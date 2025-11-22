@@ -21,7 +21,7 @@ Je ne peux pas me connecter directement au serveur SSH depuis cet environnement 
 ### Étape 2 : Se connecter et exécuter
 
 ```bash
-ssh allbyfb@46.105.204.30
+ssh allbyfb@145.239.37.162
 ```
 
 **Mot de passe** : `Allbyfouta007`
@@ -47,7 +47,7 @@ bash <(curl -s https://raw.githubusercontent.com/Sghaier-h/La-Plume-Artisanale/m
 Si vous préférez, vous pouvez tout faire en une seule commande :
 
 ```bash
-ssh allbyfb@46.105.204.30 "bash <(curl -s https://raw.githubusercontent.com/Sghaier-h/La-Plume-Artisanale/main/deploy-auto.sh)"
+ssh allbyfb@145.239.37.162 "bash <(curl -s https://raw.githubusercontent.com/Sghaier-h/La-Plume-Artisanale/main/deploy-auto.sh)"
 ```
 
 **Mot de passe** : `Allbyfouta007` (vous devrez l'entrer)
@@ -58,7 +58,7 @@ ssh allbyfb@46.105.204.30 "bash <(curl -s https://raw.githubusercontent.com/Sgha
 
 Votre API sera accessible sur :
 - **https://fabrication.laplume-artisanale.tn**
-- **http://46.105.204.30:5000**
+- **http://145.239.37.162:5000**
 
 Test :
 ```bash

@@ -1,7 +1,7 @@
 # Script PowerShell pour déployer depuis Windows
 # Usage: .\deploy-windows.ps1
 
-$SSH_HOST = "allbyfb@46.105.204.30"
+$SSH_HOST = "allbyfb@145.239.37.162"
 $SSH_PASS = "Allbyfouta007"
 $SCRIPT_URL = "https://raw.githubusercontent.com/Sghaier-h/La-Plume-Artisanale/main/deploy-auto.sh"
 
@@ -19,11 +19,11 @@ if (-not $plinkPath) {
     Write-Host "  winget install PuTTY.PuTTY" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "Option 2 : Utiliser WSL" -ForegroundColor Yellow
-    Write-Host "  wsl bash -c 'ssh allbyfb@46.105.204.30 \"bash <(curl -s $SCRIPT_URL)\"'" -ForegroundColor Cyan
+    Write-Host "  wsl bash -c 'ssh allbyfb@145.239.37.162 \"bash <(curl -s $SCRIPT_URL)\"'" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "Option 3 : Utiliser Git Bash" -ForegroundColor Yellow
     Write-Host "  Ouvrez Git Bash et exécutez :" -ForegroundColor Cyan
-    Write-Host "  ssh allbyfb@46.105.204.30" -ForegroundColor White
+    Write-Host "  ssh allbyfb@145.239.37.162" -ForegroundColor White
     Write-Host "  bash <(curl -s $SCRIPT_URL)" -ForegroundColor White
     exit 1
 }
@@ -51,7 +51,7 @@ try {
     Write-Host $_.Exception.Message -ForegroundColor Red
     Write-Host ""
     Write-Host "💡 Essayez manuellement :" -ForegroundColor Yellow
-    Write-Host "  ssh allbyfb@46.105.204.30" -ForegroundColor Cyan
+    Write-Host "  ssh allbyfb@145.239.37.162" -ForegroundColor Cyan
     Write-Host "  bash <(curl -s $SCRIPT_URL)" -ForegroundColor Cyan
 }
 

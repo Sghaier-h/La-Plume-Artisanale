@@ -5,7 +5,7 @@
 
 set -e
 
-SSH_HOST="allbyfb@46.105.204.30"
+SSH_HOST="allbyfb@145.239.37.162"
 SSH_PASS="Allbyfouta007"
 SCRIPT_URL="https://raw.githubusercontent.com/Sghaier-h/La-Plume-Artisanale/main/deploy-auto.sh"
 

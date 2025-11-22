@@ -2,7 +2,7 @@
 
 ## ✅ Informations du serveur
 
-- **IP** : `46.105.204.30`
+- **IP** : `145.239.37.162`
 - **Domaine** : `fabrication.laplume-artisanale.tn`
 - **SSH** : `ssh allbyfb@ssh.cluster130.hosting.ovh.net`
 - **Utilisateur** : `allbyfb`
@@ -15,7 +15,7 @@
 ### Étape 1 : Se connecter au serveur
 
 ```bash
-ssh allbyfb@46.105.204.30
+ssh allbyfb@145.239.37.162
 # ou
 ssh allbyfb@ssh.cluster130.hosting.ovh.net
 ```
@@ -161,7 +161,7 @@ sudo nano /etc/nginx/sites-available/fouta-erp
 ```nginx
 server {
     listen 80;
-    server_name fabrication.laplume-artisanale.tn 46.105.204.30;
+    server_name fabrication.laplume-artisanale.tn 145.239.37.162;
     return 301 https://fabrication.laplume-artisanale.tn$request_uri;
 }
 
@@ -230,7 +230,7 @@ passwd
 ```bash
 # Sur votre machine locale
 ssh-keygen -t ed25519 -C "votre-email@example.com"
-ssh-copy-id allbyfb@46.105.204.30
+ssh-copy-id allbyfb@145.239.37.162
 ```
 
 ### ⚠️ Configurer le firewall
@@ -254,7 +254,7 @@ curl http://localhost:5000/health
 
 # Depuis votre machine
 curl https://fabrication.laplume-artisanale.tn/health
-curl http://46.105.204.30:5000/health
+curl http://145.239.37.162:5000/health
 ```
 
 ### Vérifier PM2
@@ -299,7 +299,7 @@ pm2 restart fouta-api
 ### Connexion SSH
 
 ```bash
-ssh -v allbyfb@46.105.204.30
+ssh -v allbyfb@145.239.37.162
 ```
 
 ### Vérifier les services
@@ -323,7 +323,7 @@ sudo tail -f /var/log/nginx/error.log
 ## 📊 URLs finales
 
 - **API** : `https://fabrication.laplume-artisanale.tn`
-- **API IP** : `http://46.105.204.30:5000`
+- **API IP** : `http://145.239.37.162:5000`
 - **Health Check** : `https://fabrication.laplume-artisanale.tn/health`
 - **API Mobile** : `https://fabrication.laplume-artisanale.tn/api/v1/mobile/`
 

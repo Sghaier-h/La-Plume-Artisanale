@@ -21,7 +21,7 @@ winget install PuTTY.PuTTY
 ### Avec WSL (Windows Subsystem for Linux)
 
 ```powershell
-wsl bash -c 'ssh allbyfb@46.105.204.30 "bash <(curl -s https://raw.githubusercontent.com/Sghaier-h/La-Plume-Artisanale/main/deploy-auto.sh)"'
+wsl bash -c 'ssh allbyfb@145.239.37.162 "bash <(curl -s https://raw.githubusercontent.com/Sghaier-h/La-Plume-Artisanale/main/deploy-auto.sh)"'
 ```
 
 **Mot de passe** : `Allbyfouta007`
@@ -32,7 +32,7 @@ wsl bash -c 'ssh allbyfb@46.105.204.30 "bash <(curl -s https://raw.githubusercon
 2. Exécutez :
 
 ```bash
-ssh allbyfb@46.105.204.30
+ssh allbyfb@145.239.37.162
 # Mot de passe : Allbyfouta007
 bash <(curl -s https://raw.githubusercontent.com/Sghaier-h/La-Plume-Artisanale/main/deploy-auto.sh)
 ```
@@ -42,7 +42,7 @@ bash <(curl -s https://raw.githubusercontent.com/Sghaier-h/La-Plume-Artisanale/m
 ## 🚀 Option 2 : Depuis Linux/Mac
 
 ```bash
-ssh allbyfb@46.105.204.30
+ssh allbyfb@145.239.37.162
 # Mot de passe : Allbyfouta007
 bash <(curl -s https://raw.githubusercontent.com/Sghaier-h/La-Plume-Artisanale/main/deploy-auto.sh)
 ```
@@ -56,7 +56,7 @@ Créez un fichier `deploy.bat` :
 ```batch
 @echo off
 echo Connexion au serveur...
-plink -ssh allbyfb@46.105.204.30 -pw Allbyfouta007 "bash <(curl -s https://raw.githubusercontent.com/Sghaier-h/La-Plume-Artisanale/main/deploy-auto.sh)"
+plink -ssh allbyfb@145.239.37.162 -pw Allbyfouta007 "bash <(curl -s https://raw.githubusercontent.com/Sghaier-h/La-Plume-Artisanale/main/deploy-auto.sh)"
 pause
 ```
 
@@ -80,7 +80,7 @@ bash <(curl -s https://raw.githubusercontent.com/Sghaier-h/La-Plume-Artisanale/m
 ### 1. Se connecter
 
 ```bash
-ssh allbyfb@46.105.204.30
+ssh allbyfb@145.239.37.162
 ```
 
 **Mot de passe** : `Allbyfouta007`
@@ -130,7 +130,7 @@ pm2 logs fouta-api
 ### Timeout
 
 - Vérifiez votre connexion internet
-- Vérifiez que l'IP `46.105.204.30` est correcte
+- Vérifiez que l'IP `145.239.37.162` est correcte
 
 ---
 
@@ -139,7 +139,7 @@ pm2 logs fouta-api
 **Ouvrez un terminal (Git Bash, PowerShell, ou terminal Linux/Mac) et exécutez :**
 
 ```bash
-ssh allbyfb@46.105.204.30
+ssh allbyfb@145.239.37.162
 ```
 
 Puis collez cette commande :

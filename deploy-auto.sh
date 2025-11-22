@@ -10,7 +10,7 @@ echo "================================================="
 
 # Configuration
 DOMAIN="fabrication.laplume-artisanale.tn"
-IP="46.105.204.30"
+IP="145.239.37.162"
 GIT_REPO="https://github.com/Sghaier-h/La-Plume-Artisanale.git"
 PROJECT_DIR="/var/www/fouta-erp"
 DB_NAME="fouta_erp"

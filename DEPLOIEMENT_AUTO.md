@@ -11,7 +11,7 @@ J'ai créé un script complètement automatisé qui fait TOUT sans aucune questi
 ### Se connecter
 
 ```bash
-ssh allbyfb@46.105.204.30
+ssh allbyfb@145.239.37.162
 ```
 
 **Mot de passe** : `Allbyfouta007`
@@ -75,7 +75,7 @@ bash <(curl -s https://raw.githubusercontent.com/Sghaier-h/La-Plume-Artisanale/m
 ```bash
 # Tester l'API
 curl https://fabrication.laplume-artisanale.tn/health
-curl http://46.105.204.30:5000/health
+curl http://145.239.37.162:5000/health
 
 # Vérifier PM2
 pm2 status
@@ -149,7 +149,7 @@ https://fabrication.laplume-artisanale.tn/api/v1/
 
 Votre application est maintenant déployée et accessible sur :
 - **https://fabrication.laplume-artisanale.tn**
-- **http://46.105.204.30:5000**
+- **http://145.239.37.162:5000**
 
 **Aucune interaction nécessaire - tout est automatique !** 🚀
 

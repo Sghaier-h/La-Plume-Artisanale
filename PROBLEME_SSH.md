@@ -12,16 +12,16 @@ OVH utilise parfois un port SSH différent. Essayez :
 
 ```bash
 # Port 22 (standard)
-ssh allbyfb@46.105.204.30
+ssh allbyfb@145.239.37.162
 
 # Port 22 avec timeout augmenté
-ssh -o ConnectTimeout=30 allbyfb@46.105.204.30
+ssh -o ConnectTimeout=30 allbyfb@145.239.37.162
 
 # Port alternatif 2222
-ssh -p 2222 allbyfb@46.105.204.30
+ssh -p 2222 allbyfb@145.239.37.162
 
 # Port alternatif 443
-ssh -p 443 allbyfb@46.105.204.30
+ssh -p 443 allbyfb@145.239.37.162
 ```
 
 ---
@@ -67,7 +67,7 @@ Transférez le dossier `La-Plume-Artisanale` vers `/var/www/` sur le serveur.
 
 ### Vérifier l'IP
 
-L'IP `46.105.204.30` est-elle correcte ? Vérifiez dans votre panneau OVH.
+L'IP `145.239.37.162` est-elle correcte ? Vérifiez dans votre panneau OVH.
 
 ### Vérifier le domaine SSH
 
@@ -97,7 +97,7 @@ Si rien ne fonctionne :
 
 1. Téléchargez PuTTY : https://www.putty.org/
 2. Configurez :
-   - **Host Name** : `46.105.204.30` ou `ssh.cluster130.hosting.ovh.net`
+   - **Host Name** : `145.239.37.162` ou `ssh.cluster130.hosting.ovh.net`
    - **Port** : `22` (essayez aussi `2222`, `443`)
    - **Connection type** : SSH
 3. Cliquez sur "Open"
@@ -108,7 +108,7 @@ Si rien ne fonctionne :
 1. Téléchargez WinSCP : https://winscp.net/
 2. Configurez :
    - **File protocol** : SFTP
-   - **Host name** : `46.105.204.30`
+   - **Host name** : `145.239.37.162`
    - **Port** : `22`
    - **User name** : `allbyfb`
    - **Password** : `Allbyfouta007`
@@ -135,23 +135,23 @@ New-NetFirewallRule -DisplayName "SSH" -Direction Outbound -Protocol TCP -Remote
 
 ```powershell
 # Test de connexion
-Test-NetConnection -ComputerName 46.105.204.30 -Port 22
+Test-NetConnection -ComputerName 145.239.37.162 -Port 22
 
 # Ping
-ping 46.105.204.30
+ping 145.239.37.162
 ```
 
 ### Avec telnet
 
 ```powershell
-telnet 46.105.204.30 22
+telnet 145.239.37.162 22
 ```
 
 ---
 
 ## 📋 Checklist de dépannage
 
-- [ ] Vérifier l'IP : `46.105.204.30`
+- [ ] Vérifier l'IP : `145.239.37.162`
 - [ ] Vérifier le port SSH (22, 2222, 443)
 - [ ] Vérifier le domaine : `ssh.cluster130.hosting.ovh.net`
 - [ ] Vérifier le firewall local
@@ -175,7 +175,7 @@ telnet 46.105.204.30 22
 ## 🆘 Si rien ne fonctionne
 
 Contactez le support OVH avec ces informations :
-- **IP** : 46.105.204.30
+- **IP** : 145.239.37.162
 - **Domaine** : fabrication.laplume-artisanale.tn
 - **Utilisateur** : allbyfb
 - **Problème** : Connection timed out sur le port 22
