@@ -1,0 +1,52 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
+android {
+    namespace 'com.foutaerp.tisseur'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.foutaerp.tisseur"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "1.0.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.11.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    
+    // Retrofit pour API
+    implementation 'com.squareup.retrofit2:retrofit:2.9.0'
+    implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
+    
+    // Socket.IO
+    implementation 'io.socket:socket.io-client:2.1.0'
+    
+    // QR Code Scanner
+    implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
+    
+    // Image loading
+    implementation 'com.github.bumptech.glide:glide:4.16.0'
+    
+    // Bluetooth printing
+    implementation 'com.github.DantSu:ESCPOS-ThermalPrinter-Android:3.3.0'
+}
+

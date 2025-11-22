@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Uploads
+uploads/
+
+# Misc
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Database
+*.sql.backup
+
