@@ -4,12 +4,13 @@
 
 set -e
 
-# Charger nvm
+# Charger nvm si disponible (optionnel)
 export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-
-# Utiliser Node.js 18
-nvm use 18
+if [ -s "$NVM_DIR/nvm.sh" ]; then
+    \. "$NVM_DIR/nvm.sh"
+    # Essayer d'utiliser Node.js 18, sinon continuer avec la version actuelle
+    nvm use 18 2>/dev/null || nvm use default 2>/dev/null || true
+fi
 
 echo "🚀 Finalisation du Déploiement"
 echo "================================"
