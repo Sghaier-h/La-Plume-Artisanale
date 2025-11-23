@@ -74,9 +74,11 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 5000;
+// Sur hébergement partagé, écouter sur localhost uniquement
+const HOST = process.env.HOST || '127.0.0.1';
 
-httpServer.listen(PORT, () => {
-  console.log(`🚀 Serveur démarré sur le port ${PORT}`);
+httpServer.listen(PORT, HOST, () => {
+  console.log(`🚀 Serveur démarré sur ${HOST}:${PORT}`);
   console.log(`📡 Socket.IO actif`);
 });
 
