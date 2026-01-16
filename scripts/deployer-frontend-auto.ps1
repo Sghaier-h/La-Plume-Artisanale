@@ -15,13 +15,11 @@ if (-not (Test-Path $FRONTEND_DIR)) {
     exit 1
 }
 
-# 2. Creer le fichier .env.production si necessaire
+# 2. Creer/Mettre a jour le fichier .env.production
 $envProduction = Join-Path $FRONTEND_DIR ".env.production"
-if (-not (Test-Path $envProduction)) {
-    Write-Host "Creation du fichier .env.production..." -ForegroundColor Yellow
-    Set-Content -Path $envProduction -Value "REACT_APP_API_URL=https://fabrication.laplume-artisanale.tn/api"
-    Write-Host "Fichier .env.production cree" -ForegroundColor Green
-}
+Write-Host "Creation/Mise a jour du fichier .env.production..." -ForegroundColor Yellow
+Set-Content -Path $envProduction -Value "REACT_APP_API_URL=https://fabrication.laplume-artisanale.tn/api"
+Write-Host "Fichier .env.production configure: REACT_APP_API_URL=https://fabrication.laplume-artisanale.tn/api" -ForegroundColor Green
 
 # 3. Build du frontend
 Write-Host "Build du frontend (cela peut prendre 2-5 minutes)..." -ForegroundColor Yellow
