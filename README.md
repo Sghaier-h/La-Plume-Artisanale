@@ -1,81 +1,106 @@
-# 🏭 ERP ALL BY FOUTA - La Plume Artisanale
+# 🚀 ERP La Plume Artisanale
 
-Système de gestion de production ERP complet pour l'industrie textile.
+Système de gestion ERP complet pour la production artisanale de textiles.
 
-## 📋 Description
+## 📋 Structure du Projet
 
-ERP complet pour la gestion de production textile incluant :
-- 📊 Planning et ordonnancement
-- 🏭 Suivi de production en temps réel
-- 📦 Gestion multi-entrepôts
-- ✅ Contrôle qualité
-- 📱 Applications Android par poste de travail
-- ☁️ Architecture SaaS
+```
+La-Plume-Artisanale/
+├── backend/              # API Node.js/Express
+├── frontend/            # Interface React
+├── mobile/              # Applications mobiles (Android/iOS)
+├── database/            # Scripts SQL de la base de données
+├── scripts/             # Scripts de déploiement et utilitaires
+├── docs/                # Documentation
+│   ├── deployment/      # Guides de déploiement
+│   ├── configuration/   # Guides de configuration
+│   ├── troubleshooting/ # Guides de dépannage
+│   ├── development/    # Guides de développement
+│   └── database/       # Documentation base de données
+└── tests/               # Tests automatisés
+```
 
 ## 🚀 Démarrage Rapide
 
-### Installation locale
+### Prérequis
+
+- Node.js 18+
+- PostgreSQL 14+
+- npm ou yarn
+
+### Installation
 
 ```bash
 # Backend
 cd backend
 npm install
 cp .env.example .env
-# Éditer .env avec vos paramètres
-npm run dev
+# Configurer .env avec vos paramètres
+npm start
 
 # Frontend
 cd frontend
 npm install
+cp .env.example .env.production
 npm start
-```
-
-### Base de données
-
-```bash
-cd database
-psql -U postgres -d fouta_erp -f 01_base_et_securite.sql
-psql -U postgres -d fouta_erp -f 02_production_et_qualite.sql
-psql -U postgres -d fouta_erp -f 03_flux_et_tracabilite.sql
-psql -U postgres -d fouta_erp -f 04_mobile_devices.sql
 ```
 
 ## 📚 Documentation
 
-- **`INSTALLATION.md`** - Guide d'installation complet
-- **`DEPLOIEMENT_OVH.md`** - Déploiement sur serveur OVH
-- **`GUIDE_GITHUB.md`** - Workflow GitHub
-- **`SETUP_GITHUB.md`** - Configuration GitHub
-- **`QUICK_START.md`** - Démarrage rapide
+- [Guide de déploiement](docs/deployment/)
+- [Configuration](docs/configuration/)
+- [Dépannage](docs/troubleshooting/)
+- [Développement](docs/development/)
+- [Base de données](docs/database/)
 
-## 🏗️ Architecture
+## 🗄️ Base de Données
 
-- **Backend** : Node.js + Express + PostgreSQL
-- **Frontend** : React + TypeScript + Tailwind CSS
-- **Mobile** : Android (Kotlin) - 7 applications par poste
-- **Base de données** : PostgreSQL avec 45+ tables
-- **Temps réel** : Socket.IO
+Les scripts SQL sont dans le dossier `database/`. Voir [docs/database/ETAT_TABLES.md](docs/database/ETAT_TABLES.md) pour l'état des tables.
 
-## 📱 Applications Android
+### Exécution des scripts
 
-- App Tisseur (Weaver)
-- App Coupeur (Cutter)
-- App Mécanicien (Mechanic)
-- App Magasinier MP (Raw Material Warehouse)
-- App Magasinier PF (Finished Product Warehouse)
-- App Contrôle Qualité (Quality Control)
-- App Sous-traitant (Sub-contractor)
+```bash
+# Dans l'ordre
+psql -U utilisateur -d laplume_artisanale -f database/01_base_et_securite.sql
+psql -U utilisateur -d laplume_artisanale -f database/02_production_et_qualite.sql
+psql -U utilisateur -d laplume_artisanale -f database/03_flux_et_tracabilite.sql
+# ... etc
+```
 
-## ☁️ Déploiement SaaS
+## 🔧 Scripts Utilitaires
 
-Le projet est configuré pour un déploiement SaaS sur OVH Cloud.
+- `scripts/organiser-git.ps1` - Organiser le dépôt Git
+- `scripts/update-server.sh` - Mettre à jour le serveur depuis GitHub
+- `scripts/deploy-*.sh` - Scripts de déploiement
 
-Voir `DEPLOIEMENT_OVH.md` pour les instructions complètes.
+## 📝 Modules Disponibles
 
-## 🔗 Repository GitHub
+- ✅ GPAO (Gestion de Production Assistée par Ordinateur)
+- ✅ Gestion des articles et modèles
+- ✅ Catalogue produit
+- ✅ Ventes (Devis, Commandes, Factures)
+- ✅ Achats
+- ✅ Stock multi-entrepôts
+- ✅ Traçabilité lots
+- ✅ Maintenance
+- ✅ Qualité avancée
+- ✅ Planification Gantt
+- ✅ Coûts
+- ✅ Multi-société
+- ✅ Communication externe
+- ✅ E-commerce IA
+- ✅ Point de vente
+- ✅ CRM
+- ✅ Comptabilité
 
-**URL** : `https://github.com/Sghaier-h/La-Plume-Artisanale.git`
+## 🌐 Déploiement
 
-## 📝 License
+Voir [docs/deployment/](docs/deployment/) pour les guides de déploiement.
 
-Propriétaire - ALL BY FOUTA
+## 📞 Support
+
+Pour toute question, consultez la documentation dans `docs/`.
+
+## 📄 Licence
+
+Propriétaire - La Plume Artisanale
