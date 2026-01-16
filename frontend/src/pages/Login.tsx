@@ -42,7 +42,9 @@ const Login: React.FC = () => {
       
       // Gérer les erreurs de connexion réseau
       if (err.code === 'ECONNREFUSED' || err.code === 'ERR_NETWORK' || !err.response) {
-        errorMessage = 'Impossible de se connecter au serveur. Vérifiez que le backend est démarré sur http://localhost:5000';
+        errorMessage = process.env.NODE_ENV === 'production'
+          ? 'Impossible de se connecter au serveur. Vérifiez que le backend est accessible.'
+          : 'Impossible de se connecter au serveur. Vérifiez que le backend est démarré sur http://localhost:5000';
       } else if (err.message?.includes('fermée') || err.message?.includes('interrompue')) {
         errorMessage = 'La connexion au serveur a été interrompue. Vérifiez que le backend est bien démarré et accessible.';
       } else if (err.response?.status === 401) {
