@@ -87,14 +87,7 @@ Write-Host ""
 
 # 6. Déplacer les fichiers et corriger les permissions (avec sudo)
 Write-Host "Deplacement des fichiers et correction des permissions..." -ForegroundColor Yellow
-$deployCmd = @"
-sudo rm -rf $REMOTE_FRONTEND_DIR/*
-sudo cp -r $TEMP_DIR/* $REMOTE_FRONTEND_DIR/
-sudo chown -R www-data:www-data $REMOTE_FRONTEND_DIR
-sudo chmod -R 755 $REMOTE_FRONTEND_DIR
-sudo rm -rf $TEMP_DIR
-sudo systemctl reload nginx
-"@
+$deployCmd = "sudo rm -rf $REMOTE_FRONTEND_DIR/*; sudo cp -r $TEMP_DIR/* $REMOTE_FRONTEND_DIR/; sudo chown -R www-data:www-data $REMOTE_FRONTEND_DIR; sudo chmod -R 755 $REMOTE_FRONTEND_DIR; sudo rm -rf $TEMP_DIR; sudo systemctl reload nginx"
 
 ssh $SERVER $deployCmd
 
