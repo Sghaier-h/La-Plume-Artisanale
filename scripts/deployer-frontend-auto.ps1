@@ -21,8 +21,14 @@ Write-Host "Creation/Mise a jour du fichier .env.production..." -ForegroundColor
 Set-Content -Path $envProduction -Value "REACT_APP_API_URL=https://fabrication.laplume-artisanale.tn/api"
 Write-Host "Fichier .env.production configure: REACT_APP_API_URL=https://fabrication.laplume-artisanale.tn/api" -ForegroundColor Green
 
+# Verifier que le fichier existe et est correct
+Write-Host "Verification du fichier .env.production..." -ForegroundColor Gray
+Get-Content $envProduction
+
 # 3. Build du frontend
+Write-Host ""
 Write-Host "Build du frontend (cela peut prendre 2-5 minutes)..." -ForegroundColor Yellow
+Write-Host "IMPORTANT: Le build utilise le fichier .env.production pour l'URL de l'API" -ForegroundColor Cyan
 Set-Location $FRONTEND_DIR
 
 # Verifier si npm est installe
