@@ -140,7 +140,7 @@ app.use('/api/migration', migrationRoutes);
 // Routes Mobile (SaaS)
 app.use('/api/v1/mobile', mobileRoutes);
 
-// Route racine
+// Route racine - Redirection vers le frontend
 app.get('/', (req, res) => {
   // Si le client demande du JSON explicitement
   if (req.headers.accept && req.headers.accept.includes('application/json')) {
@@ -148,162 +148,57 @@ app.get('/', (req, res) => {
       message: 'API ERP La Plume Artisanale',
       version: '1.0.0',
       status: 'OK',
-      endpoints: {
-        health: '/health',
-        auth: '/api/auth',
-        articles: '/api/articles',
-        articlesCatalogue: '/api/articles-catalogue',
-        clients: '/api/clients',
-        fournisseurs: '/api/fournisseurs',
-        commandes: '/api/commandes',
-        machines: '/api/machines',
-        of: '/api/of',
-        planning: '/api/planning-dragdrop',
-        suiviFabrication: '/api/suivi-fabrication',
-        soustraitants: '/api/soustraitants',
-        dashboard: '/api/dashboard',
-        production: '/api/production',
-        stock: '/api/stock',
-        stockMultiEntrepots: '/api/stock-multi-entrepots',
-        matieresPremieres: '/api/matieres-premieres',
-        parametrage: '/api/parametrage',
-        parametresCatalogue: '/api/parametres-catalogue',
-        selecteurs: '/api/selecteurs',
-        tracabiliteLots: '/api/tracabilite-lots',
-        qualiteAvancee: '/api/qualite-avancee',
-        documents: '/api/documents',
-        planningOld: '/api/planning',
-        quality: '/api/quality',
-        mobile: '/api/v1/mobile'
-      },
+      info: '/api/info',
       timestamp: new Date().toISOString()
     });
   }
 
-  // Sinon, retourner une page HTML pour les navigateurs
-  const html = `
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>API ERP - La Plume Artisanale</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      color: #333;
-    }
-    .container {
-      background: white;
-      border-radius: 20px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-      padding: 40px;
-      max-width: 600px;
-      width: 100%;
-    }
-    h1 {
-      color: #667eea;
-      margin-bottom: 10px;
-      font-size: 2em;
-    }
-    .subtitle {
-      color: #666;
-      margin-bottom: 30px;
-      font-size: 1.1em;
-    }
-    .status {
-      display: inline-block;
-      background: #10b981;
-      color: white;
-      padding: 5px 15px;
-      border-radius: 20px;
-      font-size: 0.9em;
-      margin-bottom: 30px;
-    }
-    .endpoints {
-      background: #f7fafc;
-      border-radius: 10px;
-      padding: 20px;
-      margin-top: 20px;
-    }
-    .endpoints h2 {
-      color: #667eea;
-      margin-bottom: 15px;
-      font-size: 1.3em;
-    }
-    .endpoint-list {
-      list-style: none;
-    }
-    .endpoint-list li {
-      padding: 10px;
-      margin: 5px 0;
-      background: white;
-      border-radius: 5px;
-      border-left: 3px solid #667eea;
-      font-family: 'Courier New', monospace;
-      font-size: 0.9em;
-    }
-    .footer {
-      margin-top: 30px;
-      text-align: center;
-      color: #999;
-      font-size: 0.9em;
-    }
-    .version {
-      color: #999;
-      font-size: 0.9em;
-      margin-top: 10px;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>🚀 API ERP</h1>
-    <p class="subtitle">La Plume Artisanale</p>
-    <span class="status">✓ En ligne</span>
-    <p class="version">Version 1.0.0</p>
-    
-    <div class="endpoints">
-      <h2>📡 Endpoints disponibles</h2>
-      <ul class="endpoint-list">
-        <li><strong>GET</strong> /health - Health check</li>
-        <li><strong>POST</strong> /api/auth - Authentification</li>
-        <li><strong>GET/POST</strong> /api/articles - Articles</li>
-        <li><strong>GET/POST</strong> /api/clients - Clients</li>
-        <li><strong>GET/POST</strong> /api/commandes - Commandes</li>
-        <li><strong>GET/POST</strong> /api/machines - Machines</li>
-        <li><strong>GET/POST</strong> /api/of - Ordres de Fabrication</li>
-        <li><strong>GET/POST</strong> /api/soustraitants - Sous-traitants</li>
-        <li><strong>GET</strong> /api/dashboard - Dashboard</li>
-        <li><strong>GET/POST</strong> /api/production - Production</li>
-        <li><strong>GET/POST</strong> /api/stock - Stock</li>
-        <li><strong>GET/POST</strong> /api/planning - Planning</li>
-        <li><strong>GET/POST</strong> /api/quality - Qualité</li>
-        <li><strong>GET/POST</strong> /api/v1/mobile - Mobile (SaaS)</li>
-      </ul>
-    </div>
-    
-    <div class="footer">
-      <p>API REST - Système de gestion ERP</p>
-      <p style="margin-top: 5px;">${new Date().toLocaleString('fr-FR')}</p>
-    </div>
-  </div>
-</body>
-</html>
-  `;
-  
-  res.send(html);
+  // Redirection vers le frontend (Nginx s'en occupe en production)
+  // En développement, rediriger vers localhost:3000
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+  res.redirect(frontendUrl);
+});
+
+// Route d'information API (accessible depuis les paramètres)
+app.get('/api/info', (req, res) => {
+  res.json({
+    message: 'API ERP La Plume Artisanale',
+    version: '1.0.0',
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    endpoints: {
+      health: '/health',
+      auth: '/api/auth',
+      articles: '/api/articles',
+      articlesCatalogue: '/api/articles-catalogue',
+      clients: '/api/clients',
+      fournisseurs: '/api/fournisseurs',
+      commandes: '/api/commandes',
+      machines: '/api/machines',
+      of: '/api/of',
+      planning: '/api/planning-dragdrop',
+      suiviFabrication: '/api/suivi-fabrication',
+      soustraitants: '/api/soustraitants',
+      dashboard: '/api/dashboard',
+      production: '/api/production',
+      stock: '/api/stock',
+      stockMultiEntrepots: '/api/stock-multi-entrepots',
+      matieresPremieres: '/api/matieres-premieres',
+      parametrage: '/api/parametrage',
+      parametresCatalogue: '/api/parametres-catalogue',
+      selecteurs: '/api/selecteurs',
+      tracabiliteLots: '/api/tracabilite-lots',
+      qualiteAvancee: '/api/qualite-avancee',
+      documents: '/api/documents',
+      planningOld: '/api/planning',
+      quality: '/api/quality',
+      mobile: '/api/v1/mobile',
+      webhooks: '/api/webhooks/timemoto',
+      info: '/api/info'
+    },
+    baseUrl: process.env.API_URL || 'https://fabrication.laplume-artisanale.tn',
+    environment: process.env.NODE_ENV || 'development'
+  });
 });
 
 // Health check

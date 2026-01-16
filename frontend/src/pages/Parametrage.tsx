@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { parametrageService } from '../services/api';
-import { Save, Building2, Settings, Tag } from 'lucide-react';
+import api from '../services/api';
+import { Save, Building2, Settings, Tag, Code } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Parametrage: React.FC = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'societe' | 'systeme' | 'attributs'>('societe');
+  const [activeTab, setActiveTab] = useState<'societe' | 'systeme' | 'attributs' | 'api'>('societe');
   const [societe, setSociete] = useState<any>({});
   const [parametres, setParametres] = useState<any>({});
+  const [apiInfo, setApiInfo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -22,9 +24,12 @@ const Parametrage: React.FC = () => {
       if (activeTab === 'societe') {
         const response = await parametrageService.getSociete();
         setSociete(response.data.data);
-      } else {
+      } else if (activeTab === 'systeme') {
         const response = await parametrageService.getParametresSysteme();
         setParametres(response.data.data);
+      } else if (activeTab === 'api') {
+        const response = await api.get('/info');
+        setApiInfo(response.data);
       }
     } catch (error) {
       console.error('Erreur chargement:', error);
@@ -112,6 +117,17 @@ const Parametrage: React.FC = () => {
             >
               <Tag className="w-5 h-5" />
               Attributs
+            </button>
+            <button
+              onClick={() => setActiveTab('api')}
+              className={`px-6 py-3 font-medium flex items-center gap-2 ${
+                activeTab === 'api'
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              <Code className="w-5 h-5" />
+              API
             </button>
           </div>
 
@@ -317,6 +333,70 @@ const Parametrage: React.FC = () => {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Contenu API */}
+          {activeTab === 'api' && (
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-bold mb-6">📡 Informations API</h2>
+              
+              {apiInfo ? (
+                <div className="space-y-6">
+                  {/* Informations générales */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-bold text-blue-900">🚀 API ERP</h3>
+                      <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-semibold">
+                        ✓ {apiInfo.status}
+                      </span>
+                    </div>
+                    <p className="text-sm text-blue-700 mb-2">{apiInfo.message}</p>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-blue-600 font-medium">Version:</span>
+                        <span className="ml-2 text-blue-900">{apiInfo.version}</span>
+                      </div>
+                      <div>
+                        <span className="text-blue-600 font-medium">Environnement:</span>
+                        <span className="ml-2 text-blue-900">{apiInfo.environment}</span>
+                      </div>
+                      <div className="col-span-2">
+                        <span className="text-blue-600 font-medium">Base URL:</span>
+                        <span className="ml-2 text-blue-900 font-mono">{apiInfo.baseUrl}</span>
+                      </div>
+                      <div className="col-span-2">
+                        <span className="text-blue-600 font-medium">Dernière mise à jour:</span>
+                        <span className="ml-2 text-blue-900">
+                          {new Date(apiInfo.timestamp).toLocaleString('fr-FR')}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Endpoints disponibles */}
+                  <div>
+                    <h3 className="font-bold text-gray-800 mb-4">📋 Endpoints disponibles</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {Object.entries(apiInfo.endpoints || {}).map(([key, path]: [string, any]) => (
+                        <div
+                          key={key}
+                          className="p-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors"
+                        >
+                          <div className="font-mono text-sm text-gray-800">
+                            <span className="text-blue-600 font-semibold">{key}:</span>
+                            <span className="ml-2">{path}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  Chargement des informations API...
+                </div>
+              )}
             </div>
           )}
         </div>
