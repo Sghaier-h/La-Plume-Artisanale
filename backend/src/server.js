@@ -140,23 +140,18 @@ app.use('/api/migration', migrationRoutes);
 // Routes Mobile (SaaS)
 app.use('/api/v1/mobile', mobileRoutes);
 
-// Route racine - Redirection vers le frontend
+// Route racine - Ne jamais rediriger (Nginx sert le frontend en production)
+// Cette route ne devrait jamais être appelée en production car Nginx intercepte /
 app.get('/', (req, res) => {
-  // Si le client demande du JSON explicitement
-  if (req.headers.accept && req.headers.accept.includes('application/json')) {
-    return res.json({
-      message: 'API ERP La Plume Artisanale',
-      version: '1.0.0',
-      status: 'OK',
-      info: '/api/info',
-      timestamp: new Date().toISOString()
-    });
-  }
-
-  // Redirection vers le frontend (Nginx s'en occupe en production)
-  // En développement, rediriger vers localhost:3000
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-  res.redirect(frontendUrl);
+  // Toujours retourner du JSON (pas de redirection pour éviter les boucles)
+  res.json({
+    message: 'API ERP La Plume Artisanale',
+    version: '1.0.0',
+    status: 'OK',
+    info: '/api/info',
+    note: 'Le frontend est servi par Nginx. Utilisez /api/info pour plus d\'informations.',
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Route d'information API (accessible depuis les paramètres)
