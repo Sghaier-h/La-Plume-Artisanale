@@ -1,0 +1,121 @@
+#!/bin/bash
+# Script pour deployer le frontend directement sur le serveur
+
+set -e
+
+PROJECT_DIR="/opt/fouta-erp"
+FRONTEND_DIR="$PROJECT_DIR/frontend"
+REMOTE_FRONTEND_DIR="/opt/fouta-erp/frontend"
+
+echo "🚀 Deploiement du frontend sur le serveur..."
+echo ""
+
+cd "$PROJECT_DIR"
+
+# 1. Corriger les permissions
+echo "🔧 Correction des permissions..."
+sudo chown -R ubuntu:ubuntu frontend/
+echo "✅ Permissions corrigees"
+echo ""
+
+# 2. Mettre a jour le depot
+echo "📥 Mise a jour depuis GitHub..."
+if ! git diff --quiet || ! git diff --cached --quiet; then
+    echo "💾 Sauvegarde des modifications locales..."
+    git stash push -m "Sauvegarde avant deploy frontend"
+fi
+
+git fetch origin
+git reset --hard origin/main
+echo "✅ Depot mis a jour"
+echo ""
+
+# 3. Aller dans le dossier frontend
+cd "$FRONTEND_DIR"
+
+# 4. Creer le fichier .env.production
+echo "📝 Creation du fichier .env.production..."
+echo "REACT_APP_API_URL=https://fabrication.laplume-artisanale.tn/api" > .env.production
+cat .env.production
+echo "✅ Fichier .env.production cree"
+echo ""
+
+# 5. Installer les dependances (si necessaire)
+if [ ! -d "node_modules" ]; then
+    echo "📦 Installation des dependances (cela peut prendre plusieurs minutes)..."
+    npm install
+else
+    echo "✅ Dependances deja installees"
+fi
+echo ""
+
+# 6. Builder le frontend
+echo "🔨 Build du frontend (cela peut prendre 5-10 minutes)..."
+echo "IMPORTANT: Le build utilise le fichier .env.production pour l'URL de l'API"
+npm run build
+
+if [ ! -d "build" ]; then
+    echo "❌ Erreur: Le dossier build n'existe pas !"
+    exit 1
+fi
+
+echo "✅ Build termine avec succes"
+echo ""
+
+# 7. Deplacer le build vers le dossier de deploiement
+echo "📦 Deploiement des fichiers..."
+cd "$PROJECT_DIR"
+
+# Sauvegarder les anciens fichiers (sauf build)
+if [ -d "frontend/build" ]; then
+    sudo rm -rf frontend/build
+fi
+
+# Copier le contenu du build vers frontend/
+sudo cp -r frontend/build/* frontend/ 2>/dev/null || {
+    echo "⚠️  Erreur lors de la copie, tentative alternative..."
+    cd frontend
+    sudo cp -r build/* .
+}
+
+# Corriger les permissions
+sudo chown -R www-data:www-data frontend/
+sudo chmod -R 755 frontend/
+
+# Nettoyer le dossier build (optionnel)
+sudo rm -rf frontend/build 2>/dev/null || true
+
+echo "✅ Fichiers deployes"
+echo ""
+
+# 8. Recharger Nginx
+echo "🔄 Rechargement de Nginx..."
+sudo systemctl reload nginx
+echo "✅ Nginx recharge"
+echo ""
+
+# 9. Verification
+echo "🔍 Verification..."
+if [ -f "$REMOTE_FRONTEND_DIR/index.html" ]; then
+    echo "✅ index.html present"
+else
+    echo "❌ index.html manquant"
+fi
+
+JS_FILE=$(find "$REMOTE_FRONTEND_DIR/static/js" -name "main.*.js" 2>/dev/null | head -1)
+if [ -n "$JS_FILE" ]; then
+    if grep -q "fabrication.laplume-artisanale.tn" "$JS_FILE"; then
+        echo "✅ URL de production trouvee dans le build"
+    elif grep -q "localhost:5000" "$JS_FILE"; then
+        echo "❌ URL localhost trouvee - Le build n'a pas utilise .env.production"
+    else
+        echo "ℹ️  Impossible de determiner l'URL"
+    fi
+else
+    echo "⚠️  Aucun fichier JS trouve"
+fi
+
+echo ""
+echo "✅ Deploiement termine !"
+echo ""
+echo "🌐 Testez maintenant: https://fabrication.laplume-artisanale.tn"
