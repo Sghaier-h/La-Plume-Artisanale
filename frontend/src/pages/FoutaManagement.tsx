@@ -15,18 +15,18 @@ export default function FoutaManagementApp() {
   const [currentView, setCurrentView] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [companyLogo, setCompanyLogo] = useState(null);
+  const [companyLogo, setCompanyLogo] = useState<any>(null);
   const [showLogoUpload, setShowLogoUpload] = useState(false);
   const [stockMenuOpen, setStockMenuOpen] = useState(false);
   const [productionMenuOpen, setProductionMenuOpen] = useState(false);
   const [showDocumentModal, setShowDocumentModal] = useState(false);
-  const [selectedMachine, setSelectedMachine] = useState(null);
-  const [selectedOF, setSelectedOF] = useState(null);
+  const [selectedMachine, setSelectedMachine] = useState<any>(null);
+  const [selectedOF, setSelectedOF] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [draggedOF, setDraggedOF] = useState(null);
+  const [draggedOF, setDraggedOF] = useState<any>(null);
   const [showColorModal, setShowColorModal] = useState(false);
-  const [selectedOFForColors, setSelectedOFForColors] = useState(null);
+  const [selectedOFForColors, setSelectedOFForColors] = useState<any>(null);
   const [showCompositionModal, setShowCompositionModal] = useState(false);
   
   // Données réelles extraites des fichiers Excel
@@ -653,20 +653,20 @@ export default function FoutaManagementApp() {
     fontSize: 'medium',
   });
 
-  const handleLogoUpload = (e) => {
+  const handleLogoUpload = (e: any) => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setCompanyLogo(reader.result);
+        setCompanyLogo(reader.result as any);
         setShowLogoUpload(false);
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const updateTheme = (key, value) => {
-    setTheme(prev => ({ ...prev, [key]: value }));
+  const updateTheme = (key: string, value: any) => {
+    setTheme((prev: any) => ({ ...prev, [key]: value }));
   };
 
   // Simulation notifications temps réel
@@ -1390,10 +1390,10 @@ export default function FoutaManagementApp() {
                         e.currentTarget.classList.remove('ring-2', 'ring-blue-400');
                         
                         if (draggedOF) {
-                          if (!draggedOF.couleurAttributed) {
-                            alert(`⚠️ Vous devez d'abord attribuer les couleurs à ${draggedOF.numOF} avant de l'assigner à une machine.`);
+                          if (!(draggedOF as any)?.couleurAttributed) {
+                            alert(`⚠️ Vous devez d'abord attribuer les couleurs à ${(draggedOF as any)?.numOF} avant de l'assigner à une machine.`);
                           } else {
-                            alert(`✅ ${draggedOF.numOF} attribué à la machine ${machine.machine}!\n\nSynchronisation automatique:\n• Magasinier MP notifié\n• Tisseur ${machine.operateur} informé\n• Planning mis à jour`);
+                            alert(`✅ ${(draggedOF as any)?.numOF} attribué à la machine ${machine.machine}!\n\nSynchronisation automatique:\n• Magasinier MP notifié\n• Tisseur ${machine.operateur} informé\n• Planning mis à jour`);
                           }
                           setDraggedOF(null);
                         }
@@ -3007,7 +3007,7 @@ export default function FoutaManagementApp() {
           <div className="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
             <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-blue-500 to-blue-600">
               <h3 className="text-xl font-semibold text-white">
-                Machine {selectedMachine.machine} - Détails Complets
+                Machine {(selectedMachine as any)?.machine} - Détails Complets
               </h3>
               <button 
                 onClick={() => {
@@ -3031,23 +3031,23 @@ export default function FoutaManagementApp() {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Machine:</span>
-                      <span className="font-semibold">{selectedMachine.machine}</span>
+                      <span className="font-semibold">{(selectedMachine as any)?.machine}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Type:</span>
-                      <span className="font-semibold">{selectedMachine.type}</span>
+                      <span className="font-semibold">{(selectedMachine as any)?.type}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Nombre de fils:</span>
-                      <span className="font-semibold">{selectedMachine.nbFils} fils</span>
+                      <span className="font-semibold">{(selectedMachine as any)?.nbFils} fils</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Vitesse:</span>
-                      <span className="font-semibold">{selectedMachine.vitesse} duite/min</span>
+                      <span className="font-semibold">{(selectedMachine as any)?.vitesse} duite/min</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Duites/cm:</span>
-                      <span className="font-semibold">{selectedMachine.duitesCm}</span>
+                      <span className="font-semibold">{(selectedMachine as any)?.duitesCm}</span>
                     </div>
                   </div>
                 </div>
@@ -3061,27 +3061,27 @@ export default function FoutaManagementApp() {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-600">OF:</span>
-                      <span className="font-semibold text-blue-600">{selectedMachine.ofEnCours}</span>
+                      <span className="font-semibold text-blue-600">{(selectedMachine as any)?.ofEnCours}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Client:</span>
-                      <span className="font-semibold">{selectedMachine.clientEnCours}</span>
+                      <span className="font-semibold">{(selectedMachine as any)?.clientEnCours}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Opérateur:</span>
-                      <span className="font-semibold">{selectedMachine.operateur}</span>
+                      <span className="font-semibold">{(selectedMachine as any)?.operateur}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Opérations:</span>
-                      <span className="font-semibold">{selectedMachine.operations}</span>
+                      <span className="font-semibold">{(selectedMachine as any)?.operations}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* État Ensouple */}
                 <div className={`rounded-lg p-4 ${
-                  selectedMachine.status === 'alert' ? 'bg-red-50' :
-                  selectedMachine.status === 'warning' ? 'bg-orange-50' :
+                  (selectedMachine as any)?.status === 'alert' ? 'bg-red-50' :
+                  (selectedMachine as any)?.status === 'warning' ? 'bg-orange-50' :
                   'bg-green-50'
                 }`}>
                   <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
@@ -3092,26 +3092,26 @@ export default function FoutaManagementApp() {
                     <div className="flex justify-between">
                       <span className="text-gray-600">Métrage restant:</span>
                       <span className={`font-bold text-xl ${
-                        selectedMachine.status === 'alert' ? 'text-red-600' :
-                        selectedMachine.status === 'warning' ? 'text-orange-600' :
+                        (selectedMachine as any)?.status === 'alert' ? 'text-red-600' :
+                        (selectedMachine as any)?.status === 'warning' ? 'text-orange-600' :
                         'text-green-600'
                       }`}>
-                        {selectedMachine.restant} m
+                        {(selectedMachine as any)?.restant} m
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Autonomie:</span>
                       <span className="font-semibold">
-                        {Math.floor(selectedMachine.restant / selectedMachine.prod)} jours
+                        {Math.floor((selectedMachine as any)?.restant / (selectedMachine as any)?.prod)} jours
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Date ordissage:</span>
-                      <span className="font-semibold">{selectedMachine.dateOrdissage}</span>
+                      <span className="font-semibold">{(selectedMachine as any)?.dateOrdissage}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Production/jour:</span>
-                      <span className="font-semibold">{selectedMachine.prod}m</span>
+                      <span className="font-semibold">{(selectedMachine as any)?.prod}m</span>
                     </div>
                   </div>
                 </div>
@@ -3125,21 +3125,21 @@ export default function FoutaManagementApp() {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Rendement:</span>
-                      <span className="font-bold text-purple-600 text-xl">{selectedMachine.rendement}%</span>
+                      <span className="font-bold text-purple-600 text-xl">{(selectedMachine as any)?.rendement}%</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Temps fonct.:</span>
-                      <span className="font-semibold">{selectedMachine.tempsFonctionnement}h</span>
+                      <span className="font-semibold">{(selectedMachine as any)?.tempsFonctionnement}h</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Temps arrêt:</span>
-                      <span className="font-semibold">{selectedMachine.tempsArret}h</span>
+                      <span className="font-semibold">{(selectedMachine as any)?.tempsArret}h</span>
                     </div>
                     <div className="mt-3 pt-3 border-t border-purple-200">
                       <div className="w-full bg-gray-200 rounded-full h-3">
                         <div 
                           className="bg-purple-600 h-3 rounded-full"
-                          style={{ width: `${selectedMachine.rendement}%` }}
+                          style={{ width: `${(selectedMachine as any)?.rendement}%` }}
                         />
                       </div>
                     </div>
@@ -3180,9 +3180,9 @@ export default function FoutaManagementApp() {
             <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-purple-500 to-purple-600">
               <div>
                 <h3 className="text-xl font-semibold text-white">
-                  {selectedOF.numOF} - Détails Complets
+                  {(selectedOF as any)?.numOF} - Détails Complets
                 </h3>
-                <p className="text-sm text-purple-100 mt-1">{selectedOF.nomClient}</p>
+                <p className="text-sm text-purple-100 mt-1">{(selectedOF as any)?.nomClient}</p>
               </div>
               <button 
                 onClick={() => {
@@ -3200,15 +3200,15 @@ export default function FoutaManagementApp() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div className="bg-blue-50 rounded-lg p-4">
                   <p className="text-sm text-gray-600 mb-1">Commande</p>
-                  <p className="text-lg font-bold text-blue-600">{selectedOF.numCommande}</p>
+                  <p className="text-lg font-bold text-blue-600">{(selectedOF as any)?.numCommande}</p>
                 </div>
                 <div className="bg-purple-50 rounded-lg p-4">
                   <p className="text-sm text-gray-600 mb-1">Machine</p>
-                  <p className="text-lg font-bold text-purple-600">{selectedOF.machine}</p>
+                  <p className="text-lg font-bold text-purple-600">{(selectedOF as any)?.machine}</p>
                 </div>
                 <div className="bg-green-50 rounded-lg p-4">
                   <p className="text-sm text-gray-600 mb-1">Statut</p>
-                  <p className="text-lg font-bold text-green-600">{selectedOF.statut}</p>
+                  <p className="text-lg font-bold text-green-600">{(selectedOF as any)?.statut}</p>
                 </div>
               </div>
 
@@ -3217,21 +3217,21 @@ export default function FoutaManagementApp() {
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="font-semibold text-gray-800">Progression</h4>
                   <span className="text-3xl font-bold" style={{ color: theme.primaryColor }}>
-                    {selectedOF.progression}%
+                    {(selectedOF as any)?.progression}%
                   </span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-4">
                   <div 
                     className="h-4 rounded-full transition-all"
                     style={{ 
-                      width: `${selectedOF.progression}%`,
+                      width: `${(selectedOF as any)?.progression}%`,
                       backgroundColor: theme.primaryColor
                     }}
                   />
                 </div>
                 <div className="flex justify-between mt-2 text-sm text-gray-600">
-                  <span>{selectedOF.quantiteFabriquee} pièces fabriquées</span>
-                  <span>{selectedOF.quantite - selectedOF.quantiteFabriquee} restantes</span>
+                  <span>{(selectedOF as any)?.quantiteFabriquee} pièces fabriquées</span>
+                  <span>{(selectedOF as any)?.quantite - (selectedOF as any)?.quantiteFabriquee} restantes</span>
                 </div>
               </div>
 
@@ -3242,15 +3242,15 @@ export default function FoutaManagementApp() {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Modèle:</span>
-                      <span className="font-semibold">{selectedOF.article}</span>
+                      <span className="font-semibold">{(selectedOF as any)?.article}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Réf. commercial:</span>
-                      <span className="font-semibold">{selectedOF.refCommercial}</span>
+                      <span className="font-semibold">{(selectedOF as any)?.refCommercial}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Quantité:</span>
-                      <span className="font-semibold">{selectedOF.quantite} pièces</span>
+                      <span className="font-semibold">{(selectedOF as any)?.quantite} pièces</span>
                     </div>
                   </div>
                 </div>
@@ -3260,13 +3260,13 @@ export default function FoutaManagementApp() {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Début:</span>
-                      <span className="font-semibold">{selectedOF.dateDebut}</span>
+                      <span className="font-semibold">{(selectedOF as any)?.dateDebut}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Livraison:</span>
-                      <span className="font-semibold">{selectedOF.dateLivraison}</span>
+                      <span className="font-semibold">{(selectedOF as any)?.dateLivraison}</span>
                     </div>
-                    {selectedOF.urgence && (
+                    {(selectedOF as any)?.urgence && (
                       <div className="flex items-center gap-2 px-3 py-2 bg-red-100 rounded-lg">
                         <AlertTriangle className="w-4 h-4 text-red-600" />
                         <span className="text-sm font-semibold text-red-800">URGENT</span>
@@ -3280,16 +3280,16 @@ export default function FoutaManagementApp() {
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center gap-2">
                       <div className="w-4 h-4 bg-red-500 rounded"></div>
-                      <span>{selectedOF.couleur1}</span>
+                      <span>{(selectedOF as any)?.couleur1}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-4 h-4 bg-white border rounded"></div>
-                      <span>{selectedOF.couleur2}</span>
+                      <span>{(selectedOF as any)?.couleur2}</span>
                     </div>
-                    {selectedOF.couleur3 && (
+                    {(selectedOF as any)?.couleur3 && (
                       <div className="flex items-center gap-2">
                         <div className="w-4 h-4 bg-yellow-500 rounded"></div>
-                        <span>{selectedOF.couleur3}</span>
+                        <span>{(selectedOF as any)?.couleur3}</span>
                       </div>
                     )}
                   </div>
@@ -3300,16 +3300,16 @@ export default function FoutaManagementApp() {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Prévue:</span>
-                      <span className="font-semibold">{selectedOF.mpPrevue} kg</span>
+                      <span className="font-semibold">{(selectedOF as any)?.mpPrevue} kg</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Consommée:</span>
-                      <span className="font-semibold text-blue-600">{selectedOF.mpConsommee} kg</span>
+                      <span className="font-semibold text-blue-600">{(selectedOF as any)?.mpConsommee} kg</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Restante:</span>
                       <span className="font-semibold">
-                        {(selectedOF.mpPrevue - selectedOF.mpConsommee).toFixed(1)} kg
+                        {((selectedOF as any)?.mpPrevue - (selectedOF as any)?.mpConsommee).toFixed(1)} kg
                       </span>
                     </div>
                   </div>

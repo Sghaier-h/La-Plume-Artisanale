@@ -3,15 +3,15 @@ import { Package, AlertTriangle, CheckCircle, Clock, Printer, Play, Square, Aler
 
 const DashboardTisseur = () => {
   const [activeSection, setActiveSection] = useState('machines');
-  const [selectedMachine, setSelectedMachine] = useState(null);
-  const [expandedOF, setExpandedOF] = useState(null);
+  const [selectedMachine, setSelectedMachine] = useState<string | null>(null);
+  const [expandedOF, setExpandedOF] = useState<string | null>(null);
   const [showIncidentModal, setShowIncidentModal] = useState(false);
   const [showEtiquetteModal, setShowEtiquetteModal] = useState(false);
   const [showFinPosteModal, setShowFinPosteModal] = useState(false);
   const [showDebutPosteModal, setShowDebutPosteModal] = useState(false);
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [showRefuserComplementModal, setShowRefuserComplementModal] = useState(false);
-  const [selectedOF, setSelectedOF] = useState(null);
+  const [selectedOF, setSelectedOF] = useState<any>(null);
   const [incidentType, setIncidentType] = useState('');
   const [selecteurMP, setSelecteurMP] = useState('');
   const [compteurMachine, setCompteurMachine] = useState('');
@@ -248,9 +248,9 @@ const DashboardTisseur = () => {
   ];
 
   const getOFByMachine = () => {
-    const machines = {};
+    const machines: { [key: string]: { machine: string; ofs: any[] } } = {};
     
-    mesOF.forEach(of => {
+    mesOF.forEach((of: any) => {
       if (!machines[of.machine]) {
         machines[of.machine] = {
           machine: of.machine,
@@ -260,8 +260,8 @@ const DashboardTisseur = () => {
       machines[of.machine].ofs.push(of);
     });
     
-    Object.values(machines).forEach(m => {
-      m.ofs.sort((a, b) => {
+    Object.values(machines).forEach((m: any) => {
+      m.ofs.sort((a: any, b: any) => {
         if (a.complementTissage && !b.complementTissage) return -1;
         if (!a.complementTissage && b.complementTissage) return 1;
         return a.ordrePlanification - b.ordrePlanification;
@@ -271,7 +271,7 @@ const DashboardTisseur = () => {
     return Object.values(machines);
   };
 
-  const handleDemarrerOF = (of) => {
+  const handleDemarrerOF = (of: any) => {
     setSelectedOF(of);
     setQuantiteRestante(of.compteurInitial.toString());
     setShowDebutPosteModal(true);
@@ -283,10 +283,10 @@ const DashboardTisseur = () => {
     const qteRestante = parseFloat(quantiteRestante);
 
     // Afficher une alerte avec l'info du compteur
-    alert(`⚠️ PROGRAMMATION MACHINE\n\nCompteur à programmer sur la machine:\n${qteRestante} ${selectedOF.typeCompteur === 'pieces' ? 'pièces' : 'mètres'}\n\nLe compteur est dégressif (diminue à chaque pièce/mètre produit)`);
+    alert(`⚠️ PROGRAMMATION MACHINE\n\nCompteur à programmer sur la machine:\n${qteRestante} ${(selectedOF as any).typeCompteur === 'pieces' ? 'pièces' : 'mètres'}\n\nLe compteur est dégressif (diminue à chaque pièce/mètre produit)`);
 
-    setMesOF(prev => prev.map(o => {
-      if (o.numSousOF === selectedOF.numSousOF) {
+    setMesOF((prev: any) => prev.map((o: any) => {
+      if (o.numSousOF === (selectedOF as any).numSousOF) {
         return {
           ...o,
           etat: 'En cours',
@@ -303,17 +303,17 @@ const DashboardTisseur = () => {
     setShowDebutPosteModal(false);
   };
 
-  const handleTerminerOF = (numSousOF) => {
-    const of = mesOF.find(o => o.numSousOF === numSousOF);
+  const handleTerminerOF = (numSousOF: string) => {
+    const of = mesOF.find((o: any) => o.numSousOF === numSousOF);
     if (of) {
       setSelectedOF({
         ...of,
         typeEtiquette: 'fin'
-      });
+      } as any);
       setShowEtiquetteModal(true);
     }
     
-    setMesOF(prev => prev.map(o => {
+    setMesOF((prev: any) => prev.map((o: any) => {
       if (o.numSousOF === numSousOF) {
         return {
           ...o,
@@ -326,7 +326,7 @@ const DashboardTisseur = () => {
     }));
   };
 
-  const handleOpenFinPoste = (of) => {
+  const handleOpenFinPoste = (of: any) => {
     setSelectedOF(of);
     setCompteurMachine('');
     setShowFinPosteModal(true);
@@ -337,10 +337,10 @@ const DashboardTisseur = () => {
 
     const compteurRestant = parseFloat(compteurMachine);
     
-    setMesOF(prev => prev.map(of => {
-      if (of.numSousOF === selectedOF.numSousOF) {
+    setMesOF((prev: any) => prev.map((of: any) => {
+      if (of.numSousOF === (selectedOF as any).numSousOF) {
         // Calcul de la production THÉORIQUE basée sur le compteur dégressif
-        const quantiteTheoriqueProduite = selectedOF.compteurInitial - compteurRestant;
+        const quantiteTheoriqueProduite = (selectedOF as any).compteurInitial - compteurRestant;
 
         return {
           ...of,
@@ -353,32 +353,32 @@ const DashboardTisseur = () => {
 
     setShowFinPosteModal(false);
     
-    const quantiteTheoriqueProduite = selectedOF.compteurInitial - compteurRestant;
+    const quantiteTheoriqueProduite = (selectedOF as any).compteurInitial - compteurRestant;
     setSelectedOF({
-      ...selectedOF,
+      ...(selectedOF as any),
       typeEtiquette: 'finposte',
       compteurActuel: compteurRestant,
       piecesProduites: quantiteTheoriqueProduite
-    });
+    } as any);
     setShowEtiquetteModal(true);
   };
 
-  const handleImprimerEtiquette = (of, type) => {
+  const handleImprimerEtiquette = (of: any, type: string) => {
     setSelectedOF({
       ...of,
       typeEtiquette: type
-    });
+    } as any);
     setShowEtiquetteModal(true);
   };
 
-  const handleDeclarerIncident = (numSousOF) => {
-    setSelectedOF(mesOF.find(of => of.numSousOF === numSousOF));
+  const handleDeclarerIncident = (numSousOF: string) => {
+    setSelectedOF(mesOF.find((of: any) => of.numSousOF === numSousOF) as any);
     setIncidentType('');
     setSelecteurMP('');
     setShowIncidentModal(true);
   };
 
-  const handleRefuserComplement = (of) => {
+  const handleRefuserComplement = (of: any) => {
     setSelectedOF(of);
     setCauseRefus('');
     setShowRefuserComplementModal(true);
@@ -388,22 +388,22 @@ const DashboardTisseur = () => {
     if (!causeRefus) return;
     
     // Logique pour envoyer le refus
-    alert(`Refus envoyé pour l'OF ${selectedOF.numSousOF}\nCause: ${causeRefus}`);
+    alert(`Refus envoyé pour l'OF ${(selectedOF as any)?.numSousOF}\nCause: ${causeRefus}`);
     
     setShowRefuserComplementModal(false);
     setCauseRefus('');
   };
 
-  const handleVoirNotes = (of) => {
+  const handleVoirNotes = (of: any) => {
     setSelectedOF(of);
     setShowNotesModal(true);
   };
 
-  const toggleOF = (numSousOF) => {
+  const toggleOF = (numSousOF: string) => {
     setExpandedOF(expandedOF === numSousOF ? null : numSousOF);
   };
 
-  const StatCard = ({ title, value, subtitle, icon: Icon, color = 'blue' }) => (
+  const StatCard = ({ title, value, subtitle = '', icon: Icon, color = 'blue' }: { title: string; value: number | string; subtitle?: string; icon: any; color?: string }) => (
     <div className="bg-white rounded-lg shadow p-4 border-l-4" style={{ borderLeftColor: color }}>
       <div className="flex items-center justify-between">
         <div>
@@ -420,7 +420,7 @@ const DashboardTisseur = () => {
     const machinesData = getOFByMachine();
     
     const filteredMachines = selectedMachine 
-      ? machinesData.filter(m => m.machine === selectedMachine)
+      ? machinesData.filter((m: any) => m.machine === selectedMachine)
       : machinesData;
 
     return (
@@ -482,10 +482,10 @@ const DashboardTisseur = () => {
                   </div>
                 </button>
                 
-                {machinesData.map((machineData) => {
+                {machinesData.map((machineData: any) => {
                   const totalOF = machineData.ofs.length;
-                  const complementCount = machineData.ofs.filter(o => o.complementTissage).length;
-                  const enCoursCount = machineData.ofs.filter(o => o.etat === 'En cours').length;
+                  const complementCount = machineData.ofs.filter((o: any) => o.complementTissage).length;
+                  const enCoursCount = machineData.ofs.filter((o: any) => o.etat === 'En cours').length;
                   
                   return (
                     <button
@@ -523,7 +523,7 @@ const DashboardTisseur = () => {
           </div>
 
           <div className="lg:col-span-3 space-y-4">
-            {filteredMachines.map((machineData) => (
+            {filteredMachines.map((machineData: any) => (
               <div key={machineData.machine}>
                 {!selectedMachine && (
                   <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center">
@@ -533,7 +533,7 @@ const DashboardTisseur = () => {
                 )}
                 
                 <div className="space-y-2">
-                  {machineData.ofs.map((of, idx) => {
+                  {machineData.ofs.map((of: any, idx: number) => {
                     const isExpanded = expandedOF === of.numSousOF;
                     const progression = (of.piecesProduites / of.qtePieces) * 100;
                     const peutDemarrer = of.etat === 'Machine alimentée';
@@ -1001,7 +1001,7 @@ const DashboardTisseur = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 ml-64">
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
@@ -1062,13 +1062,13 @@ const DashboardTisseur = () => {
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
             <div className="p-6 border-b bg-green-50">
               <h3 className="text-xl font-bold text-green-900">Début de Poste / Démarrage</h3>
-              <p className="text-sm text-green-700 mt-1">OF: {selectedOF.numSousOF}</p>
+              <p className="text-sm text-green-700 mt-1">OF: {(selectedOF as any)?.numSousOF}</p>
             </div>
             
             <div className="p-6 space-y-4">
               <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
                 <p className="text-sm text-blue-900 font-semibold mb-2">Compteur initial prévu:</p>
-                <p className="text-3xl font-bold text-blue-700">{selectedOF.compteurInitial} {selectedOF.typeCompteur === 'pieces' ? 'pièces' : 'mètres'}</p>
+                <p className="text-3xl font-bold text-blue-700">{(selectedOF as any)?.compteurInitial} {(selectedOF as any)?.typeCompteur === 'pieces' ? 'pièces' : 'mètres'}</p>
               </div>
 
               <div>
@@ -1080,7 +1080,7 @@ const DashboardTisseur = () => {
                   step="0.1"
                   value={quantiteRestante}
                   onChange={(e) => setQuantiteRestante(e.target.value)}
-                  placeholder={`Ex: ${selectedOF.compteurInitial}`}
+                  placeholder={`Ex: ${(selectedOF as any)?.compteurInitial}`}
                   className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-lg font-bold"
                 />
                 <p className="text-xs text-gray-500 mt-1">
@@ -1123,7 +1123,7 @@ const DashboardTisseur = () => {
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
             <div className="p-6 border-b">
               <h3 className="text-xl font-bold text-gray-900">Fin de Poste</h3>
-              <p className="text-sm text-gray-600 mt-1">OF: {selectedOF.numSousOF}</p>
+              <p className="text-sm text-gray-600 mt-1">OF: {(selectedOF as any)?.numSousOF}</p>
             </div>
             
             <div className="p-6 space-y-4">
@@ -1136,22 +1136,22 @@ const DashboardTisseur = () => {
                   step="0.1"
                   value={compteurMachine}
                   onChange={(e) => setCompteurMachine(e.target.value)}
-                  placeholder={`Ex: ${selectedOF.typeCompteur === 'pieces' ? '40 pièces' : '600 mètres'}`}
+                  placeholder={`Ex: ${(selectedOF as any)?.typeCompteur === 'pieces' ? '40 pièces' : '600 mètres'}`}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  ⬇️ Compteur dégressif - Indiquez le nombre restant ({selectedOF.typeCompteur === 'pieces' ? 'pièces' : 'mètres'})
+                  ⬇️ Compteur dégressif - Indiquez le nombre restant ({(selectedOF as any)?.typeCompteur === 'pieces' ? 'pièces' : 'mètres'})
                 </p>
               </div>
 
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                 <p className="text-sm text-blue-900 font-semibold mb-1">
-                  Compteur initial programmé: {selectedOF.compteurInitial} {selectedOF.typeCompteur === 'pieces' ? 'pièces' : 'mètres'}
+                  Compteur initial programmé: {(selectedOF as any)?.compteurInitial} {(selectedOF as any)?.typeCompteur === 'pieces' ? 'pièces' : 'mètres'}
                 </p>
                 {compteurMachine && (
                   <>
                     <p className="text-sm text-blue-900">
-                      Production THÉORIQUE calculée: <strong>{selectedOF.compteurInitial - parseFloat(compteurMachine)} {selectedOF.uniteMesure}</strong>
+                      Production THÉORIQUE calculée: <strong>{(selectedOF as any)?.compteurInitial - parseFloat(compteurMachine)} {(selectedOF as any)?.uniteMesure}</strong>
                     </p>
                     <p className="text-xs text-blue-700 mt-1">
                       (Cette quantité sera indiquée sur l'étiquette)
@@ -1172,9 +1172,6 @@ const DashboardTisseur = () => {
                 onClick={() => {
                   setShowFinPosteModal(false);
                   setCompteurMachine('');
-                  setPiecesProduites('');
-                  setDeuxiemeChoix('');
-                  setDechets('');
                 }}
                 className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100"
               >
@@ -1198,28 +1195,28 @@ const DashboardTisseur = () => {
           <div className="bg-white rounded-lg shadow-xl max-w-lg w-full">
             <div className="p-6 border-b">
               <h3 className="text-xl font-bold text-gray-900">Notes & Instructions</h3>
-              <p className="text-sm text-gray-600 mt-1">OF: {selectedOF.numSousOF}</p>
+              <p className="text-sm text-gray-600 mt-1">OF: {(selectedOF as any)?.numSousOF}</p>
             </div>
             
             <div className="p-6 space-y-4">
-              {selectedOF.noteSpeciale && (
+              {(selectedOF as any)?.noteSpeciale && (
                 <div className="p-4 bg-yellow-50 border-2 border-yellow-300 rounded-lg">
                   <p className="text-xs font-semibold text-yellow-900 uppercase mb-2">Note Spéciale</p>
-                  <p className="text-sm text-yellow-900">{selectedOF.noteSpeciale}</p>
+                  <p className="text-sm text-yellow-900">{(selectedOF as any)?.noteSpeciale}</p>
                 </div>
               )}
 
-              {selectedOF.instructionSpeciale && (
+              {(selectedOF as any)?.instructionSpeciale && (
                 <div className="p-4 bg-blue-50 border-2 border-blue-300 rounded-lg">
                   <p className="text-xs font-semibold text-blue-900 uppercase mb-2">Instruction Spéciale</p>
-                  <p className="text-sm text-blue-900 font-medium">{selectedOF.instructionSpeciale}</p>
+                  <p className="text-sm text-blue-900 font-medium">{(selectedOF as any)?.instructionSpeciale}</p>
                 </div>
               )}
 
-              {selectedOF.noteTisseur && (
+              {(selectedOF as any)?.noteTisseur && (
                 <div className="p-4 bg-gray-50 border-2 border-gray-300 rounded-lg">
                   <p className="text-xs font-semibold text-gray-900 uppercase mb-2">Note Tisseur</p>
-                  <p className="text-sm text-gray-700">{selectedOF.noteTisseur}</p>
+                  <p className="text-sm text-gray-700">{(selectedOF as any)?.noteTisseur}</p>
                 </div>
               )}
             </div>
@@ -1242,7 +1239,7 @@ const DashboardTisseur = () => {
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
             <div className="p-6 border-b">
               <h3 className="text-xl font-bold text-gray-900">Déclarer un Incident</h3>
-              <p className="text-sm text-gray-600 mt-1">OF: {selectedOF.numSousOF} | Machine: {selectedOF.machine}</p>
+              <p className="text-sm text-gray-600 mt-1">OF: {(selectedOF as any)?.numSousOF} | Machine: {(selectedOF as any)?.machine}</p>
             </div>
             
             <div className="p-6 space-y-4">
@@ -1276,7 +1273,7 @@ const DashboardTisseur = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Sélectionner...</option>
-                    {selectedOF.selecteurs.map((sel, idx) => (
+                    {(selectedOF as any)?.selecteurs?.map((sel: any, idx: number) => (
                       <option key={idx} value={sel.sel}>
                         Sélecteur {sel.sel} - {sel.codeFab} ({sel.couleur})
                       </option>
@@ -1291,7 +1288,7 @@ const DashboardTisseur = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
                 <textarea
-                  rows="4"
+                  rows={4}
                   placeholder="Décrivez le problème..."
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
@@ -1330,7 +1327,7 @@ const DashboardTisseur = () => {
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
             <div className="p-6 border-b bg-red-50">
               <h3 className="text-xl font-bold text-red-900">Refuser le Complément</h3>
-              <p className="text-sm text-red-700 mt-1">OF: {selectedOF.numSousOF}</p>
+              <p className="text-sm text-red-700 mt-1">OF: {(selectedOF as any)?.numSousOF}</p>
             </div>
             
             <div className="p-6 space-y-4">
@@ -1361,7 +1358,7 @@ const DashboardTisseur = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Détails (optionnel)</label>
                 <textarea
-                  rows="3"
+                  rows={3}
                   placeholder="Précisez la raison du refus..."
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
                 />
@@ -1397,8 +1394,8 @@ const DashboardTisseur = () => {
             <div className="p-6 border-b">
               <h3 className="text-xl font-bold text-gray-900">
                 Étiquette {
-                  selectedOF.typeEtiquette === 'debut' ? 'Début de Poste' :
-                  selectedOF.typeEtiquette === 'finposte' ? 'Fin de Poste' :
+                  (selectedOF as any)?.typeEtiquette === 'debut' ? 'Début de Poste' :
+                  (selectedOF as any)?.typeEtiquette === 'finposte' ? 'Fin de Poste' :
                   'Fin de Fabrication'
                 }
               </h3>
@@ -1408,35 +1405,35 @@ const DashboardTisseur = () => {
               <div className="border-4 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50">
                 <div className="text-center space-y-3">
                   <div className="text-2xl font-bold text-gray-900">
-                    {selectedOF.numSousOF}
+                    {(selectedOF as any)?.numSousOF}
                   </div>
                   <div className="text-lg font-semibold">
-                    {selectedOF.modele} - {selectedOF.ref}
+                    {(selectedOF as any)?.modele} - {(selectedOF as any)?.ref}
                   </div>
                   <div className="text-sm text-gray-600 space-y-1">
-                    <div>Machine: {selectedOF.machine}</div>
+                    <div>Machine: {(selectedOF as any)?.machine}</div>
                     <div className="font-bold text-blue-700">Tisseur: {tisseurNom}</div>
                     <div>Date: {new Date().toLocaleString('fr-FR')}</div>
-                    {selectedOF.typeEtiquette === 'finposte' && (
+                    {(selectedOF as any)?.typeEtiquette === 'finposte' && (
                       <>
                         <div className="font-bold text-green-600 mt-2 text-base">
-                          Produit THÉORIQUE: {selectedOF.piecesProduites} pièces
+                          Produit THÉORIQUE: {(selectedOF as any)?.piecesProduites} pièces
                         </div>
                         <div className="font-bold text-orange-600">
-                          Compteur restant: {selectedOF.compteurActuel} {selectedOF.typeCompteur === 'pieces' ? 'pcs' : 'm'}
+                          Compteur restant: {(selectedOF as any)?.compteurActuel} {(selectedOF as any)?.typeCompteur === 'pieces' ? 'pcs' : 'm'}
                         </div>
                         <div className="text-xs text-gray-600 mt-2 italic">
                           Quantité réelle à déterminer après contrôle qualité
                         </div>
                       </>
                     )}
-                    {selectedOF.typeEtiquette === 'fin' && (
+                    {(selectedOF as any)?.typeEtiquette === 'fin' && (
                       <>
                         <div className="font-bold text-green-600 mt-2">
-                          Total: {selectedOF.qtePieces} {selectedOF.uniteMesure}
+                          Total: {(selectedOF as any)?.qtePieces} {(selectedOF as any)?.uniteMesure}
                         </div>
                         <div className="font-bold text-blue-600">
-                          Temps: {selectedOF.tempsReel || selectedOF.tempsPrevu}
+                          Temps: {(selectedOF as any)?.tempsReel || (selectedOF as any)?.tempsPrevu}
                         </div>
                       </>
                     )}

@@ -1,6 +1,10 @@
 import { io, Socket } from 'socket.io-client';
 
-const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000';
+// Utiliser l'API du VPS par défaut (déjà déployée)
+const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 
+  (process.env.NODE_ENV === 'production'
+    ? 'https://fabrication.laplume-artisanale.tn'
+    : 'http://localhost:5000');
 
 let socket: Socket | null = null;
 

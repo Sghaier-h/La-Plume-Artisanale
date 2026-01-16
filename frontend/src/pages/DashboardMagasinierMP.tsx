@@ -1,17 +1,45 @@
 import React, { useState } from 'react';
 import { Package, TrendingDown, AlertTriangle, CheckCircle, Clock, Search, Filter, Printer, Camera, ArrowRightLeft, Scan, Box, FileText, Download, Plus, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react';
 
+interface Selecteur {
+  sel: string;
+  codeFab: string;
+  codeCom: string;
+  couleur: string;
+  besoins: number | string;
+  preparer: string;
+  qrMP: string;
+}
+
+interface Preparation {
+  numSousOF: string;
+  client: string;
+  numCommande: string;
+  modele: string;
+  ref: string;
+  qte: number;
+  machine: string;
+  dateDebut: string;
+  ordrePlanification: number;
+  selecteurs: Selecteur[];
+  etat: string;
+  priorite: string;
+  surplusDemande: boolean;
+  ofOrigine?: string;
+  dateAlimentee?: string;
+}
+
 const DashboardMagasinierMP = () => {
   const [activeSection, setActiveSection] = useState('machines');
   const [searchTerm, setSearchTerm] = useState('');
   const [showEtiquetteModal, setShowEtiquetteModal] = useState(false);
   const [showTransfertModal, setShowTransfertModal] = useState(false);
-  const [selectedPreparation, setSelectedPreparation] = useState(null);
-  const [expandedOF, setExpandedOF] = useState(null);
-  const [selectedMachine, setSelectedMachine] = useState(null);
+  const [selectedPreparation, setSelectedPreparation] = useState<any>(null);
+  const [expandedOF, setExpandedOF] = useState<string | null>(null);
+  const [selectedMachine, setSelectedMachine] = useState<string | null>(null);
 
   // Données de préparation par OF
-  const [preparationsEnCours, setPreparationsEnCours] = useState([
+  const [preparationsEnCours, setPreparationsEnCours] = useState<Preparation[]>([
     {
       numSousOF: 'OF249850',
       client: 'CL00884',
@@ -118,7 +146,16 @@ const DashboardMagasinierMP = () => {
   ]);
 
   // Transferts en attente
-  const [transfertsEnAttente] = useState([
+  interface Transfert {
+    id: string;
+    origine: string;
+    destination: string;
+    items: Array<{ qr: string; codeCom: string; couleur: string; quantite: number }>;
+    etat: string;
+    date: string;
+  }
+
+  const [transfertsEnAttente] = useState<Transfert[]>([
     {
       id: 'TR2025001',
       origine: 'E1',
@@ -133,7 +170,15 @@ const DashboardMagasinierMP = () => {
   ]);
 
   // Consommations / Retours
-  const [retoursMatieres] = useState([
+  interface RetourMatiere {
+    numSousOF: string;
+    modele: string;
+    selecteurs: Array<{ sel: string; codeCom: string; couleur: string; preparer: number; consomme: number; retour: number }>;
+    etat: string;
+    aRetourner: boolean;
+  }
+
+  const [retoursMatieres] = useState<RetourMatiere[]>([
     {
       numSousOF: 'OF249780',
       modele: 'IBIZA',
@@ -154,7 +199,7 @@ const DashboardMagasinierMP = () => {
     { id: 'retours', label: 'Retours & Consommations', icon: TrendingDown }
   ];
 
-  const handleUpdateQuantite = (numSousOF, selecteur, quantite, qrMP) => {
+  const handleUpdateQuantite = (numSousOF: string, selecteur: string, quantite: string, qrMP: string) => {
     setPreparationsEnCours(prev => prev.map(prep => {
       if (prep.numSousOF === numSousOF) {
         const updatedSelecteurs = prep.selecteurs.map(sel => {
@@ -169,7 +214,7 @@ const DashboardMagasinierMP = () => {
         });
         
         const tousPreparees = updatedSelecteurs.every(s => 
-          parseFloat(s.preparer || 0) >= parseFloat(s.besoins)
+          parseFloat(s.preparer || '0') >= parseFloat(s.besoins.toString())
         );
         
         return {
@@ -182,7 +227,7 @@ const DashboardMagasinierMP = () => {
     }));
   };
 
-  const handleAlimenterMachine = (numSousOF) => {
+  const handleAlimenterMachine = (numSousOF: string) => {
     setPreparationsEnCours(prev => prev.map(prep => {
       if (prep.numSousOF === numSousOF) {
         return {
@@ -196,8 +241,13 @@ const DashboardMagasinierMP = () => {
     setExpandedOF(null);
   };
 
-  const getPreparationsByMachine = () => {
-    const machines = {};
+  interface MachineData {
+    machine: string;
+    preparations: Preparation[];
+  }
+
+  const getPreparationsByMachine = (): MachineData[] => {
+    const machines: { [key: string]: MachineData } = {};
     
     preparationsEnCours.forEach(prep => {
       if (!machines[prep.machine]) {
@@ -220,7 +270,7 @@ const DashboardMagasinierMP = () => {
     return Object.values(machines);
   };
 
-  const handleImprimerEtiquette = (preparation, selecteur) => {
+  const handleImprimerEtiquette = (preparation: any, selecteur: any) => {
     setSelectedPreparation({ ...preparation, selecteur });
     setShowEtiquetteModal(true);
   };
@@ -229,11 +279,11 @@ const DashboardMagasinierMP = () => {
     setShowTransfertModal(true);
   };
 
-  const toggleOF = (numSousOF) => {
+  const toggleOF = (numSousOF: string) => {
     setExpandedOF(expandedOF === numSousOF ? null : numSousOF);
   };
 
-  const StatCard = ({ title, value, subtitle, icon: Icon, color = 'blue', alert = false }) => (
+  const StatCard = ({ title, value, subtitle, icon: Icon, color = 'blue', alert = false }: any) => (
     <div className={`bg-white rounded-lg shadow p-4 border-l-4 ${alert ? 'border-red-500' : ''}`} style={{ borderLeftColor: alert ? '#ef4444' : color }}>
       <div className="flex items-center justify-between">
         <div>
@@ -370,7 +420,7 @@ const DashboardMagasinierMP = () => {
                 <div className="space-y-2">
                   {machineData.preparations.map((prep, idx) => {
                     const isExpanded = expandedOF === prep.numSousOF;
-                    const toutPrepare = prep.selecteurs.every(s => parseFloat(s.preparer || 0) >= parseFloat(s.besoins));
+                    const toutPrepare = prep.selecteurs.every(s => parseFloat(s.preparer || '0') >= parseFloat(s.besoins.toString()));
                     const machineAlimentee = prep.etat === 'Machine alimentée';
                     
                     return (
@@ -461,8 +511,8 @@ const DashboardMagasinierMP = () => {
                               <h5 className="font-semibold text-gray-800">Matières Premières:</h5>
                               
                               {prep.selecteurs.map((sel) => {
-                                const qtePreparee = parseFloat(sel.preparer || 0);
-                                const qteBesoins = parseFloat(sel.besoins);
+                                const qtePreparee = parseFloat(sel.preparer || '0');
+                                const qteBesoins = parseFloat(sel.besoins.toString());
                                 const isComplete = qtePreparee >= qteBesoins;
                                 
                                 return (
@@ -493,7 +543,7 @@ const DashboardMagasinierMP = () => {
                                             mp.codeFab === sel.codeFab && 
                                             mp.codeCom === sel.codeCom &&
                                             mp.poidsUsine > 0
-                                          ).map((mp) => (
+                                          ).map(mp => (
                                             <option key={mp.qr} value={mp.qr}>
                                               {mp.couleur} ({mp.poidsUsine}kg)
                                             </option>
@@ -938,7 +988,7 @@ const DashboardMagasinierMP = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 ml-64">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 py-4">
@@ -948,7 +998,7 @@ const DashboardMagasinierMP = () => {
                 Tableau de Bord Magasinier Matière Première
               </h1>
               <p className="text-sm text-gray-600 mt-1">
-                Samedi 18 Octobre 2025 - 14:30
+                {new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} - {new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
               </p>
             </div>
             <div className="flex items-center space-x-4">
