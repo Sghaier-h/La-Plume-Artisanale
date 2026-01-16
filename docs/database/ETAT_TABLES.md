@@ -27,24 +27,27 @@
 - ✅ `17_modules_maintenance.sql` - 6 tables (maintenance)
 - ✅ `18_modules_couts.sql` - 6 tables (coûts)
 - ✅ `18_modules_qualite_avance.sql` - 8 tables (qualité avancée)
-- ✅ `19_modules_multisociete.sql` - 5 tables (multi-société)
 - ✅ `19_modules_planification_gantt.sql` - 7 tables (planification Gantt)
-- ✅ `20_modules_couts.sql` - 7 tables (coûts - doublon ?)
-- ✅ `20_modules_gantt_planification.sql` - 6 tables (Gantt - doublon ?)
-- ✅ `21_modules_communication_externe.sql` - 7 tables (communication externe)
-- ✅ `21_modules_multisociete.sql` - 6 tables (multi-société - doublon ?)
-- ✅ `22_modules_communication_externe.sql` - 7 tables (communication - doublon ?)
-- ✅ `22_modules_ecommerce_ia.sql` - 7-8 tables (e-commerce IA)
+- ✅ `20_modules_couts.sql` - 7 tables (coûts - version améliorée)
+- ✅ `20_modules_gantt_planification.sql` - 6 tables (Gantt - version alternative)
+- ✅ `21_modules_multisociete.sql` - 6 tables (multi-société - version complète)
+- ✅ `22_modules_communication_externe.sql` - 7 tables (communication externe - version complète)
+- ✅ `22_modules_ecommerce_ia.sql` - 8 tables (e-commerce IA)
 - ✅ `23_amelioration_qualite_avancee.sql` - 6 tables (qualité avancée)
-- ✅ `23_modules_ecommerce_ia.sql` - 7 tables (e-commerce IA - doublon ?)
+- ✅ `23_modules_ecommerce_ia.sql` - 7 tables (e-commerce IA - version alternative)
 
-## ⚠️ Fichiers en Doublon à Vérifier
+## ✅ Fichiers en Doublon - Résolu
 
-- `20_modules_couts.sql` et `18_modules_couts.sql`
-- `19_modules_planification_gantt.sql` et `20_modules_gantt_planification.sql`
-- `19_modules_multisociete.sql` et `21_modules_multisociete.sql`
-- `21_modules_communication_externe.sql` et `22_modules_communication_externe.sql`
-- `22_modules_ecommerce_ia.sql` et `23_modules_ecommerce_ia.sql`
+- ❌ `19_modules_multisociete.sql` - **SUPPRIMÉ** (remplacé par `21_modules_multisociete.sql`)
+- ❌ `21_modules_communication_externe.sql` - **SUPPRIMÉ** (remplacé par `22_modules_communication_externe.sql`)
+
+## ⚠️ Fichiers avec Versions Alternatives (à fusionner ultérieurement)
+
+- `18_modules_couts.sql` (6 tables) et `20_modules_couts.sql` (7 tables) - Versions différentes
+- `19_modules_planification_gantt.sql` (7 tables) et `20_modules_gantt_planification.sql` (6 tables) - Versions différentes
+- `22_modules_ecommerce_ia.sql` (8 tables) et `23_modules_ecommerce_ia.sql` (7 tables) - Versions différentes
+
+Voir `database/ANALYSE_DOUBLONS.md` pour plus de détails.
 
 ## 📊 Total Estimé
 
