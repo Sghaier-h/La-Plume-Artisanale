@@ -56,6 +56,12 @@ echo ""
 echo "✅ Nettoyage et organisation termines !"
 echo ""
 echo "📊 Structure finale:"
-echo "  - docs/: $(ls -1 docs/ 2>/dev/null | wc -l) fichiers"
+echo "  - docs/: $(find docs/ -type f 2>/dev/null | wc -l) fichiers (dans $(find docs/ -type d 2>/dev/null | wc -l) dossiers)"
 echo "  - database/: $(ls -1 database/*.sql 2>/dev/null | wc -l) fichiers SQL"
 echo "  - scripts/: $(ls -1 scripts/*.sh 2>/dev/null | wc -l) scripts"
+echo ""
+echo "📂 Dossiers dans docs/:"
+ls -1d docs/*/ 2>/dev/null | sed 's|docs/||' | sed 's|/||' | while read dir; do
+    file_count=$(find "docs/$dir" -type f 2>/dev/null | wc -l)
+    echo "    - $dir/: $file_count fichiers"
+done
