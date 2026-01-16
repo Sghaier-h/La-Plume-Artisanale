@@ -1,0 +1,59 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// AUTHENTIFICATION ET UTILISATEURS
+// ============================================
+
+enum Role {
+  ADMIN
+  COMMERCIAL
+  CHEF_PRODUCTION
+  TISSEUR
+  MAGASINIER
+  QUALITE
+  USER
+}
+
+model User {
+  id                String   @id @default(uuid())
+  email             String   @unique
+  password          String   // bcrypt hash
+  nom               String
+  prenom            String
+  role              Role     @default(USER)
+  actif             Boolean  @default(true)
+  derniere_connexion DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  sessions         Session[]
+  
+  // Relations (seront ajoutées dans les phases suivantes)
+  // commandes         Commande[]
+  // suivis_tissage    SuiviTissage[]
+  // suivis_coupe      SuiviCoupe[]
+  // suivis_qualite    SuiviQualite[]
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([token])
+}

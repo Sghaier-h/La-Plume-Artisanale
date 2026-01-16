@@ -1,0 +1,71 @@
+{
+  "name": "fouta-erp-frontend",
+  "version": "1.0.0",
+  "description": "Application Desktop et Mobile ERP ALL BY FOUTA",
+  "private": true,
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "electron": "electron .",
+    "electron-dev": "concurrently \"npm start\" \"wait-on http://localhost:3000 && electron .\"",
+    "cap:init": "cap init",
+    "cap:add:android": "cap add android",
+    "cap:add:ios": "cap add ios",
+    "cap:sync": "cap sync",
+    "cap:sync:android": "cap sync android",
+    "cap:sync:ios": "cap sync ios",
+    "cap:open:android": "cap open android",
+    "cap:open:ios": "cap open ios",
+    "cap:build:android": "npm run build && cap sync android && cap open android",
+    "cap:build:ios": "npm run build && cap sync ios && cap open ios"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.20.0",
+    "axios": "^1.6.2",
+    "socket.io-client": "^4.6.1",
+    "recharts": "^2.10.3",
+    "lucide-react": "^0.294.0",
+    "react-beautiful-dnd": "^13.1.1",
+    "react-qr-code": "^2.0.12",
+    "html5-qrcode": "^2.3.8",
+    "xlsx": "^0.18.5",
+    "jspdf": "^2.5.1",
+    "date-fns": "^2.30.0",
+    "zustand": "^4.4.7",
+    "@capacitor/core": "^5.5.1",
+    "@capacitor/camera": "^5.0.7",
+    "@capacitor/push-notifications": "^5.0.7",
+    "@capacitor/haptics": "^5.0.6",
+    "@capacitor/status-bar": "^5.0.6",
+    "@capacitor/splash-screen": "^5.0.6"
+  },
+  "devDependencies": {
+    "react-scripts": "5.0.1",
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "typescript": "^4.9.5",
+    "tailwindcss": "^3.3.6",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.32",
+    "electron": "^28.0.0",
+    "concurrently": "^8.2.2",
+    "wait-on": "^7.2.0",
+    "@capacitor/cli": "^5.5.1"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}
