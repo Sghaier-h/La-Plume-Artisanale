@@ -60,13 +60,18 @@ if (-not (Test-Path $BUILD_DIR)) {
     exit 1
 }
 
-# 5. Transférer les fichiers sur le serveur
+# 5. Transférer les fichiers sur le serveur (dans un dossier temporaire)
 Write-Host "Transfert des fichiers sur le serveur..." -ForegroundColor Yellow
+$TEMP_DIR = "/tmp/frontend-build-$(Get-Date -Format 'yyyyMMddHHmmss')"
 $buildFiles = Join-Path $BUILD_DIR "*"
 
-Write-Host "Copie de $buildFiles vers ${SERVER}:$REMOTE_FRONTEND_DIR/" -ForegroundColor Gray
+Write-Host "Copie vers le dossier temporaire: $TEMP_DIR" -ForegroundColor Gray
 
-scp -r $buildFiles "${SERVER}:$REMOTE_FRONTEND_DIR/"
+# Créer le dossier temporaire sur le serveur
+ssh $SERVER "mkdir -p $TEMP_DIR"
+
+# Copier vers le dossier temporaire
+scp -r $buildFiles "${SERVER}:$TEMP_DIR/"
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Erreur lors du transfert !" -ForegroundColor Red
@@ -76,15 +81,23 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "Transfert termine avec succes !" -ForegroundColor Green
 Write-Host ""
 
-# 6. Corriger les permissions et recharger Nginx
-Write-Host "Correction des permissions sur le serveur..." -ForegroundColor Yellow
-$fixPermissionsCmd = "cd /opt/fouta-erp; sudo chown -R www-data:www-data $REMOTE_FRONTEND_DIR; sudo chmod -R 755 $REMOTE_FRONTEND_DIR; sudo systemctl reload nginx"
-ssh $SERVER $fixPermissionsCmd
+# 6. Déplacer les fichiers et corriger les permissions (avec sudo)
+Write-Host "Deplacement des fichiers et correction des permissions..." -ForegroundColor Yellow
+$deployCmd = @"
+sudo rm -rf $REMOTE_FRONTEND_DIR/*
+sudo cp -r $TEMP_DIR/* $REMOTE_FRONTEND_DIR/
+sudo chown -R www-data:www-data $REMOTE_FRONTEND_DIR
+sudo chmod -R 755 $REMOTE_FRONTEND_DIR
+sudo rm -rf $TEMP_DIR
+sudo systemctl reload nginx
+"@
+
+ssh $SERVER $deployCmd
 
 if ($LASTEXITCODE -eq 0) {
-    Write-Host "Permissions corrigees et Nginx recharge" -ForegroundColor Green
+    Write-Host "Fichiers deplaces, permissions corrigees et Nginx recharge" -ForegroundColor Green
 } else {
-    Write-Host "Avertissement: erreur lors de la correction des permissions" -ForegroundColor Yellow
+    Write-Host "Avertissement: erreur lors du deploiement" -ForegroundColor Yellow
 }
 
 Write-Host ""
