@@ -22,7 +22,7 @@ Dans le panneau OVH :
 
 Vous devriez voir :
 
-- **Dossier racine** : Doit pointer vers `/fouta-erp/backend` ou `/fouta-erp`
+- **Dossier racine** : Doit pointer vers `/image.pngfouta-erp/backend` ou `/fouta-erp`
 - **SSL** : Activé (recommandé)
 - **Node.js** : Doit être activé
 

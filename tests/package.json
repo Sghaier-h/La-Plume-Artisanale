@@ -1,0 +1,13 @@
+{
+  "name": "tests-gpao",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Tests automatiques système GPAO",
+  "main": "test-complet.js",
+  "scripts": {
+    "test": "node test-complet.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.0"
+  }
+}

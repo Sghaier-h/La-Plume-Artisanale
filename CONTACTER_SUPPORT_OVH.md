@@ -1,100 +1,143 @@
-# 📞 Contacter le Support OVH - Guide
+# 📞 Contacter le Support OVH - Application Ne Démarre Pas
 
-## 🎯 Objectif
+## ❌ Situation
 
-Obtenir de l'aide pour configurer votre application Node.js sur hébergement partagé OVH.
+- ✅ Code correct (HOST défini, écoute sur 127.0.0.1)
+- ✅ Fichiers essentiels présents (`.ovhconfig`, `index.js`)
+- ✅ Configuration Multisite vérifiée
+- ❌ Application ne démarre toujours pas automatiquement
+
+**C'est probablement un problème côté OVH.**
 
 ---
 
-## 📋 Informations à Fournir au Support
+## 🔍 Dernières Vérifications
 
-### 1. Votre Situation
+### 1. Vérifier que Tout est en Place
+
+```bash
+cd ~/fouta-erp/backend
+
+# Vérifier .ovhconfig
+cat .ovhconfig
+
+# Vérifier index.js
+cat index.js
+
+# Vérifier le code
+grep -B 5 "httpServer.listen" src/server.js
+
+# Vérifier que l'application ne tourne pas
+ps aux | grep node | grep -v grep
+```
+
+### 2. Vérifier le Chemin Absolu
+
+```bash
+# Vérifier le chemin absolu
+pwd
+
+# Doit être quelque chose comme :
+# /home/allbyfb/fouta-erp/backend
+# OU
+# /homez.1005/allbyfb/fouta-erp/backend
+```
+
+Dans OVH Multisite, le dossier racine doit être relatif à `~` (home), donc `fouta-erp/backend`.
+
+---
+
+## 📞 Contacter le Support OVH
+
+### Informations à Fournir
+
+1. **Configuration** :
+   - `.ovhconfig` avec Node.js 18
+   - `index.js` qui importe `src/server.js`
+   - `src/server.js` qui écoute sur `127.0.0.1:PORT`
+   - Dossier racine dans Multisite : `fouta-erp/backend`
+   - Node.js activé dans Multisite
+
+2. **Problème** :
+   - L'application Node.js ne démarre pas automatiquement
+   - Aucun processus Node.js ne tourne : `ps aux | grep node` ne retourne rien
+   - Connexion refusée : `curl: (7) Failed to connect to fabrication.laplume-artisanale.tn port 80: Connexion refusée`
+
+3. **Ce qui a été fait** :
+   - Code vérifié et corrigé
+   - Fichiers essentiels créés
+   - Configuration Multisite vérifiée
+   - Plusieurs tentatives de redémarrage (touch index.js)
+   - Attente de 20+ minutes
+
+### Message Type pour le Support
 
 ```
 Bonjour,
 
-J'ai une application Node.js que je souhaite déployer sur mon hébergement partagé OVH.
+J'ai un problème avec le démarrage automatique d'une application Node.js sur mon hébergement partagé OVH.
 
+Configuration :
 - Domaine : fabrication.laplume-artisanale.tn
-- Application : Node.js 18 avec Express
-- Problème : Tous les ports sont bloqués (EACCES: permission denied)
-  - Ports testés : 5000, 30000, 50000
-  - Même sur localhost (127.0.0.1)
+- Dossier racine (Multisite) : fouta-erp/backend
+- Node.js activé dans Multisite
+- Fichier .ovhconfig présent avec Node.js 18
+- Fichier index.js présent qui importe src/server.js
+- Code qui écoute sur 127.0.0.1:PORT
 
-Questions :
-1. Quels ports sont autorisés pour Node.js sur hébergement partagé ?
-2. Comment configurer le reverse proxy pour pointer vers mon application Node.js ?
-3. Y a-t-il une variable d'environnement spécifique pour le port ?
-4. Dois-je activer Node.js dans le panneau pour ce domaine ?
+Problème :
+- L'application Node.js ne démarre pas automatiquement
+- Aucun processus Node.js ne tourne (ps aux | grep node ne retourne rien)
+- Connexion refusée lors du test : curl http://fabrication.laplume-artisanale.tn/health
 
-Merci de votre aide.
+Pouvez-vous vérifier pourquoi l'application ne démarre pas automatiquement ?
+Y a-t-il des logs d'erreur côté serveur ?
+La configuration est-elle correcte ?
+
+Merci pour votre aide.
 ```
 
 ---
 
-### 2. Informations Techniques
+## 🔧 Alternative : Essayer un Démarrage Manuel (Pour Voir les Erreurs)
 
-- **Domaine** : `fabrication.laplume-artisanale.tn`
-- **Serveur** : `ssh.cluster130.hosting.ovh.net`
-- **Node.js** : v18.20.8
-- **Application** : Express.js (API REST)
-- **Port souhaité** : N'importe quel port autorisé
+```bash
+cd ~/fouta-erp/backend
 
----
+# Charger nvm
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
-## 🔗 Comment Contacter le Support OVH
+# Charger .env
+set -a
+source .env
+set +a
 
-### Option 1 : Ticket Support (Recommandé)
+# Tester le démarrage
+node index.js
+```
 
-1. Allez sur [https://www.ovh.com/manager/](https://www.ovh.com/manager/)
-2. Connectez-vous
-3. Allez dans **Support** → **Créer un ticket**
-4. Sélectionnez **Hébergement web**
-5. Remplissez le formulaire avec les informations ci-dessus
-
-### Option 2 : Chat en Direct
-
-1. Allez sur le panneau OVH
-2. Cherchez **Support** ou **Aide**
-3. Cliquez sur **Chat en direct** (si disponible)
-
-### Option 3 : Téléphone
-
-- **Support technique** : Vérifiez les horaires sur votre panneau OVH
+**Note** : Cela peut échouer avec EACCES, mais vous verrez d'autres erreurs éventuelles (connexion DB, modules manquants, etc.).
 
 ---
 
-## 📝 Questions à Poser
+## 📋 Checklist Avant de Contacter le Support
 
-1. **Ports autorisés** : Quels ports puis-je utiliser pour Node.js ?
-2. **Reverse proxy** : Comment configurer le reverse proxy pour mon application ?
-3. **Node.js** : Dois-je activer Node.js dans le panneau pour mon domaine ?
-4. **Variables d'environnement** : Y a-t-il des variables spécifiques à utiliser ?
-5. **Limitations** : Quelles sont les limitations pour Node.js sur hébergement partagé ?
-
----
-
-## ✅ Après la Réponse du Support
-
-Une fois que vous avez les informations :
-
-1. **Notez les ports autorisés** ou la méthode de configuration
-2. **Configurez l'application** selon les instructions
-3. **Testez l'accès** via le domaine
+- [x] Code vérifié (HOST défini, écoute sur 127.0.0.1)
+- [x] Fichiers essentiels présents
+- [x] Configuration Multisite vérifiée (dossier racine, Node.js activé)
+- [x] Plusieurs tentatives de redémarrage
+- [x] Attente de 20+ minutes
+- [ ] Test manuel effectué (pour voir les erreurs)
+- [ ] Support OVH contacté
 
 ---
 
-## 💡 Alternative : VPS OVH
+## ✅ Résumé
 
-Si l'hébergement partagé ne convient pas :
+1. **Vérifier une dernière fois** que tout est en place
+2. **Tester manuellement** pour voir les erreurs éventuelles
+3. **Contacter le support OVH** avec toutes les informations
+4. **Attendre leur réponse**
 
-- **VPS Starter** : ~3€/mois
-- **Contrôle complet** : Ports, root, configuration libre
-- **Idéal pour Node.js** : Pas de limitations
-
----
-
-## 🎯 Résumé
-
-**Contactez le support OVH** avec les informations ci-dessus pour obtenir de l'aide sur la configuration Node.js sur hébergement partagé.
-
+**Le code est correct. C'est un problème côté OVH maintenant. Il faut contacter le support !**
