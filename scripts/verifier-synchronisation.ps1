@@ -74,7 +74,8 @@ Write-Host "3️⃣ VÉRIFICATION SERVEUR" -ForegroundColor Yellow
 Write-Host "--------------------------------" -ForegroundColor Gray
 
 try {
-    $serverCommit = ssh $SERVEUR_SSH "cd $SERVEUR_DIR && git rev-parse HEAD 2>/dev/null" 2>$null
+    $serverCommitCmd = "cd $SERVEUR_DIR; git rev-parse HEAD 2>/dev/null"
+    $serverCommit = ssh $SERVEUR_SSH $serverCommitCmd 2>$null
     
     if ($serverCommit) {
         $serverCommit = $serverCommit.Trim()
@@ -91,7 +92,8 @@ try {
         }
         
         # Vérifier les modifications non commitées sur le serveur
-        $serverStatus = ssh $SERVEUR_SSH "cd $SERVEUR_DIR && git status --porcelain 2>/dev/null" 2>$null
+        $serverStatusCmd = "cd $SERVEUR_DIR; git status --porcelain 2>/dev/null"
+        $serverStatus = ssh $SERVEUR_SSH $serverStatusCmd 2>$null
         if ($serverStatus -and $serverStatus.Trim()) {
             Write-Host "⚠️  Modifications non commitées sur le serveur:" -ForegroundColor Yellow
             $serverStatus | ForEach-Object { Write-Host "   $_" -ForegroundColor Gray }
