@@ -201,6 +201,11 @@ app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
+// Health check API (accessible via /api/health)
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
 // Socket.IO pour temps réel avec authentification
 io.use((socket, next) => {
   const token = socket.handshake.auth.token;
