@@ -83,10 +83,21 @@ const Equipe: React.FC = () => {
   });
   const [activeTab, setActiveTab] = useState<'liste' | 'pointage'>('liste');
   const [selectedMembrePointage, setSelectedMembrePointage] = useState<MembreEquipe | null>(null);
+  const [pointageData, setPointageData] = useState<any[]>([]);
+  const [pointageStats, setPointageStats] = useState<any>(null);
+  const [loadingPointage, setLoadingPointage] = useState(false);
+  const [filterStatut, setFilterStatut] = useState<string>('tous'); // 'tous' | 'present' | 'absent' | 'non_pointe'
+  const [datePointage, setDatePointage] = useState<string>(new Date().toISOString().split('T')[0]);
 
   useEffect(() => {
     loadMembres();
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'pointage') {
+      loadPointageData();
+    }
+  }, [activeTab, datePointage]);
 
   const loadMembres = async () => {
     try {
@@ -251,6 +262,28 @@ const Equipe: React.FC = () => {
       console.error('Erreur création membre:', error);
     }
   };
+
+  const loadPointageData = async () => {
+    try {
+      setLoadingPointage(true);
+      const response = await api.get(`/pointage/statut?date=${datePointage}`);
+      if (response.data.success) {
+        setPointageData(response.data.personnes || []);
+        setPointageStats(response.data.statistiques || null);
+      }
+    } catch (error) {
+      console.error('Erreur chargement pointage:', error);
+      setPointageData([]);
+      setPointageStats(null);
+    } finally {
+      setLoadingPointage(false);
+    }
+  };
+
+  const filteredPointageData = pointageData.filter((personne: any) => {
+    if (filterStatut === 'tous') return true;
+    return personne.statut === filterStatut;
+  });
 
   const filteredMembres = membres.filter(membre => {
     const matchSearch = `${membre.nom} ${membre.prenom} ${membre.fonction}`.toLowerCase().includes(searchTerm.toLowerCase());
@@ -597,189 +630,185 @@ const Equipe: React.FC = () => {
         {/* Contenu Pointage */}
         {activeTab === 'pointage' && (
           <div className="space-y-6">
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
               <div className="flex items-start gap-3">
-                <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5" />
+                <CheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
                 <div>
-                  <p className="font-semibold text-yellow-900">Intégration Pointage Cloud</p>
-                  <p className="text-sm text-yellow-800 mt-1">
-                    Cette section sera connectée à un système de pointage cloud pour récupérer automatiquement 
-                    les temps travaillés réels, présences et retards. Les données affichées sont actuellement mockées.
+                  <p className="font-semibold text-green-900">Intégration TimeMoto Active</p>
+                  <p className="text-sm text-green-800 mt-1">
+                    Les données de pointage sont synchronisées automatiquement depuis TimeMoto en temps réel.
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Sélecteur de période */}
+            {/* Sélecteur de date et filtres */}
             <div className="bg-white rounded-lg shadow p-4 mb-6">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-gray-800">Période d'affichage</h3>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setPeriodePointage('jour')}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                      periodePointage === 'jour'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Date de pointage</label>
+                  <input
+                    type="date"
+                    value={datePointage}
+                    onChange={(e) => setDatePointage(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Filtrer par statut</label>
+                  <select
+                    value={filterStatut}
+                    onChange={(e) => setFilterStatut(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
-                    Journalier
-                  </button>
-                  <button
-                    onClick={() => setPeriodePointage('semaine')}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                      periodePointage === 'semaine'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    Hebdomadaire
-                  </button>
-                  <button
-                    onClick={() => setPeriodePointage('mois')}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                      periodePointage === 'mois'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    Mensuel
-                  </button>
+                    <option value="tous">Tous</option>
+                    <option value="present">Présents</option>
+                    <option value="absent">Absents</option>
+                    <option value="non_pointe">Non pointés</option>
+                  </select>
                 </div>
               </div>
             </div>
 
             {/* Statistiques globales */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-              <div className="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
-                <p className="text-sm text-gray-600">Ouvriers avec pointage</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">
-                  {membres.filter(m => m.pointage).length} / {membres.length}
-                </p>
+            {loadingPointage ? (
+              <div className="text-center py-12 bg-white rounded-lg shadow">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                <p className="text-gray-600 mt-4">Chargement des données de pointage...</p>
               </div>
-              <div className="bg-white rounded-lg shadow p-4 border-l-4 border-green-500">
-                <p className="text-sm text-gray-600">Temps moyen/mois</p>
-                <p className="text-2xl font-bold text-green-600 mt-1">
-                  {Math.round(membres.filter(m => m.pointage?.tempsTravailleReel).reduce((acc, m) => acc + (m.pointage?.tempsTravailleReel || 0), 0) / membres.filter(m => m.pointage?.tempsTravailleReel).length || 0)}h
-                </p>
+            ) : pointageStats ? (
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div className="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
+                  <p className="text-sm text-gray-600">Total personnes</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">
+                    {pointageStats.total || 0}
+                  </p>
+                </div>
+                <div className="bg-white rounded-lg shadow p-4 border-l-4 border-green-500">
+                  <p className="text-sm text-gray-600">Présents</p>
+                  <p className="text-2xl font-bold text-green-600 mt-1">
+                    {pointageStats.presents || 0}
+                  </p>
+                </div>
+                <div className="bg-white rounded-lg shadow p-4 border-l-4 border-red-500">
+                  <p className="text-sm text-gray-600">Absents</p>
+                  <p className="text-2xl font-bold text-red-600 mt-1">
+                    {pointageStats.absents || 0}
+                  </p>
+                </div>
+                <div className="bg-white rounded-lg shadow p-4 border-l-4 border-orange-500">
+                  <p className="text-sm text-gray-600">Non pointés</p>
+                  <p className="text-2xl font-bold text-orange-600 mt-1">
+                    {pointageStats.non_pointes || 0}
+                  </p>
+                </div>
               </div>
-              <div className="bg-white rounded-lg shadow p-4 border-l-4 border-orange-500">
-                <p className="text-sm text-gray-600">Retards ce mois</p>
-                <p className="text-2xl font-bold text-orange-600 mt-1">
-                  {membres.reduce((acc, m) => acc + (m.pointage?.retard?.length || 0), 0)}
-                </p>
-              </div>
-              <div className="bg-white rounded-lg shadow p-4 border-l-4 border-red-500">
-                <p className="text-sm text-gray-600">Absences ce mois</p>
-                <p className="text-2xl font-bold text-red-600 mt-1">
-                  {membres.reduce((acc, m) => acc + (m.pointage?.presence?.filter(p => !p.present).length || 0), 0)}
-                </p>
-              </div>
-            </div>
+            ) : null}
 
             {/* Liste avec pointage */}
             <div className="bg-white rounded-lg shadow overflow-hidden">
               <div className="p-4 border-b bg-gray-50 flex items-center justify-between">
-                <h3 className="font-semibold text-gray-800">Détail par Ouvrier</h3>
+                <h3 className="font-semibold text-gray-800">
+                  Statut des Personnes - {datePointage ? new Date(datePointage).toLocaleDateString('fr-FR') : 'Aujourd\'hui'}
+                </h3>
                 <button
-                  onClick={() => {
-                    setSelectedMembrePointage(null);
-                    setShowDemandeModal(true);
-                  }}
+                  onClick={loadPointageData}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                  disabled={loadingPointage}
                 >
-                  <Plus className="w-4 h-4" />
-                  Nouvelle Demande
+                  <Clock className="w-4 h-4" />
+                  {loadingPointage ? 'Chargement...' : 'Actualiser'}
                 </button>
               </div>
+              {loadingPointage ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="text-gray-600 mt-4">Chargement des données...</p>
+                </div>
+              ) : filteredPointageData.length === 0 ? (
+                <div className="text-center py-12">
+                  <UserCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600">Aucune personne trouvée</p>
+                  {filterStatut !== 'tous' && (
+                    <p className="text-sm text-gray-500 mt-2">
+                      Aucune personne avec le statut "{filterStatut}" pour cette date
+                    </p>
+                  )}
+                </div>
+              ) : (
               <div className="divide-y">
-                {membres.map((membre) => (
-                  <div key={membre.id} className="p-4 hover:bg-gray-50">
+                {filteredPointageData.map((personne: any) => (
+                  <div key={personne.id} className="p-4 hover:bg-gray-50">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${membre.utiliseSysteme ? 'bg-blue-100' : 'bg-gray-100'}`}>
-                          <UserCircle className={`w-5 h-5 ${membre.utiliseSysteme ? 'text-blue-600' : 'text-gray-400'}`} />
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          personne.statut === 'present' ? 'bg-green-100' :
+                          personne.statut === 'absent' ? 'bg-red-100' :
+                          'bg-orange-100'
+                        }`}>
+                          {personne.statut === 'present' ? (
+                            <CheckCircle className="w-5 h-5 text-green-600" />
+                          ) : personne.statut === 'absent' ? (
+                            <X className="w-5 h-5 text-red-600" />
+                          ) : (
+                            <Clock className="w-5 h-5 text-orange-600" />
+                          )}
                         </div>
                         <div>
-                          <h4 className="font-bold text-gray-900">{membre.prenom} {membre.nom}</h4>
-                          <p className="text-sm text-gray-600">{membre.fonction}</p>
+                          <h4 className="font-bold text-gray-900">{personne.prenom} {personne.nom}</h4>
+                          <p className="text-sm text-gray-600">{personne.fonction || 'Employé'}</p>
+                          {personne.email && (
+                            <p className="text-xs text-gray-500">{personne.email}</p>
+                          )}
                         </div>
                       </div>
-                      <button
-                        onClick={() => setSelectedMembrePointage(membre)}
-                        className="px-3 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 text-sm font-medium"
-                      >
-                        Voir détails
-                      </button>
+                      <div className="flex items-center gap-3">
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          personne.statut === 'present' ? 'bg-green-100 text-green-800' :
+                          personne.statut === 'absent' ? 'bg-red-100 text-red-800' :
+                          'bg-orange-100 text-orange-800'
+                        }`}>
+                          {personne.statut === 'present' ? 'Présent' : 
+                           personne.statut === 'absent' ? 'Absent' : 
+                           'Non pointé'}
+                        </span>
+                      </div>
                     </div>
-                    {membre.pointage && (
-                      <div className="space-y-3">
-                        <div className="grid grid-cols-3 gap-4 text-sm">
-                          <div>
-                            <p className="text-gray-600">Temps travaillé ({periodePointage === 'jour' ? 'jour' : periodePointage === 'semaine' ? 'semaine' : 'mois'})</p>
-                            <p className="font-bold text-gray-900">{membre.pointage.tempsTravailleReel || 0}h</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-600">Retards</p>
-                            <p className="font-bold text-orange-600">{membre.pointage.retard?.length || 0}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-600">Absences</p>
-                            <p className="font-bold text-red-600">
-                              {membre.pointage.presence?.filter(p => !p.present).length || 0}
-                            </p>
-                          </div>
+                    {personne.a_pointe && (
+                      <div className="grid grid-cols-4 gap-4 text-sm mt-3 pt-3 border-t">
+                        <div>
+                          <p className="text-gray-600">Heure arrivée</p>
+                          <p className="font-bold text-gray-900">
+                            {personne.check_in ? new Date(personne.check_in).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '-'}
+                          </p>
                         </div>
-                        {membre.pointage.demandes && membre.pointage.demandes.length > 0 && (
-                          <div className="mt-3 pt-3 border-t">
-                            <p className="text-xs text-gray-600 mb-2 font-medium">Demandes d'absence/congé:</p>
-                            <div className="space-y-2">
-                              {membre.pointage.demandes.map((demande) => (
-                                <div key={demande.id} className={`p-2 rounded text-xs ${
-                                  demande.type === 'conge' ? 'bg-blue-50 border border-blue-200' :
-                                  demande.type === 'absence' ? 'bg-yellow-50 border border-yellow-200' :
-                                  'bg-red-50 border border-red-200'
-                                }`}>
-                                  <div className="flex items-center justify-between">
-                                    <div>
-                                      <span className={`font-medium ${
-                                        demande.type === 'conge' ? 'text-blue-800' :
-                                        demande.type === 'absence' ? 'text-yellow-800' :
-                                        'text-red-800'
-                                      }`}>
-                                        {demande.type === 'conge' ? 'Congé' : demande.type === 'absence' ? 'Absence' : 'Absence non approuvée'}
-                                      </span>
-                                      <span className="text-gray-600 ml-2">
-                                        {new Date(demande.dateDebut).toLocaleDateString('fr-FR')} - {new Date(demande.dateFin).toLocaleDateString('fr-FR')}
-                                      </span>
-                                    </div>
-                                    <span className={`px-2 py-1 rounded ${
-                                      demande.statut === 'approuve' ? 'bg-green-100 text-green-800' :
-                                      demande.statut === 'refuse' ? 'bg-red-100 text-red-800' :
-                                      'bg-yellow-100 text-yellow-800'
-                                    }`}>
-                                      {demande.statut === 'approuve' ? 'Approuvé' : demande.statut === 'refuse' ? 'Refusé' : 'En attente'}
-                                    </span>
-                                  </div>
-                                  {demande.raison && (
-                                    <p className="text-gray-700 mt-1">Raison: {demande.raison}</p>
-                                  )}
-                                  {demande.remarque && (
-                                    <p className="text-gray-600 mt-1 italic">Remarque: {demande.remarque}</p>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
+                        <div>
+                          <p className="text-gray-600">Heure départ</p>
+                          <p className="font-bold text-gray-900">
+                            {personne.check_out ? new Date(personne.check_out).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : 'En cours'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-gray-600">Heures travaillées</p>
+                          <p className="font-bold text-blue-600">
+                            {personne.heures_travaillees ? `${personne.heures_travaillees}h` : '0h'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-gray-600">Retard</p>
+                          <p className={`font-bold ${personne.retard_minutes > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                            {personne.retard_minutes > 0 ? `${personne.retard_minutes} min` : 'Aucun'}
+                          </p>
+                        </div>
                       </div>
                     )}
-                    {!membre.pointage && (
-                      <p className="text-sm text-gray-500 italic">Aucune donnée de pointage disponible</p>
+                    {!personne.a_pointe && (
+                      <p className="text-sm text-gray-500 italic mt-2">Pas encore pointé aujourd'hui</p>
                     )}
                   </div>
                 ))}
               </div>
+              )}
             </div>
           </div>
         )}
