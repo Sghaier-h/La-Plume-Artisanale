@@ -258,8 +258,32 @@ const synchroniserUtilisateur = async (data) => {
       await pool.query(updateQuery, [timemoto_user_id, nom, prenom, email, checkResult.rows[0].id]);
       console.log(`[Webhook] Utilisateur mis à jour: ${email}`);
     } else {
-      // Créer un nouvel utilisateur (optionnel - selon votre logique métier)
-      console.log(`[Webhook] Nouvel utilisateur TimeMoto détecté: ${email} - Création manuelle requise`);
+      // Créer un nouvel utilisateur automatiquement
+      const [nom, prenom] = name ? name.split(' ').slice(0, 2) : ['', ''];
+      const insertQuery = `
+        INSERT INTO equipe (
+          timemoto_user_id,
+          nom,
+          prenom,
+          email,
+          matricule,
+          fonction,
+          actif,
+          created_at,
+          updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, true, NOW(), NOW())
+        RETURNING id
+      `;
+      const matricule = employee_id || timemoto_user_id || `TM-${Date.now()}`;
+      const result = await pool.query(insertQuery, [
+        timemoto_user_id,
+        nom || 'Utilisateur',
+        prenom || 'TimeMoto',
+        email || `user-${timemoto_user_id}@timemoto.local`,
+        matricule,
+        'Employé'
+      ]);
+      console.log(`[Webhook] Nouvel utilisateur créé automatiquement: ${email || timemoto_user_id} (ID: ${result.rows[0].id})`);
     }
 
   } catch (error) {
