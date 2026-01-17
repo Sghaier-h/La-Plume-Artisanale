@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { planificationGanttService } from '../services/api';
-import { Calendar, PlusCircle, Settings, BarChart3 } from 'lucide-react';
+import { Calendar, PlusCircle, Settings, BarChart3, Eye, X } from 'lucide-react';
 
 const PlanificationGantt: React.FC = () => {
   const [projets, setProjets] = useState<any[]>([]);
   const [taches, setTaches] = useState<any[]>([]);
   const [selectedProjet, setSelectedProjet] = useState<number | null>(null);
+  const [selectedTache, setSelectedTache] = useState<any | null>(null);
+  const [selectedProjetDetail, setSelectedProjetDetail] = useState<any | null>(null);
   const [ganttData, setGanttData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
