@@ -47,24 +47,99 @@ fi
 
 echo ""
 
-# 4. Nettoyer les modifications Git
-echo "4️⃣ Nettoyage des modifications Git..."
+# 4. Sauvegarder les fichiers déployés du frontend (s'ils existent)
+echo "4️⃣ Sauvegarde des fichiers déployés frontend..."
+if [ -f "$FRONTEND_DIR/index.html" ] || [ -d "$FRONTEND_DIR/static" ]; then
+    TEMP_FRONTEND_BACKUP="/tmp/frontend-deployed-backup-$(date +%s)"
+    sudo mkdir -p "$TEMP_FRONTEND_BACKUP"
+    
+    # Sauvegarder uniquement les fichiers déployés (pas node_modules, src, etc.)
+    if [ -f "$FRONTEND_DIR/index.html" ]; then
+        sudo cp "$FRONTEND_DIR/index.html" "$TEMP_FRONTEND_BACKUP/" 2>/dev/null || true
+    fi
+    if [ -f "$FRONTEND_DIR/asset-manifest.json" ]; then
+        sudo cp "$FRONTEND_DIR/asset-manifest.json" "$TEMP_FRONTEND_BACKUP/" 2>/dev/null || true
+    fi
+    if [ -f "$FRONTEND_DIR/manifest.json" ]; then
+        sudo cp "$FRONTEND_DIR/manifest.json" "$TEMP_FRONTEND_BACKUP/" 2>/dev/null || true
+    fi
+    if [ -d "$FRONTEND_DIR/static" ]; then
+        sudo cp -r "$FRONTEND_DIR/static" "$TEMP_FRONTEND_BACKUP/" 2>/dev/null || true
+    fi
+    
+    echo "✅ Fichiers déployés sauvegardés dans $TEMP_FRONTEND_BACKUP"
+else
+    TEMP_FRONTEND_BACKUP=""
+    echo "ℹ️  Aucun fichier déployé à sauvegarder"
+fi
+
+echo ""
+
+# 5. Nettoyer les modifications Git (mais préserver les fichiers déployés)
+echo "5️⃣ Nettoyage des modifications Git..."
 git reset --hard HEAD
-git clean -fd
+
+# Nettoyer uniquement les fichiers non trackés qui ne sont pas des fichiers déployés
+# Exclure index.html, static/, asset-manifest.json, manifest.json du nettoyage
+git clean -fd --exclude="$FRONTEND_DIR/index.html" --exclude="$FRONTEND_DIR/static" --exclude="$FRONTEND_DIR/asset-manifest.json" --exclude="$FRONTEND_DIR/manifest.json" 2>/dev/null || git clean -fd
+
 echo "✅ Modifications locales supprimées"
 
 echo ""
 
-# 5. Mettre à jour depuis GitHub
-echo "5️⃣ Mise à jour depuis GitHub..."
+# 6. Mettre à jour depuis GitHub
+echo "6️⃣ Mise à jour depuis GitHub..."
 git fetch origin
 git reset --hard origin/main
 echo "✅ Code mis à jour depuis GitHub"
 
 echo ""
 
-# 6. Restaurer le .env
-echo "6️⃣ Restauration du .env..."
+# 7. Restaurer les fichiers déployés si ils ont été supprimés
+if [ -n "$TEMP_FRONTEND_BACKUP" ] && [ -d "$TEMP_FRONTEND_BACKUP" ]; then
+    echo "7️⃣ Restauration des fichiers déployés frontend..."
+    
+    # Vérifier si les fichiers ont été supprimés
+    if [ ! -f "$FRONTEND_DIR/index.html" ] && [ -f "$TEMP_FRONTEND_BACKUP/index.html" ]; then
+        sudo cp "$TEMP_FRONTEND_BACKUP/index.html" "$FRONTEND_DIR/" 2>/dev/null || true
+        echo "✅ index.html restauré"
+    fi
+    
+    if [ ! -f "$FRONTEND_DIR/asset-manifest.json" ] && [ -f "$TEMP_FRONTEND_BACKUP/asset-manifest.json" ]; then
+        sudo cp "$TEMP_FRONTEND_BACKUP/asset-manifest.json" "$FRONTEND_DIR/" 2>/dev/null || true
+        echo "✅ asset-manifest.json restauré"
+    fi
+    
+    if [ ! -f "$FRONTEND_DIR/manifest.json" ] && [ -f "$TEMP_FRONTEND_BACKUP/manifest.json" ]; then
+        sudo cp "$TEMP_FRONTEND_BACKUP/manifest.json" "$FRONTEND_DIR/" 2>/dev/null || true
+        echo "✅ manifest.json restauré"
+    fi
+    
+    if [ ! -d "$FRONTEND_DIR/static" ] && [ -d "$TEMP_FRONTEND_BACKUP/static" ]; then
+        sudo cp -r "$TEMP_FRONTEND_BACKUP/static" "$FRONTEND_DIR/" 2>/dev/null || true
+        echo "✅ static/ restauré"
+    fi
+    
+    # Corriger les permissions des fichiers restaurés
+    if [ -f "$FRONTEND_DIR/index.html" ]; then
+        sudo chown -R www-data:www-data "$FRONTEND_DIR/index.html" "$FRONTEND_DIR/static" "$FRONTEND_DIR/asset-manifest.json" "$FRONTEND_DIR/manifest.json" 2>/dev/null || true
+        sudo chmod -R 755 "$FRONTEND_DIR/index.html" "$FRONTEND_DIR/static" 2>/dev/null || true
+    fi
+    
+    # Nettoyer le backup temporaire
+    sudo rm -rf "$TEMP_FRONTEND_BACKUP" 2>/dev/null || true
+    
+    echo "✅ Fichiers déployés restaurés"
+else
+    echo "7️⃣ Aucun fichier déployé à restaurer"
+fi
+
+echo ""
+
+echo ""
+
+# 8. Restaurer le .env
+echo "8️⃣ Restauration du .env..."
 if [ -f ~/.env.backup ]; then
     cp ~/.env.backup "$BACKEND_DIR/.env"
     echo "✅ .env restauré"
@@ -72,8 +147,8 @@ fi
 
 echo ""
 
-# 7. Corriger les permissions pour Nginx (frontend seulement)
-echo "7️⃣ Correction des permissions pour Nginx..."
+# 9. Corriger les permissions pour Nginx (frontend seulement)
+echo "9️⃣ Correction des permissions pour Nginx..."
 if [ -d "$FRONTEND_DIR" ]; then
     # Les fichiers sources peuvent rester à ubuntu:ubuntu
     # Mais les fichiers déployés (index.html, static/) doivent être accessibles par Nginx
@@ -86,8 +161,8 @@ fi
 
 echo ""
 
-# 8. Vérification
-echo "8️⃣ Vérification..."
+# 10. Vérification
+echo "🔟 Vérification..."
 LOCAL_COMMIT=$(git rev-parse HEAD)
 REMOTE_COMMIT=$(git rev-parse origin/main)
 
