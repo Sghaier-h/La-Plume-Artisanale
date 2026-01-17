@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { clientsService } from '../services/api';
-import { List, Grid } from 'lucide-react';
+import { List, Grid, Eye, X, User, Mail, Phone, MapPin, Building, CreditCard, Percent, Edit, Trash2 } from 'lucide-react';
 
 const Clients: React.FC = () => {
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingClient, setEditingClient] = useState<any>(null);
+  const [selectedClient, setSelectedClient] = useState<any>(null);
   const [search, setSearch] = useState('');
   const [affichageMode, setAffichageMode] = useState<'ligne' | 'catalogue'>('ligne'); // Simple toggle ligne/catalogue
 
@@ -304,8 +305,31 @@ const Clients: React.FC = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <button onClick={() => handleEdit(client)} className="text-blue-600 hover:text-blue-900 mr-3">Modifier</button>
-                    <button onClick={() => handleDelete(client.id_client)} className="text-red-600 hover:text-red-900">Supprimer</button>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={async () => {
+                          try {
+                            const result = await clientsService.getClient(client.id_client);
+                            if (result.data?.data) {
+                              setSelectedClient(result.data.data);
+                            }
+                          } catch (error: any) {
+                            console.error('Erreur chargement client:', error);
+                            setSelectedClient(client);
+                          }
+                        }}
+                        className="text-blue-600 hover:text-blue-900"
+                        title="Consulter"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => handleEdit(client)} className="text-gray-600 hover:text-gray-900" title="Modifier">
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => handleDelete(client.id_client)} className="text-red-600 hover:text-red-900" title="Supprimer">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -351,6 +375,167 @@ const Clients: React.FC = () => {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Modal de consultation */}
+        {selectedClient && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b p-6 flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                  <Building className="w-6 h-6 text-blue-600" />
+                  {selectedClient.raison_sociale}
+                </h2>
+                <button
+                  onClick={() => setSelectedClient(null)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              
+              <div className="p-6 space-y-6">
+                {/* Informations générales */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <User className="w-5 h-5 text-blue-600" />
+                    Informations Générales
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Code Client</label>
+                      <p className="text-gray-900 font-semibold">{selectedClient.code_client}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Raison Sociale</label>
+                      <p className="text-gray-900 font-semibold">{selectedClient.raison_sociale}</p>
+                    </div>
+                    {selectedClient.contact_principal && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Contact Principal</label>
+                        <p className="text-gray-900">{selectedClient.contact_principal}</p>
+                      </div>
+                    )}
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Statut</label>
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${selectedClient.actif ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                        {selectedClient.actif ? 'Actif' : 'Inactif'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Coordonnées */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <MapPin className="w-5 h-5 text-blue-600" />
+                    Coordonnées
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    {selectedClient.adresse && (
+                      <div className="col-span-2">
+                        <label className="text-sm font-medium text-gray-500">Adresse</label>
+                        <p className="text-gray-900">{selectedClient.adresse}</p>
+                      </div>
+                    )}
+                    {selectedClient.code_postal && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Code Postal</label>
+                        <p className="text-gray-900">{selectedClient.code_postal}</p>
+                      </div>
+                    )}
+                    {selectedClient.ville && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Ville</label>
+                        <p className="text-gray-900">{selectedClient.ville}</p>
+                      </div>
+                    )}
+                    {selectedClient.pays && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Pays</label>
+                        <p className="text-gray-900">{selectedClient.pays}</p>
+                      </div>
+                    )}
+                    {selectedClient.telephone && (
+                      <div className="flex items-center gap-2">
+                        <Phone className="w-4 h-4 text-gray-400" />
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">Téléphone</label>
+                          <p className="text-gray-900">{selectedClient.telephone}</p>
+                        </div>
+                      </div>
+                    )}
+                    {selectedClient.email && (
+                      <div className="flex items-center gap-2">
+                        <Mail className="w-4 h-4 text-gray-400" />
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">Email</label>
+                          <p className="text-gray-900">{selectedClient.email}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Informations commerciales */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <CreditCard className="w-5 h-5 text-blue-600" />
+                    Informations Commerciales
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    {selectedClient.devise && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Devise</label>
+                        <p className="text-gray-900">{selectedClient.devise}</p>
+                      </div>
+                    )}
+                    {selectedClient.taux_remise && parseFloat(selectedClient.taux_remise) > 0 && (
+                      <div className="flex items-center gap-2">
+                        <Percent className="w-4 h-4 text-gray-400" />
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">Taux de Remise</label>
+                          <p className="text-gray-900">{selectedClient.taux_remise}%</p>
+                        </div>
+                      </div>
+                    )}
+                    {selectedClient.plafond_credit && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Plafond Crédit</label>
+                        <p className="text-gray-900">{selectedClient.plafond_credit} {selectedClient.devise || 'TND'}</p>
+                      </div>
+                    )}
+                    {selectedClient.conditions_paiement && (
+                      <div className="col-span-2">
+                        <label className="text-sm font-medium text-gray-500">Conditions de Paiement</label>
+                        <p className="text-gray-900">{selectedClient.conditions_paiement}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="border-t pt-4 flex gap-2 justify-end">
+                  <button
+                    onClick={() => {
+                      handleEdit(selectedClient);
+                      setSelectedClient(null);
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                  >
+                    <Edit className="w-4 h-4" />
+                    Modifier
+                  </button>
+                  <button
+                    onClick={() => setSelectedClient(null)}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                  >
+                    Fermer
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
         </div>
