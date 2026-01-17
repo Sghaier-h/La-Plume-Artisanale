@@ -66,14 +66,7 @@ CREATE TABLE IF NOT EXISTS notifications (
     
     -- Métadonnées
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    action_url VARCHAR(255), -- URL vers la page concernée (optionnel)
-    
-    -- Index pour performances
-    INDEX idx_notifications_user (id_user),
-    INDEX idx_notifications_lue (lue),
-    INDEX idx_notifications_priorite (priorite),
-    INDEX idx_notifications_created (created_at DESC),
-    INDEX idx_notifications_user_lue (id_user, lue)
+    action_url VARCHAR(255) -- URL vers la page concernée (optionnel)
 );
 
 -- Corriger la syntaxe PostgreSQL pour les index
