@@ -85,12 +85,20 @@ fi
 # Nettoyer le dossier build (optionnel, pour économiser de l'espace)
 sudo rm -rf build 2>/dev/null || true
 
-# Corriger les permissions
-sudo chown -R www-data:www-data frontend/
-sudo chmod -R 755 frontend/
+# Corriger les permissions (on est dans $FRONTEND_DIR, donc utiliser .)
+sudo chown -R www-data:www-data .
+sudo chmod -R 755 .
 
-# Nettoyer le dossier build (optionnel)
-sudo rm -rf frontend/build 2>/dev/null || true
+# Corriger spécifiquement les fichiers déployés
+if [ -f "index.html" ]; then
+    sudo chown www-data:www-data index.html asset-manifest.json manifest.json 2>/dev/null || true
+    sudo chmod 644 index.html asset-manifest.json manifest.json 2>/dev/null || true
+fi
+
+if [ -d "static" ]; then
+    sudo chown -R www-data:www-data static/
+    sudo chmod -R 755 static/
+fi
 
 echo "✅ Fichiers deployes"
 echo ""
