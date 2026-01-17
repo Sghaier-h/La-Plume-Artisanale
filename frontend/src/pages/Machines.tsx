@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { machinesService } from '../services/api';
+import { Settings, Plus, Edit, Trash2, Search, Eye, X, Calendar, MapPin, AlertCircle, Activity, TrendingUp } from 'lucide-react';
 
 const Machines: React.FC = () => {
   const [machines, setMachines] = useState<any[]>([]);
@@ -264,14 +265,194 @@ const Machines: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">{machine.emplacement || '-'}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <button onClick={() => setSelectedMachine(machine)} className="text-blue-600 hover:text-blue-900 mr-3">Voir</button>
-                    <button onClick={() => handleEdit(machine)} className="text-blue-600 hover:text-blue-900">Modifier</button>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={async () => {
+                          try {
+                            const result = await machinesService.getMachine(machine.id_machine);
+                            if (result.data?.data) {
+                              setSelectedMachine(result.data.data);
+                            }
+                          } catch (error: any) {
+                            console.error('Erreur chargement machine:', error);
+                            setSelectedMachine(machine);
+                          }
+                        }}
+                        className="text-blue-600 hover:text-blue-700"
+                        title="Consulter"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => handleEdit(machine)}
+                        className="text-gray-600 hover:text-gray-700"
+                        title="Modifier"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+
+        {/* Modal de consultation */}
+        {selectedMachine && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b p-6 flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                  <Settings className="w-6 h-6 text-blue-600" />
+                  Machine {selectedMachine.numero_machine}
+                </h2>
+                <button
+                  onClick={() => setSelectedMachine(null)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              
+              <div className="p-6 space-y-6">
+                {/* Informations générales */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-blue-600" />
+                    Informations Générales
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Numéro Machine</label>
+                      <p className="text-gray-900 font-semibold">{selectedMachine.numero_machine}</p>
+                    </div>
+                    {selectedMachine.type_machine && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Type Machine</label>
+                        <p className="text-gray-900">{selectedMachine.type_machine}</p>
+                      </div>
+                    )}
+                    {selectedMachine.marque && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Marque</label>
+                        <p className="text-gray-900">{selectedMachine.marque}</p>
+                      </div>
+                    )}
+                    {selectedMachine.modele && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Modèle</label>
+                        <p className="text-gray-900">{selectedMachine.modele}</p>
+                      </div>
+                    )}
+                    {selectedMachine.numero_serie && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Numéro de Série</label>
+                        <p className="text-gray-900 font-mono text-sm">{selectedMachine.numero_serie}</p>
+                      </div>
+                    )}
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Statut</label>
+                      <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium mt-1 ${
+                        selectedMachine.statut === 'operationnel' ? 'bg-green-100 text-green-800' :
+                        selectedMachine.statut === 'en_panne' ? 'bg-red-100 text-red-800' :
+                        'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {selectedMachine.statut}
+                      </span>
+                    </div>
+                    {selectedMachine.emplacement && (
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-gray-400" />
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">Emplacement</label>
+                          <p className="text-gray-900">{selectedMachine.emplacement}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Caractéristiques techniques */}
+                {(selectedMachine.vitesse_nominale || selectedMachine.largeur_utile || selectedMachine.capacite_production) && (
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5 text-blue-600" />
+                      Caractéristiques Techniques
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      {selectedMachine.vitesse_nominale && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">Vitesse Nominale</label>
+                          <p className="text-gray-900">{selectedMachine.vitesse_nominale}</p>
+                        </div>
+                      )}
+                      {selectedMachine.largeur_utile && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">Largeur Utile</label>
+                          <p className="text-gray-900">{selectedMachine.largeur_utile}</p>
+                        </div>
+                      )}
+                      {selectedMachine.capacite_production && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">Capacité Production</label>
+                          <p className="text-gray-900">{selectedMachine.capacite_production}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Dates */}
+                {(selectedMachine.annee_fabrication || selectedMachine.date_mise_service) && (
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                      <Calendar className="w-5 h-5 text-blue-600" />
+                      Dates
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      {selectedMachine.annee_fabrication && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">Année Fabrication</label>
+                          <p className="text-gray-900">{selectedMachine.annee_fabrication}</p>
+                        </div>
+                      )}
+                      {selectedMachine.date_mise_service && (
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-gray-400" />
+                          <div>
+                            <label className="text-sm font-medium text-gray-500">Date Mise en Service</label>
+                            <p className="text-gray-900">{new Date(selectedMachine.date_mise_service).toLocaleDateString()}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="border-t pt-4 flex gap-2 justify-end">
+                  <button
+                    onClick={() => {
+                      handleEdit(selectedMachine);
+                      setSelectedMachine(null);
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                  >
+                    <Edit className="w-4 h-4" />
+                    Modifier
+                  </button>
+                  <button
+                    onClick={() => setSelectedMachine(null)}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                  >
+                    Fermer
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         </div>
       </div>
     </div>
