@@ -135,10 +135,10 @@ export const getStatutPersonnes = async (req, res) => {
       LEFT JOIN pointage p ON e.id = p.user_id AND p.date = $1
       WHERE e.actif = true
       ORDER BY 
-        CASE statut
-          WHEN 'present' THEN 1
-          WHEN 'absent' THEN 2
-          WHEN 'non_pointe' THEN 3
+        CASE 
+          WHEN p.id IS NOT NULL THEN 
+            CASE WHEN p.present THEN 1 ELSE 2 END
+          ELSE 3
         END,
         e.nom, e.prenom
     `;
