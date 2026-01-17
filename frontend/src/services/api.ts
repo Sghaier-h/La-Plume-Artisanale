@@ -202,6 +202,8 @@ export const parametrageService = {
   updateSociete: (data: any) => api.put('/parametrage/societe', data),
   getParametresSysteme: () => api.get('/parametrage/systeme'),
   updateParametreSysteme: (cle: string, data: any) => api.put(`/parametrage/systeme/${cle}`, data),
+  getParametresModule: (module: string) => api.get(`/parametrage/module/${module}`),
+  updateParametresModule: (module: string, data: any) => api.put(`/parametrage/module/${module}`, data),
 };
 
 export const matieresPremieresService = {

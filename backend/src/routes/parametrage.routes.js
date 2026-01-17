@@ -3,7 +3,9 @@ import {
   getSociete,
   updateSociete,
   getParametresSysteme,
-  updateParametreSysteme
+  updateParametreSysteme,
+  getParametresModule,
+  updateParametresModule
 } from '../controllers/parametrage.controller.js';
 import { authenticate } from '../middleware/auth.middleware.js';
 
@@ -13,5 +15,7 @@ router.get('/societe', authenticate, getSociete);
 router.put('/societe', authenticate, updateSociete);
 router.get('/systeme', authenticate, getParametresSysteme);
 router.put('/systeme/:cle', authenticate, updateParametreSysteme);
+router.get('/module/:module', authenticate, getParametresModule);
+router.put('/module/:module', authenticate, updateParametresModule);
 
 export default router;

@@ -210,3 +210,131 @@ export const updateParametreSysteme = async (req, res) => {
     });
   }
 };
+
+// GET /api/parametrage/module/:module - Paramètres d'un module spécifique
+export const getParametresModule = async (req, res) => {
+  try {
+    const { module } = req.params;
+    const useMockAuth = process.env.USE_MOCK_AUTH === 'true' && process.env.NODE_ENV === 'development';
+    
+    if (useMockAuth) {
+      // Retourner des valeurs par défaut selon le module
+      const defaults: { [key: string]: any } = {
+        vente: {
+          devis: { tva_par_defaut: 20, validite_devis_jours: 30, generer_numero_auto: true, prefixe_numero: 'DEV' },
+          factures: { delai_paiement_jours: 30, taux_penalite_retard: 0.75, generer_numero_auto: true, prefixe_numero: 'FAC' },
+          bons_livraison: { generer_numero_auto: true, prefixe_numero: 'BL' }
+        },
+        production: {
+          of: { taux_rendement_cible: 90, delai_alerte_retard_heures: 24, generer_numero_auto: true, prefixe_numero: 'OF' },
+          machines: { alerte_maintenance_jours: 7, delai_maintenance_preventive_jours: 90 },
+          suivi: { calcul_rendement_auto: true, calcul_temps_auto: true }
+        },
+        stock: {
+          articles: { stock_minimum_par_defaut: 10, stock_alerte_par_defaut: 5, activer_alertes_stock: true },
+          inventaire: { frequence_inventaire_jours: 30, type_inventaire_par_defaut: 'PARTIEL' },
+          alertes: { delai_alerte_stock_jours: 3, notification_email: true }
+        },
+        qualite: {
+          controles: { taux_acceptation_cible: 95, activer_controles_auto: true, frequence_controles: 'CHAQUE_LOT' },
+          non_conformites: { delai_traitement_jours: 7, notification_urgence: true }
+        },
+        planification: {
+          gantt: { unite_planification: 'JOUR', afficher_weekend: false, couleur_retard: '#FF0000' },
+          ressources: { capacite_max_machine: 8, activer_surcharge: false }
+        }
+      };
+      
+      return res.json({
+        success: true,
+        data: defaults[module] || {}
+      });
+    }
+
+    const result = await pool.query(`
+      SELECT cle, valeur, description, type_donnee
+      FROM parametres_systeme
+      WHERE cle LIKE $1
+      ORDER BY cle
+    `, [`${module}_%`]);
+
+    const params: any = {};
+    result.rows.forEach(row => {
+      const parts = row.cle.split('_');
+      if (parts.length >= 3) {
+        const categorie = parts[1];
+        const paramKey = parts.slice(2).join('_');
+        if (!params[categorie]) params[categorie] = {};
+        params[categorie][paramKey] = row.type_donnee === 'number' ? parseFloat(row.valeur) : 
+                                      row.type_donnee === 'boolean' ? row.valeur === 'true' : row.valeur;
+      }
+    });
+
+    res.json({
+      success: true,
+      data: params
+    });
+  } catch (error) {
+    console.error('Erreur getParametresModule:', error);
+    res.status(500).json({
+      success: false,
+      error: { message: 'Erreur serveur' }
+    });
+  }
+};
+
+// PUT /api/parametrage/module/:module - Mettre à jour les paramètres d'un module
+export const updateParametresModule = async (req, res) => {
+  try {
+    const { module } = req.params;
+    const parametres = req.body;
+
+    const useMockAuth = process.env.USE_MOCK_AUTH === 'true' && process.env.NODE_ENV === 'development';
+    
+    if (useMockAuth) {
+      return res.json({
+        success: true,
+        data: { message: `Paramètres ${module} mis à jour (mode mock)` }
+      });
+    }
+
+    // Convertir les paramètres en format plat pour la base de données
+    const updates = [];
+    const values: any[] = [];
+    let paramIndex = 1;
+
+    for (const [categorie, params] of Object.entries(parametres)) {
+      if (params && typeof params === 'object') {
+        for (const [cle, valeur] of Object.entries(params)) {
+          const cleComplet = `${module}_${categorie}_${cle}`;
+          const typeDonnee = typeof valeur === 'number' ? 'number' : typeof valeur === 'boolean' ? 'boolean' : 'string';
+          const valeurStr = typeof valeur === 'boolean' ? String(valeur) : String(valeur);
+          
+          updates.push(`INSERT INTO parametres_systeme (cle, valeur, type_donnee, date_modification)
+            VALUES ($${paramIndex}, $${paramIndex + 1}, $${paramIndex + 2}, CURRENT_TIMESTAMP)
+            ON CONFLICT (cle) DO UPDATE 
+            SET valeur = EXCLUDED.valeur, 
+                type_donnee = EXCLUDED.type_donnee,
+                date_modification = CURRENT_TIMESTAMP`);
+          values.push(cleComplet, valeurStr, typeDonnee);
+          paramIndex += 3;
+        }
+      }
+    }
+
+    if (updates.length > 0) {
+      await pool.query(updates.join('; '), values);
+    }
+
+    res.json({
+      success: true,
+      data: { message: `Paramètres ${module} mis à jour` }
+    });
+  } catch (error) {
+    console.error('Erreur updateParametresModule:', error);
+    res.status(500).json({
+      success: false,
+      error: { message: 'Erreur serveur' }
+    });
+  }
+};
