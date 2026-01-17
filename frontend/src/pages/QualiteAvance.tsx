@@ -266,6 +266,165 @@ const QualiteAvance: React.FC = () => {
             )}
           </div>
         )}
+
+        {/* Modal consultation Contrôle */}
+        {selectedControle && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b p-6 flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                  <CheckCircle className="w-6 h-6 text-blue-600" />
+                  Contrôle Qualité - {selectedControle.numero_controle}
+                </h2>
+                <button
+                  onClick={() => setSelectedControle(null)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              
+              <div className="p-6 space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Numéro Contrôle</label>
+                    <p className="text-gray-900 font-semibold">{selectedControle.numero_controle}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Numéro OF</label>
+                    <p className="text-gray-900">{selectedControle.numero_of || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Type de Contrôle</label>
+                    <p className="text-gray-900">{selectedControle.type_controle}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Date</label>
+                    <p className="text-gray-900">{new Date(selectedControle.date_controle).toLocaleDateString('fr-FR')}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Taux de Conformité</label>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 bg-gray-200 rounded-full h-3">
+                        <div
+                          className={`h-3 rounded-full ${
+                            selectedControle.taux_conformite >= 95 ? 'bg-green-600' :
+                            selectedControle.taux_conformite >= 80 ? 'bg-yellow-600' : 'bg-red-600'
+                          }`}
+                          style={{ width: `${selectedControle.taux_conformite || 0}%` }}
+                        ></div>
+                      </div>
+                      <span className="font-semibold">{selectedControle.taux_conformite || 0}%</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Résultat Global</label>
+                    <span className={`inline-block px-3 py-1 rounded text-sm ${getResultatColor(selectedControle.resultat_global)}`}>
+                      {selectedControle.resultat_global}
+                    </span>
+                  </div>
+                  {selectedControle.observations && (
+                    <div className="col-span-2">
+                      <label className="text-sm font-medium text-gray-500">Observations</label>
+                      <p className="text-gray-900 bg-gray-50 p-3 rounded-lg">{selectedControle.observations}</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="border-t pt-4 flex gap-2 justify-end">
+                  <button
+                    onClick={() => setSelectedControle(null)}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                  >
+                    Fermer
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal consultation Non-Conformité */}
+        {selectedNonConformite && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b p-6 flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                  <XCircle className="w-6 h-6 text-red-600" />
+                  Non-Conformité - {selectedNonConformite.numero_nc}
+                </h2>
+                <button
+                  onClick={() => setSelectedNonConformite(null)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              
+              <div className="p-6 space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Numéro NC</label>
+                    <p className="text-gray-900 font-semibold">{selectedNonConformite.numero_nc}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Gravité</label>
+                    <span className={`inline-block px-3 py-1 rounded text-sm ${getGraviteColor(selectedNonConformite.gravite)}`}>
+                      {selectedNonConformite.gravite}
+                    </span>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Numéro OF</label>
+                    <p className="text-gray-900">{selectedNonConformite.numero_of || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Statut</label>
+                    <span className={`inline-block px-3 py-1 rounded text-sm ${
+                      selectedNonConformite.statut === 'FERMEE' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {selectedNonConformite.statut}
+                    </span>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Date Ouverture</label>
+                    <p className="text-gray-900">{new Date(selectedNonConformite.date_ouverture).toLocaleDateString('fr-FR')}</p>
+                  </div>
+                  {selectedNonConformite.date_fermeture && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Date Fermeture</label>
+                      <p className="text-gray-900">{new Date(selectedNonConformite.date_fermeture).toLocaleDateString('fr-FR')}</p>
+                    </div>
+                  )}
+                  <div className="col-span-2">
+                    <label className="text-sm font-medium text-gray-500">Description</label>
+                    <p className="text-gray-900 bg-gray-50 p-3 rounded-lg">{selectedNonConformite.description}</p>
+                  </div>
+                  {selectedNonConformite.cause && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Cause</label>
+                      <p className="text-gray-900">{selectedNonConformite.cause}</p>
+                    </div>
+                  )}
+                  {selectedNonConformite.action_corrective && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Action Corrective</label>
+                      <p className="text-gray-900 bg-blue-50 p-3 rounded-lg">{selectedNonConformite.action_corrective}</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="border-t pt-4 flex gap-2 justify-end">
+                  <button
+                    onClick={() => setSelectedNonConformite(null)}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                  >
+                    Fermer
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -108,6 +108,17 @@ const PlanificationGantt: React.FC = () => {
               </option>
             ))}
           </select>
+          <button
+            onClick={() => {
+              const projet = projets.find(p => p.id_projet === selectedProjet);
+              if (projet) setSelectedProjetDetail(projet);
+            }}
+            className="ml-2 px-3 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+            title="Consulter le projet"
+            disabled={!selectedProjet}
+          >
+            <Eye className="w-4 h-4" />
+          </button>
         </div>
 
         {selectedProjet && (
