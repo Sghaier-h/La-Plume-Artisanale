@@ -59,6 +59,7 @@ import ProduitFini from './pages/ProduitFini';
 import SemiFini from './pages/SemiFini';
 import MatierePremiereStock from './pages/MatierePremiereStock';
 import Fourniture from './pages/Fourniture';
+import ProtectedRoute from './components/ProtectedRoute';
 
 const PrivateRoute: React.FC<{ children: React.ReactNode; showNav?: boolean }> = ({ children, showNav = true }) => {
   const { user, loading } = useAuth();
@@ -111,9 +112,9 @@ function App() {
           <Route
             path="/dashboard-admin"
             element={
-              <PrivateRoute showNav={true}>
+              <ProtectedRoute requiredDashboard="dashboard" showNav={true}>
                 <DashboardAdministrateur />
-              </PrivateRoute>
+              </ProtectedRoute>
             }
           />
           <Route
@@ -303,9 +304,9 @@ function App() {
           <Route
             path="/multisociete"
             element={
-              <PrivateRoute>
+              <ProtectedRoute requiredRole="ADMIN">
                 <MultiSociete />
-              </PrivateRoute>
+              </ProtectedRoute>
             }
           />
           <Route
@@ -359,9 +360,9 @@ function App() {
           <Route
             path="/parametres-catalogue"
             element={
-              <PrivateRoute>
+              <ProtectedRoute requiredRole="ADMIN">
                 <ParametresCatalogue />
-              </PrivateRoute>
+              </ProtectedRoute>
             }
           />
           <Route

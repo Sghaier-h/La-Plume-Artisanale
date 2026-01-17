@@ -42,6 +42,9 @@ const Navigation: React.FC = () => {
     setExpandedCategories(newExpanded);
   };
 
+  // Vérifier si l'utilisateur est admin
+  const isAdmin = user?.role === 'ADMIN';
+
   // Filtrer les dashboards selon les attributions de l'utilisateur
   const getAllDashboards = () => {
     const allDashboards = [
@@ -56,13 +59,18 @@ const Navigation: React.FC = () => {
       { path: '/chef-production', label: 'Dashboard Chef Production', icon: Factory, id: 'chef-production' },
     ];
 
-    // Si l'utilisateur a des dashboards attribués, filtrer selon ces attributions
+    // L'admin voit tous les dashboards
+    if (isAdmin) {
+      return allDashboards;
+    }
+
+    // Sinon, filtrer selon les dashboards attribués
     if (user?.dashboardsAttribues && user.dashboardsAttribues.length > 0) {
       return allDashboards.filter(dash => user.dashboardsAttribues?.includes(dash.id));
     }
 
-    // Sinon, afficher tous les dashboards (pour l'admin ou si pas d'attribution)
-    return allDashboards;
+    // Si pas de dashboard attribué et pas admin, ne rien afficher
+    return [];
   };
 
   const menuCategories: MenuCategory[] = [
@@ -173,15 +181,15 @@ const Navigation: React.FC = () => {
       id: 'parametrage',
       label: 'Paramétrage',
       icon: Settings,
-      items: [
+      items: isAdmin ? [
         { path: '/parametrage', label: 'Paramétrage Général', icon: Settings },
         { path: '/parametres-catalogue', label: 'Paramètres Catalogue', icon: Settings },
         { path: '/multisociete', label: 'Multi-Société', icon: Building2 },
         { path: '/communication', label: 'Communication Externe', icon: MessageSquare },
         { path: '/messages-operateurs', label: 'Messages Opérateurs', icon: Bell },
-      ]
+      ] : []
     },
-  ];
+  ].filter(category => category.items.length > 0);
 
   return (
     <nav className="bg-white shadow-lg border-r border-gray-200 w-64 min-h-screen fixed left-0 top-0">
