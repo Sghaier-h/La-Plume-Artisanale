@@ -201,7 +201,16 @@ const PlanificationGantt: React.FC = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <button className="text-blue-600 hover:text-blue-800">Modifier</button>
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => setSelectedTache(tache)}
+                            className="text-blue-600 hover:text-blue-800"
+                            title="Consulter"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button className="text-gray-600 hover:text-gray-800" title="Modifier">Modifier</button>
+                        </div>
                       </td>
                     </tr>
                   ))}

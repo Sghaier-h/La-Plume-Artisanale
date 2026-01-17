@@ -133,6 +133,7 @@ const QualiteAvance: React.FC = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Taux conformité</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Résultat</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -168,6 +169,15 @@ const QualiteAvance: React.FC = () => {
                       <span className={`px-2 py-1 rounded text-xs ${getResultatColor(controle.resultat_global)}`}>
                         {controle.resultat_global}
                       </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <button
+                        onClick={() => setSelectedControle(controle)}
+                        className="text-blue-600 hover:text-blue-700"
+                        title="Consulter"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
                     </td>
                   </tr>
                 ))}
