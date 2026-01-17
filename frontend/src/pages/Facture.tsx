@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Receipt, Plus, Edit, Trash2, Search, Download, Eye, Send } from 'lucide-react';
-import { clientsService } from '../services/api';
+import { facturesService, clientsService } from '../services/api';
 
 const Facture: React.FC = () => {
   const [factures, setFactures] = useState<any[]>([]);
@@ -14,35 +14,58 @@ const Facture: React.FC = () => {
 
   const loadData = async () => {
     try {
-      // TODO: Remplacer par l'API réelle des factures
-      const mockFactures = [
-        { id: 1, numero: 'FAC-2024-001', client: 'Client A', date: '2024-01-25', montant_ttc: 5950, statut: 'payée' },
-        { id: 2, numero: 'FAC-2024-002', client: 'Client B', date: '2024-01-26', montant_ttc: 3808, statut: 'en_attente' },
-      ];
-      setFactures(mockFactures);
+      setLoading(true);
+      const params: any = {};
+      if (filters.statut) params.statut = filters.statut.toUpperCase();
+      if (filters.client_id) params.client_id = filters.client_id;
+      if (search) params.search = search;
+
+      const facturesRes = await facturesService.getFactures(params).catch(() => ({ data: { data: [], success: false } }));
+      
+      if (facturesRes.data?.success) {
+        setFactures(facturesRes.data.data || []);
+      } else {
+        setFactures([]);
+      }
     } catch (error) {
       console.error('Erreur chargement factures:', error);
+      setFactures([]);
     } finally {
       setLoading(false);
     }
   };
 
   const getStatutColor = (statut: string) => {
+    const statutLower = statut?.toLowerCase() || '';
     const colors: { [key: string]: string } = {
       'brouillon': 'bg-gray-100 text-gray-800',
       'en_attente': 'bg-yellow-100 text-yellow-800',
+      'payee': 'bg-green-100 text-green-800',
       'payée': 'bg-green-100 text-green-800',
+      'reglee': 'bg-green-100 text-green-800',
+      'partiellement_payee': 'bg-blue-100 text-blue-800',
       'partiellement_payée': 'bg-blue-100 text-blue-800',
+      'impayee': 'bg-red-100 text-red-800',
       'impayée': 'bg-red-100 text-red-800',
+      'annulee': 'bg-orange-100 text-orange-800',
       'annulée': 'bg-orange-100 text-orange-800'
     };
-    return colors[statut] || 'bg-gray-100 text-gray-800';
+    return colors[statutLower] || 'bg-gray-100 text-gray-800';
   };
 
-  const filteredFactures = factures.filter(f =>
-    f.numero?.toLowerCase().includes(search.toLowerCase()) ||
-    f.client?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredFactures = factures.filter(f => {
+    if (search && !f.numero_facture?.toLowerCase().includes(search.toLowerCase()) && 
+        !f.client_nom?.toLowerCase().includes(search.toLowerCase())) {
+      return false;
+    }
+    if (filters.statut && f.statut !== filters.statut.toUpperCase()) {
+      return false;
+    }
+    if (filters.client_id && f.id_client?.toString() !== filters.client_id) {
+      return false;
+    }
+    return true;
+  });
 
   if (loading) {
     return (
@@ -90,11 +113,12 @@ const Facture: React.FC = () => {
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Tous les statuts</option>
-              <option value="brouillon">Brouillon</option>
-              <option value="en_attente">En attente</option>
-              <option value="payée">Payée</option>
-              <option value="partiellement_payée">Partiellement payée</option>
-              <option value="impayée">Impayée</option>
+              <option value="BROUILLON">Brouillon</option>
+              <option value="EN_ATTENTE">En attente</option>
+              <option value="REGLEE">Réglée</option>
+              <option value="PARTIELLEMENT_REGLEE">Partiellement réglée</option>
+              <option value="IMPAYEE">Impayée</option>
+              <option value="ANNULEE">Annulée</option>
             </select>
           </div>
         </div>
@@ -113,32 +137,50 @@ const Facture: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {filteredFactures.map((facture) => (
-                <tr key={facture.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap font-medium">{facture.numero}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">{facture.client}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">{facture.date}</td>
-                  <td className="px-6 py-4 whitespace-nowrap font-semibold">{facture.montant_ttc?.toFixed(2)} TND</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${getStatutColor(facture.statut)}`}>
-                      {facture.statut}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex gap-2">
-                      <button className="text-blue-600 hover:text-blue-700">
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button className="text-green-600 hover:text-green-700">
-                        <Download className="w-4 h-4" />
-                      </button>
-                      <button className="text-purple-600 hover:text-purple-700">
-                        <Send className="w-4 h-4" />
-                      </button>
-                    </div>
+              {filteredFactures.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                    Aucune facture trouvée
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredFactures.map((facture) => (
+                  <tr key={facture.id_facture} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap font-medium">{facture.numero_facture}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{facture.client_nom}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{facture.date_facture}</td>
+                    <td className="px-6 py-4 whitespace-nowrap font-semibold">{facture.montant_ttc?.toFixed(2)} TND</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${getStatutColor(facture.statut)}`}>
+                        {facture.statut}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={async () => {
+                            try {
+                              const result = await facturesService.getFactureById(facture.id_facture);
+                              console.log('Détails facture:', result.data);
+                            } catch (error) {
+                              console.error('Erreur chargement facture:', error);
+                            }
+                          }}
+                          className="text-blue-600 hover:text-blue-700"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button className="text-green-600 hover:text-green-700">
+                          <Download className="w-4 h-4" />
+                        </button>
+                        <button className="text-purple-600 hover:text-purple-700">
+                          <Send className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

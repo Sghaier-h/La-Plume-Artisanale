@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowLeft, Plus, Edit, Trash2, Search, Download, Eye } from 'lucide-react';
-import { clientsService } from '../services/api';
+import { avoirsService, clientsService, facturesService } from '../services/api';
 
 const Avoir: React.FC = () => {
   const [avoirs, setAvoirs] = useState<any[]>([]);
@@ -14,33 +14,53 @@ const Avoir: React.FC = () => {
 
   const loadData = async () => {
     try {
-      // TODO: Remplacer par l'API réelle des avoirs
-      const mockAvoirs = [
-        { id: 1, numero: 'AVR-2024-001', facture: 'FAC-2024-001', client: 'Client A', date: '2024-01-28', montant: 500, statut: 'appliqué' },
-        { id: 2, numero: 'AVR-2024-002', facture: 'FAC-2024-002', client: 'Client B', date: '2024-01-29', montant: 200, statut: 'en_attente' },
-      ];
-      setAvoirs(mockAvoirs);
+      setLoading(true);
+      const params: any = {};
+      if (filters.statut) params.statut = filters.statut.toUpperCase();
+      if (filters.client_id) params.client_id = filters.client_id;
+      if (search) params.search = search;
+
+      const avoirsRes = await avoirsService.getAvoirs(params).catch(() => ({ data: { data: [], success: false } }));
+      
+      if (avoirsRes.data?.success) {
+        setAvoirs(avoirsRes.data.data || []);
+      } else {
+        setAvoirs([]);
+      }
     } catch (error) {
       console.error('Erreur chargement avoirs:', error);
+      setAvoirs([]);
     } finally {
       setLoading(false);
     }
   };
 
   const getStatutColor = (statut: string) => {
+    const statutLower = statut?.toLowerCase() || '';
     const colors: { [key: string]: string } = {
       'brouillon': 'bg-gray-100 text-gray-800',
       'en_attente': 'bg-yellow-100 text-yellow-800',
+      'applique': 'bg-green-100 text-green-800',
       'appliqué': 'bg-green-100 text-green-800',
+      'annule': 'bg-red-100 text-red-800',
       'annulé': 'bg-red-100 text-red-800'
     };
-    return colors[statut] || 'bg-gray-100 text-gray-800';
+    return colors[statutLower] || 'bg-gray-100 text-gray-800';
   };
 
-  const filteredAvoirs = avoirs.filter(a =>
-    a.numero?.toLowerCase().includes(search.toLowerCase()) ||
-    a.client?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredAvoirs = avoirs.filter(a => {
+    if (search && !a.numero_avoir?.toLowerCase().includes(search.toLowerCase()) && 
+        !a.client_nom?.toLowerCase().includes(search.toLowerCase())) {
+      return false;
+    }
+    if (filters.statut && a.statut !== filters.statut.toUpperCase()) {
+      return false;
+    }
+    if (filters.client_id && a.id_client?.toString() !== filters.client_id) {
+      return false;
+    }
+    return true;
+  });
 
   if (loading) {
     return (
@@ -88,10 +108,10 @@ const Avoir: React.FC = () => {
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Tous les statuts</option>
-              <option value="brouillon">Brouillon</option>
-              <option value="en_attente">En attente</option>
-              <option value="appliqué">Appliqué</option>
-              <option value="annulé">Annulé</option>
+              <option value="BROUILLON">Brouillon</option>
+              <option value="EN_ATTENTE">En attente</option>
+              <option value="APPLIQUE">Appliqué</option>
+              <option value="ANNULE">Annulé</option>
             </select>
           </div>
         </div>
@@ -111,33 +131,51 @@ const Avoir: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {filteredAvoirs.map((avoir) => (
-                <tr key={avoir.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap font-medium">{avoir.numero}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">{avoir.facture}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">{avoir.client}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">{avoir.date}</td>
-                  <td className="px-6 py-4 whitespace-nowrap font-semibold text-red-600">{avoir.montant?.toFixed(2)} TND</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${getStatutColor(avoir.statut)}`}>
-                      {avoir.statut}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex gap-2">
-                      <button className="text-blue-600 hover:text-blue-700">
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button className="text-green-600 hover:text-green-700">
-                        <Download className="w-4 h-4" />
-                      </button>
-                      <button className="text-gray-600 hover:text-gray-700">
-                        <Edit className="w-4 h-4" />
-                      </button>
-                    </div>
+              {filteredAvoirs.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                    Aucun avoir trouvé
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredAvoirs.map((avoir) => (
+                  <tr key={avoir.id_avoir} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap font-medium">{avoir.numero_avoir}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{avoir.numero_facture || '-'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{avoir.client_nom}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{avoir.date_avoir}</td>
+                    <td className="px-6 py-4 whitespace-nowrap font-semibold text-red-600">{avoir.montant_ttc?.toFixed(2)} TND</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${getStatutColor(avoir.statut)}`}>
+                        {avoir.statut}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={async () => {
+                            try {
+                              const result = await avoirsService.getAvoirById(avoir.id_avoir);
+                              console.log('Détails avoir:', result.data);
+                            } catch (error) {
+                              console.error('Erreur chargement avoir:', error);
+                            }
+                          }}
+                          className="text-blue-600 hover:text-blue-700"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button className="text-green-600 hover:text-green-700">
+                          <Download className="w-4 h-4" />
+                        </button>
+                        <button className="text-gray-600 hover:text-gray-700">
+                          <Edit className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

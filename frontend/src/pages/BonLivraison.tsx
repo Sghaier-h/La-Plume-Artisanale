@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Truck, Plus, Edit, Trash2, Search, Download, Eye, CheckCircle } from 'lucide-react';
-import { commandesService, clientsService } from '../services/api';
+import { bonsLivraisonService, commandesService, clientsService } from '../services/api';
 
 const BonLivraison: React.FC = () => {
   const [bonsLivraison, setBonsLivraison] = useState<any[]>([]);
@@ -15,36 +15,61 @@ const BonLivraison: React.FC = () => {
 
   const loadData = async () => {
     try {
-      // TODO: Remplacer par l'API réelle des bons de livraison
-      const mockBL = [
-        { id: 1, numero: 'BL-2024-001', commande: 'CMD-2024-001', client: 'Client A', date: '2024-01-20', statut: 'livré' },
-        { id: 2, numero: 'BL-2024-002', commande: 'CMD-2024-002', client: 'Client B', date: '2024-01-21', statut: 'en_cours' },
-      ];
-      setBonsLivraison(mockBL);
+      setLoading(true);
+      const params: any = {};
+      if (filters.statut) params.statut = filters.statut.toUpperCase();
+      if (filters.client_id) params.client_id = filters.client_id;
+      if (search) params.search = search;
+
+      const [blRes, cmdRes] = await Promise.all([
+        bonsLivraisonService.getBonsLivraison(params).catch(() => ({ data: { data: [], success: false } })),
+        commandesService.getCommandes().catch(() => ({ data: { data: [] } }))
+      ]);
+
+      if (blRes.data?.success) {
+        setBonsLivraison(blRes.data.data || []);
+      } else {
+        setBonsLivraison([]);
+      }
       
-      const cmdRes = await commandesService.getCommandes().catch(() => ({ data: { data: [] } }));
       setCommandes(cmdRes.data?.data || []);
     } catch (error) {
       console.error('Erreur chargement BL:', error);
+      setBonsLivraison([]);
     } finally {
       setLoading(false);
     }
   };
 
   const getStatutColor = (statut: string) => {
+    const statutLower = statut?.toLowerCase() || '';
     const colors: { [key: string]: string } = {
+      'brouillon': 'bg-gray-100 text-gray-800',
       'en_preparation': 'bg-yellow-100 text-yellow-800',
+      'prepare': 'bg-yellow-100 text-yellow-800',
       'en_cours': 'bg-blue-100 text-blue-800',
+      'livre': 'bg-green-100 text-green-800',
       'livré': 'bg-green-100 text-green-800',
+      'livree': 'bg-green-100 text-green-800',
+      'annule': 'bg-red-100 text-red-800',
       'annulé': 'bg-red-100 text-red-800'
     };
-    return colors[statut] || 'bg-gray-100 text-gray-800';
+    return colors[statutLower] || 'bg-gray-100 text-gray-800';
   };
 
-  const filteredBL = bonsLivraison.filter(bl =>
-    bl.numero?.toLowerCase().includes(search.toLowerCase()) ||
-    bl.client?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredBL = bonsLivraison.filter(bl => {
+    if (search && !bl.numero_bl?.toLowerCase().includes(search.toLowerCase()) && 
+        !bl.client_nom?.toLowerCase().includes(search.toLowerCase())) {
+      return false;
+    }
+    if (filters.statut && bl.statut !== filters.statut.toUpperCase()) {
+      return false;
+    }
+    if (filters.client_id && bl.id_client?.toString() !== filters.client_id) {
+      return false;
+    }
+    return true;
+  });
 
   if (loading) {
     return (
@@ -92,10 +117,10 @@ const BonLivraison: React.FC = () => {
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Tous les statuts</option>
-              <option value="en_preparation">En préparation</option>
-              <option value="en_cours">En cours</option>
-              <option value="livré">Livré</option>
-              <option value="annulé">Annulé</option>
+              <option value="BROUILLON">Brouillon</option>
+              <option value="PREPARE">Préparé</option>
+              <option value="LIVREE">Livré</option>
+              <option value="ANNULE">Annulé</option>
             </select>
           </div>
         </div>
@@ -114,32 +139,50 @@ const BonLivraison: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {filteredBL.map((bl) => (
-                <tr key={bl.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap font-medium">{bl.numero}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">{bl.commande}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">{bl.client}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">{bl.date}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${getStatutColor(bl.statut)}`}>
-                      {bl.statut}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex gap-2">
-                      <button className="text-blue-600 hover:text-blue-700">
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button className="text-green-600 hover:text-green-700">
-                        <Download className="w-4 h-4" />
-                      </button>
-                      <button className="text-purple-600 hover:text-purple-700">
-                        <CheckCircle className="w-4 h-4" />
-                      </button>
-                    </div>
+              {filteredBL.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                    Aucun bon de livraison trouvé
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredBL.map((bl) => (
+                  <tr key={bl.id_bl} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap font-medium">{bl.numero_bl}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{bl.numero_commande || '-'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{bl.client_nom}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{bl.date_livraison}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${getStatutColor(bl.statut)}`}>
+                        {bl.statut}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={async () => {
+                            try {
+                              const result = await bonsLivraisonService.getBonLivraisonById(bl.id_bl);
+                              console.log('Détails BL:', result.data);
+                            } catch (error) {
+                              console.error('Erreur chargement BL:', error);
+                            }
+                          }}
+                          className="text-blue-600 hover:text-blue-700"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button className="text-green-600 hover:text-green-700">
+                          <Download className="w-4 h-4" />
+                        </button>
+                        <button className="text-purple-600 hover:text-purple-700">
+                          <CheckCircle className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
