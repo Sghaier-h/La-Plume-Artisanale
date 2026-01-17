@@ -54,6 +54,7 @@ import webhooksRoutes from './routes/webhooks.routes.js';
 import migrationRoutes from './routes/migration.routes.js';
 import databaseRoutes from './routes/database.routes.js';
 import pointageRoutes from './routes/pointage.routes.js';
+import utilisateursRoutes from './routes/utilisateurs.routes.js';
 
 dotenv.config();
 

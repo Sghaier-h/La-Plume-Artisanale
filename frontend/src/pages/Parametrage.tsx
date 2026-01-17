@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { parametrageService } from '../services/api';
+import { parametrageService, utilisateursService } from '../services/api';
 import api from '../services/api';
 import { 
   Save, Building2, Settings, Tag, Code, ShoppingCart, Package, 
   Factory, CheckCircle, Calendar, FileText, TrendingUp, AlertTriangle,
-  BarChart3, Wrench, Boxes, ClipboardCheck
+  BarChart3, Wrench, Boxes, ClipboardCheck, Users, UserPlus, Edit, Trash2, Lock, Shield
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-type TabType = 'societe' | 'systeme' | 'vente' | 'production' | 'stock' | 'qualite' | 'planification' | 'attributs' | 'api';
+type TabType = 'societe' | 'systeme' | 'utilisateurs' | 'vente' | 'production' | 'stock' | 'qualite' | 'planification' | 'attributs' | 'api';
 
 const Parametrage: React.FC = () => {
   const navigate = useNavigate();
@@ -22,6 +22,13 @@ const Parametrage: React.FC = () => {
   const [parametresStock, setParametresStock] = useState<any>({});
   const [parametresQualite, setParametresQualite] = useState<any>({});
   const [parametresPlanification, setParametresPlanification] = useState<any>({});
+  
+  // État pour la gestion des utilisateurs
+  const [utilisateurs, setUtilisateurs] = useState<any[]>([]);
+  const [roles, setRoles] = useState<any[]>([]);
+  const [dashboards, setDashboards] = useState<any[]>([]);
+  const [showFormUtilisateur, setShowFormUtilisateur] = useState(false);
+  const [editingUtilisateur, setEditingUtilisateur] = useState<any>(null);
   
   const [apiInfo, setApiInfo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -122,6 +129,11 @@ const Parametrage: React.FC = () => {
             activer_surcharge: false
           }
         });
+      } else if (activeTab === 'utilisateurs') {
+        const response = await utilisateursService.getUtilisateurs();
+        setUtilisateurs(response.data.data.utilisateurs || []);
+        setRoles(response.data.data.roles || []);
+        setDashboards(response.data.data.dashboards || []);
       } else if (activeTab === 'api') {
         const response = await api.get('/info');
         setApiInfo(response.data);
@@ -219,6 +231,17 @@ const Parametrage: React.FC = () => {
             >
               <Settings className="w-4 h-4" />
               Système
+            </button>
+            <button
+              onClick={() => setActiveTab('utilisateurs')}
+              className={`px-4 py-2 font-medium flex items-center gap-2 rounded-t-lg ${
+                activeTab === 'utilisateurs'
+                  ? 'text-blue-600 border-b-2 border-blue-600 bg-white'
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              Utilisateurs
             </button>
             <button
               onClick={() => setActiveTab('vente')}

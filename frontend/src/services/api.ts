@@ -206,6 +206,16 @@ export const parametrageService = {
   updateParametresModule: (module: string, data: any) => api.put(`/parametrage/module/${module}`, data),
 };
 
+export const utilisateursService = {
+  getUtilisateurs: () => api.get('/utilisateurs'),
+  getUtilisateur: (id: number) => api.get(`/utilisateurs/${id}`),
+  createUtilisateur: (data: any) => api.post('/utilisateurs', data),
+  updateUtilisateur: (id: number, data: any) => api.put(`/utilisateurs/${id}`, data),
+  deleteUtilisateur: (id: number) => api.delete(`/utilisateurs/${id}`),
+  getRoles: () => api.get('/utilisateurs/roles'),
+  getDashboards: () => api.get('/utilisateurs/dashboards'),
+};
+
 export const matieresPremieresService = {
   getMatieresPremieres: (params?: any) => api.get('/matieres-premieres', { params }),
   getMatierePremiere: (id: number) => api.get(`/matieres-premieres/${id}`),
