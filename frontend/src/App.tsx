@@ -100,6 +100,14 @@ function App() {
             }
           />
           <Route
+            path="/dashboard"
+            element={
+              <PrivateRoute>
+                <Navigate to="/dashboard-admin" replace />
+              </PrivateRoute>
+            }
+          />
+          <Route
             path="/dashboard-admin"
             element={
               <PrivateRoute showNav={true}>
