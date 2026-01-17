@@ -304,7 +304,7 @@ export const getMouvementsSoustraitant = async (req, res) => {
 export const enregistrerSortie = async (req, res) => {
   try {
     const { id } = req.params;
-    const { id_of, quantite, date_sortie_prevue, observations } = req.body;
+    const { id_of, quantite, date_sortie_prevue, qr_code_sortie, numero_suivi_transporteur, observations } = req.body;
 
     // Validation
     if (!id_of || !quantite || !date_sortie_prevue) {
@@ -340,13 +340,22 @@ export const enregistrerSortie = async (req, res) => {
     const dateRetourPrevue = new Date(date_sortie_prevue);
     dateRetourPrevue.setDate(dateRetourPrevue.getDate() + delai);
 
+    // Construire observations avec les infos supplémentaires si nécessaire
+    let obsFinal = observations || '';
+    if (qr_code_sortie) {
+      obsFinal += (obsFinal ? '\n' : '') + `QR Code Sortie: ${qr_code_sortie}`;
+    }
+    if (numero_suivi_transporteur) {
+      obsFinal += (obsFinal ? '\n' : '') + `Numéro Suivi Transporteur: ${numero_suivi_transporteur}`;
+    }
+
     const result = await pool.query(
       `INSERT INTO mouvements_sous_traitance 
         (numero_mouvement, id_sous_traitant, id_of, type_mouvement, 
-         date_mouvement, date_retour_prevue, statut, observations)
-      VALUES ($1, $2, $3, 'sortie', CURRENT_TIMESTAMP, $4, 'en_cours', $5)
+         date_mouvement, date_retour_prevue, statut, qr_code_sortie, observations)
+      VALUES ($1, $2, $3, 'sortie', CURRENT_TIMESTAMP, $4, 'en_cours', $5, $6)
       RETURNING *`,
-      [numero, id, id_of, dateRetourPrevue.toISOString().split('T')[0], observations || null]
+      [numero, id, id_of, dateRetourPrevue.toISOString().split('T')[0], qr_code_sortie || null, obsFinal || null]
     );
 
     res.status(201).json({
@@ -376,16 +385,23 @@ export const enregistrerRetour = async (req, res) => {
       });
     }
 
+    // Construire observations avec QR code retour si nécessaire
+    let obsFinal = observations || '';
+    if (qr_code_retour) {
+      obsFinal += (obsFinal ? '\n' : '') + `QR Code Retour: ${qr_code_retour}`;
+    }
+
     const result = await pool.query(
       `UPDATE mouvements_sous_traitance 
       SET type_mouvement = 'retour',
           date_mouvement = CURRENT_TIMESTAMP,
           date_retour_reelle = $1,
+          qr_code_retour = $2,
           statut = 'retourne',
-          observations = COALESCE($2, observations)
-      WHERE id_mouvement_st = $3 AND id_sous_traitant = $4
+          observations = COALESCE($3, observations)
+      WHERE id_mouvement_st = $4 AND id_sous_traitant = $5
       RETURNING *`,
-      [date_retour, observations || null, id_mouvement, id]
+      [date_retour, qr_code_retour || null, obsFinal || null, id_mouvement, id]
     );
 
     if (result.rows.length === 0) {

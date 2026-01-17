@@ -39,6 +39,7 @@ import DashboardControleCentral from './pages/DashboardControleCentral';
 import ChefAtelierDashboard from './pages/ChefAtelierDashboard';
 import TableauBordMagasinPF from './pages/TableauBordMagasinPF';
 import DashboardChefProduction from './pages/DashboardChefProduction';
+import DashboardMagasinierSoustraitants from './pages/DashboardMagasinierSoustraitants';
 import Equipe from './pages/Equipe';
 import Services from './pages/Services';
 import Modeles from './pages/Modeles';

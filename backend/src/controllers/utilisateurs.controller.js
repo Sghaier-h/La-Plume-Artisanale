@@ -26,6 +26,7 @@ const DASHBOARDS_DISPONIBLES = [
   { code: 'controle-central', libelle: 'Dashboard Contrôle Central' },
   { code: 'chef-atelier', libelle: 'Dashboard Chef d\'Atelier' },
   { code: 'magasin-pf', libelle: 'Dashboard Magasin PF' },
+  { code: 'magasinier-soustraitants', libelle: 'Dashboard Magasinier Soustraitants' },
   { code: 'chef-production', libelle: 'Dashboard Chef Production' }
 ];
 

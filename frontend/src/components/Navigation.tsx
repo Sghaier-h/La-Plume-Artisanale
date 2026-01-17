@@ -56,6 +56,7 @@ const Navigation: React.FC = () => {
       { path: '/controle-central', label: 'Dashboard Contrôle Central', icon: CheckCircle, id: 'controle-central' },
       { path: '/chef-atelier', label: 'Dashboard Chef d\'Atelier', icon: Briefcase, id: 'chef-atelier' },
       { path: '/magasin-pf', label: 'Dashboard Magasin PF', icon: Package, id: 'magasin-pf' },
+      { path: '/magasinier-soustraitants', label: 'Dashboard Magasinier Soustraitants', icon: Truck, id: 'magasinier-soustraitants' },
       { path: '/chef-production', label: 'Dashboard Chef Production', icon: Factory, id: 'chef-production' },
     ];
 
