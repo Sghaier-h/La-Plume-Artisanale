@@ -216,6 +216,15 @@ export const utilisateursService = {
   getDashboards: () => api.get('/utilisateurs/dashboards'),
 };
 
+export const auditService = {
+  getAuditLogs: (params?: any) => api.get('/audit', { params }),
+  getAuditLog: (id: number) => api.get(`/audit/${id}`),
+  getAuditStatsByTable: () => api.get('/audit/stats/by-table'),
+  getAuditStatsByUser: () => api.get('/audit/stats/by-user'),
+  getRecordHistory: (table: string, id: number) => api.get(`/audit/record/${table}/${id}`),
+  getAuditedTables: () => api.get('/audit/tables'),
+};
+
 export const matieresPremieresService = {
   getMatieresPremieres: (params?: any) => api.get('/matieres-premieres', { params }),
   getMatierePremiere: (id: number) => api.get(`/matieres-premieres/${id}`),
