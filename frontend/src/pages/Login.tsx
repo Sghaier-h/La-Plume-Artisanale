@@ -35,7 +35,7 @@ const Login: React.FC = () => {
         axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.data.token}`;
         
         // Rediriger vers le dashboard
-        navigate('/dashboard');
+        navigate('/dashboard-admin');
       }
     } catch (err: any) {
       let errorMessage = 'Erreur de connexion';
