@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Package, Plus, Edit, Trash2, Search, RefreshCw, Upload, Image as ImageIcon, Eye, CheckSquare, XSquare, Save, FileText, Settings, Tag, X, Warehouse, TrendingUp, History, List, Grid } from 'lucide-react';
+import { Package, Plus, Edit, Trash2, Search, RefreshCw, Upload, Image as ImageIcon, Eye, CheckSquare, XSquare, Save, FileText, Settings, Tag, X, Warehouse, TrendingUp, History, List, Grid, BarChart3 } from 'lucide-react';
 import { produitsService } from '../services/api';
 import { genererRefCommerciale, genererRefFabrication } from '../utils/references';
 import api from '../services/api';
@@ -91,6 +91,7 @@ const Articles: React.FC = () => {
   const [modeles, setModeles] = useState<Modele[]>([]);
   const [attributs, setAttributs] = useState<Attribut[]>([]);
   const [selectedArticleForStock, setSelectedArticleForStock] = useState<Article | null>(null);
+  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [showStockDetail, setShowStockDetail] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
