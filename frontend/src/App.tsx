@@ -28,6 +28,7 @@ import QualiteAvance from './pages/QualiteAvance';
 import Couts from './pages/Couts';
 import MultiSociete from './pages/MultiSociete';
 import Communication from './pages/Communication';
+import MessagesOperateurs from './pages/MessagesOperateurs';
 import Ecommerce from './pages/Ecommerce';
 import FoutaManagementApp from './pages/FoutaManagement';
 import DashboardTisseur from './pages/DashboardTisseur';
@@ -312,6 +313,14 @@ function App() {
             element={
               <PrivateRoute>
                 <Communication />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/messages-operateurs"
+            element={
+              <PrivateRoute>
+                <MessagesOperateurs />
               </PrivateRoute>
             }
           />

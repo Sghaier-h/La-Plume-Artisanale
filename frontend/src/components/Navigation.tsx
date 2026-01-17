@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Package, Users, ShoppingBag, Cog, Building2, FileText, LogOut, Settings, 
   Box, Layers, TrendingUp, Truck, Calendar, CheckCircle, DollarSign, MessageSquare, ShoppingCart,
   ChevronDown, ChevronRight, Factory, UserCircle, Wrench, Store, Receipt, ArrowLeft, RotateCcw,
-  Package2, Briefcase, ArrowRightLeft, Warehouse, ClipboardList, Scissors, Activity
+  Package2, Briefcase, ArrowRightLeft, Warehouse, ClipboardList, Scissors, Activity, Bell, AlertTriangle
 } from 'lucide-react';
 
 interface MenuItem {
@@ -177,7 +177,8 @@ const Navigation: React.FC = () => {
         { path: '/parametrage', label: 'Paramétrage Général', icon: Settings },
         { path: '/parametres-catalogue', label: 'Paramètres Catalogue', icon: Settings },
         { path: '/multisociete', label: 'Multi-Société', icon: Building2 },
-        { path: '/communication', label: 'Communication', icon: MessageSquare },
+        { path: '/communication', label: 'Communication Externe', icon: MessageSquare },
+        { path: '/messages-operateurs', label: 'Messages Opérateurs', icon: Bell },
       ]
     },
   ];
