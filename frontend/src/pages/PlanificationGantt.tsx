@@ -231,6 +231,192 @@ const PlanificationGantt: React.FC = () => {
           </>
         )}
       </div>
+
+      {/* Modal consultation Tâche */}
+      {selectedTache && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b p-6 flex justify-between items-center">
+              <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                <Calendar className="w-6 h-6 text-blue-600" />
+                Tâche - {selectedTache.libelle}
+              </h2>
+              <button
+                onClick={() => setSelectedTache(null)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Libellé</label>
+                  <p className="text-gray-900 font-semibold text-lg">{selectedTache.libelle}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Statut</label>
+                  <span className={`inline-block px-3 py-1 rounded text-sm ${getStatutColor(selectedTache.statut)} text-white`}>
+                    {selectedTache.statut}
+                  </span>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Date Début Prévue</label>
+                  <p className="text-gray-900">{new Date(selectedTache.date_debut_prevue).toLocaleDateString('fr-FR')}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Date Fin Prévue</label>
+                  <p className="text-gray-900">{new Date(selectedTache.date_fin_prevue).toLocaleDateString('fr-FR')}</p>
+                </div>
+                {selectedTache.date_debut_reelle && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Date Début Réelle</label>
+                    <p className="text-gray-900">{new Date(selectedTache.date_debut_reelle).toLocaleDateString('fr-FR')}</p>
+                  </div>
+                )}
+                {selectedTache.date_fin_reelle && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Date Fin Réelle</label>
+                    <p className="text-gray-900">{new Date(selectedTache.date_fin_reelle).toLocaleDateString('fr-FR')}</p>
+                  </div>
+                )}
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Durée Prévue</label>
+                  <p className="text-gray-900">{selectedTache.duree_prevue_jours || 0} jours</p>
+                </div>
+                {selectedTache.duree_reelle_jours && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Durée Réelle</label>
+                    <p className="text-gray-900">{selectedTache.duree_reelle_jours} jours</p>
+                  </div>
+                )}
+                <div className="col-span-2">
+                  <label className="text-sm font-medium text-gray-500 mb-2 block">Progression</label>
+                  <div className="w-full bg-gray-200 rounded-full h-4">
+                    <div
+                      className="bg-blue-600 h-4 rounded-full flex items-center justify-center text-white text-xs font-semibold"
+                      style={{ width: `${selectedTache.progression_pourcentage || 0}%` }}
+                    >
+                      {selectedTache.progression_pourcentage || 0}%
+                    </div>
+                  </div>
+                </div>
+                {selectedTache.description && (
+                  <div className="col-span-2">
+                    <label className="text-sm font-medium text-gray-500">Description</label>
+                    <p className="text-gray-900 bg-gray-50 p-3 rounded-lg">{selectedTache.description}</p>
+                  </div>
+                )}
+                {selectedTache.ressources && selectedTache.ressources.length > 0 && (
+                  <div className="col-span-2">
+                    <label className="text-sm font-medium text-gray-500 mb-2 block">Ressources</label>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedTache.ressources.map((ressource: any, idx: number) => (
+                        <span key={idx} className="px-3 py-1 bg-blue-100 text-blue-800 rounded text-sm">
+                          {ressource.nom || ressource}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {selectedTache.notes && (
+                  <div className="col-span-2">
+                    <label className="text-sm font-medium text-gray-500">Notes</label>
+                    <p className="text-gray-900 bg-gray-50 p-3 rounded-lg">{selectedTache.notes}</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="border-t pt-4 flex gap-2 justify-end">
+                <button
+                  onClick={() => setSelectedTache(null)}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                >
+                  Fermer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal consultation Projet */}
+      {selectedProjetDetail && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b p-6 flex justify-between items-center">
+              <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                <BarChart3 className="w-6 h-6 text-blue-600" />
+                Projet - {selectedProjetDetail.libelle}
+              </h2>
+              <button
+                onClick={() => setSelectedProjetDetail(null)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Code Projet</label>
+                  <p className="text-gray-900 font-mono font-semibold">{selectedProjetDetail.code_projet}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Libellé</label>
+                  <p className="text-gray-900 font-semibold text-lg">{selectedProjetDetail.libelle}</p>
+                </div>
+                {selectedProjetDetail.date_debut && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Date Début</label>
+                    <p className="text-gray-900">{new Date(selectedProjetDetail.date_debut).toLocaleDateString('fr-FR')}</p>
+                  </div>
+                )}
+                {selectedProjetDetail.date_fin && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Date Fin</label>
+                    <p className="text-gray-900">{new Date(selectedProjetDetail.date_fin).toLocaleDateString('fr-FR')}</p>
+                  </div>
+                )}
+                {selectedProjetDetail.statut && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Statut</label>
+                    <span className={`inline-block px-3 py-1 rounded text-sm ${getStatutColor(selectedProjetDetail.statut)} text-white`}>
+                      {selectedProjetDetail.statut}
+                    </span>
+                  </div>
+                )}
+                {selectedProjetDetail.description && (
+                  <div className="col-span-2">
+                    <label className="text-sm font-medium text-gray-500">Description</label>
+                    <p className="text-gray-900 bg-gray-50 p-3 rounded-lg">{selectedProjetDetail.description}</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="border-t pt-4 flex gap-2 justify-end">
+                <button
+                  onClick={() => {
+                    setSelectedProjet(selectedProjetDetail.id_projet);
+                    setSelectedProjetDetail(null);
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  Voir les Tâches
+                </button>
+                <button
+                  onClick={() => setSelectedProjetDetail(null)}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                >
+                  Fermer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
