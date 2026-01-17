@@ -31,9 +31,6 @@ CREATE TABLE IF NOT EXISTS audit_log (
     method VARCHAR(10), -- GET, POST, PUT, DELETE
     
     -- Horodatage
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Index pour performances (créés après la table)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
