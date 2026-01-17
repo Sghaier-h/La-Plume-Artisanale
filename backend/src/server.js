@@ -55,6 +55,8 @@ import migrationRoutes from './routes/migration.routes.js';
 import databaseRoutes from './routes/database.routes.js';
 import pointageRoutes from './routes/pointage.routes.js';
 import utilisateursRoutes from './routes/utilisateurs.routes.js';
+import auditRoutes from './routes/audit.routes.js';
+import { auditMiddleware } from './middleware/audit.middleware.js';
 
 dotenv.config();
 
@@ -106,6 +108,9 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
+// Middleware d'audit - doit être après l'authentification
+// Il sera appliqué automatiquement aux routes qui modifient des données
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/articles', articlesRoutes);
@@ -151,6 +156,7 @@ app.use('/api/webhooks', webhooksRoutes);
 app.use('/api/migration', migrationRoutes);
 app.use('/api/database', databaseRoutes);
 app.use('/api/pointage', pointageRoutes);
+app.use('/api/audit', auditRoutes);
 
 // Routes Mobile (SaaS)
 app.use('/api/v1/mobile', mobileRoutes);
