@@ -79,9 +79,9 @@ echo ""
 echo "5️⃣ Nettoyage des modifications Git..."
 git reset --hard HEAD
 
-# Nettoyer uniquement les fichiers non trackés qui ne sont pas des fichiers déployés
-# Exclure index.html, static/, asset-manifest.json, manifest.json du nettoyage
-git clean -fd --exclude="$FRONTEND_DIR/index.html" --exclude="$FRONTEND_DIR/static" --exclude="$FRONTEND_DIR/asset-manifest.json" --exclude="$FRONTEND_DIR/manifest.json" 2>/dev/null || git clean -fd
+# Nettoyer les fichiers non trackés, mais exclure manuellement les fichiers déployés
+# git clean ne supporte pas --exclude, donc on nettoie d'abord, puis on restaurera
+git clean -fd
 
 echo "✅ Modifications locales supprimées"
 
