@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { fournisseursService } from '../services/api';
-import { Building, PlusCircle, Edit, Trash2, Search, List, Grid } from 'lucide-react';
+import { Building, PlusCircle, Edit, Trash2, Search, List, Grid, Eye, X, Mail, Phone, MapPin, Truck, Clock, CreditCard } from 'lucide-react';
 
 interface Fournisseur {
   id_fournisseur: number;
@@ -20,6 +20,7 @@ const Fournisseurs: React.FC = () => {
   const [affichageMode, setAffichageMode] = useState<'ligne' | 'catalogue'>('ligne'); // Simple toggle ligne/catalogue
   const [showForm, setShowForm] = useState(false);
   const [editingFournisseur, setEditingFournisseur] = useState<any>(null);
+  const [selectedFournisseur, setSelectedFournisseur] = useState<any>(null);
   const [formData, setFormData] = useState({
     code_fournisseur: '',
     raison_sociale: '',
@@ -321,9 +322,28 @@ const Fournisseurs: React.FC = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <button onClick={() => handleEdit(fournisseur)} className="text-blue-600 hover:text-blue-900 mr-3">
-                          <Edit className="w-4 h-4 inline" />
-                        </button>
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={async () => {
+                              try {
+                                const result = await fournisseursService.getFournisseur(fournisseur.id_fournisseur);
+                                if (result.data?.data) {
+                                  setSelectedFournisseur(result.data.data);
+                                }
+                              } catch (error: any) {
+                                console.error('Erreur chargement fournisseur:', error);
+                                setSelectedFournisseur(fournisseur);
+                              }
+                            }}
+                            className="text-blue-600 hover:text-blue-900"
+                            title="Consulter"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => handleEdit(fournisseur)} className="text-gray-600 hover:text-gray-900" title="Modifier">
+                            <Edit className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -355,16 +375,190 @@ const Fournisseurs: React.FC = () => {
                   </div>
                   <div className="flex gap-2 pt-3 border-t">
                     <button
-                      onClick={() => handleEdit(fournisseur)}
+                      onClick={async () => {
+                        try {
+                          const result = await fournisseursService.getFournisseur(fournisseur.id_fournisseur);
+                          if (result.data?.data) {
+                            setSelectedFournisseur(result.data.data);
+                          }
+                        } catch (error: any) {
+                          console.error('Erreur chargement fournisseur:', error);
+                          setSelectedFournisseur(fournisseur);
+                        }
+                      }}
                       className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
                     >
+                      <Eye className="w-4 h-4" />
+                      Consulter
+                    </button>
+                    <button
+                      onClick={() => handleEdit(fournisseur)}
+                      className="px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+                    >
                       <Edit className="w-4 h-4" />
-                      Modifier
                     </button>
                   </div>
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Modal de consultation */}
+        {selectedFournisseur && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b p-6 flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                  <Building className="w-6 h-6 text-green-600" />
+                  {selectedFournisseur.raison_sociale}
+                </h2>
+                <button
+                  onClick={() => setSelectedFournisseur(null)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              
+              <div className="p-6 space-y-6">
+                {/* Informations générales */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <Building className="w-5 h-5 text-green-600" />
+                    Informations Générales
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Code Fournisseur</label>
+                      <p className="text-gray-900 font-semibold">{selectedFournisseur.code_fournisseur}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Raison Sociale</label>
+                      <p className="text-gray-900 font-semibold">{selectedFournisseur.raison_sociale}</p>
+                    </div>
+                    {(selectedFournisseur as any).contact_principal && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Contact Principal</label>
+                        <p className="text-gray-900">{(selectedFournisseur as any).contact_principal}</p>
+                      </div>
+                    )}
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Statut</label>
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${selectedFournisseur.actif ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                        {selectedFournisseur.actif ? 'Actif' : 'Inactif'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Coordonnées */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <MapPin className="w-5 h-5 text-green-600" />
+                    Coordonnées
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    {(selectedFournisseur as any).adresse && (
+                      <div className="col-span-2">
+                        <label className="text-sm font-medium text-gray-500">Adresse</label>
+                        <p className="text-gray-900">{(selectedFournisseur as any).adresse}</p>
+                      </div>
+                    )}
+                    {(selectedFournisseur as any).code_postal && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Code Postal</label>
+                        <p className="text-gray-900">{(selectedFournisseur as any).code_postal}</p>
+                      </div>
+                    )}
+                    {selectedFournisseur.ville && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Ville</label>
+                        <p className="text-gray-900">{selectedFournisseur.ville}</p>
+                      </div>
+                    )}
+                    {(selectedFournisseur as any).pays && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Pays</label>
+                        <p className="text-gray-900">{(selectedFournisseur as any).pays}</p>
+                      </div>
+                    )}
+                    {selectedFournisseur.telephone && (
+                      <div className="flex items-center gap-2">
+                        <Phone className="w-4 h-4 text-gray-400" />
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">Téléphone</label>
+                          <p className="text-gray-900">{selectedFournisseur.telephone}</p>
+                        </div>
+                      </div>
+                    )}
+                    {selectedFournisseur.email && (
+                      <div className="flex items-center gap-2">
+                        <Mail className="w-4 h-4 text-gray-400" />
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">Email</label>
+                          <p className="text-gray-900">{selectedFournisseur.email}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Informations commerciales */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <Truck className="w-5 h-5 text-green-600" />
+                    Informations Commerciales
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    {(selectedFournisseur as any).devise && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Devise</label>
+                        <p className="text-gray-900">{(selectedFournisseur as any).devise}</p>
+                      </div>
+                    )}
+                    {(selectedFournisseur as any).delai_livraison_moyen && (
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-gray-400" />
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">Délai Livraison Moyen</label>
+                          <p className="text-gray-900">{(selectedFournisseur as any).delai_livraison_moyen} jours</p>
+                        </div>
+                      </div>
+                    )}
+                    {(selectedFournisseur as any).conditions_paiement && (
+                      <div className="col-span-2 flex items-center gap-2">
+                        <CreditCard className="w-4 h-4 text-gray-400" />
+                        <div className="flex-1">
+                          <label className="text-sm font-medium text-gray-500">Conditions de Paiement</label>
+                          <p className="text-gray-900">{(selectedFournisseur as any).conditions_paiement}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="border-t pt-4 flex gap-2 justify-end">
+                  <button
+                    onClick={() => {
+                      handleEdit(selectedFournisseur);
+                      setSelectedFournisseur(null);
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                  >
+                    <Edit className="w-4 h-4" />
+                    Modifier
+                  </button>
+                  <button
+                    onClick={() => setSelectedFournisseur(null)}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                  >
+                    Fermer
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
         </div>

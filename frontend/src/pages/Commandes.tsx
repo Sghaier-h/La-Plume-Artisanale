@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { commandesService, clientsService, articlesService } from '../services/api';
+import { ShoppingCart, Plus, Edit, Trash2, Search, Eye, X, CheckCircle, Package, Calendar, User, DollarSign } from 'lucide-react';
 
 const Commandes: React.FC = () => {
   const [commandes, setCommandes] = useState<any[]>([]);
@@ -315,16 +316,208 @@ const Commandes: React.FC = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <button onClick={() => setSelectedCommande(commande)} className="text-blue-600 hover:text-blue-900 mr-3">Voir</button>
-                    {commande.statut === 'en_attente' && (
-                      <button onClick={() => handleValider(commande.id_commande)} className="text-green-600 hover:text-green-900">Valider</button>
-                    )}
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={async () => {
+                          try {
+                            const result = await commandesService.getCommande(commande.id_commande);
+                            if (result.data?.data) {
+                              setSelectedCommande(result.data.data);
+                            }
+                          } catch (error: any) {
+                            console.error('Erreur chargement commande:', error);
+                            setSelectedCommande(commande);
+                          }
+                        }}
+                        className="text-blue-600 hover:text-blue-900"
+                        title="Consulter"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => {
+                          handleEdit(commande);
+                        }}
+                        className="text-gray-600 hover:text-gray-900"
+                        title="Modifier"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      {commande.statut === 'en_attente' && (
+                        <button 
+                          onClick={() => handleValider(commande.id_commande)} 
+                          className="text-green-600 hover:text-green-900"
+                          title="Valider"
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+
+        {/* Modal de consultation */}
+        {selectedCommande && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b p-6 flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                  <ShoppingCart className="w-6 h-6 text-blue-600" />
+                  Commande {selectedCommande.numero_commande}
+                </h2>
+                <button
+                  onClick={() => setSelectedCommande(null)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              
+              <div className="p-6 space-y-6">
+                {/* Informations générales */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <User className="w-5 h-5 text-blue-600" />
+                    Informations Générales
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Client</label>
+                      <p className="text-gray-900 font-semibold">{selectedCommande.client_nom || selectedCommande.nom_client}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-gray-400" />
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Date Commande</label>
+                        <p className="text-gray-900">{new Date(selectedCommande.date_commande).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                    {selectedCommande.date_livraison_prevue && (
+                      <div className="flex items-center gap-2">
+                        <Package className="w-4 h-4 text-gray-400" />
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">Date Livraison Prévue</label>
+                          <p className="text-gray-900">{new Date(selectedCommande.date_livraison_prevue).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                    )}
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Statut</label>
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        selectedCommande.statut === 'validee' ? 'bg-green-100 text-green-800' :
+                        selectedCommande.statut === 'en_production' ? 'bg-blue-100 text-blue-800' :
+                        selectedCommande.statut === 'livree' ? 'bg-gray-100 text-gray-800' :
+                        'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {selectedCommande.statut}
+                      </span>
+                    </div>
+                    {selectedCommande.priorite && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Priorité</label>
+                        <p className="text-gray-900 capitalize">{selectedCommande.priorite}</p>
+                      </div>
+                    )}
+                    {selectedCommande.devise && (
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="w-4 h-4 text-gray-400" />
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">Devise</label>
+                          <p className="text-gray-900">{selectedCommande.devise}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Lignes de commande */}
+                {(selectedCommande.lignes || selectedCommande.articles_commande) && (selectedCommande.lignes || selectedCommande.articles_commande).length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold mb-3">Lignes de Commande</h3>
+                    <div className="border rounded-lg overflow-hidden">
+                      <table className="w-full">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Article</th>
+                            <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Désignation</th>
+                            <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Qté</th>
+                            <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Prix U.</th>
+                            <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Remise %</th>
+                            <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                          {(selectedCommande.lignes || selectedCommande.articles_commande).map((ligne: any, index: number) => (
+                            <tr key={index}>
+                              <td className="px-4 py-2">{ligne.code_article || ligne.ref_article || '-'}</td>
+                              <td className="px-4 py-2">{ligne.designation || ligne.libelle || '-'}</td>
+                              <td className="px-4 py-2">{ligne.quantite_commandee || ligne.quantite}</td>
+                              <td className="px-4 py-2">{ligne.prix_unitaire?.toFixed(2)} {selectedCommande.devise || 'TND'}</td>
+                              <td className="px-4 py-2">{ligne.remise || 0}%</td>
+                              <td className="px-4 py-2 font-semibold">
+                                {((ligne.prix_unitaire || 0) * (ligne.quantite_commandee || ligne.quantite || 0) * (1 - (ligne.remise || 0) / 100)).toFixed(2)} {selectedCommande.devise || 'TND'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Totaux */}
+                {selectedCommande.montant_total && (
+                  <div className="border-t pt-4">
+                    <div className="flex justify-end">
+                      <div className="w-64">
+                        <div className="flex justify-between text-lg font-bold border-t pt-2">
+                          <span>Total:</span>
+                          <span>{selectedCommande.montant_total?.toFixed(2)} {selectedCommande.devise || 'TND'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="border-t pt-4 flex gap-2 justify-end">
+                  <button
+                    onClick={() => {
+                      handleEdit(selectedCommande);
+                      setSelectedCommande(null);
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                  >
+                    <Edit className="w-4 h-4" />
+                    Modifier
+                  </button>
+                  {selectedCommande.statut === 'en_attente' && (
+                    <button
+                      onClick={() => {
+                        handleValider(selectedCommande.id_commande);
+                        setSelectedCommande(null);
+                      }}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      Valider
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setSelectedCommande(null)}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                  >
+                    Fermer
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         </div>
       </div>
     </div>
