@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Layers, Plus, Edit, Trash2, Search, Upload, Image as ImageIcon, DollarSign, Settings, Save, Tag, X, List, Grid } from 'lucide-react';
+import { Layers, Plus, Edit, Trash2, Search, Upload, Image as ImageIcon, DollarSign, Settings, Save, Tag, X, List, Grid, Eye, BarChart3 } from 'lucide-react';
 import { produitsService } from '../services/api';
 import api from '../services/api';
 
