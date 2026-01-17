@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { matieresPremieresService } from '../services/api';
-import { Plus, Search, Edit, Package, Settings, Tag, List, Grid } from 'lucide-react';
+import { Plus, Search, Edit, Package, Settings, Tag, List, Grid, Eye, X, AlertTriangle, DollarSign, BarChart3 } from 'lucide-react';
 
 const MatieresPremieres: React.FC = () => {
   const [matieres, setMatieres] = useState<any[]>([]);
@@ -8,6 +8,7 @@ const MatieresPremieres: React.FC = () => {
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingMatiere, setEditingMatiere] = useState<any>(null);
+  const [selectedMatiere, setSelectedMatiere] = useState<any>(null);
   const [affichageMode, setAffichageMode] = useState<'ligne' | 'catalogue'>('ligne'); // Simple toggle ligne/catalogue
   const [formData, setFormData] = useState<any>({
     code_mp: '',
@@ -257,12 +258,32 @@ const MatieresPremieres: React.FC = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <button
-                          onClick={() => handleEdit(matiere)}
-                          className="text-blue-600 hover:text-blue-800"
-                        >
-                          <Edit className="w-5 h-5" />
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={async () => {
+                              try {
+                                const result = await matieresPremieresService.getMatierePremiere(matiere.id_mp);
+                                if (result.data?.data) {
+                                  setSelectedMatiere(result.data.data);
+                                }
+                              } catch (error: any) {
+                                console.error('Erreur chargement matière:', error);
+                                setSelectedMatiere(matiere);
+                              }
+                            }}
+                            className="text-blue-600 hover:text-blue-800"
+                            title="Consulter"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleEdit(matiere)}
+                            className="text-gray-600 hover:text-gray-800"
+                            title="Modifier"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -303,11 +324,28 @@ const MatieresPremieres: React.FC = () => {
                       </div>
                       <div className="flex gap-2 pt-3 border-t">
                         <button
-                          onClick={() => handleEdit(matiere)}
+                          onClick={async () => {
+                            try {
+                              const result = await matieresPremieresService.getMatierePremiere(matiere.id_mp);
+                              if (result.data?.data) {
+                                setSelectedMatiere(result.data.data);
+                              }
+                            } catch (error: any) {
+                              console.error('Erreur chargement matière:', error);
+                              setSelectedMatiere(matiere);
+                            }
+                          }}
                           className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
                         >
+                          <Eye className="w-4 h-4" />
+                          Consulter
+                        </button>
+                        <button
+                          onClick={() => handleEdit(matiere)}
+                          className="px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+                          title="Modifier"
+                        >
                           <Edit className="w-4 h-4" />
-                          Modifier
                         </button>
                       </div>
                     </div>
@@ -493,6 +531,160 @@ const MatieresPremieres: React.FC = () => {
                   >
                     Enregistrer
                   </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Modal de consultation */}
+          {selectedMatiere && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                <div className="sticky top-0 bg-white border-b p-6 flex justify-between items-center">
+                  <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                    <Package className="w-6 h-6 text-blue-600" />
+                    Matière Première - {selectedMatiere.couleur || selectedMatiere.designation || selectedMatiere.code_couleur}
+                  </h2>
+                  <button
+                    onClick={() => setSelectedMatiere(null)}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+                
+                <div className="p-6 space-y-6">
+                  {/* Informations générales */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                      <Tag className="w-5 h-5 text-blue-600" />
+                      Informations Générales
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      {selectedMatiere.qr_mp && (
+                        <div className="col-span-2">
+                          <label className="text-sm font-medium text-gray-500">QR MP</label>
+                          <p className="text-gray-900 font-mono font-semibold text-sm">{selectedMatiere.qr_mp}</p>
+                        </div>
+                      )}
+                      {selectedMatiere.code_couleur && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">Code Couleur</label>
+                          <p className="text-gray-900 font-semibold">{selectedMatiere.code_couleur}</p>
+                        </div>
+                      )}
+                      {selectedMatiere.couleur && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">Couleur</label>
+                          <p className="text-gray-900 font-semibold">{selectedMatiere.couleur}</p>
+                        </div>
+                      )}
+                      {selectedMatiere.code_mp && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">Code MP</label>
+                          <p className="text-gray-900">{selectedMatiere.code_mp}</p>
+                        </div>
+                      )}
+                      {selectedMatiere.designation && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">Désignation</label>
+                          <p className="text-gray-900">{selectedMatiere.designation}</p>
+                        </div>
+                      )}
+                      {selectedMatiere.code_fabrication_mp && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">Code Fabrication MP</label>
+                          <p className="text-gray-900 font-mono text-sm">{selectedMatiere.code_fabrication_mp}</p>
+                        </div>
+                      )}
+                      {selectedMatiere.num_lot && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">Numéro de Lot</label>
+                          <p className="text-gray-900 font-mono text-sm">{selectedMatiere.num_lot}</p>
+                        </div>
+                      )}
+                      {selectedMatiere.numero_metrique && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">Numéro Métrique</label>
+                          <p className="text-gray-900 font-mono text-sm">{selectedMatiere.numero_metrique}</p>
+                        </div>
+                      )}
+                      {selectedMatiere.couleur_commerciale && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">Couleur Commerciale</label>
+                          <p className="text-gray-900">{selectedMatiere.couleur_commerciale}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Stock et Prix */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                      <BarChart3 className="w-5 h-5 text-blue-600" />
+                      Stock et Prix
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      {selectedMatiere.stock_disponible !== undefined && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">Stock Disponible</label>
+                          <p className="text-gray-900 font-semibold text-lg">{selectedMatiere.stock_disponible || 0} kg</p>
+                        </div>
+                      )}
+                      {selectedMatiere.prix_unitaire && (
+                        <div className="flex items-center gap-2">
+                          <DollarSign className="w-4 h-4 text-gray-400" />
+                          <div>
+                            <label className="text-sm font-medium text-gray-500">Prix Unitaire</label>
+                            <p className="text-gray-900 font-semibold text-lg">{parseFloat(selectedMatiere.prix_unitaire || 0).toFixed(2)} TND</p>
+                          </div>
+                        </div>
+                      )}
+                      {selectedMatiere.stock_minimum !== undefined && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">Stock Minimum</label>
+                          <p className="text-gray-900">{selectedMatiere.stock_minimum || 0} kg</p>
+                        </div>
+                      )}
+                      {selectedMatiere.stock_alerte !== undefined && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">Stock Alerte</label>
+                          <p className="text-gray-900">{selectedMatiere.stock_alerte || 0} kg</p>
+                        </div>
+                      )}
+                      <div className="col-span-2">
+                        <label className="text-sm font-medium text-gray-500">Statut Stock</label>
+                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium mt-1 ${
+                          getStockStatus(selectedMatiere) === 'critical' ? 'bg-red-100 text-red-800' :
+                          getStockStatus(selectedMatiere) === 'warning' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-green-100 text-green-800'
+                        }`}>
+                          {getStockStatus(selectedMatiere) === 'critical' ? 'Critique' : 
+                           getStockStatus(selectedMatiere) === 'warning' ? 'Alerte' : 'OK'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="border-t pt-4 flex gap-2 justify-end">
+                    <button
+                      onClick={() => {
+                        handleEdit(selectedMatiere);
+                        setSelectedMatiere(null);
+                      }}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                    >
+                      <Edit className="w-4 h-4" />
+                      Modifier
+                    </button>
+                    <button
+                      onClick={() => setSelectedMatiere(null)}
+                      className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                    >
+                      Fermer
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
