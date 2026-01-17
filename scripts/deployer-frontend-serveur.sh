@@ -64,19 +64,26 @@ echo ""
 
 # 7. Deplacer le build vers le dossier de deploiement
 echo "📦 Deploiement des fichiers..."
-cd "$PROJECT_DIR"
+# On est déjà dans $FRONTEND_DIR
 
-# Sauvegarder les anciens fichiers (sauf build)
-if [ -d "frontend/build" ]; then
-    sudo rm -rf frontend/build
+# Sauvegarder les anciens fichiers (sauf build et node_modules)
+if [ -f "index.html" ] && [ ! -f "index.html.backup" ]; then
+    sudo mv index.html index.html.backup 2>/dev/null || true
 fi
 
-# Copier le contenu du build vers frontend/
-sudo cp -r frontend/build/* frontend/ 2>/dev/null || {
-    echo "⚠️  Erreur lors de la copie, tentative alternative..."
-    cd frontend
+# Copier le contenu du build vers le répertoire frontend/
+if [ -d "build" ]; then
     sudo cp -r build/* .
-}
+    echo "✅ Fichiers copiés depuis build/"
+else
+    echo "❌ Erreur: Le dossier build n'existe pas dans $FRONTEND_DIR"
+    echo "   Contenu actuel:"
+    ls -la
+    exit 1
+fi
+
+# Nettoyer le dossier build (optionnel, pour économiser de l'espace)
+sudo rm -rf build 2>/dev/null || true
 
 # Corriger les permissions
 sudo chown -R www-data:www-data frontend/
