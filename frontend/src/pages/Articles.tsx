@@ -1097,8 +1097,39 @@ const Articles: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex gap-2">
                       <button
-                        onClick={() => article.id_article && handleEdit(article)}
+                        onClick={async () => {
+                          try {
+                            if (article.id_article) {
+                              const result = await articlesService.getArticle(article.id_article);
+                              if (result.data?.data) {
+                                setSelectedArticle(result.data.data);
+                              }
+                            } else {
+                              setSelectedArticle(article);
+                            }
+                          } catch (error: any) {
+                            console.error('Erreur chargement article:', error);
+                            setSelectedArticle(article);
+                          }
+                        }}
                         className="text-blue-600 hover:text-blue-700"
+                        title="Consulter"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedArticleForStock(article);
+                          setShowStockDetail(true);
+                        }}
+                        className="text-green-600 hover:text-green-700"
+                        title="Voir Stock"
+                      >
+                        <Warehouse className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => article.id_article && handleEdit(article)}
+                        className="text-gray-600 hover:text-gray-700"
                         title="Modifier"
                       >
                         <Edit className="w-4 h-4" />
@@ -1172,16 +1203,38 @@ const Articles: React.FC = () => {
                   </div>
                   <div className="flex gap-2 pt-3 border-t">
                     <button
-                      onClick={() => handleEdit(article)}
+                      onClick={async () => {
+                        try {
+                          if (article.id_article) {
+                            const result = await articlesService.getArticle(article.id_article);
+                            if (result.data?.data) {
+                              setSelectedArticle(result.data.data);
+                            }
+                          } else {
+                            setSelectedArticle(article);
+                          }
+                        } catch (error: any) {
+                          console.error('Erreur chargement article:', error);
+                          setSelectedArticle(article);
+                        }
+                      }}
                       className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
                     >
+                      <Eye className="w-4 h-4" />
+                      Consulter
+                    </button>
+                    <button
+                      onClick={() => handleEdit(article)}
+                      className="px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+                      title="Modifier"
+                    >
                       <Edit className="w-4 h-4" />
-                      Modifier
                     </button>
                     {article.id_article && (
                       <button
                         onClick={() => handleDelete(article.id_article!)}
                         className="px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                        title="Supprimer"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
