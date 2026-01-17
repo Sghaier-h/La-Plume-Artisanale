@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FileText, Plus, Edit, Trash2, Search, Download, Eye } from 'lucide-react';
+import { FileText, Plus, Edit, Trash2, Search, Download, Eye, X, CheckCircle } from 'lucide-react';
 import { devisService, commandesService, clientsService, articlesService } from '../services/api';
 
 interface LigneDevis {
@@ -339,6 +339,70 @@ const Devis: React.FC = () => {
                     <option value="REFUSE">Refusé</option>
                   </select>
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Taux TVA (%)</label>
+                  <input
+                    type="number"
+                    value={formData.taux_tva}
+                    onChange={(e) => setFormData({ ...formData, taux_tva: parseFloat(e.target.value) || 20 })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Remise Globale (%)</label>
+                  <input
+                    type="number"
+                    value={formData.remise_globale}
+                    onChange={(e) => setFormData({ ...formData, remise_globale: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Référence Client</label>
+                  <input
+                    type="text"
+                    value={formData.reference_client}
+                    onChange={(e) => setFormData({ ...formData, reference_client: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="Réf. commande client"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Conditions de Paiement</label>
+                  <input
+                    type="text"
+                    value={formData.conditions_paiement}
+                    onChange={(e) => setFormData({ ...formData, conditions_paiement: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="Ex: 30 jours"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Conditions de Livraison</label>
+                  <input
+                    type="text"
+                    value={formData.conditions_livraison}
+                    onChange={(e) => setFormData({ ...formData, conditions_livraison: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="Ex: Livraison sous 15 jours"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                  <textarea
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    rows={3}
+                    placeholder="Notes additionnelles..."
+                  />
+                </div>
               </div>
 
               {/* Lignes de devis */}
@@ -499,10 +563,21 @@ const Devis: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex gap-2">
                       <button 
-                        onClick={() => {
-                          setSelectedDevis(devis);
+                        onClick={async () => {
+                          try {
+                            const result = await devisService.getDevisById(devis.id_devis);
+                            if (result.data?.success) {
+                              setSelectedDevis(result.data.data);
+                            } else {
+                              alert('Erreur lors du chargement du devis');
+                            }
+                          } catch (error: any) {
+                            console.error('Erreur chargement devis:', error);
+                            alert(error.response?.data?.error?.message || 'Erreur lors du chargement du devis');
+                          }
                         }}
                         className="text-blue-600 hover:text-blue-700"
+                        title="Consulter"
                       >
                         <Eye className="w-4 h-4" />
                       </button>
@@ -537,14 +612,36 @@ const Devis: React.FC = () => {
                               });
                               setEditingDevis(devis);
                               setShowForm(true);
+                            } else {
+                              alert('Erreur lors du chargement du devis');
                             }
-                          } catch (error) {
+                          } catch (error: any) {
                             console.error('Erreur chargement devis:', error);
+                            alert(error.response?.data?.error?.message || 'Erreur lors du chargement du devis');
                           }
                         }}
                         className="text-gray-600 hover:text-gray-700"
+                        title="Modifier"
                       >
                         <Edit className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={async () => {
+                          if (window.confirm(`Êtes-vous sûr de vouloir supprimer le devis ${devis.numero_devis} ?`)) {
+                            try {
+                              await devisService.deleteDevis(devis.id_devis);
+                              loadData();
+                              alert('Devis supprimé avec succès');
+                            } catch (error: any) {
+                              console.error('Erreur suppression devis:', error);
+                              alert(error.response?.data?.error?.message || 'Erreur lors de la suppression du devis');
+                            }
+                          }
+                        }}
+                        className="text-red-600 hover:text-red-700"
+                        title="Supprimer"
+                      >
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </td>
@@ -553,6 +650,211 @@ const Devis: React.FC = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Modal de consultation */}
+        {selectedDevis && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b p-6 flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-gray-800">
+                  Devis {selectedDevis.numero_devis}
+                </h2>
+                <button
+                  onClick={() => setSelectedDevis(null)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              
+              <div className="p-6 space-y-6">
+                {/* Informations générales */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Client</label>
+                    <p className="text-gray-900">{selectedDevis.client_nom}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Date Devis</label>
+                    <p className="text-gray-900">{selectedDevis.date_devis}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Date Validité</label>
+                    <p className="text-gray-900">{selectedDevis.date_validite || '-'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Statut</label>
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${getStatutColor(selectedDevis.statut)}`}>
+                      {selectedDevis.statut}
+                    </span>
+                  </div>
+                  {selectedDevis.reference_client && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Référence Client</label>
+                      <p className="text-gray-900">{selectedDevis.reference_client}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Lignes du devis */}
+                {selectedDevis.lignes && selectedDevis.lignes.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold mb-3">Lignes du Devis</h3>
+                    <div className="border rounded-lg overflow-hidden">
+                      <table className="w-full">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Désignation</th>
+                            <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Qté</th>
+                            <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Prix U. HT</th>
+                            <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Remise %</th>
+                            <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">TVA %</th>
+                            <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Total TTC</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                          {selectedDevis.lignes.map((ligne: any, index: number) => (
+                            <tr key={index}>
+                              <td className="px-4 py-2">{ligne.designation}</td>
+                              <td className="px-4 py-2">{ligne.quantite}</td>
+                              <td className="px-4 py-2">{ligne.prix_unitaire_ht?.toFixed(2)} TND</td>
+                              <td className="px-4 py-2">{ligne.remise || 0}%</td>
+                              <td className="px-4 py-2">{ligne.taux_tva || 20}%</td>
+                              <td className="px-4 py-2 font-semibold">
+                                {ligne.montant_ttc?.toFixed(2)} TND
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Totaux */}
+                <div className="border-t pt-4">
+                  <div className="flex justify-end">
+                    <div className="w-64 space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Montant HT:</span>
+                        <span className="font-semibold">{selectedDevis.montant_ht?.toFixed(2)} TND</span>
+                      </div>
+                      {selectedDevis.remise_globale > 0 && (
+                        <div className="flex justify-between text-red-600">
+                          <span>Remise globale ({selectedDevis.remise_globale}%):</span>
+                          <span>-{selectedDevis.montant_remise?.toFixed(2)} TND</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">TVA ({selectedDevis.taux_tva || 20}%):</span>
+                        <span className="font-semibold">{selectedDevis.montant_tva?.toFixed(2)} TND</span>
+                      </div>
+                      <div className="flex justify-between text-lg font-bold border-t pt-2">
+                        <span>Total TTC:</span>
+                        <span>{selectedDevis.montant_ttc?.toFixed(2)} TND</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Conditions et notes */}
+                {(selectedDevis.conditions_paiement || selectedDevis.conditions_livraison || selectedDevis.notes) && (
+                  <div className="border-t pt-4 space-y-3">
+                    {selectedDevis.conditions_paiement && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Conditions de Paiement</label>
+                        <p className="text-gray-900">{selectedDevis.conditions_paiement}</p>
+                      </div>
+                    )}
+                    {selectedDevis.conditions_livraison && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Conditions de Livraison</label>
+                        <p className="text-gray-900">{selectedDevis.conditions_livraison}</p>
+                      </div>
+                    )}
+                    {selectedDevis.notes && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Notes</label>
+                        <p className="text-gray-900 whitespace-pre-wrap">{selectedDevis.notes}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="border-t pt-4 flex gap-2 justify-end">
+                  <button
+                    onClick={async () => {
+                      try {
+                        const result = await devisService.getDevisById(selectedDevis.id_devis);
+                        if (result.data?.success) {
+                          const devisData = result.data.data;
+                          setFormData({
+                            id_client: devisData.id_client?.toString() || '',
+                            date_devis: devisData.date_devis || new Date().toISOString().split('T')[0],
+                            date_validite: devisData.date_validite || '',
+                            statut: devisData.statut || 'BROUILLON',
+                            taux_tva: devisData.taux_tva || 20,
+                            remise_globale: devisData.remise_globale || 0,
+                            reference_client: devisData.reference_client || '',
+                            conditions_paiement: devisData.conditions_paiement || '',
+                            conditions_livraison: devisData.conditions_livraison || '',
+                            notes: devisData.notes || '',
+                            lignes: (devisData.lignes || []).map((l: any) => ({
+                              id_article: l.id_article,
+                              designation: l.designation,
+                              quantite: l.quantite,
+                              prix_unitaire_ht: l.prix_unitaire_ht,
+                              remise: l.remise || 0,
+                              taux_tva: l.taux_tva || 20
+                            }))
+                          });
+                          setEditingDevis(selectedDevis);
+                          setSelectedDevis(null);
+                          setShowForm(true);
+                        }
+                      } catch (error: any) {
+                        console.error('Erreur chargement devis:', error);
+                        alert(error.response?.data?.error?.message || 'Erreur lors du chargement du devis');
+                      }
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    <Edit className="w-4 h-4 inline mr-2" />
+                    Modifier
+                  </button>
+                  {selectedDevis.statut === 'ACCEPTE' && !selectedDevis.id_commande && (
+                    <button
+                      onClick={async () => {
+                        if (window.confirm('Transformer ce devis en commande ?')) {
+                          try {
+                            await devisService.transformerEnCommande(selectedDevis.id_devis);
+                            alert('Devis transformé en commande avec succès');
+                            setSelectedDevis(null);
+                            loadData();
+                          } catch (error: any) {
+                            console.error('Erreur transformation:', error);
+                            alert(error.response?.data?.error?.message || 'Erreur lors de la transformation');
+                          }
+                        }
+                      }}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                    >
+                      <CheckCircle className="w-4 h-4 inline mr-2" />
+                      Transformer en Commande
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setSelectedDevis(null)}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                  >
+                    Fermer
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
