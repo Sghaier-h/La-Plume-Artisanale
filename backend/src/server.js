@@ -48,6 +48,7 @@ import ecommerceRoutes from './routes/ecommerce.routes.js';
 import webhooksRoutes from './routes/webhooks.routes.js';
 import migrationRoutes from './routes/migration.routes.js';
 import databaseRoutes from './routes/database.routes.js';
+import pointageRoutes from './routes/pointage.routes.js';
 
 dotenv.config();
 
@@ -138,6 +139,7 @@ app.use('/api/ecommerce', ecommerceRoutes);
 app.use('/api/webhooks', webhooksRoutes);
 app.use('/api/migration', migrationRoutes);
 app.use('/api/database', databaseRoutes);
+app.use('/api/pointage', pointageRoutes);
 
 // Routes Mobile (SaaS)
 app.use('/api/v1/mobile', mobileRoutes);
