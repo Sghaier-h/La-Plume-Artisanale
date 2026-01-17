@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { qualiteAvanceService } from '../services/api';
-import { CheckCircle, XCircle, AlertTriangle, BarChart3, TrendingUp } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, BarChart3, TrendingUp, Eye, X } from 'lucide-react';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const QualiteAvance: React.FC = () => {
@@ -10,6 +10,8 @@ const QualiteAvance: React.FC = () => {
   const [diagrammes, setDiagrammes] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'controles' | 'non-conformites' | 'statistiques' | 'diagrammes'>('controles');
+  const [selectedControle, setSelectedControle] = useState<any | null>(null);
+  const [selectedNonConformite, setSelectedNonConformite] = useState<any | null>(null);
 
   useEffect(() => {
     loadData();
