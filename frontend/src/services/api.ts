@@ -114,6 +114,52 @@ export const commandesService = {
   validerCommande: (id: number) => api.post(`/commandes/${id}/valider`),
 };
 
+export const devisService = {
+  getDevis: (params?: any) => api.get('/devis', { params }),
+  getDevisById: (id: number) => api.get(`/devis/${id}`),
+  createDevis: (data: any) => api.post('/devis', data),
+  updateDevis: (id: number, data: any) => api.put(`/devis/${id}`, data),
+  deleteDevis: (id: number) => api.delete(`/devis/${id}`),
+  transformerEnCommande: (id: number, data?: any) => api.post(`/devis/${id}/transformer`, data),
+};
+
+export const bonsLivraisonService = {
+  getBonsLivraison: (params?: any) => api.get('/bons-livraison', { params }),
+  getBonLivraisonById: (id: number) => api.get(`/bons-livraison/${id}`),
+  createBonLivraison: (data: any) => api.post('/bons-livraison', data),
+  createFromCommande: (id: number, data?: any) => api.post(`/bons-livraison/from-commande/${id}`, data),
+  updateBonLivraison: (id: number, data: any) => api.put(`/bons-livraison/${id}`, data),
+  deleteBonLivraison: (id: number) => api.delete(`/bons-livraison/${id}`),
+};
+
+export const facturesService = {
+  getFactures: (params?: any) => api.get('/factures', { params }),
+  getFactureById: (id: number) => api.get(`/factures/${id}`),
+  createFacture: (data: any) => api.post('/factures', data),
+  createFromCommande: (id: number, data?: any) => api.post(`/factures/from-commande/${id}`, data),
+  createFromBL: (id: number, data?: any) => api.post(`/factures/from-bl/${id}`, data),
+  updateFacture: (id: number, data: any) => api.put(`/factures/${id}`, data),
+  deleteFacture: (id: number) => api.delete(`/factures/${id}`),
+};
+
+export const avoirsService = {
+  getAvoirs: (params?: any) => api.get('/avoirs', { params }),
+  getAvoirById: (id: number) => api.get(`/avoirs/${id}`),
+  createAvoir: (data: any) => api.post('/avoirs', data),
+  createFromFacture: (id: number, data?: any) => api.post(`/avoirs/from-facture/${id}`, data),
+  updateAvoir: (id: number, data: any) => api.put(`/avoirs/${id}`, data),
+  deleteAvoir: (id: number) => api.delete(`/avoirs/${id}`),
+};
+
+export const bonsRetourService = {
+  getBonsRetour: (params?: any) => api.get('/bons-retour', { params }),
+  getBonRetourById: (id: number) => api.get(`/bons-retour/${id}`),
+  createBonRetour: (data: any) => api.post('/bons-retour', data),
+  createFromBL: (id: number, data?: any) => api.post(`/bons-retour/from-bl/${id}`, data),
+  updateBonRetour: (id: number, data: any) => api.put(`/bons-retour/${id}`, data),
+  deleteBonRetour: (id: number) => api.delete(`/bons-retour/${id}`),
+};
+
 export const machinesService = {
   getMachines: (params?: any) => api.get('/machines', { params }),
   getMachine: (id: number) => api.get(`/machines/${id}`),

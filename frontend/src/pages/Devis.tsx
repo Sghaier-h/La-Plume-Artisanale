@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { FileText, Plus, Edit, Trash2, Search, Download, Eye } from 'lucide-react';
-import { commandesService, clientsService, articlesService } from '../services/api';
+import { devisService, commandesService, clientsService, articlesService } from '../services/api';
 
 interface LigneDevis {
-  id_article: number;
+  id_article?: number;
+  designation?: string;
   quantite: number;
-  prix_unitaire: number;
+  prix_unitaire_ht: number;
   remise?: number;
-  tva?: number;
+  taux_tva?: number;
 }
 
 const Devis: React.FC = () => {
@@ -25,9 +26,12 @@ const Devis: React.FC = () => {
     id_client: '',
     date_devis: new Date().toISOString().split('T')[0],
     date_validite: '',
-    statut: 'brouillon',
-    devise: 'TND',
+    statut: 'BROUILLON',
+    taux_tva: 20,
+    remise_globale: 0,
+    reference_client: '',
     conditions_paiement: '',
+    conditions_livraison: '',
     notes: '',
     lignes: [] as LigneDevis[]
   });
@@ -38,21 +42,29 @@ const Devis: React.FC = () => {
 
   const loadData = async () => {
     try {
-      // TODO: Remplacer par l'API réelle des devis
-      const mockDevis = [
-        { id: 1, numero: 'DEV-2024-001', client: 'Client A', date: '2024-01-15', montant_ht: 5000, statut: 'envoyé' },
-        { id: 2, numero: 'DEV-2024-002', client: 'Client B', date: '2024-01-16', montant_ht: 3200, statut: 'accepté' },
-      ];
-      setDevis(mockDevis);
-      
-      const [clientsRes, articlesRes] = await Promise.all([
+      setLoading(true);
+      const params: any = {};
+      if (filters.statut) params.statut = filters.statut.toUpperCase();
+      if (filters.client_id) params.client_id = filters.client_id;
+      if (search) params.search = search;
+
+      const [devisRes, clientsRes, articlesRes] = await Promise.all([
+        devisService.getDevis(params).catch(() => ({ data: { data: [], success: false } })),
         clientsService.getClients().catch(() => ({ data: { data: [] } })),
         articlesService.getArticles().catch(() => ({ data: { data: [] } }))
       ]);
+      
+      if (devisRes.data?.success) {
+        setDevis(devisRes.data.data || []);
+      } else {
+        setDevis([]);
+      }
+      
       setClients(clientsRes.data?.data || []);
       setArticles(articlesRes.data?.data || []);
     } catch (error) {
       console.error('Erreur chargement devis:', error);
+      setDevis([]);
     } finally {
       setLoading(false);
     }
@@ -64,31 +76,70 @@ const Devis: React.FC = () => {
       alert('Ajoutez au moins une ligne de devis');
       return;
     }
+    if (!formData.id_client) {
+      alert('Sélectionnez un client');
+      return;
+    }
     try {
-      // TODO: Appel API pour créer/modifier devis
-      console.log('Sauvegarde devis:', formData);
+      // Préparer les données pour l'API
+      const lignesFormatees = formData.lignes.map(ligne => {
+        const article = articles.find(a => a.id_article === ligne.id_article);
+        return {
+          id_article: ligne.id_article || null,
+          designation: ligne.designation || article?.libelle || article?.designation || '',
+          quantite: ligne.quantite,
+          prix_unitaire_ht: ligne.prix_unitaire_ht,
+          remise: ligne.remise || 0,
+          taux_tva: ligne.taux_tva || formData.taux_tva || 20
+        };
+      });
+
+      const dataToSend = {
+        id_client: parseInt(formData.id_client),
+        date_devis: formData.date_devis,
+        date_validite: formData.date_validite || null,
+        statut: formData.statut,
+        taux_tva: formData.taux_tva,
+        remise_globale: formData.remise_globale,
+        reference_client: formData.reference_client || null,
+        conditions_paiement: formData.conditions_paiement || null,
+        conditions_livraison: formData.conditions_livraison || null,
+        notes: formData.notes || null,
+        lignes: lignesFormatees
+      };
+
+      if (editingDevis) {
+        await devisService.updateDevis(editingDevis.id_devis, dataToSend);
+      } else {
+        await devisService.createDevis(dataToSend);
+      }
+
       setShowForm(false);
       setEditingDevis(null);
       setFormData({
         id_client: '',
         date_devis: new Date().toISOString().split('T')[0],
         date_validite: '',
-        statut: 'brouillon',
-        devise: 'TND',
+        statut: 'BROUILLON',
+        taux_tva: 20,
+        remise_globale: 0,
+        reference_client: '',
         conditions_paiement: '',
+        conditions_livraison: '',
         notes: '',
         lignes: []
       });
       loadData();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erreur sauvegarde devis:', error);
+      alert(error.response?.data?.error?.message || 'Erreur lors de la sauvegarde du devis');
     }
   };
 
   const addLigne = () => {
     setFormData({
       ...formData,
-      lignes: [...formData.lignes, { id_article: 0, quantite: 1, prix_unitaire: 0, remise: 0, tva: 19 }]
+      lignes: [...formData.lignes, { id_article: undefined, quantite: 1, prix_unitaire_ht: 0, remise: 0, taux_tva: formData.taux_tva || 20 }]
     });
   };
 
@@ -106,30 +157,50 @@ const Devis: React.FC = () => {
   };
 
   const calculerTotal = () => {
-    return formData.lignes.reduce((total, ligne) => {
-      const prix = ligne.prix_unitaire * ligne.quantite;
+    let totalHt = 0;
+    formData.lignes.forEach(ligne => {
+      const prix = (ligne.prix_unitaire_ht || 0) * (ligne.quantite || 0);
       const remise = prix * (ligne.remise || 0) / 100;
       const ht = prix - remise;
-      const tva = ht * (ligne.tva || 0) / 100;
-      return total + ht + tva;
-    }, 0);
+      totalHt += ht;
+    });
+    const remiseGlobale = totalHt * (formData.remise_globale || 0) / 100;
+    const htFinal = totalHt - remiseGlobale;
+    const tva = htFinal * (formData.taux_tva || 20) / 100;
+    return htFinal + tva;
   };
 
   const getStatutColor = (statut: string) => {
+    const statutLower = statut?.toLowerCase() || '';
     const colors: { [key: string]: string } = {
       'brouillon': 'bg-gray-100 text-gray-800',
+      'envoye': 'bg-blue-100 text-blue-800',
       'envoyé': 'bg-blue-100 text-blue-800',
+      'accepte': 'bg-green-100 text-green-800',
       'accepté': 'bg-green-100 text-green-800',
+      'refuse': 'bg-red-100 text-red-800',
       'refusé': 'bg-red-100 text-red-800',
-      'expiré': 'bg-orange-100 text-orange-800'
+      'expire': 'bg-orange-100 text-orange-800',
+      'expiré': 'bg-orange-100 text-orange-800',
+      'transforme': 'bg-purple-100 text-purple-800',
+      'transformé': 'bg-purple-100 text-purple-800'
     };
-    return colors[statut] || 'bg-gray-100 text-gray-800';
+    return colors[statutLower] || 'bg-gray-100 text-gray-800';
   };
 
-  const filteredDevis = devis.filter(d =>
-    d.numero?.toLowerCase().includes(search.toLowerCase()) ||
-    d.client?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredDevis = devis.filter(d => {
+    if (search && !d.numero_devis?.toLowerCase().includes(search.toLowerCase()) && 
+        !d.client_nom?.toLowerCase().includes(search.toLowerCase())) {
+      return false;
+    }
+    if (filters.statut && d.statut !== filters.statut.toUpperCase()) {
+      return false;
+    }
+    if (filters.client_id && d.id_client?.toString() !== filters.client_id) {
+      return false;
+    }
+    return true;
+  });
 
   if (loading) {
     return (
@@ -158,9 +229,12 @@ const Devis: React.FC = () => {
                 id_client: '',
                 date_devis: new Date().toISOString().split('T')[0],
                 date_validite: '',
-                statut: 'brouillon',
-                devise: 'TND',
+                statut: 'BROUILLON',
+                taux_tva: 20,
+                remise_globale: 0,
+                reference_client: '',
                 conditions_paiement: '',
+                conditions_livraison: '',
                 notes: '',
                 lignes: []
               });
@@ -191,11 +265,12 @@ const Devis: React.FC = () => {
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Tous les statuts</option>
-              <option value="brouillon">Brouillon</option>
-              <option value="envoyé">Envoyé</option>
-              <option value="accepté">Accepté</option>
-              <option value="refusé">Refusé</option>
-              <option value="expiré">Expiré</option>
+              <option value="BROUILLON">Brouillon</option>
+              <option value="ENVOYE">Envoyé</option>
+              <option value="ACCEPTE">Accepté</option>
+              <option value="REFUSE">Refusé</option>
+              <option value="EXPIRE">Expiré</option>
+              <option value="TRANSFORME">Transformé en commande</option>
             </select>
             <select
               value={filters.client_id}
@@ -204,7 +279,7 @@ const Devis: React.FC = () => {
             >
               <option value="">Tous les clients</option>
               {clients.map(c => (
-                <option key={c.id_client} value={c.id_client}>{c.nom}</option>
+                <option key={c.id_client} value={c.id_client}>{c.raison_sociale || c.nom}</option>
               ))}
             </select>
           </div>
@@ -228,7 +303,7 @@ const Devis: React.FC = () => {
                   >
                     <option value="">Sélectionner un client</option>
                     {clients.map(c => (
-                      <option key={c.id_client} value={c.id_client}>{c.nom}</option>
+                      <option key={c.id_client} value={c.id_client}>{c.raison_sociale || c.nom}</option>
                     ))}
                   </select>
                 </div>
@@ -258,10 +333,10 @@ const Devis: React.FC = () => {
                     onChange={(e) => setFormData({ ...formData, statut: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="brouillon">Brouillon</option>
-                    <option value="envoyé">Envoyé</option>
-                    <option value="accepté">Accepté</option>
-                    <option value="refusé">Refusé</option>
+                    <option value="BROUILLON">Brouillon</option>
+                    <option value="ENVOYE">Envoyé</option>
+                    <option value="ACCEPTE">Accepté</option>
+                    <option value="REFUSE">Refusé</option>
                   </select>
                 </div>
               </div>
@@ -302,7 +377,7 @@ const Devis: React.FC = () => {
                             >
                               <option value="0">Sélectionner</option>
                               {articles.map(a => (
-                                <option key={a.id_article} value={a.id_article}>{a.libelle}</option>
+                                <option key={a.id_article} value={a.id_article}>{a.designation || a.libelle}</option>
                               ))}
                             </select>
                           </td>
@@ -319,8 +394,8 @@ const Devis: React.FC = () => {
                           <td className="px-4 py-2">
                             <input
                               type="number"
-                              value={ligne.prix_unitaire}
-                              onChange={(e) => updateLigne(index, 'prix_unitaire', parseFloat(e.target.value))}
+                              value={ligne.prix_unitaire_ht || 0}
+                              onChange={(e) => updateLigne(index, 'prix_unitaire_ht', parseFloat(e.target.value))}
                               className="w-24 px-2 py-1 border border-gray-300 rounded text-sm"
                               min="0"
                               step="0.01"
@@ -340,8 +415,8 @@ const Devis: React.FC = () => {
                           <td className="px-4 py-2">
                             <input
                               type="number"
-                              value={ligne.tva || 19}
-                              onChange={(e) => updateLigne(index, 'tva', parseFloat(e.target.value))}
+                              value={ligne.taux_tva || formData.taux_tva || 20}
+                              onChange={(e) => updateLigne(index, 'taux_tva', parseFloat(e.target.value))}
                               className="w-20 px-2 py-1 border border-gray-300 rounded text-sm"
                               min="0"
                               max="100"
@@ -349,7 +424,7 @@ const Devis: React.FC = () => {
                             />
                           </td>
                           <td className="px-4 py-2 text-sm">
-                            {((ligne.prix_unitaire * ligne.quantite * (1 - (ligne.remise || 0) / 100)) * (1 + (ligne.tva || 0) / 100)).toFixed(2)} TND
+                            {((ligne.prix_unitaire_ht || 0) * (ligne.quantite || 0) * (1 - (ligne.remise || 0) / 100) * (1 + (ligne.taux_tva || formData.taux_tva || 20) / 100)).toFixed(2)} TND
                           </td>
                           <td className="px-4 py-2">
                             <button
@@ -411,10 +486,10 @@ const Devis: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-gray-200">
               {filteredDevis.map((devis) => (
-                <tr key={devis.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap font-medium">{devis.numero}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">{devis.client}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">{devis.date}</td>
+                <tr key={devis.id_devis} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap font-medium">{devis.numero_devis}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">{devis.client_nom}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">{devis.date_devis}</td>
                   <td className="px-6 py-4 whitespace-nowrap">{devis.montant_ht?.toFixed(2)} TND</td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 rounded text-xs font-medium ${getStatutColor(devis.statut)}`}>
@@ -423,13 +498,52 @@ const Devis: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex gap-2">
-                      <button className="text-blue-600 hover:text-blue-700">
+                      <button 
+                        onClick={() => {
+                          setSelectedDevis(devis);
+                        }}
+                        className="text-blue-600 hover:text-blue-700"
+                      >
                         <Eye className="w-4 h-4" />
                       </button>
                       <button className="text-green-600 hover:text-green-700">
                         <Download className="w-4 h-4" />
                       </button>
-                      <button className="text-gray-600 hover:text-gray-700">
+                      <button 
+                        onClick={async () => {
+                          try {
+                            const result = await devisService.getDevisById(devis.id_devis);
+                            if (result.data?.success) {
+                              const devisData = result.data.data;
+                              setFormData({
+                                id_client: devisData.id_client?.toString() || '',
+                                date_devis: devisData.date_devis || new Date().toISOString().split('T')[0],
+                                date_validite: devisData.date_validite || '',
+                                statut: devisData.statut || 'BROUILLON',
+                                taux_tva: devisData.taux_tva || 20,
+                                remise_globale: devisData.remise_globale || 0,
+                                reference_client: devisData.reference_client || '',
+                                conditions_paiement: devisData.conditions_paiement || '',
+                                conditions_livraison: devisData.conditions_livraison || '',
+                                notes: devisData.notes || '',
+                                lignes: (devisData.lignes || []).map((l: any) => ({
+                                  id_article: l.id_article,
+                                  designation: l.designation,
+                                  quantite: l.quantite,
+                                  prix_unitaire_ht: l.prix_unitaire_ht,
+                                  remise: l.remise || 0,
+                                  taux_tva: l.taux_tva || 20
+                                }))
+                              });
+                              setEditingDevis(devis);
+                              setShowForm(true);
+                            }
+                          } catch (error) {
+                            console.error('Erreur chargement devis:', error);
+                          }
+                        }}
+                        className="text-gray-600 hover:text-gray-700"
+                      >
                         <Edit className="w-4 h-4" />
                       </button>
                     </div>
