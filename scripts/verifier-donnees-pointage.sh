@@ -36,19 +36,55 @@ if ! command -v psql &> /dev/null; then
     exit 1
 fi
 
+echo "0️⃣ Vérification de la configuration..."
+echo "-------------------------------------------"
+echo "📁 Fichier .env: /opt/fouta-erp/backend/.env"
+if [ -f "/opt/fouta-erp/backend/.env" ]; then
+    echo "✅ Fichier .env trouvé"
+    # Afficher les variables (masquer le mot de passe)
+    echo "   DB_HOST: ${DB_HOST:-non défini}"
+    echo "   DB_PORT: ${DB_PORT:-non défini}"
+    echo "   DB_NAME: ${DB_NAME:-non défini}"
+    echo "   DB_USER: ${DB_USER:-non défini}"
+    if [ -n "$DB_PASSWORD" ]; then
+        echo "   DB_PASSWORD: *** (défini)"
+    else
+        echo "   DB_PASSWORD: ❌ NON DÉFINI"
+    fi
+else
+    echo "❌ Fichier .env non trouvé"
+    exit 1
+fi
+
+echo ""
 echo "1️⃣ Test de connexion à la base de données..."
 echo "-------------------------------------------"
-PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "SELECT '✅ Connexion réussie' as status;" 2>&1
 
-if [ $? -ne 0 ]; then
+# Test de connexion avec timeout
+CONNECTION_TEST=$(PGPASSWORD="$DB_PASSWORD" timeout 10 psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "SELECT '✅ Connexion réussie' as status;" 2>&1)
+CONNECTION_EXIT_CODE=$?
+
+if [ $CONNECTION_EXIT_CODE -ne 0 ]; then
     echo ""
     echo "❌ Erreur de connexion à la base de données"
-    echo "   Vérifiez les variables DB_* dans backend/.env"
+    echo ""
+    echo "Détails de l'erreur:"
+    echo "$CONNECTION_TEST" | head -5
+    echo ""
+    echo "Configuration utilisée:"
     echo "   Host: $DB_HOST"
     echo "   Port: $DB_PORT"
     echo "   Database: $DB_NAME"
     echo "   User: $DB_USER"
+    echo ""
+    echo "🔧 Solutions possibles:"
+    echo "   1. Vérifiez que l'IP du serveur est autorisée dans OVH Cloud DB"
+    echo "   2. Vérifiez les identifiants dans backend/.env"
+    echo "   3. Testez la connexion depuis un autre outil (pgAdmin, DBeaver)"
+    echo "   4. Le timeout peut être dû à un problème réseau"
     exit 1
+else
+    echo "$CONNECTION_TEST"
 fi
 
 echo ""
