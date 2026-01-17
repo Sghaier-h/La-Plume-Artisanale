@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ClipboardList, Plus, Search, Edit, CheckCircle, XCircle, List, Grid, Package } from 'lucide-react';
+import { ClipboardList, Plus, Search, Edit, CheckCircle, XCircle, List, Grid, Package, Eye, X } from 'lucide-react';
 
 interface Inventaire {
   id_inventaire?: number;
@@ -24,6 +24,7 @@ const Inventaire: React.FC = () => {
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingInventaire, setEditingInventaire] = useState<Inventaire | null>(null);
+  const [selectedInventaire, setSelectedInventaire] = useState<Inventaire | null>(null);
   const [affichageMode, setAffichageMode] = useState<'ligne' | 'catalogue'>('ligne');
 
   const [formData, setFormData] = useState<Inventaire>({
