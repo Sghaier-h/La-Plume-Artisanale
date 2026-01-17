@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { maintenanceService, planificationGanttService } from '../services/api';
+import { maintenanceService, planificationGanttService, ofService, dashboardService, machinesService } from '../services/api';
 import { 
   LayoutDashboard, Wrench, AlertTriangle, Calendar, TrendingUp, 
-  Package, Users, Clock, CheckCircle, XCircle, Activity
+  Package, Users, Clock, CheckCircle, XCircle, Activity, FileText, BarChart3, Target
 } from 'lucide-react';
 
 const DashboardGPAO: React.FC = () => {
@@ -10,7 +10,16 @@ const DashboardGPAO: React.FC = () => {
     interventions: { total: 0, en_cours: 0, planifiees: 0 },
     alertes: { total: 0, urgentes: 0 },
     taches: { total: 0, en_cours: 0, terminees: 0 },
-    machines: { operationnelles: 0, en_maintenance: 0 }
+    machines: { operationnelles: 0, en_maintenance: 0, total: 0 },
+    production: { 
+      ofs_en_cours: 0, 
+      ofs_termines: 0, 
+      quantite_produite: 0, 
+      quantite_prevue: 0,
+      taux_rendement: 0,
+      ofs_planifies: 0,
+      total_ofs: 0
+    }
   });
   const [loading, setLoading] = useState(true);
   const [alertes, setAlertes] = useState<any[]>([]);
@@ -22,15 +31,29 @@ const DashboardGPAO: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [interventionsRes, alertesRes, tachesRes] = await Promise.all([
-        maintenanceService.getInterventions(),
-        maintenanceService.getAlertes({ lue: 'false' }),
-        planificationGanttService.getTaches()
+      const [interventionsRes, alertesRes, tachesRes, ofsRes, machinesRes] = await Promise.all([
+        maintenanceService.getInterventions().catch(() => ({ data: { data: { interventions: [] } } })),
+        maintenanceService.getAlertes({ lue: 'false' }).catch(() => ({ data: { data: [] } })),
+        planificationGanttService.getTaches().catch(() => ({ data: { data: { taches: [] } } })),
+        ofService.getOFs({}).catch(() => ({ data: { data: [] } })),
+        machinesService.getMachines({}).catch(() => ({ data: { data: [] } }))
       ]);
 
       const interventions = interventionsRes.data.data.interventions || [];
       const alertesData = alertesRes.data.data || [];
       const taches = tachesRes.data.data.taches || [];
+      const ofs = ofsRes.data?.data || [];
+      const machines = machinesRes.data?.data || [];
+
+      // Calculer les KPIs de production
+      const ofsEnCours = ofs.filter((of: any) => of.statut === 'EN_COURS' || of.statut === 'en_cours').length;
+      const ofsTermines = ofs.filter((of: any) => of.statut === 'TERMINE' || of.statut === 'termine').length;
+      const ofsPlanifies = ofs.filter((of: any) => of.statut === 'PLANIFIE' || of.statut === 'planifie' || of.statut === 'ATTRIBUE' || of.statut === 'attribue').length;
+      const quantiteProduite = ofs.reduce((sum: number, of: any) => sum + (parseFloat(of.quantite_produite) || 0), 0);
+      const quantitePrevue = ofs.reduce((sum: number, of: any) => sum + (parseFloat(of.quantite_a_produire) || 0), 0);
+      const tauxRendement = quantitePrevue > 0 ? Math.round((quantiteProduite / quantitePrevue) * 100) : 0;
+
+      const machinesOperationnelles = machines.filter((m: any) => m.statut === 'operationnel' || m.statut === 'OPERATIONNEL').length;
 
       setStats({
         interventions: {
@@ -48,8 +71,18 @@ const DashboardGPAO: React.FC = () => {
           terminees: taches.filter((t: any) => t.statut === 'TERMINEE').length
         },
         machines: {
-          operationnelles: 0, // TODO: Récupérer depuis API machines
-          en_maintenance: interventions.filter((i: any) => i.statut === 'EN_COURS').length
+          operationnelles: machinesOperationnelles,
+          en_maintenance: interventions.filter((i: any) => i.statut === 'EN_COURS').length,
+          total: machines.length
+        },
+        production: {
+          ofs_en_cours: ofsEnCours,
+          ofs_termines: ofsTermines,
+          quantite_produite: quantiteProduite,
+          quantite_prevue: quantitePrevue,
+          taux_rendement: tauxRendement,
+          ofs_planifies: ofsPlanifies,
+          total_ofs: ofs.length
         }
       });
 
@@ -79,7 +112,73 @@ const DashboardGPAO: React.FC = () => {
           </h1>
         </div>
 
-        {/* Indicateurs clés */}
+        {/* Indicateurs clés - Production */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          {/* OFs en cours */}
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm">OFs en Cours</p>
+                <p className="text-3xl font-bold text-gray-800">{stats.production.ofs_en_cours}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {stats.production.total_ofs} au total
+                </p>
+              </div>
+              <FileText className="w-12 h-12 text-blue-600" />
+            </div>
+          </div>
+
+          {/* Quantité produite */}
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm">Quantité Produite</p>
+                <p className="text-3xl font-bold text-gray-800">
+                  {stats.production.quantite_produite.toLocaleString('fr-FR')}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Prévu: {stats.production.quantite_prevue.toLocaleString('fr-FR')}
+                </p>
+              </div>
+              <Package className="w-12 h-12 text-green-600" />
+            </div>
+          </div>
+
+          {/* Taux de rendement */}
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm">Taux de Rendement</p>
+                <p className="text-3xl font-bold text-gray-800">{stats.production.taux_rendement}%</p>
+                <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                  <div
+                    className={`h-2 rounded-full ${stats.production.taux_rendement >= 90 ? 'bg-green-600' : stats.production.taux_rendement >= 70 ? 'bg-yellow-600' : 'bg-red-600'}`}
+                    style={{ width: `${Math.min(100, stats.production.taux_rendement)}%` }}
+                  ></div>
+                </div>
+              </div>
+              <Target className="w-12 h-12 text-yellow-600" />
+            </div>
+          </div>
+
+          {/* OFs terminés */}
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm">OFs Terminés</p>
+                <p className="text-3xl font-bold text-gray-800">{stats.production.ofs_termines}</p>
+                <p className="text-xs text-green-500 mt-1">
+                  {stats.production.total_ofs > 0 
+                    ? Math.round((stats.production.ofs_termines / stats.production.total_ofs) * 100) 
+                    : 0}% du total
+                </p>
+              </div>
+              <CheckCircle className="w-12 h-12 text-green-600" />
+            </div>
+          </div>
+        </div>
+
+        {/* Indicateurs clés - Maintenance & Tâches */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
           {/* Interventions */}
           <div className="bg-white rounded-lg shadow-lg p-6">

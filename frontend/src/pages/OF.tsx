@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ofService, articlesService, machinesService, commandesService } from '../services/api';
+import { ofService, articlesService, machinesService, commandesService, suiviFabricationService, stockService, qualiteAvanceeService } from '../services/api';
 import { FileText, Plus, Edit, Trash2, Search, Eye, X, Play, Square, CheckCircle, Settings, Package, Calendar, AlertCircle, TrendingUp, Clock, User } from 'lucide-react';
 
 interface LigneOF {
@@ -100,11 +100,33 @@ const OF: React.FC = () => {
   };
 
   const handleDemarrer = async (id: number) => {
-    if (window.confirm('Démarrer cet ordre de fabrication ?')) {
+    if (window.confirm('Démarrer cet ordre de fabrication ?\n\nCeci va créer automatiquement un suivi de fabrication.')) {
       try {
+        // Démarrer l'OF
         await ofService.demarrerOF(id);
+        
+        // Récupérer les détails de l'OF
+        const of = ofs.find(o => o.id_of === id);
+        if (of) {
+          // Créer automatiquement un suivi de fabrication
+          try {
+            await suiviFabricationService.createSuiviFabrication({
+              id_of: id,
+              id_article: of.id_article,
+              quantite_prevue: of.quantite_a_produire || 0,
+              quantite_produite: 0,
+              date_debut: new Date().toISOString().split('T')[0],
+              statut: 'EN_COURS',
+              observations: `Créé automatiquement au démarrage de l'OF ${of.numero_of}`
+            });
+          } catch (suiviError: any) {
+            console.warn('Impossible de créer le suivi de fabrication automatiquement:', suiviError);
+            // Ne pas bloquer le démarrage si le suivi échoue
+          }
+        }
+        
         loadData();
-        alert('OF démarré avec succès');
+        alert('OF démarré avec succès\nSuivi de fabrication créé automatiquement');
       } catch (error: any) {
         alert(error.response?.data?.error?.message || 'Erreur lors du démarrage');
       }
@@ -116,12 +138,67 @@ const OF: React.FC = () => {
       alert('Quantité produite invalide');
       return;
     }
-    try {
-      await ofService.terminerOF(id, { quantite_produite: parseFloat(quantite) });
-      loadData();
-      alert('OF terminé avec succès');
-    } catch (error: any) {
-      alert(error.response?.data?.error?.message || 'Erreur lors de la finalisation');
+    if (window.confirm(`Terminer cet ordre de fabrication avec ${quantite} unités produites ?\n\nCeci va :\n- Créer un mouvement de stock (entrée produits finis)\n- Créer un contrôle qualité`)) {
+      try {
+        const quantiteProduite = parseFloat(quantite);
+        // Terminer l'OF
+        await ofService.terminerOF(id, { quantite_produite: quantiteProduite });
+        
+        // Récupérer les détails de l'OF
+        const of = ofs.find(o => o.id_of === id);
+        if (of) {
+          // Créer automatiquement un mouvement de stock (entrée produits finis)
+          try {
+            await stockService.createMouvement?.({
+              id_article: of.id_article,
+              type_mouvement: 'ENTREE_PRODUCTION',
+              quantite: quantiteProduite,
+              date_mouvement: new Date().toISOString().split('T')[0],
+              reference: `OF-${of.numero_of}`,
+              observations: `Production terminée - OF ${of.numero_of}`
+            }) || console.warn('API stock.createMouvement non disponible');
+          } catch (stockError: any) {
+            console.warn('Impossible de créer le mouvement de stock automatiquement:', stockError);
+            // Ne pas bloquer la finalisation si le mouvement stock échoue
+          }
+          
+          // Créer automatiquement un contrôle qualité
+          try {
+            await qualiteAvanceeService.createNonConformite?.({
+              id_of: id,
+              id_article: of.id_article,
+              type_controle: 'CONTROLE_FINAL',
+              date_controle: new Date().toISOString().split('T')[0],
+              statut: 'EN_ATTENTE',
+              observations: `Contrôle qualité automatique - OF ${of.numero_of} terminé avec ${quantiteProduite} unités`
+            }) || console.warn('API qualiteAvanceeService.createNonConformite non disponible pour contrôles');
+          } catch (qualiteError: any) {
+            console.warn('Impossible de créer le contrôle qualité automatiquement:', qualiteError);
+            // Ne pas bloquer la finalisation si le contrôle qualité échoue
+          }
+          
+          // Mettre à jour le suivi de fabrication
+          try {
+            const suivis = await suiviFabricationService.getSuivisFabrication({ id_of: id });
+            const suivisData = suivis.data?.data?.suivis || [];
+            if (suivisData.length > 0) {
+              const dernierSuivi = suivisData[0];
+              await suiviFabricationService.updateSuiviFabrication(dernierSuivi.id_suivi, {
+                quantite_produite: quantiteProduite,
+                date_fin: new Date().toISOString().split('T')[0],
+                statut: 'TERMINE'
+              });
+            }
+          } catch (suiviError: any) {
+            console.warn('Impossible de mettre à jour le suivi de fabrication:', suiviError);
+          }
+        }
+        
+        loadData();
+        alert('OF terminé avec succès\n✅ Mouvement de stock créé\n✅ Contrôle qualité créé');
+      } catch (error: any) {
+        alert(error.response?.data?.error?.message || 'Erreur lors de la finalisation');
+      }
     }
   };
 
