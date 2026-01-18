@@ -1,0 +1,59 @@
+#!/bin/bash
+
+# ============================================================================
+# Script pour exécuter le schéma SQL d'ajout des champs created_by/updated_by
+# ============================================================================
+
+set -e  # Arrêter en cas d'erreur
+
+echo "============================================================================"
+echo "Ajout des champs created_by et updated_by aux tables principales"
+echo "============================================================================"
+
+# Charger les variables d'environnement depuis backend/.env
+if [ -f "backend/.env" ]; then
+    export $(grep -v '^#' backend/.env | grep -E '^(DB_HOST|DB_PORT|DB_NAME|DB_USER|DB_PASSWORD)=' | xargs)
+    echo "✅ Variables d'environnement chargées depuis backend/.env"
+else
+    echo "❌ Erreur: backend/.env introuvable"
+    exit 1
+fi
+
+# Vérifier que toutes les variables nécessaires sont définies
+if [ -z "$DB_HOST" ] || [ -z "$DB_PORT" ] || [ -z "$DB_NAME" ] || [ -z "$DB_USER" ] || [ -z "$DB_PASSWORD" ]; then
+    echo "❌ Erreur: Variables d'environnement manquantes (DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD)"
+    exit 1
+fi
+
+echo "📊 Connexion à la base de données:"
+echo "   Host: $DB_HOST"
+echo "   Port: $DB_PORT"
+echo "   Database: $DB_NAME"
+echo "   User: $DB_USER"
+echo ""
+
+# Vérifier que le fichier SQL existe
+SQL_FILE="backend/database/add_created_updated_by.sql"
+if [ ! -f "$SQL_FILE" ]; then
+    echo "❌ Erreur: Fichier SQL introuvable: $SQL_FILE"
+    exit 1
+fi
+
+echo "📄 Fichier SQL: $SQL_FILE"
+echo ""
+
+# Exécuter le script SQL
+echo "🔄 Exécution du script SQL..."
+PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -f "$SQL_FILE" -v ON_ERROR_STOP=1
+
+if [ $? -eq 0 ]; then
+    echo ""
+    echo "✅ Script exécuté avec succès!"
+    echo ""
+    echo "📋 Les champs created_by et updated_by ont été ajoutés aux tables principales."
+    echo ""
+else
+    echo ""
+    echo "❌ Erreur lors de l'exécution du script SQL"
+    exit 1
+fi
