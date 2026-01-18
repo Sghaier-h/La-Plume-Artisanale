@@ -457,17 +457,25 @@ function App() {
           <Route
             path="/magasin-pf"
             element={
-              <PrivateRoute showNav={true}>
+              <ProtectedRoute requiredDashboard="magasin-pf" showNav={true}>
                 <TableauBordMagasinPF />
-              </PrivateRoute>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/magasinier-soustraitants"
+            element={
+              <ProtectedRoute requiredDashboard="magasinier-soustraitants" showNav={true}>
+                <DashboardMagasinierSoustraitants />
+              </ProtectedRoute>
             }
           />
           <Route
             path="/chef-production"
             element={
-              <PrivateRoute showNav={true}>
+              <ProtectedRoute requiredDashboard="chef-production" showNav={true}>
                 <DashboardChefProduction />
-              </PrivateRoute>
+              </ProtectedRoute>
             }
           />
           <Route
