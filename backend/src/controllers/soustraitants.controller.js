@@ -375,7 +375,7 @@ export const enregistrerSortie = async (req, res) => {
 export const enregistrerRetour = async (req, res) => {
   try {
     const { id } = req.params;
-    const { id_mouvement, quantite_retournee, date_retour, conforme, observations } = req.body;
+    const { id_mouvement, quantite_retournee, date_retour, qr_code_retour, conforme, observations } = req.body;
 
     // Validation
     if (!id_mouvement || !date_retour) {
