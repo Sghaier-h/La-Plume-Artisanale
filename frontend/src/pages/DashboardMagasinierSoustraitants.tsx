@@ -330,7 +330,9 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
     totalEnCours: mouvementsEnCours.length,
     totalRetard: mouvementsRetard.length,
     totalRetournes: mouvements.filter(m => m.statut === 'retourne').length,
-    messagesNonLus: messagesUrgents.filter(m => !m.lu).length
+    messagesNonLus: messagesUrgents.filter(m => !m.lu).length,
+    ofsAPrioriser: ofsAPrioriser.length,
+    alertesQualite: alertesQualite.length
   };
 
   if (loading) {
@@ -419,6 +421,27 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
                       <X className="w-4 h-4" />
                     </button>
                   </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Alertes Qualité Sous-Traitants */}
+      {alertesQualite.length > 0 && (
+        <div className="max-w-7xl mx-auto px-4 py-3">
+          <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+            <div className="flex items-center">
+              <AlertCircle className="w-5 h-5 text-red-600 mr-2" />
+              <h3 className="text-lg font-bold text-red-800">
+                {alertesQualite.length} Alerte(s) Qualité Sous-Traitant
+              </h3>
+            </div>
+            <div className="mt-2 space-y-2">
+              {alertesQualite.slice(0, 5).map((alerte: any) => (
+                <div key={alerte.id_sous_traitant} className="text-sm text-red-700 bg-white p-2 rounded">
+                  <span className="font-semibold">{alerte.raison_sociale}:</span> {alerte.message}
                 </div>
               ))}
             </div>
