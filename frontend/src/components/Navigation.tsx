@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Package, Users, ShoppingBag, Cog, Building2, FileText, LogOut, Settings, 
   Box, Layers, TrendingUp, Truck, Calendar, CheckCircle, DollarSign, MessageSquare, ShoppingCart,
   ChevronDown, ChevronRight, Factory, UserCircle, Wrench, Store, Receipt, ArrowLeft, RotateCcw,
-  Package2, Briefcase, ArrowRightLeft, Warehouse, ClipboardList, Scissors, Activity, Bell, AlertTriangle
+  Package2, Briefcase, ArrowRightLeft, Warehouse, ClipboardList, Scissors, Activity, Bell, AlertTriangle, Truck
 } from 'lucide-react';
 
 interface MenuItem {
