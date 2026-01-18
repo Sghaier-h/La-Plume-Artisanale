@@ -614,6 +614,106 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 py-6">
         {activeTab === 'vue-ensemble' && (
           <div className="space-y-6">
+            {/* OF à Sortir en Priorité */}
+            {ofsAPrioriser.length > 0 && (
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold flex items-center">
+                    <Zap className="w-6 h-6 mr-2 text-orange-600" />
+                    OF à Sortir en Priorité ({ofsAPrioriser.length})
+                  </h2>
+                  <button
+                    onClick={() => {
+                      if (ofsAPrioriser.length > 0) {
+                        setFormSortie({
+                          ...formSortie,
+                          id_of: ofsAPrioriser[0].id_of.toString()
+                        });
+                        setShowModalSortie(true);
+                      }
+                    }}
+                    className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center"
+                  >
+                    <ArrowRight className="w-4 h-4 mr-2" />
+                    Sortir le Premier OF
+                  </button>
+                </div>
+                <div className="bg-white rounded-lg shadow overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-sm font-semibold">Priorité</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold">Numéro OF</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold">Article</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold">Quantité</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold">Date Début Prévue</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold">Statut</th>
+                          <th className="px-4 py-3 text-center text-sm font-semibold">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {ofsAPrioriser.slice(0, 10).map((of: any) => (
+                          <tr key={of.id_of} className={`border-b hover:bg-gray-50 ${
+                            of.priorite === 'urgente' ? 'bg-red-50' : of.priorite === 'haute' ? 'bg-orange-50' : ''
+                          }`}>
+                            <td className="px-4 py-3">
+                              <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                                of.priorite === 'urgente' ? 'bg-red-100 text-red-800 animate-pulse' :
+                                of.priorite === 'haute' ? 'bg-orange-100 text-orange-800' :
+                                'bg-blue-100 text-blue-800'
+                              }`}>
+                                {of.priorite === 'urgente' ? 'URGENTE' :
+                                 of.priorite === 'haute' ? 'HAUTE' : 'NORMALE'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 font-medium">{of.numero_of}</td>
+                            <td className="px-4 py-3">
+                              <div>
+                                <div className="font-medium">{of.article_designation || of.code_article || '-'}</div>
+                                {of.code_article && of.article_designation && (
+                                  <div className="text-xs text-gray-500">{of.code_article}</div>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">{of.quantite_a_produire} {of.unite || ''}</td>
+                            <td className="px-4 py-3 text-sm">
+                              {of.date_debut_prevue ? new Date(of.date_debut_prevue).toLocaleDateString('fr-FR') : '-'}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800">
+                                {of.statut}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <button
+                                onClick={() => {
+                                  setFormSortie({
+                                    ...formSortie,
+                                    id_of: of.id_of.toString()
+                                  });
+                                  setShowModalSortie(true);
+                                }}
+                                className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm flex items-center mx-auto"
+                              >
+                                <ArrowRight className="w-4 h-4 mr-1" />
+                                Sortir
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {ofsAPrioriser.length > 10 && (
+                    <div className="p-4 bg-gray-50 text-center text-sm text-gray-600">
+                      + {ofsAPrioriser.length - 10} autre(s) OF en attente de sortie
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Liste des Sous-Traitants avec résumé */}
             <div>
               <h2 className="text-xl font-bold mb-4">Sous-Traitants Actifs</h2>
