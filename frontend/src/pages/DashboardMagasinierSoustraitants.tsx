@@ -3,7 +3,7 @@ import {
   Package, Truck, AlertTriangle, CheckCircle, Clock, Search, Scan, 
   ArrowRight, ArrowLeft, Plus, Filter, FileText, Calendar, Building2,
   Phone, Mail, MapPin, MessageSquare, Eye, BarChart3, TrendingUp, Bell,
-  X, User, Mail as MailIcon, Phone as PhoneIcon
+  X, User, Mail as MailIcon, Phone as PhoneIcon, AlertCircle, Zap
 } from 'lucide-react';
 import { soustraitantsService, ofService, messagesService } from '../services/api';
 
@@ -66,6 +66,8 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
   const [soustraitantsList, setSoustraitantsList] = useState<any[]>([]);
   const [ofs, setOfs] = useState<any[]>([]);
   const [alertes, setAlertes] = useState<any[]>([]);
+  const [alertesQualite, setAlertesQualite] = useState<any[]>([]);
+  const [ofsAPrioriser, setOfsAPrioriser] = useState<any[]>([]);
   const [messagesUrgents, setMessagesUrgents] = useState<MessageUrgent[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -148,6 +150,43 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
 
       setSoustraitants(soustraitantsDetails);
       setMouvements(mouvementsData);
+
+      // Identifier les OF prêts à sortir (non encore envoyés en sous-traitance)
+      const ofsIdsEnSousTraitance = new Set(mouvementsData.map(m => m.numero_of));
+      const ofsPretesASortir = (ofsRes.data?.data || [])
+        .filter((of: any) => {
+          // OF planifiés ou en attente, pas encore envoyés
+          return (of.statut === 'PLANIFIE' || of.statut === 'EN_ATTENTE') && 
+                 !ofsIdsEnSousTraitance.has(of.numero_of);
+        })
+        .sort((a: any, b: any) => {
+          // Trier par priorité: urgente > haute > normale
+          const prioriteOrder: any = { 'urgente': 1, 'haute': 2, 'normale': 3 };
+          const orderA = prioriteOrder[a.priorite] || 99;
+          const orderB = prioriteOrder[b.priorite] || 99;
+          return orderA - orderB;
+        });
+      setOfsAPrioriser(ofsPretesASortir);
+
+      // Générer alertes qualité pour les sous-traitants
+      const qualiteAlertes = soustraitantsDetails
+        .filter(st => {
+          // Alerte si taux qualité < 90% ou si beaucoup de retours en retard
+          return (st.taux_qualite !== null && st.taux_qualite < 90) ||
+                 (st.statistiques && st.statistiques.en_retard > 2);
+        })
+        .map(st => ({
+          id_sous_traitant: st.id_sous_traitant,
+          raison_sociale: st.raison_sociale,
+          type_alerte: st.taux_qualite !== null && st.taux_qualite < 90 ? 'qualite_faible' : 'retards_frequents',
+          taux_qualite: st.taux_qualite,
+          nb_retards: st.statistiques?.en_retard || 0,
+          message: st.taux_qualite !== null && st.taux_qualite < 90
+            ? `Taux de qualité faible: ${st.taux_qualite}%`
+            : `Nombre de retards élevé: ${st.statistiques?.en_retard || 0}`
+        }));
+      setAlertesQualite(qualiteAlertes);
+
       await loadMessages();
     } catch (error) {
       console.error('Erreur chargement données:', error);
@@ -412,7 +451,7 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
       {/* Statistiques Rapides */}
       {activeTab === 'vue-ensemble' && (
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
             <div className="bg-white rounded-lg shadow p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -456,6 +495,24 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
                   <p className="text-2xl font-bold text-red-600">{stats.messagesNonLus}</p>
                 </div>
                 <MessageSquare className="w-8 h-8 text-red-600" />
+              </div>
+            </div>
+            <div className="bg-white rounded-lg shadow p-4 border-2 border-orange-300">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">OF à Prioriser</p>
+                  <p className="text-2xl font-bold text-orange-600">{stats.ofsAPrioriser}</p>
+                </div>
+                <Zap className="w-8 h-8 text-orange-600" />
+              </div>
+            </div>
+            <div className="bg-white rounded-lg shadow p-4 border-2 border-red-300">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Alertes Qualité</p>
+                  <p className="text-2xl font-bold text-red-600">{stats.alertesQualite}</p>
+                </div>
+                <AlertCircle className="w-8 h-8 text-red-600" />
               </div>
             </div>
           </div>
