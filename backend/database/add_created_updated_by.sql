@@ -6,15 +6,15 @@
 -- ============================================================================
 
 -- Fonction pour vérifier si une colonne existe
-CREATE OR REPLACE FUNCTION column_exists(table_name TEXT, column_name TEXT)
+CREATE OR REPLACE FUNCTION column_exists(p_table_name TEXT, p_column_name TEXT)
 RETURNS BOOLEAN AS $$
 BEGIN
     RETURN EXISTS (
         SELECT 1
-        FROM information_schema.columns
-        WHERE table_schema = 'public'
-        AND table_name = $1
-        AND column_name = $2
+        FROM information_schema.columns c
+        WHERE c.table_schema = 'public'
+        AND c.table_name = p_table_name
+        AND c.column_name = p_column_name
     );
 END;
 $$ LANGUAGE plpgsql;
