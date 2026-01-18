@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Package, Truck, AlertTriangle, CheckCircle, Clock, Search, Scan, 
-  ArrowRight, ArrowLeft, Plus, Filter, FileText, Calendar, Building2 
+  ArrowRight, ArrowLeft, Plus, Filter, FileText, Calendar, Building2,
+  Phone, Mail, MapPin, MessageSquare, Eye, BarChart3, TrendingUp, Bell,
+  X, User, Mail as MailIcon, Phone as PhoneIcon
 } from 'lucide-react';
-import { soustraitantsService, ofService } from '../services/api';
+import { soustraitantsService, ofService, messagesService } from '../services/api';
 
 interface Mouvement {
   id_mouvement_st: number;
@@ -20,16 +22,55 @@ interface Mouvement {
   numero_suivi_transporteur?: string;
   statut: string;
   quantite?: number;
+  article_designation?: string;
+}
+
+interface SoustraitantDetails {
+  id_sous_traitant: number;
+  code_sous_traitant: string;
+  raison_sociale: string;
+  adresse?: string;
+  telephone?: string;
+  email?: string;
+  contact_principal?: string;
+  specialite?: string;
+  capacite_production?: string;
+  delai_moyen_jours?: number;
+  taux_qualite?: number;
+  actif: boolean;
+  mouvements?: Mouvement[];
+  statistiques?: {
+    total_mouvements: number;
+    en_cours: number;
+    en_retard: number;
+    retournes: number;
+  };
+}
+
+interface MessageUrgent {
+  id_message: number;
+  sujet: string;
+  message: string;
+  expediteur_nom?: string;
+  id_of?: number;
+  numero_of?: string;
+  urgent: boolean;
+  lu: boolean;
+  created_at: string;
 }
 
 const DashboardMagasinierSoustraitants: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'sorties' | 'retours' | 'historique'>('sorties');
+  const [activeTab, setActiveTab] = useState<'vue-ensemble' | 'soustraitants' | 'sorties' | 'retours' | 'messages'>('vue-ensemble');
   const [mouvements, setMouvements] = useState<Mouvement[]>([]);
-  const [soustraitants, setSoustraitants] = useState<any[]>([]);
+  const [soustraitants, setSoustraitants] = useState<SoustraitantDetails[]>([]);
+  const [soustraitantsList, setSoustraitantsList] = useState<any[]>([]);
   const [ofs, setOfs] = useState<any[]>([]);
   const [alertes, setAlertes] = useState<any[]>([]);
+  const [messagesUrgents, setMessagesUrgents] = useState<MessageUrgent[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [selectedSoustraitant, setSelectedSoustraitant] = useState<SoustraitantDetails | null>(null);
+  const [showModalDetails, setShowModalDetails] = useState(false);
 
   // Modal Sortie
   const [showModalSortie, setShowModalSortie] = useState(false);
@@ -57,29 +98,41 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
 
   useEffect(() => {
     loadData();
+    // Polling toutes les 10 secondes pour les messages
+    const interval = setInterval(() => {
+      loadMessages();
+    }, 10000);
+    return () => clearInterval(interval);
   }, [activeTab]);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      // Charger tous les mouvements via les sous-traitants
       const [soustraitantsRes, ofsRes, alertesRes] = await Promise.all([
         soustraitantsService.getSoustraitants({ actif: 'true' }),
-        ofService.getOFs({ statut: 'PLANIFIE' }),
+        ofService.getOFs({}),
         soustraitantsService.getAlertesRetard()
       ]);
 
-      setSoustraitants(soustraitantsRes.data.data);
+      setSoustraitantsList(soustraitantsRes.data.data);
       setOfs(ofsRes.data?.data || []);
       setAlertes(alertesRes.data.data);
 
-      // Charger les mouvements pour chaque sous-traitant
+      // Charger les détails de chaque sous-traitant
+      const soustraitantsDetails: SoustraitantDetails[] = [];
       const mouvementsData: Mouvement[] = [];
+
       for (const st of soustraitantsRes.data.data) {
         try {
-          const mouvRes = await soustraitantsService.getMouvements(st.id_sous_traitant, {
-            statut: activeTab === 'retours' ? 'en_cours' : undefined
-          });
+          const [detailRes, mouvRes] = await Promise.all([
+            soustraitantsService.getSoustraitant(st.id_sous_traitant),
+            soustraitantsService.getMouvements(st.id_sous_traitant, {})
+          ]);
+
+          if (detailRes.data.data) {
+            soustraitantsDetails.push(detailRes.data.data);
+          }
+
           if (mouvRes.data.data) {
             mouvRes.data.data.forEach((m: any) => {
               mouvementsData.push({
@@ -89,22 +142,41 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
             });
           }
         } catch (err) {
-          console.error(`Erreur chargement mouvements pour ST ${st.id_sous_traitant}:`, err);
+          console.error(`Erreur chargement détails ST ${st.id_sous_traitant}:`, err);
         }
       }
 
-      // Filtrer selon l'onglet actif
-      if (activeTab === 'sorties') {
-        setMouvements(mouvementsData.filter(m => m.type_mouvement === 'sortie' && m.statut === 'en_cours'));
-      } else if (activeTab === 'retours') {
-        setMouvements(mouvementsData.filter(m => m.statut === 'en_cours'));
-      } else {
-        setMouvements(mouvementsData);
-      }
+      setSoustraitants(soustraitantsDetails);
+      setMouvements(mouvementsData);
+      await loadMessages();
     } catch (error) {
       console.error('Erreur chargement données:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadMessages = async () => {
+    try {
+      const res = await messagesService.getMessages({ lu: 'false' });
+      const allMessages = res.data.data?.messages || [];
+      
+      // Filtrer les messages urgents liés aux OF en sous-traitance
+      const ofsEnCours = mouvements
+        .filter(m => m.statut === 'en_cours')
+        .map(m => m.numero_of);
+      
+      const messagesFiltres = allMessages.filter((msg: MessageUrgent) => {
+        // Messages urgents
+        if (msg.urgent) return true;
+        // Messages liés à un OF en sous-traitance
+        if (msg.numero_of && ofsEnCours.includes(msg.numero_of)) return true;
+        return false;
+      });
+
+      setMessagesUrgents(messagesFiltres);
+    } catch (error) {
+      console.error('Erreur chargement messages:', error);
     }
   };
 
@@ -189,6 +261,15 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
     });
   };
 
+  const handleMarquerMessageLu = async (idMessage: number) => {
+    try {
+      await messagesService.marquerMessageLu(idMessage);
+      await loadMessages();
+    } catch (error) {
+      console.error('Erreur marquer message lu:', error);
+    }
+  };
+
   const filteredMouvements = mouvements.filter(m => {
     if (!search) return true;
     const searchLower = search.toLowerCase();
@@ -200,6 +281,18 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
       m.qr_code_retour?.toLowerCase().includes(searchLower)
     );
   });
+
+  const mouvementsEnCours = mouvements.filter(m => m.statut === 'en_cours');
+  const mouvementsRetard = alertes;
+
+  // Statistiques globales
+  const stats = {
+    totalSoustraitants: soustraitants.length,
+    totalEnCours: mouvementsEnCours.length,
+    totalRetard: mouvementsRetard.length,
+    totalRetournes: mouvements.filter(m => m.statut === 'retourne').length,
+    messagesNonLus: messagesUrgents.filter(m => !m.lu).length
+  };
 
   if (loading) {
     return (
@@ -223,10 +316,18 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
                 Dashboard Magasinier Sous-Traitants
               </h1>
               <p className="text-sm text-gray-600 mt-1">
-                Gestion des transferts et retours vers/des sous-traitants
+                Gestion complète des transferts et retours vers/des sous-traitants
               </p>
             </div>
             <div className="flex items-center space-x-4">
+              {messagesUrgents.filter(m => !m.lu).length > 0 && (
+                <div className="relative">
+                  <Bell className="w-6 h-6 text-red-600 animate-pulse" />
+                  <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {messagesUrgents.filter(m => !m.lu).length}
+                  </span>
+                </div>
+              )}
               <button
                 onClick={() => {
                   if (activeTab === 'sorties') {
@@ -238,16 +339,57 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
               >
                 <Plus className="w-4 h-4 mr-2" />
-                {activeTab === 'sorties' ? 'Nouvelle Sortie' : activeTab === 'retours' ? 'Enregistrer Retour' : 'Nouveau'}
+                {activeTab === 'sorties' ? 'Nouvelle Sortie' : activeTab === 'retours' ? 'Enregistrer Retour' : 'Action'}
               </button>
             </div>
           </div>
         </div>
       </div>
 
+      {/* Messages Urgents Banner */}
+      {messagesUrgents.filter(m => !m.lu).length > 0 && (
+        <div className="max-w-7xl mx-auto px-4 py-3">
+          <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <Bell className="w-5 h-5 text-red-600 mr-2 animate-pulse" />
+                <h3 className="text-lg font-bold text-red-800">
+                  {messagesUrgents.filter(m => !m.lu).length} Message(s) Urgent(s)
+                </h3>
+              </div>
+              <button
+                onClick={() => setActiveTab('messages')}
+                className="text-red-700 hover:text-red-900 underline text-sm"
+              >
+                Voir tous les messages
+              </button>
+            </div>
+            <div className="mt-2 space-y-2">
+              {messagesUrgents.filter(m => !m.lu).slice(0, 3).map((msg) => (
+                <div key={msg.id_message} className="text-sm text-red-700 bg-white p-2 rounded">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <span className="font-semibold">{msg.expediteur_nom || 'Système'}: </span>
+                      <span>{msg.sujet}</span>
+                      {msg.numero_of && <span className="ml-2 text-xs">(OF: {msg.numero_of})</span>}
+                    </div>
+                    <button
+                      onClick={() => handleMarquerMessageLu(msg.id_message)}
+                      className="ml-2 text-red-600 hover:text-red-800"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Alertes Retards */}
       {alertes.length > 0 && (
-        <div className="max-w-7xl mx-auto px-4 py-4">
+        <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="bg-orange-50 border-l-4 border-orange-500 p-4 rounded">
             <div className="flex items-center">
               <AlertTriangle className="w-5 h-5 text-orange-600 mr-2" />
@@ -267,13 +409,88 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
         </div>
       )}
 
+      {/* Statistiques Rapides */}
+      {activeTab === 'vue-ensemble' && (
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div className="bg-white rounded-lg shadow p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Sous-Traitants</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.totalSoustraitants}</p>
+                </div>
+                <Building2 className="w-8 h-8 text-blue-600" />
+              </div>
+            </div>
+            <div className="bg-white rounded-lg shadow p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">En Cours</p>
+                  <p className="text-2xl font-bold text-yellow-600">{stats.totalEnCours}</p>
+                </div>
+                <Clock className="w-8 h-8 text-yellow-600" />
+              </div>
+            </div>
+            <div className="bg-white rounded-lg shadow p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">En Retard</p>
+                  <p className="text-2xl font-bold text-orange-600">{stats.totalRetard}</p>
+                </div>
+                <AlertTriangle className="w-8 h-8 text-orange-600" />
+              </div>
+            </div>
+            <div className="bg-white rounded-lg shadow p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Retournés</p>
+                  <p className="text-2xl font-bold text-green-600">{stats.totalRetournes}</p>
+                </div>
+                <CheckCircle className="w-8 h-8 text-green-600" />
+              </div>
+            </div>
+            <div className="bg-white rounded-lg shadow p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Messages</p>
+                  <p className="text-2xl font-bold text-red-600">{stats.messagesNonLus}</p>
+                </div>
+                <MessageSquare className="w-8 h-8 text-red-600" />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Navigation Tabs */}
       <div className="bg-white border-b sticky top-0 z-10 shadow-sm">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="flex space-x-1">
+          <div className="flex space-x-1 overflow-x-auto">
+            <button
+              onClick={() => setActiveTab('vue-ensemble')}
+              className={`flex items-center space-x-2 px-4 py-3 border-b-2 transition-colors whitespace-nowrap ${
+                activeTab === 'vue-ensemble'
+                  ? 'border-blue-600 text-blue-600 bg-blue-50'
+                  : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <BarChart3 className="w-4 h-4" />
+              <span className="font-medium">Vue d'Ensemble</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('soustraitants')}
+              className={`flex items-center space-x-2 px-4 py-3 border-b-2 transition-colors whitespace-nowrap ${
+                activeTab === 'soustraitants'
+                  ? 'border-blue-600 text-blue-600 bg-blue-50'
+                  : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <Building2 className="w-4 h-4" />
+              <span className="font-medium">Sous-Traitants</span>
+            </button>
             <button
               onClick={() => setActiveTab('sorties')}
-              className={`flex items-center space-x-2 px-4 py-3 border-b-2 transition-colors ${
+              className={`flex items-center space-x-2 px-4 py-3 border-b-2 transition-colors whitespace-nowrap ${
                 activeTab === 'sorties'
                   ? 'border-blue-600 text-blue-600 bg-blue-50'
                   : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50'
@@ -284,7 +501,7 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
             </button>
             <button
               onClick={() => setActiveTab('retours')}
-              className={`flex items-center space-x-2 px-4 py-3 border-b-2 transition-colors ${
+              className={`flex items-center space-x-2 px-4 py-3 border-b-2 transition-colors whitespace-nowrap ${
                 activeTab === 'retours'
                   ? 'border-blue-600 text-blue-600 bg-blue-50'
                   : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50'
@@ -294,114 +511,478 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
               <span className="font-medium">Retours</span>
             </button>
             <button
-              onClick={() => setActiveTab('historique')}
-              className={`flex items-center space-x-2 px-4 py-3 border-b-2 transition-colors ${
-                activeTab === 'historique'
+              onClick={() => setActiveTab('messages')}
+              className={`flex items-center space-x-2 px-4 py-3 border-b-2 transition-colors whitespace-nowrap relative ${
+                activeTab === 'messages'
                   ? 'border-blue-600 text-blue-600 bg-blue-50'
                   : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50'
               }`}
             >
-              <FileText className="w-4 h-4" />
-              <span className="font-medium">Historique</span>
+              <MessageSquare className="w-4 h-4" />
+              <span className="font-medium">Messages</span>
+              {messagesUrgents.filter(m => !m.lu).length > 0 && (
+                <span className="absolute top-1 right-1 bg-red-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                  {messagesUrgents.filter(m => !m.lu).length}
+                </span>
+              )}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Content */}
+      {/* Content selon l'onglet actif */}
       <div className="max-w-7xl mx-auto px-4 py-6">
-        {/* Search */}
-        <div className="mb-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Rechercher par numéro mouvement, sous-traitant, OF, QR code..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-        </div>
+        {activeTab === 'vue-ensemble' && (
+          <div className="space-y-6">
+            {/* Liste des Sous-Traitants avec résumé */}
+            <div>
+              <h2 className="text-xl font-bold mb-4">Sous-Traitants Actifs</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {soustraitants.map(st => (
+                  <div key={st.id_sous_traitant} className="bg-white rounded-lg shadow p-4 hover:shadow-lg transition-shadow cursor-pointer"
+                    onClick={() => {
+                      setSelectedSoustraitant(st);
+                      setShowModalDetails(true);
+                    }}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h3 className="font-bold text-lg">{st.raison_sociale}</h3>
+                        <p className="text-sm text-gray-600">{st.code_sous_traitant}</p>
+                      </div>
+                      <Eye className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      {st.specialite && (
+                        <p><span className="font-semibold">Spécialité:</span> {st.specialite}</p>
+                      )}
+                      {st.statistiques && (
+                        <div className="flex space-x-4 mt-3 pt-3 border-t">
+                          <div>
+                            <span className="text-gray-600">En cours:</span>
+                            <span className="ml-2 font-bold text-yellow-600">{st.statistiques.en_cours || 0}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-600">Retard:</span>
+                            <span className="ml-2 font-bold text-orange-600">{st.statistiques.en_retard || 0}</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-        {/* Liste des mouvements */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full">
-              <thead className="bg-gray-50 border-b">
-                <tr>
-                  <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">Numéro</th>
-                  <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">Sous-Traitant</th>
-                  <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">OF</th>
-                  <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">QR Code</th>
-                  <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">Num. Suivi</th>
-                  <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">Date Sortie</th>
-                  <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">Retour Prévu</th>
-                  <th className="text-center py-3 px-4 font-semibold text-sm text-gray-700">Statut</th>
-                  <th className="text-center py-3 px-4 font-semibold text-sm text-gray-700">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredMouvements.length === 0 ? (
-                  <tr>
-                    <td colSpan={9} className="text-center py-8 text-gray-500">
-                      Aucun mouvement trouvé
-                    </td>
-                  </tr>
-                ) : (
-                  filteredMouvements.map((mouvement) => (
-                    <tr key={mouvement.id_mouvement_st} className="border-b hover:bg-gray-50">
-                      <td className="py-3 px-4 font-medium">{mouvement.numero_mouvement}</td>
-                      <td className="py-3 px-4">{mouvement.raison_sociale}</td>
-                      <td className="py-3 px-4">{mouvement.numero_of || '-'}</td>
-                      <td className="py-3 px-4 font-mono text-xs">
-                        {mouvement.qr_code_sortie || mouvement.qr_code_retour || '-'}
-                      </td>
-                      <td className="py-3 px-4 font-mono text-xs">
-                        {mouvement.numero_suivi_transporteur || '-'}
-                      </td>
-                      <td className="py-3 px-4 text-sm">
-                        {new Date(mouvement.date_mouvement).toLocaleDateString('fr-FR')}
-                      </td>
-                      <td className="py-3 px-4 text-sm">
-                        {mouvement.date_retour_prevue ? (
-                          new Date(mouvement.date_retour_prevue).toLocaleDateString('fr-FR')
-                        ) : '-'}
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                          mouvement.statut === 'en_cours' ? 'bg-yellow-100 text-yellow-800' :
-                          mouvement.statut === 'retourne' ? 'bg-green-100 text-green-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {mouvement.statut}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        {activeTab === 'retours' && mouvement.statut === 'en_cours' && (
-                          <button
-                            onClick={() => {
-                              setFormRetour({
-                                ...formRetour,
-                                id_mouvement: mouvement.id_mouvement_st.toString(),
-                                qr_code_retour: mouvement.qr_code_sortie || ''
-                              });
-                              setShowModalRetour(true);
-                            }}
-                            className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
-                          >
-                            Enregistrer Retour
-                          </button>
-                        )}
-                      </td>
+            {/* Mouvements récents */}
+            <div>
+              <h2 className="text-xl font-bold mb-4">Mouvements Récents</h2>
+              <div className="bg-white rounded-lg shadow overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-sm font-semibold">Numéro</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold">Sous-Traitant</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold">OF</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold">Statut</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold">Date Sortie</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredMouvements.slice(0, 10).map(m => (
+                        <tr key={m.id_mouvement_st} className="border-b hover:bg-gray-50">
+                          <td className="px-4 py-3 text-sm font-medium">{m.numero_mouvement}</td>
+                          <td className="px-4 py-3 text-sm">{m.raison_sociale}</td>
+                          <td className="px-4 py-3 text-sm">{m.numero_of || '-'}</td>
+                          <td className="px-4 py-3">
+                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                              m.statut === 'en_cours' ? 'bg-yellow-100 text-yellow-800' :
+                              m.statut === 'retourne' ? 'bg-green-100 text-green-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {m.statut}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            {new Date(m.date_mouvement).toLocaleDateString('fr-FR')}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'soustraitants' && (
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold">Liste Complète des Sous-Traitants</h2>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Rechercher..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {soustraitants
+                .filter(st => !search || st.raison_sociale.toLowerCase().includes(search.toLowerCase()))
+                .map(st => (
+                <div key={st.id_sous_traitant} className="bg-white rounded-lg shadow p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <h3 className="text-xl font-bold">{st.raison_sociale}</h3>
+                      <p className="text-sm text-gray-600">{st.code_sous_traitant}</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setSelectedSoustraitant(st);
+                        setShowModalDetails(true);
+                      }}
+                      className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                    >
+                      <Eye className="w-4 h-4 inline mr-1" />
+                      Détails
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-2 text-sm mb-4">
+                    {st.specialite && (
+                      <p><span className="font-semibold">Spécialité:</span> {st.specialite}</p>
+                    )}
+                    {st.delai_moyen_jours && (
+                      <p><span className="font-semibold">Délai moyen:</span> {st.delai_moyen_jours} jours</p>
+                    )}
+                    {st.telephone && (
+                      <p className="flex items-center">
+                        <PhoneIcon className="w-4 h-4 mr-2 text-gray-600" />
+                        {st.telephone}
+                      </p>
+                    )}
+                    {st.email && (
+                      <p className="flex items-center">
+                        <MailIcon className="w-4 h-4 mr-2 text-gray-600" />
+                        {st.email}
+                      </p>
+                    )}
+                  </div>
+
+                  {st.statistiques && (
+                    <div className="pt-4 border-t">
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        <div>
+                          <p className="text-xs text-gray-600">En cours</p>
+                          <p className="text-lg font-bold text-yellow-600">{st.statistiques.en_cours || 0}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-600">Retard</p>
+                          <p className="text-lg font-bold text-orange-600">{st.statistiques.en_retard || 0}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-600">Total</p>
+                          <p className="text-lg font-bold text-gray-900">{st.statistiques.total_mouvements || 0}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {(activeTab === 'sorties' || activeTab === 'retours') && (
+          <>
+            <div className="mb-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Rechercher par numéro mouvement, sous-traitant, OF, QR code..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full">
+                  <thead className="bg-gray-50 border-b">
+                    <tr>
+                      <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">Numéro</th>
+                      <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">Sous-Traitant</th>
+                      <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">OF</th>
+                      <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">QR Code</th>
+                      <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">Num. Suivi</th>
+                      <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">Date Sortie</th>
+                      <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">Retour Prévu</th>
+                      <th className="text-center py-3 px-4 font-semibold text-sm text-gray-700">Statut</th>
+                      <th className="text-center py-3 px-4 font-semibold text-sm text-gray-700">Actions</th>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  </thead>
+                  <tbody>
+                    {filteredMouvements
+                      .filter(m => activeTab === 'sorties' 
+                        ? m.type_mouvement === 'sortie' && m.statut === 'en_cours'
+                        : m.statut === 'en_cours'
+                      )
+                      .length === 0 ? (
+                      <tr>
+                        <td colSpan={9} className="text-center py-8 text-gray-500">
+                          Aucun mouvement trouvé
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredMouvements
+                        .filter(m => activeTab === 'sorties' 
+                          ? m.type_mouvement === 'sortie' && m.statut === 'en_cours'
+                          : m.statut === 'en_cours'
+                        )
+                        .map((mouvement) => (
+                        <tr key={mouvement.id_mouvement_st} className="border-b hover:bg-gray-50">
+                          <td className="py-3 px-4 font-medium">{mouvement.numero_mouvement}</td>
+                          <td className="py-3 px-4">{mouvement.raison_sociale}</td>
+                          <td className="py-3 px-4">{mouvement.numero_of || '-'}</td>
+                          <td className="py-3 px-4 font-mono text-xs">
+                            {mouvement.qr_code_sortie || mouvement.qr_code_retour || '-'}
+                          </td>
+                          <td className="py-3 px-4 font-mono text-xs">
+                            {mouvement.numero_suivi_transporteur || '-'}
+                          </td>
+                          <td className="py-3 px-4 text-sm">
+                            {new Date(mouvement.date_mouvement).toLocaleDateString('fr-FR')}
+                          </td>
+                          <td className="py-3 px-4 text-sm">
+                            {mouvement.date_retour_prevue ? (
+                              new Date(mouvement.date_retour_prevue).toLocaleDateString('fr-FR')
+                            ) : '-'}
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                              mouvement.statut === 'en_cours' ? 'bg-yellow-100 text-yellow-800' :
+                              mouvement.statut === 'retourne' ? 'bg-green-100 text-green-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {mouvement.statut}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            {activeTab === 'retours' && mouvement.statut === 'en_cours' && (
+                              <button
+                                onClick={() => {
+                                  setFormRetour({
+                                    ...formRetour,
+                                    id_mouvement: mouvement.id_mouvement_st.toString(),
+                                    qr_code_retour: mouvement.qr_code_sortie || ''
+                                  });
+                                  setShowModalRetour(true);
+                                }}
+                                className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
+                              >
+                                Enregistrer Retour
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        )}
+
+        {activeTab === 'messages' && (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold">Messages et Alertes des Autres Postes</h2>
+            {messagesUrgents.length === 0 ? (
+              <div className="bg-white rounded-lg shadow p-8 text-center">
+                <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600">Aucun message urgent pour le moment</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {messagesUrgents.map(msg => (
+                  <div key={msg.id_message} className={`bg-white rounded-lg shadow p-4 border-l-4 ${
+                    msg.urgent ? 'border-red-500' : 'border-blue-500'
+                  }`}>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
+                          {msg.urgent && <AlertTriangle className="w-5 h-5 text-red-600" />}
+                          <h3 className="font-bold text-lg">{msg.sujet}</h3>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-2">
+                          De: <span className="font-semibold">{msg.expediteur_nom || 'Système'}</span>
+                          {msg.numero_of && (
+                            <span className="ml-4">OF concerné: <span className="font-semibold">{msg.numero_of}</span></span>
+                          )}
+                        </p>
+                        <p className="text-gray-700 whitespace-pre-wrap">{msg.message}</p>
+                        <p className="text-xs text-gray-500 mt-2">
+                          {new Date(msg.created_at).toLocaleString('fr-FR')}
+                        </p>
+                      </div>
+                      {!msg.lu && (
+                        <button
+                          onClick={() => handleMarquerMessageLu(msg.id_message)}
+                          className="ml-4 px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm"
+                        >
+                          Marquer lu
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Modal Détails Sous-Traitant */}
+      {showModalDetails && selectedSoustraitant && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b flex items-center justify-between">
+              <h3 className="text-xl font-bold text-gray-900">Détails Sous-Traitant</h3>
+              <button onClick={() => setShowModalDetails(false)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-6 space-y-6">
+              <div>
+                <h4 className="text-lg font-bold mb-2">{selectedSoustraitant.raison_sociale}</h4>
+                <p className="text-sm text-gray-600">Code: {selectedSoustraitant.code_sous_traitant}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <h5 className="font-semibold mb-3">Informations Contact</h5>
+                  <div className="space-y-2 text-sm">
+                    {selectedSoustraitant.telephone && (
+                      <p className="flex items-center">
+                        <PhoneIcon className="w-4 h-4 mr-2 text-gray-600" />
+                        {selectedSoustraitant.telephone}
+                      </p>
+                    )}
+                    {selectedSoustraitant.email && (
+                      <p className="flex items-center">
+                        <MailIcon className="w-4 h-4 mr-2 text-gray-600" />
+                        {selectedSoustraitant.email}
+                      </p>
+                    )}
+                    {selectedSoustraitant.adresse && (
+                      <p className="flex items-start">
+                        <MapPin className="w-4 h-4 mr-2 text-gray-600 mt-1" />
+                        <span>{selectedSoustraitant.adresse}</span>
+                      </p>
+                    )}
+                    {selectedSoustraitant.contact_principal && (
+                      <p><span className="font-semibold">Contact principal:</span> {selectedSoustraitant.contact_principal}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <h5 className="font-semibold mb-3">Informations Techniques</h5>
+                  <div className="space-y-2 text-sm">
+                    {selectedSoustraitant.specialite && (
+                      <p><span className="font-semibold">Spécialité:</span> {selectedSoustraitant.specialite}</p>
+                    )}
+                    {selectedSoustraitant.delai_moyen_jours && (
+                      <p><span className="font-semibold">Délai moyen:</span> {selectedSoustraitant.delai_moyen_jours} jours</p>
+                    )}
+                    {selectedSoustraitant.capacite_production && (
+                      <p><span className="font-semibold">Capacité:</span> {selectedSoustraitant.capacite_production}</p>
+                    )}
+                    {selectedSoustraitant.taux_qualite && (
+                      <p><span className="font-semibold">Taux qualité:</span> {selectedSoustraitant.taux_qualite}%</p>
+                    )}
+                    <p>
+                      <span className="font-semibold">Statut:</span>{' '}
+                      <span className={`px-2 py-1 rounded text-xs ${
+                        selectedSoustraitant.actif ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      }`}>
+                        {selectedSoustraitant.actif ? 'Actif' : 'Inactif'}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {selectedSoustraitant.statistiques && (
+                <div>
+                  <h5 className="font-semibold mb-3">Statistiques</h5>
+                  <div className="grid grid-cols-4 gap-4">
+                    <div className="bg-gray-50 p-3 rounded text-center">
+                      <p className="text-sm text-gray-600">Total</p>
+                      <p className="text-2xl font-bold">{selectedSoustraitant.statistiques.total_mouvements || 0}</p>
+                    </div>
+                    <div className="bg-yellow-50 p-3 rounded text-center">
+                      <p className="text-sm text-gray-600">En cours</p>
+                      <p className="text-2xl font-bold text-yellow-600">{selectedSoustraitant.statistiques.en_cours || 0}</p>
+                    </div>
+                    <div className="bg-orange-50 p-3 rounded text-center">
+                      <p className="text-sm text-gray-600">En retard</p>
+                      <p className="text-2xl font-bold text-orange-600">{selectedSoustraitant.statistiques.en_retard || 0}</p>
+                    </div>
+                    <div className="bg-green-50 p-3 rounded text-center">
+                      <p className="text-sm text-gray-600">Retournés</p>
+                      <p className="text-2xl font-bold text-green-600">{selectedSoustraitant.statistiques.retournes || 0}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {selectedSoustraitant.mouvements && selectedSoustraitant.mouvements.length > 0 && (
+                <div>
+                  <h5 className="font-semibold mb-3">OF en Cours chez ce Sous-Traitant</h5>
+                  <div className="bg-gray-50 rounded p-4 max-h-60 overflow-y-auto">
+                    <div className="space-y-2">
+                      {selectedSoustraitant.mouvements.map(mouv => (
+                        <div key={mouv.id_mouvement_st} className="bg-white p-3 rounded border">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-semibold">{mouv.numero_of}</p>
+                              {mouv.article_designation && (
+                                <p className="text-sm text-gray-600">{mouv.article_designation}</p>
+                              )}
+                              <p className="text-xs text-gray-500">
+                                Sortie: {new Date(mouv.date_mouvement).toLocaleDateString('fr-FR')}
+                                {mouv.date_retour_prevue && (
+                                  <> | Retour prévu: {new Date(mouv.date_retour_prevue).toLocaleDateString('fr-FR')}</>
+                                )}
+                              </p>
+                            </div>
+                            <span className={`px-2 py-1 rounded text-xs ${
+                              mouv.statut === 'en_cours' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-green-100 text-green-800'
+                            }`}>
+                              {mouv.statut}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Modal Sortie */}
       {showModalSortie && (
@@ -421,7 +1002,7 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
                     required
                   >
                     <option value="">Sélectionner...</option>
-                    {soustraitants.map(st => (
+                    {soustraitantsList.map(st => (
                       <option key={st.id_sous_traitant} value={st.id_sous_traitant}>
                         {st.raison_sociale}
                       </option>
@@ -445,7 +1026,6 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
                   </select>
                 </div>
               </div>
-
               <div>
                 <label className="block text-sm font-medium mb-1">
                   QR Code / Numéro de Suivi (Scanner ou Saisir) *
@@ -464,7 +1044,6 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
                   </button>
                 </div>
               </div>
-
               <div>
                 <label className="block text-sm font-medium mb-1">Numéro de Suivi Transporteur</label>
                 <input
@@ -475,7 +1054,6 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
                   className="w-full px-3 py-2 border rounded-lg"
                 />
               </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">Date Sortie *</label>
@@ -497,7 +1075,6 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
                   />
                 </div>
               </div>
-
               <div>
                 <label className="block text-sm font-medium mb-1">Observations</label>
                 <textarea
@@ -555,7 +1132,6 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
                   </button>
                 </div>
               </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">Date Retour *</label>
@@ -578,7 +1154,6 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
                   />
                 </div>
               </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">Quantité Conforme</label>
@@ -599,7 +1174,6 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
                   />
                 </div>
               </div>
-
               <div>
                 <label className="block text-sm font-medium mb-1">Observations</label>
                 <textarea
