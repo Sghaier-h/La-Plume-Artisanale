@@ -1,0 +1,10 @@
+{
+  "id": "access_excel-import",
+  "name": "ExcelImport Access",
+  "model_id": "excel-import.excel",
+  "group_id": "base.group_user",
+  "perm_read": true,
+  "perm_write": true,
+  "perm_create": true,
+  "perm_unlink": true
+}

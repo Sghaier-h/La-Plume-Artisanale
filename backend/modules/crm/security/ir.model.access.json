@@ -1,0 +1,8 @@
+{
+  "crm.lead": {
+    "read": ["group_system", "group_sales_manager", "group_sales_user"],
+    "write": ["group_system", "group_sales_manager", "group_sales_user"],
+    "create": ["group_system", "group_sales_manager", "group_sales_user"],
+    "unlink": ["group_system", "group_sales_manager"]
+  }
+}

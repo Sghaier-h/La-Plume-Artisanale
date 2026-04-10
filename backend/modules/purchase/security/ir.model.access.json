@@ -1,0 +1,13 @@
+{
+  "purchase.order": [
+    {
+      "id": "access_purchase_order_user",
+      "name": "purchase.order.user",
+      "group": "base.group_user",
+      "perm_read": true,
+      "perm_write": true,
+      "perm_create": true,
+      "perm_unlink": false
+    }
+  ]
+}

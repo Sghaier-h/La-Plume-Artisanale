@@ -1,0 +1,33 @@
+{
+  "sale.order": [
+    {
+      "id": "access_sale_order_user",
+      "name": "sale.order.user",
+      "group": "sales_team.group_sale_salesman",
+      "perm_read": true,
+      "perm_write": true,
+      "perm_create": true,
+      "perm_unlink": false
+    },
+    {
+      "id": "access_sale_order_manager",
+      "name": "sale.order.manager",
+      "group": "sales_team.group_sale_manager",
+      "perm_read": true,
+      "perm_write": true,
+      "perm_create": true,
+      "perm_unlink": true
+    }
+  ],
+  "sale.order.line": [
+    {
+      "id": "access_sale_order_line_user",
+      "name": "sale.order.line.user",
+      "group": "sales_team.group_sale_salesman",
+      "perm_read": true,
+      "perm_write": true,
+      "perm_create": true,
+      "perm_unlink": true
+    }
+  ]
+}

@@ -1,0 +1,232 @@
+{
+  "sale.order": {
+    "name": "sale.order",
+    "model": "sale.order",
+    "views": {
+      "form": {
+        "type": "form",
+        "arch": {
+          "string": "Sales Order",
+          "header": {
+            "buttons": [
+              {
+                "name": "action_confirm",
+                "string": "Confirm",
+                "type": "object",
+                "class": "btn-primary",
+                "attrs": {
+                  "invisible": [["state", "!=", "draft"]]
+                }
+              },
+              {
+                "name": "action_cancel",
+                "string": "Cancel",
+                "type": "object",
+                "class": "btn-secondary",
+                "attrs": {
+                  "invisible": [["state", "in", ["cancel", "done"]]]
+                }
+              }
+            ],
+            "fields": [
+              {
+                "name": "state",
+                "widget": "statusbar",
+                "statusbar_visible": "draft,sent,sale"
+              }
+            ]
+          },
+          "sheet": {
+            "groups": [
+              {
+                "name": "main",
+                "string": "Order Information",
+                "fields": [
+                  {
+                    "name": "name",
+                    "string": "Order Reference",
+                    "required": true,
+                    "readonly": true
+                  },
+                  {
+                    "name": "partner_id",
+                    "string": "Customer",
+                    "type": "many2one",
+                    "required": true,
+                    "widget": "many2one"
+                  },
+                  {
+                    "name": "date_order",
+                    "string": "Order Date",
+                    "type": "datetime",
+                    "required": true
+                  },
+                  {
+                    "name": "state",
+                    "string": "Status",
+                    "type": "selection",
+                    "readonly": true
+                  }
+                ]
+              },
+              {
+                "name": "amounts",
+                "string": "Amounts",
+                "fields": [
+                  {
+                    "name": "amount_untaxed",
+                    "string": "Untaxed Amount",
+                    "type": "monetary",
+                    "readonly": true
+                  },
+                  {
+                    "name": "amount_tax",
+                    "string": "Taxes",
+                    "type": "monetary",
+                    "readonly": true
+                  },
+                  {
+                    "name": "amount_total",
+                    "string": "Total",
+                    "type": "monetary",
+                    "readonly": true
+                  }
+                ]
+              }
+            ],
+            "notebook": {
+              "pages": [
+                {
+                  "name": "order_lines",
+                  "string": "Order Lines",
+                  "fields": [
+                    {
+                      "name": "order_line",
+                      "type": "one2many",
+                      "widget": "list",
+                      "fields": [
+                        {
+                          "name": "product_id",
+                          "string": "Product",
+                          "type": "many2one",
+                          "required": true
+                        },
+                        {
+                          "name": "quantity",
+                          "string": "Quantity",
+                          "type": "float",
+                          "required": true
+                        },
+                        {
+                          "name": "price_unit",
+                          "string": "Unit Price",
+                          "type": "monetary",
+                          "required": true
+                        },
+                        {
+                          "name": "discount",
+                          "string": "Discount (%)",
+                          "type": "float"
+                        },
+                        {
+                          "name": "price_subtotal",
+                          "string": "Subtotal",
+                          "type": "monetary",
+                          "readonly": true
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      },
+      "tree": {
+        "type": "tree",
+        "arch": {
+          "string": "Sales Orders",
+          "decoration": {
+            "info": [["state", "==", "draft"]],
+            "success": [["state", "==", "sale"]],
+            "muted": [["state", "==", "cancel"]]
+          },
+          "fields": [
+            {
+              "name": "name",
+              "string": "Number",
+              "readonly": true
+            },
+            {
+              "name": "partner_id",
+              "string": "Customer",
+              "readonly": true
+            },
+            {
+              "name": "date_order",
+              "string": "Order Date",
+              "type": "datetime"
+            },
+            {
+              "name": "amount_total",
+              "string": "Total",
+              "type": "monetary"
+            },
+            {
+              "name": "state",
+              "string": "Status"
+            }
+          ]
+        }
+      },
+      "kanban": {
+        "type": "kanban",
+        "arch": {
+          "string": "Sales Orders",
+          "default_group_by": "state",
+          "fields": [
+            {
+              "name": "name",
+              "string": "Order Reference"
+            },
+            {
+              "name": "partner_id",
+              "string": "Customer"
+            },
+            {
+              "name": "amount_total",
+              "string": "Total",
+              "type": "monetary"
+            },
+            {
+              "name": "state",
+              "string": "Status"
+            }
+          ],
+          "templates": {
+            "card": {
+              "fields": [
+                {
+                  "name": "name",
+                  "class": "font-bold"
+                },
+                {
+                  "name": "partner_id"
+                },
+                {
+                  "name": "amount_total",
+                  "type": "monetary"
+                },
+                {
+                  "name": "state",
+                  "widget": "badge"
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

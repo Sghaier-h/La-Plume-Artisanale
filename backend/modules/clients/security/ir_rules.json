@@ -1,0 +1,28 @@
+{
+  "clients": [
+    {
+      "domain": [],
+      "groups": ["base.group_user"],
+      "description": "Tous les utilisateurs peuvent voir tous les clients"
+    },
+    {
+      "domain": [["id_commercial", "=", "user.id_utilisateur"]],
+      "groups": ["sales.group_sale_salesman"],
+      "description": "Les commerciaux voient leurs clients assignés"
+    }
+  ],
+  "adresses_client": [
+    {
+      "domain": [],
+      "groups": ["base.group_user"],
+      "description": "Tous les utilisateurs peuvent voir toutes les adresses"
+    }
+  ],
+  "contacts_client": [
+    {
+      "domain": [],
+      "groups": ["base.group_user"],
+      "description": "Tous les utilisateurs peuvent voir tous les contacts"
+    }
+  ]
+}

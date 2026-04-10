@@ -1,0 +1,10 @@
+{
+  "id": "access_qualite-avancee",
+  "name": "QualiteAvancee Access",
+  "model_id": "qualite-avancee.qualite",
+  "group_id": "base.group_user",
+  "perm_read": true,
+  "perm_write": true,
+  "perm_create": true,
+  "perm_unlink": true
+}

@@ -1,0 +1,10 @@
+{
+  "id": "access_pos",
+  "name": "Pos Access",
+  "model_id": "pos.pos",
+  "group_id": "base.group_user",
+  "perm_read": true,
+  "perm_write": true,
+  "perm_create": true,
+  "perm_unlink": true
+}

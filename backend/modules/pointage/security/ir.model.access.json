@@ -1,0 +1,10 @@
+{
+  "id": "access_pointage",
+  "name": "Pointage Access",
+  "model_id": "pointage.pointage",
+  "group_id": "base.group_user",
+  "perm_read": true,
+  "perm_write": true,
+  "perm_create": true,
+  "perm_unlink": true
+}

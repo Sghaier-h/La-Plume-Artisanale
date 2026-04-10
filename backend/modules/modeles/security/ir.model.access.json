@@ -1,0 +1,10 @@
+{
+  "id": "access_modeles",
+  "name": "Modeles Access",
+  "model_id": "modeles.modeles",
+  "group_id": "base.group_user",
+  "perm_read": true,
+  "perm_write": true,
+  "perm_create": true,
+  "perm_unlink": true
+}

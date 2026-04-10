@@ -1,0 +1,10 @@
+{
+  "id": "access_tracabilite-lots",
+  "name": "TracabiliteLots Access",
+  "model_id": "tracabilite-lots.tracabilite",
+  "group_id": "base.group_user",
+  "perm_read": true,
+  "perm_write": true,
+  "perm_create": true,
+  "perm_unlink": true
+}

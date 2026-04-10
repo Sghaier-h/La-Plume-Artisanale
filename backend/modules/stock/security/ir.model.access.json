@@ -1,0 +1,46 @@
+{
+  "stock.warehouse": [
+    {
+      "id": "access_stock_warehouse_user",
+      "name": "stock.warehouse.user",
+      "group": "base.group_user",
+      "perm_read": true,
+      "perm_write": false,
+      "perm_create": false,
+      "perm_unlink": false
+    }
+  ],
+  "stock.location": [
+    {
+      "id": "access_stock_location_user",
+      "name": "stock.location.user",
+      "group": "base.group_user",
+      "perm_read": true,
+      "perm_write": false,
+      "perm_create": false,
+      "perm_unlink": false
+    }
+  ],
+  "stock.move": [
+    {
+      "id": "access_stock_move_user",
+      "name": "stock.move.user",
+      "group": "base.group_user",
+      "perm_read": true,
+      "perm_write": true,
+      "perm_create": true,
+      "perm_unlink": false
+    }
+  ],
+  "stock.picking": [
+    {
+      "id": "access_stock_picking_user",
+      "name": "stock.picking.user",
+      "group": "base.group_user",
+      "perm_read": true,
+      "perm_write": true,
+      "perm_create": true,
+      "perm_unlink": false
+    }
+  ]
+}

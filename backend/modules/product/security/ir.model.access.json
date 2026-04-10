@@ -1,0 +1,33 @@
+{
+  "product.template": [
+    {
+      "id": "access_product_template_user",
+      "name": "product.template.user",
+      "group": "base.group_user",
+      "perm_read": true,
+      "perm_write": false,
+      "perm_create": false,
+      "perm_unlink": false
+    },
+    {
+      "id": "access_product_template_manager",
+      "name": "product.template.manager",
+      "group": "base.group_system",
+      "perm_read": true,
+      "perm_write": true,
+      "perm_create": true,
+      "perm_unlink": true
+    }
+  ],
+  "product.category": [
+    {
+      "id": "access_product_category_user",
+      "name": "product.category.user",
+      "group": "base.group_user",
+      "perm_read": true,
+      "perm_write": false,
+      "perm_create": false,
+      "perm_unlink": false
+    }
+  ]
+}

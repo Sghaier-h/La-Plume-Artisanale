@@ -1,0 +1,10 @@
+{
+  "id": "access_accounting-tunisia",
+  "name": "AccountingTunisia Access",
+  "model_id": "accounting-tunisia.accounting",
+  "group_id": "base.group_user",
+  "perm_read": true,
+  "perm_write": true,
+  "perm_create": true,
+  "perm_unlink": true
+}

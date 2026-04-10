@@ -1,0 +1,10 @@
+{
+  "id": "access_soustraitants",
+  "name": "Soustraitants Access",
+  "model_id": "soustraitants.soustraitants",
+  "group_id": "base.group_user",
+  "perm_read": true,
+  "perm_write": true,
+  "perm_create": true,
+  "perm_unlink": true
+}

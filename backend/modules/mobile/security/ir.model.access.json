@@ -1,0 +1,10 @@
+{
+  "id": "access_mobile",
+  "name": "Mobile Access",
+  "model_id": "mobile.mobile",
+  "group_id": "base.group_user",
+  "perm_read": true,
+  "perm_write": true,
+  "perm_create": true,
+  "perm_unlink": true
+}

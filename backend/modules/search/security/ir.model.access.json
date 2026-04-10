@@ -1,0 +1,10 @@
+{
+  "id": "access_search",
+  "name": "Search Access",
+  "model_id": "search.search",
+  "group_id": "base.group_user",
+  "perm_read": true,
+  "perm_write": true,
+  "perm_create": true,
+  "perm_unlink": true
+}

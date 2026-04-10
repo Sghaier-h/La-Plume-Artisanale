@@ -1,0 +1,10 @@
+{
+  "id": "access_matieres-premieres",
+  "name": "MatieresPremieres Access",
+  "model_id": "matieres-premieres.matieres",
+  "group_id": "base.group_user",
+  "perm_read": true,
+  "perm_write": true,
+  "perm_create": true,
+  "perm_unlink": true
+}
