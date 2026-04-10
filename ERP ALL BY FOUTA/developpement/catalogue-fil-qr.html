@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catalogue de Fils - La Plume Artisanale</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Roboto:wght@300;400;500;700&display=swap');
+        
+        @media print {
+            .no-print { display: none !important; }
+            .page-break { page-break-after: always; }
+            body { margin: 0; padding: 0; }
+            @page { 
+                size: A4 portrait;
+                margin: 5mm 5mm 5mm 20mm; 
+            }
+            .catalogue-page {
+                padding: 5mm 5mm 5mm 5mm;
+                margin: 0;
+                box-shadow: none;
+            }
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            background: #f8f9fa;
+            padding: 20px;
+        }
+        
+        .controls {
+            background: white;
+            padding: 25px;
+            margin-bottom: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .controls h2 {
+            color: #1e293b;
+            margin-bottom: 20px;
+            font-family: 'Playfair Display', serif;
+        }
+        
+        .file-input {
+            margin-bottom: 20px;
+        }
+        
+        .file-input label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #475569;
+        }
+        
+        input[type="file"] {
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            max-width: 500px;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="file"]:hover {
+            border-color: #3b82f6;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            margin-right: 10px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4);
+        }
+        
+        .info {
+            background: #f0f9ff;
+            border-left: 4px solid #3b82f6;
+            padding: 16px;
+            margin-top: 20px;
+            border-radius: 8px;
+        }
+        
+        .info strong {
+            color: #1e40af;
+            font-size: 16px;
+        }
+        
+        .catalogue-page {
+            background: white;
+            width: 210mm;
+            min-height: 297mm;
+            padding: 8mm 8mm 8mm 8mm;
+            margin: 0 auto 20px auto;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        
+        .page-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+            background: linear-gradient(to bottom, #ffffff 0%, #f8fafc 100%);
+        }
+        
+        .logo-container {
+            text-align: center;
+            margin-bottom: 6px;
+            width: 100%;
+        }
+        
+        .logo-container img {
+            width: 33.33%;
+            max-width: 250px;
+            height: auto;
+            max-height: 80px;
+            object-fit: contain;
+        }
+        
+        .page-subtitle {
+            font-family: 'Roboto', sans-serif;
+            font-size: 18px;
+            color: #475569;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-align: center;
+            margin-top: 8px;
+        }
+        
+        .code-commercial-banner {
+            background: linear-gradient(135deg, #f5f5dc 0%, #e8e8c8 100%);
+            border: 4px solid #d4a574;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .code-commercial-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 34px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+        
+        .code-commercial-subtitle {
+            font-size: 20px;
+            font-weight: 600;
+            opacity: 0.95;
+            letter-spacing: 0.5px;
+        }
+        
+        .table-container {
+            border: 3px solid #1e293b;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .fil-item {
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        .fil-item:last-child {
+            border-bottom: none;
+        }
+        
+        .fil-row-top {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .fil-row-bottom {
+            display: grid;
+            grid-template-columns: 100px 100px 1fr;
+            min-height: 135px;
+        }
+        
+        .info-cell {
+            padding: 10px 8px;
+            border-right: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .info-cell:last-child {
+            border-right: none;
+        }
+        
+        .info-label {
+            font-size: 9px;
+            text-transform: uppercase;
+            color: #64748b;
+            font-weight: 600;
+            margin-bottom: 4px;
+            letter-spacing: 0.5px;
+        }
+        
+        .info-value {
+            font-size: 12px;
+            font-weight: 600;
+            color: #1e293b;
+            text-align: center;
+        }
+        
+        .qr-cell {
+            border-right: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px;
+        }
+        
+        .position-cell {
+            border-right: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            padding: 8px;
+            gap: 6px;
+            background: #f8fafc;
+            justify-content: center;
+        }
+        
+        .position-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        
+        .checkbox {
+            width: 14px;
+            height: 14px;
+            border: 2px solid #475569;
+            border-radius: 3px;
+            display: inline-block;
+        }
+        
+        .echantillon-cell {
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+            border: 5px dashed #d97706;
+            margin: 5px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            box-shadow: inset 0 0 15px rgba(217, 119, 6, 0.15);
+        }
+        
+        .echantillon-icon {
+            font-size: 40px;
+            margin-bottom: 8px;
+            opacity: 0.8;
+        }
+        
+        .echantillon-text {
+            font-size: 14px;
+            font-weight: 700;
+            color: #92400e;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls no-print">
+        <h2>📚 Catalogue Professionnel de Fils - La Plume Artisanale</h2>
+        
+        <div class="file-input">
+            <label for="fileInput">📁 Charger votre fichier Excel :</label>
+            <input type="file" id="fileInput" accept=".xlsx,.xls" />
+        </div>
+        
+        <div class="file-input">
+            <label for="logoInput">🖼️ Charger votre logo (optionnel) :</label>
+            <input type="file" id="logoInput" accept=".png,.jpg,.jpeg,.svg" />
+            <p style="font-size: 12px; color: #64748b; margin-top: 5px;">Format recommandé : PNG ou SVG transparent, ratio ~3:1</p>
+            <button onclick="resetLogo()" style="margin-top: 8px; padding: 8px 16px; font-size: 14px; background: #64748b;">↻ Réinitialiser au logo par défaut</button>
+        </div>
+        
+        <button onclick="window.print()">🖨️ Imprimer le Catalogue</button>
+        
+        <div class="info">
+            <strong>📌 Instructions d'utilisation :</strong>
+            <ol style="margin-left: 20px; margin-top: 10px; line-height: 1.8;">
+                <li><strong>Logo (optionnel) :</strong> Chargez votre logo PNG, JPG ou SVG. Format recommandé : largeur ~3 fois la hauteur, fond transparent.</li>
+                <li><strong>Fichier Excel :</strong> Chargez votre fichier contenant : <strong>Code Commercial</strong> (C01, C02...), <strong>Couleur Commercial</strong> (BLANC, ROUGE, BEIGE, BLEU...), <strong>Numéro/Métrique</strong>, <strong>Couleur</strong>, <strong>Code Fabrication MP</strong>, <strong>Num de Lot</strong></li>
+                <li><strong>Couleur Commercial</strong> : Ajoutez cette colonne dans votre Excel pour définir la famille de couleur (BLANC, ROUGE, BEIGE, BLEU, VERT, GRIS, ROSE, JAUNE, ORANGE, VIOLET, MARRON, NOIR, TURQUOISE, KAKI, BORDEAUX, TAUPE, CORAIL, MARINE, FUSCHIA, LILA, NAVY, NATUREL, ECRU, PRALINE). Si la colonne est absente, la couleur du fil sera utilisée.</li>
+                <li>Les fils sont <strong>automatiquement triés</strong> par : <strong>N° de Lot</strong> (du plus ancien au plus récent) → <strong>N° Métrique</strong> → <strong>Code Fabrication</strong></li>
+                <li>Le logo occupera 1/3 de la largeur avec une hauteur compacte (max 80px)</li>
+                <li><strong>Format A4 optimisé :</strong> Marge gauche de 2 cm pour perforation classeur</li>
+            </ol>
+        </div>
+    </div>
+    
+    <div id="catalogueContainer"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script>
+        let filsData = [];
+        let logoDataUrl = null;
+
+        // Logo par défaut simple et compact
+        const defaultLogoSvg = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 100'%3E%3Cdefs%3E%3ClinearGradient id='plumeGrad' x1='0%25' y1='0%25' x2='0%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23FFD700;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%23B8860B;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M 20 50 Q 22 10 24 50 Q 26 10 28 50 Q 30 10 32 50 Q 34 10 36 50 Q 38 10 40 50 Q 42 10 44 50' fill='url(%23plumeGrad)' stroke='%23000' stroke-width='2'/%3E%3Cpath d='M 44 50 L 48 90' stroke='%23654321' stroke-width='3'/%3E%3Ctext x='70' y='45' font-family='Georgia,serif' font-size='32' fill='%23333' font-style='italic' font-weight='700'%3ELa Plume%3C/text%3E%3Ctext x='70' y='75' font-family='Georgia,serif' font-size='32' fill='%23333' font-style='italic' font-weight='700'%3EArtisanale%3C/text%3E%3Cpath d='M 70 80 Q 300 85 530 80' fill='none' stroke='%23999' stroke-width='2'/%3E%3C/svg%3E`;
+
+        // Gestionnaire d'upload de logo
+        document.getElementById('logoInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                logoDataUrl = e.target.result;
+                alert('✅ Logo chargé avec succès ! Chargez maintenant votre fichier Excel.');
+                if (filsData.length > 0) {
+                    generateCatalogue(); // Régénérer si des données existent déjà
+                }
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // Fonction pour réinitialiser le logo
+        function resetLogo() {
+            logoDataUrl = null;
+            document.getElementById('logoInput').value = '';
+            if (filsData.length > 0) {
+                generateCatalogue();
+            }
+            alert('✅ Logo réinitialisé au logo par défaut');
+        }
+
+        function getColorStyleByFamille(familleCouleur) {
+            const familleColorMap = {
+                // Famille BLANC / ECRU / LIN
+                'BLANC': { bg: '#ffffff', border: '#cbd5e1', text: '#1e293b', bannerBg: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)', bannerBorder: '#94a3b8' },
+                'ECRU': { bg: '#fef6e8', border: '#d4a574', text: '#78350f', bannerBg: 'linear-gradient(135deg, #fef6e8 0%, #f5e6d3 100%)', bannerBorder: '#b8956a' },
+                'LIN': { bg: '#faf8f0', border: '#d4c8b0', text: '#6b5d4f', bannerBg: 'linear-gradient(135deg, #faf8f0 0%, #f0e8d8 100%)', bannerBorder: '#c4b8a0' },
+                'LIN CHINE': { bg: '#faf8f0', border: '#d4c8b0', text: '#6b5d4f', bannerBg: 'linear-gradient(135deg, #faf8f0 0%, #f0e8d8 100%)', bannerBorder: '#c4b8a0' },
+                
+                // Famille BEIGE / TAUPE
+                'BEIGE': { bg: '#fef6e8', border: '#d4a574', text: '#78350f', bannerBg: 'linear-gradient(135deg, #fef6e8 0%, #f5e6d3 100%)', bannerBorder: '#b8956a' },
+                'TAUPE': { bg: '#f5f0e8', border: '#c8b5a0', text: '#5d4e37', bannerBg: 'linear-gradient(135deg, #f5f0e8 0%, #e8dcc8 100%)', bannerBorder: '#a89780' },
+                'NATUREL': { bg: '#faf5f0', border: '#d4c5b0', text: '#6b5d4f', bannerBg: 'linear-gradient(135deg, #faf5f0 0%, #f0e8d8 100%)', bannerBorder: '#bfab8f' },
+                'PRALINE': { bg: '#f5e8dd', border: '#c19a6b', text: '#6b5a3d', bannerBg: 'linear-gradient(135deg, #f5e8dd 0%, #e5d8cd 100%)', bannerBorder: '#b18a5b' },
+                
+                // Famille GRIS
+                'GRIS': { bg: '#f8fafc', border: '#6b7280', text: '#1f2937', bannerBg: 'linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%)', bannerBorder: '#4b5563' },
+                'GRIS CLAIR': { bg: '#f3f4f6', border: '#9ca3af', text: '#374151', bannerBg: 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)', bannerBorder: '#6b7280' },
+                'GRIS CLAIRE': { bg: '#f3f4f6', border: '#9ca3af', text: '#374151', bannerBg: 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)', bannerBorder: '#6b7280' },
+                'GRIS MOYEN': { bg: '#e5e7eb', border: '#6b7280', text: '#1f2937', bannerBg: 'linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%)', bannerBorder: '#4b5563' },
+                'GRIS ANTHRACITE': { bg: '#d1d5db', border: '#4b5563', text: '#111827', bannerBg: 'linear-gradient(135deg, #9ca3af 0%, #6b7280 100%)', bannerBorder: '#374151' },
+                'NOIR': { bg: '#1f2937', border: '#000000', text: '#ffffff', bannerBg: 'linear-gradient(135deg, #374151 0%, #1f2937 100%)', bannerBorder: '#111827' },
+                
+                // Famille MARRON
+                'MARRON': { bg: '#f5f5f0', border: '#795548', text: '#3e2723', bannerBg: 'linear-gradient(135deg, #d7ccc8 0%, #bcaaa4 100%)', bannerBorder: '#5d4037' },
+                
+                // Famille ROUGE / BORDEAUX
+                'ROUGE': { bg: '#fef2f2', border: '#dc2626', text: '#7f1d1d', bannerBg: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)', bannerBorder: '#b91c1c' },
+                'ROUGE BORDEAUX': { bg: '#fef2f2', border: '#991b1b', text: '#7f1d1d', bannerBg: 'linear-gradient(135deg, #fecaca 0%, #fca5a5 100%)', bannerBorder: '#7f1d1d' },
+                'BORDEAUX': { bg: '#fef2f2', border: '#991b1b', text: '#7f1d1d', bannerBg: 'linear-gradient(135deg, #fecaca 0%, #fca5a5 100%)', bannerBorder: '#7f1d1d' },
+                'ROUGE FERRARI': { bg: '#ffe5e5', border: '#c20000', text: '#7f0000', bannerBg: 'linear-gradient(135deg, #ffd0d0 0%, #ffb0b0 100%)', bannerBorder: '#b20000' },
+                
+                // Famille ROSE / CORAIL / FUSCHIA / SAUMON
+                'ROSE': { bg: '#fdf2f8', border: '#ec4899', text: '#831843', bannerBg: 'linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%)', bannerBorder: '#db2777' },
+                'ROSE CLAIR': { bg: '#fff5f8', border: '#ffc0cb', text: '#8b5565', bannerBg: 'linear-gradient(135deg, #ffe5f0 0%, #ffd0db 100%)', bannerBorder: '#ffb0bb' },
+                'ROSE CLAIRE': { bg: '#fff5f8', border: '#ffc0cb', text: '#8b5565', bannerBg: 'linear-gradient(135deg, #ffe5f0 0%, #ffd0db 100%)', bannerBorder: '#ffb0bb' },
+                'ROSE BEBE': { bg: '#fff5f8', border: '#ffb6c1', text: '#8b4555', bannerBg: 'linear-gradient(135deg, #ffe5f0 0%, #ffc5d1 100%)', bannerBorder: '#ffa6b1' },
+                'CORAIL': { bg: '#fff5f0', border: '#ff6f61', text: '#8f2f21', bannerBg: 'linear-gradient(135deg, #ffe5df 0%, #ffc5b9 100%)', bannerBorder: '#ef5f51' },
+                'FUSCHIA': { bg: '#fce7ff', border: '#e91e8c', text: '#8b0e48', bannerBg: 'linear-gradient(135deg, #fcd7ff 0%, #fcb7ef 100%)', bannerBorder: '#d91e7c' },
+                'FUSHIA': { bg: '#fce7ff', border: '#e91e8c', text: '#8b0e48', bannerBg: 'linear-gradient(135deg, #fcd7ff 0%, #fcb7ef 100%)', bannerBorder: '#d91e7c' },
+                'FRAMBOISE': { bg: '#ffe0f0', border: '#c72c48', text: '#8b1c38', bannerBg: 'linear-gradient(135deg, #ffd0e5 0%, #ffb0d5 100%)', bannerBorder: '#b72c38' },
+                'SAUMON': { bg: '#fff5f0', border: '#ffa07a', text: '#8b4726', bannerBg: 'linear-gradient(135deg, #ffe8dc 0%, #ffd4c4 100%)', bannerBorder: '#ff9068' },
+                
+                // Famille BLEU
+                'BLEU': { bg: '#eff6ff', border: '#2563eb', text: '#1e3a8a', bannerBg: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)', bannerBorder: '#1d4ed8' },
+                'BLEU CLAIR': { bg: '#f0f9ff', border: '#60a5fa', text: '#1e40af', bannerBg: 'linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%)', bannerBorder: '#50a5fa' },
+                'BLEU CIEL': { bg: '#f0f9ff', border: '#60a5fa', text: '#1e40af', bannerBg: 'linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%)', bannerBorder: '#50a5fa' },
+                'BLEU DELAVE': { bg: '#e8f4f8', border: '#82b1c4', text: '#2d5a6e', bannerBg: 'linear-gradient(135deg, #d8e9f0 0%, #c8dde8 100%)', bannerBorder: '#72a1b4' },
+                'BLEU MARINE': { bg: '#dbeafe', border: '#1e40af', text: '#1e3a8a', bannerBg: 'linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%)', bannerBorder: '#1e40af' },
+                'BLEU ROI': { bg: '#e0e7ff', border: '#4169e1', text: '#1e3a8a', bannerBg: 'linear-gradient(135deg, #e0e7ff 0%, #c0cfff 100%)', bannerBorder: '#3159c1' },
+                'BLEU TURQUOISE': { bg: '#d0f5ff', border: '#00bfff', text: '#005f8f', bannerBg: 'linear-gradient(135deg, #d0f5ff 0%, #a0e5ff 100%)', bannerBorder: '#009fcf' },
+                'BLEU GITANE': { bg: '#cfe2ff', border: '#0d47a1', text: '#01579b', bannerBg: 'linear-gradient(135deg, #cfe2ff 0%, #9fc5e8 100%)', bannerBorder: '#0d47a1' },
+                'BLEU OCTAVE': { bg: '#d4e4f7', border: '#3b5998', text: '#1e3a5f', bannerBg: 'linear-gradient(135deg, #d4e4f7 0%, #a4c4e7 100%)', bannerBorder: '#2d4373' },
+                'BLEU JEANS': { bg: '#d6e4f5', border: '#4682b4', text: '#1e3a5f', bannerBg: 'linear-gradient(135deg, #d6e4f5 0%, #b0cfe5 100%)', bannerBorder: '#366a99' },
+                'BLEU RIO': { bg: '#d4e9f7', border: '#5fa9d4', text: '#1e5a8a', bannerBg: 'linear-gradient(135deg, #d4e9f7 0%, #a4d4f7 100%)', bannerBorder: '#4f99c4' },
+                'MARINE': { bg: '#dbeafe', border: '#1e40af', text: '#1e3a8a', bannerBg: 'linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%)', bannerBorder: '#1e40af' },
+                'NAVY': { bg: '#cfd8dc', border: '#001f3f', text: '#000a1f', bannerBg: 'linear-gradient(135deg, #cfd8dc 0%, #9fb3c8 100%)', bannerBorder: '#001f3f' },
+                
+                // Famille VERT / TURQUOISE / EMERAUDE / LAGON
+                'VERT': { bg: '#f0fdf4', border: '#059669', text: '#064e3b', bannerBg: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)', bannerBorder: '#047857' },
+                'VERT CLAIR': { bg: '#e8f5e9', border: '#66bb6a', text: '#2e7d32', bannerBg: 'linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%)', bannerBorder: '#56ab5a' },
+                "VERT D'EAU": { bg: '#d5f5f0', border: '#4db8a8', text: '#2d6860', bannerBg: 'linear-gradient(135deg, #d5f5f0 0%, #b5e5d8 100%)', bannerBorder: '#3da898' },
+                'VERT JADE': { bg: '#d8f3e8', border: '#00a86b', text: '#005835', bannerBg: 'linear-gradient(135deg, #d8f3e8 0%, #b8e3d8 100%)', bannerBorder: '#00985b' },
+                'VERT PISTACHE': { bg: '#e8f5d8', border: '#93c572', text: '#536b3a', bannerBg: 'linear-gradient(135deg, #e8f5d8 0%, #d8e5c8 100%)', bannerBorder: '#83b562' },
+                'VERT OLIVE': { bg: '#e8f0d0', border: '#808000', text: '#4a4a00', bannerBg: 'linear-gradient(135deg, #e8f0d0 0%, #d8e0c0 100%)', bannerBorder: '#707000' },
+                'VERT VICHY': { bg: '#e0f5e0', border: '#4caf50', text: '#2e5d32', bannerBg: 'linear-gradient(135deg, #c8e6c8 0%, #a8d6a8 100%)', bannerBorder: '#3c9f40' },
+                'EMERAUDE': { bg: '#d0f8f0', border: '#00c9a7', text: '#00593f', bannerBg: 'linear-gradient(135deg, #b0f0e0 0%, #90e8d0 100%)', bannerBorder: '#00b997' },
+                'EMMERAUDE': { bg: '#d0f8f0', border: '#00c9a7', text: '#00593f', bannerBg: 'linear-gradient(135deg, #b0f0e0 0%, #90e8d0 100%)', bannerBorder: '#00b997' },
+                'TURQUOISE': { bg: '#f0fdfa', border: '#14b8a6', text: '#134e4a', bannerBg: 'linear-gradient(135deg, #ccfbf1 0%, #99f6e4 100%)', bannerBorder: '#0f766e' },
+                'LAGON': { bg: '#e0fbf8', border: '#20b2aa', text: '#005f5f', bannerBg: 'linear-gradient(135deg, #d0f5f5 0%, #a0e5e5 100%)', bannerBorder: '#10a2aa' },
+                'KAKI': { bg: '#f7fee7', border: '#65a30d', text: '#3f6212', bannerBg: 'linear-gradient(135deg, #d9f99d 0%, #bef264 100%)', bannerBorder: '#4d7c0f' },
+                
+                // Famille JAUNE / ORANGE / OR
+                'JAUNE': { bg: '#fefce8', border: '#eab308', text: '#713f12', bannerBg: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)', bannerBorder: '#ca8a04' },
+                'JAUNE CITRON': { bg: '#fffef0', border: '#ffeb3b', text: '#7d7642', bannerBg: 'linear-gradient(135deg, #fffee0 0%, #fffecc 100%)', bannerBorder: '#e0d67c' },
+                'JAUNE FLUO': { bg: '#ffffe0', border: '#ffff00', text: '#7d7d00', bannerBg: 'linear-gradient(135deg, #ffffcc 0%, #ffff99 100%)', bannerBorder: '#e0e000' },
+                'JAUNE SAFRAN': { bg: '#fff8e0', border: '#f4a460', text: '#7d5230', bannerBg: 'linear-gradient(135deg, #ffe8c0 0%, #ffd8a0 100%)', bannerBorder: '#e49450' },
+                'OR': { bg: '#fff8e5', border: '#ffd700', text: '#7d6700', bannerBg: 'linear-gradient(135deg, #ffe8c5 0%, #ffd89a 100%)', bannerBorder: '#e0c000' },
+                'ORANGE': { bg: '#fff7ed', border: '#ea580c', text: '#7c2d12', bannerBg: 'linear-gradient(135deg, #fed7aa 0%, #fdba74 100%)', bannerBorder: '#c2410c' },
+                
+                // Famille VIOLET / LILA
+                'VIOLET': { bg: '#faf5ff', border: '#9c27b0', text: '#581c87', bannerBg: 'linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%)', bannerBorder: '#7b1fa2' },
+                'LILA': { bg: '#f5f0ff', border: '#c084fc', text: '#6b21a8', bannerBg: 'linear-gradient(135deg, #e9d5ff 0%, #d8b4fe 100%)', bannerBorder: '#a855f7' },
+                
+                // Famille LUREX (argent et doré)
+                'LUREX ARGENT': { bg: '#f0f0f5', border: '#b0b0c0', text: '#3a3a4a', bannerBg: 'linear-gradient(135deg, #e8e8f0 0%, #d0d0e0 100%)', bannerBorder: '#a0a0b0' },
+                'LUREX DORE': { bg: '#fff8e5', border: '#d4af37', text: '#7d6700', bannerBg: 'linear-gradient(135deg, #ffe8c5 0%, #ffd89a 100%)', bannerBorder: '#c4a037' },
+                'LUREX DOREE': { bg: '#fff8e5', border: '#d4af37', text: '#7d6700', bannerBg: 'linear-gradient(135deg, #ffe8c5 0%, #ffd89a 100%)', bannerBorder: '#c4a037' }
+            };
+            
+            const famille = (familleCouleur || 'BLANC').toUpperCase().trim();
+            return familleColorMap[famille] || familleColorMap['BLANC'];
+        }
+
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                
+                filsData = jsonData.map(row => ({
+                    codeCommercial: row['CODE FIN'] || row['Code Commercial'] || row['Code Fin'] || '',
+                    numeroMetrique: row['NUMERO/METRIQUE'] || row['Numéro/Métrique'] || row['Numero Metrique'] || '',
+                    couleur: row['COULEUR'] || row['Couleur'] || '',
+                    codeFabrication: row['CODE FAB'] || row['Code Fabrication MP'] || row['Code Fab'] || '',
+                    numLot: row['Num de Lot'] || row['Numéro de Lot'] || row['Numero Lot'] || '',
+                    couleurCommercial: row['Couleur Commercial'] || row['COULEUR COMMERCIAL'] || row['Famille Couleur'] || row['FAMILLE COULEUR'] || 'BLANC'
+                }));
+                
+                generateCatalogue();
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        function generateCatalogue() {
+            const container = document.getElementById('catalogueContainer');
+            container.innerHTML = '';
+
+            const groupedByCode = {};
+            filsData.forEach(fil => {
+                if (!groupedByCode[fil.codeCommercial]) {
+                    groupedByCode[fil.codeCommercial] = [];
+                }
+                groupedByCode[fil.codeCommercial].push(fil);
+            });
+
+            Object.keys(groupedByCode).sort().forEach((codeCommercial, index) => {
+                const fils = groupedByCode[codeCommercial];
+                const pageDiv = document.createElement('div');
+                pageDiv.className = 'catalogue-page';
+                if (index < Object.keys(groupedByCode).length - 1) {
+                    pageDiv.classList.add('page-break');
+                }
+
+                const couleurCommerciale = fils[0].couleurCommercial || fils[0].couleur;
+                const colorStyle = getColorStyleByFamille(couleurCommerciale);
+                
+                // Utiliser le logo uploadé ou le logo par défaut
+                const logoUrl = logoDataUrl || defaultLogoSvg;
+
+                let pageHTML = `
+                    <div class="page-header">
+                        <div class="logo-container">
+                            <img src="${logoUrl}" alt="La Plume Artisanale">
+                        </div>
+                        <div class="page-subtitle">
+                            Catalogue de Fils - ${codeCommercial} - ${couleurCommerciale}
+                        </div>
+                    </div>
+                    
+                    <div class="code-commercial-banner" style="background: ${colorStyle.bannerBg}; border-color: ${colorStyle.bannerBorder};">
+                        <div class="code-commercial-title" style="color: ${colorStyle.text};">
+                            ${codeCommercial}
+                        </div>
+                        <div class="code-commercial-subtitle" style="color: ${colorStyle.text};">
+                            ${couleurCommerciale}
+                        </div>
+                    </div>
+                    
+                    <div class="table-container">
+                `;
+
+                fils.forEach((fil, filIndex) => {
+                    const qrText = `${fil.codeCommercial}_${fil.couleur}_${fil.codeFabrication}_${fil.numLot}__`;
+                    const qrId = `qr-${codeCommercial.replace(/[^a-zA-Z0-9]/g, '')}-${filIndex}`;
+                    
+                    pageHTML += `
+                        <div class="fil-item">
+                            <div class="fil-row-top">
+                                <div class="info-cell" style="background-color: ${colorStyle.bg}; border-color: ${colorStyle.border};">
+                                    <div class="info-label">N° Métrique</div>
+                                    <div class="info-value" style="color: ${colorStyle.text};">${fil.numeroMetrique}</div>
+                                </div>
+                                <div class="info-cell" style="background-color: ${colorStyle.bg}; border-color: ${colorStyle.border};">
+                                    <div class="info-label">Couleur</div>
+                                    <div class="info-value" style="color: ${colorStyle.text};">${fil.couleur}</div>
+                                </div>
+                                <div class="info-cell" style="background-color: ${colorStyle.bg}; border-color: ${colorStyle.border};">
+                                    <div class="info-label">Code Fabrication</div>
+                                    <div class="info-value" style="color: ${colorStyle.text};">${fil.codeFabrication}</div>
+                                </div>
+                                <div class="info-cell" style="background-color: ${colorStyle.bg}; border-color: ${colorStyle.border};">
+                                    <div class="info-label">N° de Lot</div>
+                                    <div class="info-value" style="color: ${colorStyle.text};">${fil.numLot}</div>
+                                </div>
+                            </div>
+                            <div class="fil-row-bottom">
+                                <div class="qr-cell">
+                                    <div id="${qrId}"></div>
+                                </div>
+                                <div class="position-cell">
+                                    <div class="position-item">
+                                        <span class="checkbox"></span>
+                                        <span>E1</span>
+                                    </div>
+                                    <div class="position-item">
+                                        <span class="checkbox"></span>
+                                        <span>E2</span>
+                                    </div>
+                                    <div class="position-item">
+                                        <span class="checkbox"></span>
+                                        <span>E3</span>
+                                    </div>
+                                    <div class="position-item">
+                                        <span class="checkbox"></span>
+                                        <span>Usine</span>
+                                    </div>
+                                </div>
+                                <div class="echantillon-cell">
+                                    <div class="echantillon-icon">🧵</div>
+                                    <div class="echantillon-text">
+                                        <strong>COLLER ÉCHANTILLON</strong><br>
+                                        <strong>DE FIL ICI</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                pageHTML += `</div>`;
+
+                pageDiv.innerHTML = pageHTML;
+                container.appendChild(pageDiv);
+
+                fils.forEach((fil, filIndex) => {
+                    const qrText = `${fil.codeCommercial}_${fil.couleur}_${fil.codeFabrication}_${fil.numLot}__`;
+                    const qrId = `qr-${codeCommercial.replace(/[^a-zA-Z0-9]/g, '')}-${filIndex}`;
+                    
+                    setTimeout(() => {
+                        const qrElement = document.getElementById(qrId);
+                        if (qrElement) {
+                            new QRCode(qrElement, {
+                                text: qrText,
+                                width: 80,
+                                height: 80,
+                                colorDark: "#000000",
+                                colorLight: "#ffffff",
+                                correctLevel: QRCode.CorrectLevel.H
+                            });
+                        }
+                    }, 50 * filIndex);
+                });
+            });
+        }
+
+        const demoData = [
+            { codeCommercial: 'C01', numeroMetrique: 'NM05', couleur: 'BLANC', codeFabrication: 'NM15-01.00', numLot: 'S2023', couleurCommercial: 'BLANC' },
+            { codeCommercial: 'C01', numeroMetrique: 'NM15', couleur: 'BLANC', codeFabrication: 'NM15-01.00', numLot: 'G3515', couleurCommercial: 'BLANC' },
+            { codeCommercial: 'C01', numeroMetrique: 'NM15', couleur: 'BLANC', codeFabrication: 'NM15-01.00', numLot: 'G3577', couleurCommercial: 'BLANC' },
+            { codeCommercial: 'C02', numeroMetrique: 'NM10', couleur: 'ROUGE', codeFabrication: 'NM10-02.00', numLot: 'S2024', couleurCommercial: 'ROUGE' },
+            { codeCommercial: 'C02', numeroMetrique: 'NM12', couleur: 'ROUGE', codeFabrication: 'NM12-02.00', numLot: 'S2025', couleurCommercial: 'ROUGE' },
+            { codeCommercial: 'C03', numeroMetrique: 'NM20', couleur: 'BEIGE', codeFabrication: 'NM20-03.00', numLot: 'S2027', couleurCommercial: 'BEIGE' },
+            { codeCommercial: 'C03', numeroMetrique: 'NM20', couleur: 'BEIGE', codeFabrication: 'NM20-03.00', numLot: 'S2028', couleurCommercial: 'BEIGE' },
+            { codeCommercial: 'C04', numeroMetrique: 'NM15', couleur: 'BLEU', codeFabrication: 'NM15-04.00', numLot: 'S2031', couleurCommercial: 'BLEU' }
+        ];
+
+        window.addEventListener('load', function() {
+            filsData = demoData;
+            generateCatalogue();
+        });
+    </script>
+</body>
+</html>

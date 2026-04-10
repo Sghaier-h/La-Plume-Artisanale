@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Package2, Plus, Search, Edit, List, Grid } from 'lucide-react';
+import { articlesService } from '../services/api';
 
 interface SemiFini {
   id_article?: number;
@@ -26,7 +27,12 @@ const SemiFini: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      // TODO: Remplacer par l'API réelle avec filtre type = 'SEMI_FINI'
+      const response = await articlesService.getArticles({ type: 'SEMI_FINI', search });
+      const articles = response.data.data?.articles || response.data.data || [];
+      setProduits(articles);
+    } catch (error) {
+      console.error('Erreur chargement semi-finis:', error);
+      // Fallback sur données mockées si l'API échoue
       const mockProduits: SemiFini[] = [
         {
           id_article: 1,
@@ -58,8 +64,6 @@ const SemiFini: React.FC = () => {
         }
       ];
       setProduits(mockProduits);
-    } catch (error) {
-      console.error('Erreur chargement semi-finis:', error);
     } finally {
       setLoading(false);
     }

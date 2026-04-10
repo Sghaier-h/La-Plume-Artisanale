@@ -71,6 +71,34 @@ export function genererRefFabrication(article: ArticleData): string {
 }
 
 /**
+ * Génère le code couleur d'article selon la formule Excel exacte
+ * Formule: SI(Code Nombre de couleur="U"; DROITE(Code Selecteur 01, NBCAR-1);
+ *          SI(Code Nombre de couleur="B"; Code Nombre + DROITE(Code Selecteur 01, NBCAR-1) + "-" + DROITE(Code Selecteur 02, NBCAR-1);
+ *          Code Nombre + DROITE(Code Selecteur 01, NBCAR-1) + "-" + DROITE(Code Selecteur 02, NBCAR-1) + "-" + DROITE(Code Selecteur 03, NBCAR-1)))
+ * @param article - Objet contenant les propriétés de l'article
+ * @returns Code couleur d'article
+ */
+export function genererCodeCouleurArticle(article: ArticleData): string {
+  const {
+    code_nombre_couleur = '',
+    code_selecteur_01 = '',
+    code_selecteur_02 = '',
+    code_selecteur_03 = ''
+  } = article;
+
+  if (code_nombre_couleur === 'U') {
+    // Uni (1 couleur) - DROITE(Code Selecteur 01, NBCAR-1)
+    return droiteSansPremier(code_selecteur_01);
+  } else if (code_nombre_couleur === 'B') {
+    // 2 Couleurs - Code Nombre + DROITE(Code Selecteur 01) + "-" + DROITE(Code Selecteur 02)
+    return `${code_nombre_couleur}${droiteSansPremier(code_selecteur_01)}-${droiteSansPremier(code_selecteur_02)}`;
+  } else {
+    // 3+ Couleurs (T, Q, C, S) - Code Nombre + DROITE(Code Selecteur 01) + "-" + DROITE(Code Selecteur 02) + "-" + DROITE(Code Selecteur 03)
+    return `${code_nombre_couleur}${droiteSansPremier(code_selecteur_01)}-${droiteSansPremier(code_selecteur_02)}-${droiteSansPremier(code_selecteur_03)}`;
+  }
+}
+
+/**
  * Génère la référence commerciale selon la formule Excel exacte
  * Formule: SI(Code Nombre de couleur="U"; Code Modèle + Code Dimensions + "-" + DROITE(Code Selecteur 01);
  *          SI(Code Nombre de couleur="B"; Code Modèle + Code Dimensions + "-" + Code Nombre de couleur + DROITE(Code Selecteur 01) + "-" + DROITE(Code Selecteur 02);
@@ -97,7 +125,7 @@ export function genererRefCommerciale(article: ArticleData): string {
     // 2 Couleurs
     return `${base}-${code_nombre_couleur}${droiteSansPremier(code_selecteur_01)}-${droiteSansPremier(code_selecteur_02)}`;
   } else {
-    // Par défaut (3+ couleurs) - La formule Excel s'arrête à 3 couleurs
+    // 3+ Couleurs (T, Q, C, S)
     return `${base}-${code_nombre_couleur}${droiteSansPremier(code_selecteur_01)}-${droiteSansPremier(code_selecteur_02)}-${droiteSansPremier(code_selecteur_03)}`;
   }
 }

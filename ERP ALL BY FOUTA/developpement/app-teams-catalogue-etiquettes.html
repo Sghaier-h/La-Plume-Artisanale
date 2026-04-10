@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>La Plume Artisanale - Catalogue & Étiquettes</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://alcdn.msauth.net/browser/2.30.0/js/msal-browser.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Roboto:wght@300;400;500;700&display=swap');
+        
+        @media print {
+            .no-print { display: none !important; }
+            .page-break { page-break-after: always; }
+            body { margin: 0; padding: 0; }
+            @page { 
+                size: A4 portrait;
+                margin: 0;
+            }
+            .etiquettes-page {
+                padding: 0;
+                margin: 0;
+                box-shadow: none;
+            }
+            .catalogue-page {
+                padding: 8mm 8mm 8mm 8mm;
+                margin: 0;
+                box-shadow: none;
+                page-break-inside: avoid;
+            }
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            background: #f8f9fa;
+            padding: 20px;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .tab {
+            padding: 12px 24px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .tab:hover {
+            background: #f8fafc;
+        }
+        
+        .tab.active {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            border-color: #2563eb;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .controls {
+            background: white;
+            padding: 25px;
+            margin-bottom: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .controls h2 {
+            color: #1e293b;
+            margin-bottom: 20px;
+            font-family: 'Playfair Display', serif;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #475569;
+        }
+        
+        input[type="text"], input[type="number"], input[type="file"], select {
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 600px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="text"]:focus, select:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            margin-right: 10px;
+            margin-top: 10px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4);
+        }
+        
+        button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+        
+        .status {
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+        
+        .status.success {
+            background: #d1fae5;
+            color: #065f46;
+            border-left: 4px solid #10b981;
+        }
+        
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border-left: 4px solid #dc2626;
+        }
+        
+        .selection-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .code-selection {
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            background: white;
+            transition: all 0.3s;
+        }
+        
+        .code-selection:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+        }
+        
+        .code-selection.selected {
+            border-color: #10b981;
+            background: #f0fdf4;
+        }
+        
+        .code-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .code-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        
+        .code-label {
+            font-weight: 600;
+            font-size: 16px;
+            color: #1e293b;
+        }
+        
+        .quantity-input {
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        /* Styles étiquettes A4/8 */
+        .etiquettes-page {
+            background: white;
+            width: 210mm;
+            height: 297mm;
+            padding: 0;
+            margin: 0 auto 20px auto;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            display: grid;
+            grid-template-columns: repeat(2, 105mm);
+            grid-template-rows: repeat(4, 74.25mm);
+        }
+        
+        .etiquette {
+            width: 105mm;
+            height: 74.25mm;
+            border: 1px dashed #ccc;
+            padding: 4mm;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        
+        .etiquette-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 3mm;
+            padding-bottom: 2mm;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        .etiquette-logo {
+            max-width: 30mm;
+            max-height: 12mm;
+            object-fit: contain;
+        }
+        
+        .etiquette-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 14pt;
+            font-weight: 700;
+            color: #1e293b;
+        }
+        
+        .etiquette-body {
+            display: flex;
+            gap: 3mm;
+            flex: 1;
+        }
+        
+        .etiquette-left {
+            display: flex;
+            flex-direction: column;
+            gap: 2mm;
+            flex: 1;
+        }
+        
+        .etiquette-field {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .etiquette-field-label {
+            font-size: 7pt;
+            color: #64748b;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 1mm;
+        }
+        
+        .etiquette-field-value {
+            font-size: 11pt;
+            color: #1e293b;
+            font-weight: 600;
+        }
+        
+        .etiquette-qr {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Styles catalogue (identiques à avant) */
+        .catalogue-page {
+            background: white;
+            width: 210mm;
+            min-height: 297mm;
+            padding: 8mm;
+            margin: 0 auto 20px auto;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        
+        .page-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 6px;
+            padding-bottom: 6px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        .logo-container {
+            text-align: center;
+            width: 100%;
+        }
+        
+        .logo-container img {
+            width: 33.33%;
+            max-width: 200px;
+            height: auto;
+            max-height: 60px;
+            object-fit: contain;
+        }
+        
+        .code-commercial-banner {
+            background: linear-gradient(135deg, #f5f5dc 0%, #e8e8c8 100%);
+            border: 3px solid #d4a574;
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .code-commercial-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: #475569;
+        }
+        
+        .table-container {
+            border: 3px solid #1e293b;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .fil-item {
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        .fil-item:last-child {
+            border-bottom: none;
+        }
+        
+        .fil-row-top {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .fil-row-bottom {
+            display: grid;
+            grid-template-columns: 100px 100px 1fr;
+            min-height: 120px;
+        }
+        
+        .info-cell {
+            padding: 10px 8px;
+            border-right: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .info-cell:last-child {
+            border-right: none;
+        }
+        
+        .info-label {
+            font-size: 9px;
+            text-transform: uppercase;
+            color: #64748b;
+            font-weight: 600;
+            margin-bottom: 4px;
+            letter-spacing: 0.5px;
+        }
+        
+        .info-value {
+            font-size: 12px;
+            font-weight: 600;
+            color: #1e293b;
+            text-align: center;
+        }
+        
+        .qr-cell {
+            border-right: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px;
+        }
+        
+        .position-cell {
+            border-right: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            padding: 8px;
+            gap: 6px;
+            background: #f8fafc;
+            justify-content: center;
+        }
+        
+        .position-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        
+        .checkbox {
+            width: 14px;
+            height: 14px;
+            border: 2px solid #475569;
+            border-radius: 3px;
+            display: inline-block;
+        }
+        
+        .echantillon-cell {
+            background: #ffffff;
+            border: 5px dashed #d97706;
+            margin: 5px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            box-shadow: inset 0 0 15px rgba(217, 119, 6, 0.15);
+        }
+        
+        .echantillon-icon {
+            font-size: 40px;
+            margin-bottom: 8px;
+            opacity: 0.8;
+        }
+        
+        .echantillon-text {
+            font-size: 14px;
+            font-weight: 700;
+            color: #92400e;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print">
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('config')">⚙️ Configuration</div>
+            <div class="tab" onclick="switchTab('catalogue')">📚 Catalogue</div>
+            <div class="tab" onclick="switchTab('etiquettes')">🏷️ Étiquettes</div>
+        </div>
+
+        <!-- Onglet Configuration -->
+        <div id="config-tab" class="tab-content active">
+            <div class="controls">
+                <h2>⚙️ Configuration SharePoint</h2>
+                
+                <div class="input-group">
+                    <label for="clientId">🔑 Application (client) ID :</label>
+                    <input type="text" id="clientId" placeholder="12345678-1234-1234-1234-123456789abc">
+                </div>
+                
+                <div class="input-group">
+                    <label for="tenantId">🏢 Directory (tenant) ID :</label>
+                    <input type="text" id="tenantId" placeholder="87654321-4321-4321-4321-cba987654321">
+                </div>
+                
+                <button onclick="authenticateUser()" id="authBtn">🔐 Se connecter</button>
+                <button onclick="logout()" id="logoutBtn" style="display:none;" class="btn-warning">🚪 Déconnecter</button>
+                
+                <div id="authStatus"></div>
+
+                <hr style="margin: 30px 0; border: none; border-top: 2px solid #e2e8f0;">
+                
+                <div class="input-group">
+                    <label for="sharepointUrl">📂 URL du fichier Excel :</label>
+                    <input type="text" id="sharepointUrl" placeholder="https://...sharepoint.com/.../fichier.xlsx" disabled>
+                </div>
+                
+                <div class="input-group">
+                    <label for="logoInput">🖼️ Logo (optionnel) :</label>
+                    <input type="file" id="logoInput" accept=".png,.jpg,.jpeg,.svg" disabled>
+                </div>
+                
+                <button onclick="loadFromSharePoint()" id="loadBtn" class="btn-success" disabled>📥 Charger les données</button>
+                
+                <div id="loadStatus"></div>
+            </div>
+        </div>
+
+        <!-- Onglet Catalogue -->
+        <div id="catalogue-tab" class="tab-content">
+            <div class="controls">
+                <h2>📚 Catalogue de Fils</h2>
+                <button onclick="generateCatalogue()" id="genCatalogueBtn" disabled class="btn-success">📄 Générer le Catalogue</button>
+                <button onclick="window.print()" id="printCatalogueBtn" disabled>🖨️ Imprimer</button>
+                <div id="catalogueStatus"></div>
+            </div>
+        </div>
+
+        <!-- Onglet Étiquettes -->
+        <div id="etiquettes-tab" class="tab-content">
+            <div class="controls">
+                <h2>🏷️ Impression d'Étiquettes A4/8</h2>
+                <p style="margin-bottom: 20px; color: #64748b;">Sélectionnez les codes commerciaux et indiquez le nombre d'étiquettes à imprimer pour chaque.</p>
+                
+                <div id="selectionGrid" class="selection-grid"></div>
+                
+                <button onclick="generateEtiquettes()" id="genEtiquettesBtn" disabled class="btn-success">🏷️ Générer les Étiquettes</button>
+                <button onclick="window.print()" id="printEtiquettesBtn" disabled>🖨️ Imprimer</button>
+                
+                <div id="etiquettesStatus"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="outputContainer"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script>
+        let msalInstance = null;
+        let accessToken = null;
+        let filsData = [];
+        let logoDataUrl = null;
+        let currentMode = 'catalogue';
+
+        const defaultLogoSvg = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 100'%3E%3Cdefs%3E%3ClinearGradient id='plumeGrad' x1='0%25' y1='0%25' x2='0%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23FFD700;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%23B8860B;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M 20 50 Q 22 10 24 50 Q 26 10 28 50 Q 30 10 32 50 Q 34 10 36 50 Q 38 10 40 50 Q 42 10 44 50' fill='url(%23plumeGrad)' stroke='%23000' stroke-width='2'/%3E%3Cpath d='M 44 50 L 48 90' stroke='%23654321' stroke-width='3'/%3E%3Ctext x='70' y='45' font-family='Georgia,serif' font-size='32' fill='%23333' font-style='italic' font-weight='700'%3ELa Plume%3C/text%3E%3Ctext x='70' y='75' font-family='Georgia,serif' font-size='32' fill='%23333' font-style='italic' font-weight='700'%3EArtisanale%3C/text%3E%3Cpath d='M 70 80 Q 300 85 530 80' fill='none' stroke='%23999' stroke-width='2'/%3E%3C/svg%3E`;
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+            
+            document.getElementById('outputContainer').innerHTML = '';
+        }
+
+        document.getElementById('logoInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                logoDataUrl = e.target.result;
+                showStatus('loadStatus', '✅ Logo chargé !', 'success');
+            };
+            reader.readAsDataURL(file);
+        });
+
+        async function authenticateUser() {
+            const clientId = document.getElementById('clientId').value.trim();
+            const tenantId = document.getElementById('tenantId').value.trim();
+            
+            if (!clientId || !tenantId) {
+                showStatus('authStatus', '❌ Client ID et Tenant ID requis', 'error');
+                return;
+            }
+
+            const msalConfig = {
+                auth: {
+                    clientId: clientId,
+                    authority: `https://login.microsoftonline.com/${tenantId}`,
+                    redirectUri: window.location.origin
+                }
+            };
+
+            try {
+                msalInstance = new msal.PublicClientApplication(msalConfig);
+                await msalInstance.initialize();
+
+                const loginResponse = await msalInstance.loginPopup({
+                    scopes: ["Files.Read.All", "Sites.Read.All"]
+                });
+                accessToken = loginResponse.accessToken;
+                
+                showStatus('authStatus', `✅ Connecté : ${loginResponse.account.username}`, 'success');
+                
+                document.getElementById('authBtn').style.display = 'none';
+                document.getElementById('logoutBtn').style.display = 'inline-block';
+                document.getElementById('sharepointUrl').disabled = false;
+                document.getElementById('logoInput').disabled = false;
+                document.getElementById('loadBtn').disabled = false;
+                
+            } catch (error) {
+                showStatus('authStatus', `❌ Erreur : ${error.message}`, 'error');
+            }
+        }
+
+        async function logout() {
+            if (msalInstance) {
+                await msalInstance.logoutPopup();
+                location.reload();
+            }
+        }
+
+        async function loadFromSharePoint() {
+            const sharepointUrl = document.getElementById('sharepointUrl').value.trim();
+            
+            if (!sharepointUrl || !accessToken) {
+                showStatus('loadStatus', '❌ URL et authentification requises', 'error');
+                return;
+            }
+
+            try {
+                showStatus('loadStatus', '🔄 Chargement...', 'success');
+                
+                const url = new URL(sharepointUrl);
+                const pathParts = url.pathname.split('/');
+                const sitesIndex = pathParts.indexOf('sites');
+                const siteName = pathParts[sitesIndex + 1];
+                const filePath = pathParts.slice(sitesIndex + 2).join('/');
+                
+                const graphUrl = `https://graph.microsoft.com/v1.0/sites/${url.hostname}:/sites/${siteName}:/drive/root:/${filePath}:/content`;
+                
+                const response = await fetch(graphUrl, {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const arrayBuffer = await response.arrayBuffer();
+                const workbook = XLSX.read(new Uint8Array(arrayBuffer), {type: 'array'});
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                
+                filsData = jsonData.map(row => ({
+                    codeCommercial: row['CODE FIN'] || row['Code Commercial'] || '',
+                    numeroMetrique: row['NUMERO/METRIQUE'] || row['Numéro/Métrique'] || '',
+                    couleur: row['COULEUR'] || row['Couleur'] || '',
+                    codeFabrication: row['CODE FAB'] || row['Code Fabrication MP'] || '',
+                    numLot: row['Num de Lot'] || row['Numéro de Lot'] || '',
+                    couleurCommercial: row['Couleur Commercial'] || 'BLANC'
+                }));
+                
+                showStatus('loadStatus', `✅ ${filsData.length} références chargées !`, 'success');
+                
+                document.getElementById('genCatalogueBtn').disabled = false;
+                document.getElementById('genEtiquettesBtn').disabled = false;
+                
+                buildSelectionGrid();
+                
+            } catch (error) {
+                showStatus('loadStatus', `❌ Erreur : ${error.message}`, 'error');
+            }
+        }
+
+        function buildSelectionGrid() {
+            const grid = document.getElementById('selectionGrid');
+            grid.innerHTML = '';
+            
+            const groupedByCode = {};
+            filsData.forEach(fil => {
+                if (!groupedByCode[fil.codeCommercial]) {
+                    groupedByCode[fil.codeCommercial] = [];
+                }
+                groupedByCode[fil.codeCommercial].push(fil);
+            });
+
+            Object.keys(groupedByCode).sort().forEach(code => {
+                const div = document.createElement('div');
+                div.className = 'code-selection';
+                div.innerHTML = `
+                    <div class="code-header">
+                        <input type="checkbox" class="code-checkbox" id="check-${code}" onchange="toggleSelection('${code}')">
+                        <label class="code-label" for="check-${code}">${code}</label>
+                    </div>
+                    <div class="info" style="font-size: 12px; color: #64748b; margin-bottom: 10px;">
+                        ${groupedByCode[code].length} référence(s)
+                    </div>
+                    <input type="number" class="quantity-input" id="qty-${code}" 
+                           placeholder="Nombre d'étiquettes" min="1" value="1" disabled>
+                `;
+                grid.appendChild(div);
+            });
+        }
+
+        function toggleSelection(code) {
+            const checkbox = document.getElementById(`check-${code}`);
+            const qtyInput = document.getElementById(`qty-${code}`);
+            const div = checkbox.closest('.code-selection');
+            
+            if (checkbox.checked) {
+                div.classList.add('selected');
+                qtyInput.disabled = false;
+            } else {
+                div.classList.remove('selected');
+                qtyInput.disabled = true;
+            }
+        }
+
+        function showStatus(elementId, message, type) {
+            document.getElementById(elementId).innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        function generateCatalogue() {
+            currentMode = 'catalogue';
+            const container = document.getElementById('outputContainer');
+            container.innerHTML = '';
+
+            const groupedByCode = {};
+            filsData.forEach(fil => {
+                if (!groupedByCode[fil.codeCommercial]) {
+                    groupedByCode[fil.codeCommercial] = [];
+                }
+                groupedByCode[fil.codeCommercial].push(fil);
+            });
+
+            const FILS_PER_PAGE = 5;
+            const logoUrl = logoDataUrl || defaultLogoSvg;
+
+            Object.keys(groupedByCode).sort().forEach((codeCommercial) => {
+                const allFils = groupedByCode[codeCommercial];
+                const totalPages = Math.ceil(allFils.length / FILS_PER_PAGE);
+                
+                for (let pageNum = 0; pageNum < totalPages; pageNum++) {
+                    const startIdx = pageNum * FILS_PER_PAGE;
+                    const endIdx = Math.min(startIdx + FILS_PER_PAGE, allFils.length);
+                    const fils = allFils.slice(startIdx, endIdx);
+                    
+                    const pageDiv = document.createElement('div');
+                    pageDiv.className = 'catalogue-page page-break';
+
+                    const couleurCommerciale = fils[0].couleurCommercial;
+                    
+                    let pageHTML = `
+                        <div class="page-header">
+                            <div class="logo-container">
+                                <img src="${logoUrl}" alt="La Plume Artisanale">
+                            </div>
+                        </div>
+                        <div class="code-commercial-banner">
+                            <div class="code-commercial-title">
+                                Catalogue de Fils - ${codeCommercial} - ${couleurCommerciale}
+                            </div>
+                        </div>
+                        <div class="table-container">
+                    `;
+
+                    fils.forEach((fil, filIndex) => {
+                        const qrText = `${fil.codeCommercial}_${fil.couleur}_${fil.codeFabrication}_${fil.numLot}__`;
+                        const qrId = `qr-cat-${codeCommercial.replace(/[^a-zA-Z0-9]/g, '')}-${startIdx + filIndex}`;
+                        
+                        pageHTML += `
+                            <div class="fil-item">
+                                <div class="fil-row-top">
+                                    <div class="info-cell">
+                                        <div class="info-label">N° Métrique</div>
+                                        <div class="info-value">${fil.numeroMetrique}</div>
+                                    </div>
+                                    <div class="info-cell">
+                                        <div class="info-label">Couleur</div>
+                                        <div class="info-value">${fil.couleur}</div>
+                                    </div>
+                                    <div class="info-cell">
+                                        <div class="info-label">Code Fabrication</div>
+                                        <div class="info-value">${fil.codeFabrication}</div>
+                                    </div>
+                                    <div class="info-cell">
+                                        <div class="info-label">N° de Lot</div>
+                                        <div class="info-value">${fil.numLot}</div>
+                                    </div>
+                                </div>
+                                <div class="fil-row-bottom">
+                                    <div class="qr-cell">
+                                        <div id="${qrId}"></div>
+                                    </div>
+                                    <div class="position-cell">
+                                        <div class="position-item"><span class="checkbox"></span><span>E1</span></div>
+                                        <div class="position-item"><span class="checkbox"></span><span>E2</span></div>
+                                        <div class="position-item"><span class="checkbox"></span><span>E3</span></div>
+                                        <div class="position-item"><span class="checkbox"></span><span>Usine</span></div>
+                                    </div>
+                                    <div class="echantillon-cell">
+                                        <div class="echantillon-icon">🧵</div>
+                                        <div class="echantillon-text">
+                                            <strong>COLLER ÉCHANTILLON<br>DE FIL ICI</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    pageHTML += `</div>`;
+                    pageDiv.innerHTML = pageHTML;
+                    container.appendChild(pageDiv);
+
+                    fils.forEach((fil, filIndex) => {
+                        const qrText = `${fil.codeCommercial}_${fil.couleur}_${fil.codeFabrication}_${fil.numLot}__`;
+                        const qrId = `qr-cat-${codeCommercial.replace(/[^a-zA-Z0-9]/g, '')}-${startIdx + filIndex}`;
+                        setTimeout(() => {
+                            const qrElement = document.getElementById(qrId);
+                            if (qrElement) {
+                                new QRCode(qrElement, {
+                                    text: qrText,
+                                    width: 80,
+                                    height: 80,
+                                    correctLevel: QRCode.CorrectLevel.H
+                                });
+                            }
+                        }, 50 * filIndex);
+                    });
+                }
+            });
+
+            document.getElementById('printCatalogueBtn').disabled = false;
+            showStatus('catalogueStatus', '✅ Catalogue généré !', 'success');
+        }
+
+        function generateEtiquettes() {
+            currentMode = 'etiquettes';
+            const container = document.getElementById('outputContainer');
+            container.innerHTML = '';
+
+            const etiquettesToPrint = [];
+            
+            const groupedByCode = {};
+            filsData.forEach(fil => {
+                if (!groupedByCode[fil.codeCommercial]) {
+                    groupedByCode[fil.codeCommercial] = [];
+                }
+                groupedByCode[fil.codeCommercial].push(fil);
+            });
+
+            Object.keys(groupedByCode).forEach(code => {
+                const checkbox = document.getElementById(`check-${code}`);
+                const qtyInput = document.getElementById(`qty-${code}`);
+                
+                if (checkbox && checkbox.checked) {
+                    const quantity = parseInt(qtyInput.value) || 1;
+                    const fils = groupedByCode[code];
+                    
+                    for (let i = 0; i < quantity; i++) {
+                        fils.forEach(fil => {
+                            etiquettesToPrint.push(fil);
+                        });
+                    }
+                }
+            });
+
+            if (etiquettesToPrint.length === 0) {
+                showStatus('etiquettesStatus', '❌ Sélectionnez au moins un code', 'error');
+                return;
+            }
+
+            const logoUrl = logoDataUrl || defaultLogoSvg;
+            const etiquettesPerPage = 8;
+            const totalPages = Math.ceil(etiquettesToPrint.length / etiquettesPerPage);
+
+            for (let pageNum = 0; pageNum < totalPages; pageNum++) {
+                const pageDiv = document.createElement('div');
+                pageDiv.className = 'etiquettes-page page-break';
+
+                const startIdx = pageNum * etiquettesPerPage;
+                const endIdx = Math.min(startIdx + etiquettesPerPage, etiquettesToPrint.length);
+
+                for (let i = startIdx; i < endIdx; i++) {
+                    const fil = etiquettesToPrint[i];
+                    const qrText = `${fil.codeCommercial}_${fil.couleur}_${fil.codeFabrication}_${fil.numLot}__`;
+                    const qrId = `qr-etiq-${i}`;
+
+                    const etiqDiv = document.createElement('div');
+                    etiqDiv.className = 'etiquette';
+                    etiqDiv.innerHTML = `
+                        <div class="etiquette-header">
+                            <img src="${logoUrl}" alt="Logo" class="etiquette-logo">
+                            <div class="etiquette-title">${fil.codeCommercial}</div>
+                        </div>
+                        <div class="etiquette-body">
+                            <div class="etiquette-left">
+                                <div class="etiquette-field">
+                                    <div class="etiquette-field-label">N° Métrique</div>
+                                    <div class="etiquette-field-value">${fil.numeroMetrique}</div>
+                                </div>
+                                <div class="etiquette-field">
+                                    <div class="etiquette-field-label">Couleur</div>
+                                    <div class="etiquette-field-value">${fil.couleur}</div>
+                                </div>
+                                <div class="etiquette-field">
+                                    <div class="etiquette-field-label">Code Fabrication</div>
+                                    <div class="etiquette-field-value">${fil.codeFabrication}</div>
+                                </div>
+                                <div class="etiquette-field">
+                                    <div class="etiquette-field-label">N° de Lot</div>
+                                    <div class="etiquette-field-value">${fil.numLot}</div>
+                                </div>
+                            </div>
+                            <div class="etiquette-qr">
+                                <div id="${qrId}"></div>
+                            </div>
+                        </div>
+                    `;
+                    pageDiv.appendChild(etiqDiv);
+                }
+
+                while (pageDiv.children.length < etiquettesPerPage) {
+                    const emptyDiv = document.createElement('div');
+                    emptyDiv.className = 'etiquette';
+                    pageDiv.appendChild(emptyDiv);
+                }
+
+                container.appendChild(pageDiv);
+
+                for (let i = startIdx; i < endIdx; i++) {
+                    const fil = etiquettesToPrint[i];
+                    const qrText = `${fil.codeCommercial}_${fil.couleur}_${fil.codeFabrication}_${fil.numLot}__`;
+                    const qrId = `qr-etiq-${i}`;
+                    
+                    setTimeout(() => {
+                        const qrElement = document.getElementById(qrId);
+                        if (qrElement) {
+                            new QRCode(qrElement, {
+                                text: qrText,
+                                width: 60,
+                                height: 60,
+                                correctLevel: QRCode.CorrectLevel.H
+                            });
+                        }
+                    }, 50 * (i - startIdx));
+                }
+            }
+
+            document.getElementById('printEtiquettesBtn').disabled = false;
+            showStatus('etiquettesStatus', `✅ ${etiquettesToPrint.length} étiquettes sur ${totalPages} page(s) générées !`, 'success');
+        }
+    </script>
+</body>
+</html>

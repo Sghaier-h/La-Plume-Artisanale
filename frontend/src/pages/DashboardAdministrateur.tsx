@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { 
+import { useNavigate } from 'react-router-dom';
+import {
   LayoutDashboard, Activity, CheckCircle, Clock, AlertTriangle, TrendingUp, TrendingDown,
   Users, Package, Factory, Scissors, Wrench, Truck, MessageSquare, Send, Bell,
-  Edit, Eye, Filter, Download, Calendar, BarChart3, ArrowRight, X, DollarSign, TrendingUp as TrendingUpIcon
+  Edit, Eye, Filter, Download, Calendar, BarChart3, ArrowRight, X, DollarSign, TrendingUp as TrendingUpIcon, RefreshCw,
+  FileText, Target, Feather
 } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, PieChart as RechartsPieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import DashboardLayout from '../components/DashboardLayout';
+import { dashboardService, tachesService, messagesService, maintenanceService, coutsService, planificationGanttService, ofService, machinesService } from '../services/api';
 
 interface Tache {
   id: string;
@@ -29,14 +33,18 @@ interface Avancement {
 }
 
 const DashboardAdministrateur = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('vue-generale');
   const [selectedTache, setSelectedTache] = useState<Tache | null>(null);
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [messageData, setMessageData] = useState({ destinataire: '', message: '', urgent: false });
   const [filterStatut, setFilterStatut] = useState<string>('tous');
   const [filterPoste, setFilterPoste] = useState<string>('tous');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Données mockées - à remplacer par l'API réelle
+  // Données depuis l'API
   const [taches, setTaches] = useState<Tache[]>([
     {
       id: 'T001',
@@ -100,25 +108,25 @@ const DashboardAdministrateur = () => {
     }
   ]);
 
-  const avancements: Avancement[] = [
+  const [avancements, setAvancements] = useState<Avancement[]>([
     { poste: 'Tissage', tachesTotal: 12, tachesTerminees: 8, tachesEnCours: 3, tachesRetard: 1, progression: 67 },
     { poste: 'Coupe', tachesTotal: 8, tachesTerminees: 6, tachesEnCours: 2, tachesRetard: 0, progression: 75 },
     { poste: 'Atelier', tachesTotal: 15, tachesTerminees: 10, tachesEnCours: 4, tachesRetard: 1, progression: 67 },
     { poste: 'Mécanique', tachesTotal: 5, tachesTerminees: 2, tachesEnCours: 2, tachesRetard: 1, progression: 40 },
     { poste: 'Magasin MP', tachesTotal: 6, tachesTerminees: 4, tachesEnCours: 1, tachesRetard: 1, progression: 67 },
     { poste: 'Contrôle Qualité', tachesTotal: 10, tachesTerminees: 7, tachesEnCours: 2, tachesRetard: 1, progression: 70 }
-  ];
+  ]);
 
-  const statsGlobales = {
-    tachesTotal: taches.length,
-    tachesTerminees: taches.filter(t => t.statut === 'termine').length,
-    tachesEnCours: taches.filter(t => t.statut === 'en_cours').length,
-    tachesRetard: taches.filter(t => t.statut === 'retard').length,
-    tauxCompletion: Math.round((taches.filter(t => t.statut === 'termine').length / taches.length) * 100)
-  };
+  const [statsGlobales, setStatsGlobales] = useState({
+    tachesTotal: 0,
+    tachesTerminees: 0,
+    tachesEnCours: 0,
+    tachesRetard: 0,
+    tauxCompletion: 0
+  });
 
   // Données financières
-  const [donneesFinancieres] = useState({
+  const [donneesFinancieres, setDonneesFinancieres] = useState({
     chiffreAffaire: {
       aujourdhui: 125000,
       semaine: 850000,
@@ -158,6 +166,16 @@ const DashboardAdministrateur = () => {
     ]
   });
 
+  // Données fabrication / GPAO (ex-dashboard GPAO)
+  const [statsFabrication, setStatsFabrication] = useState({
+    production: { ofs_en_cours: 0, ofs_termines: 0, quantite_produite: 0, quantite_prevue: 0, taux_rendement: 0, total_ofs: 0 },
+    interventions: { total: 0, en_cours: 0, planifiees: 0 },
+    alertes: { total: 0, urgentes: 0 },
+    taches: { total: 0, en_cours: 0, terminees: 0 },
+    machines: { operationnelles: 0, en_maintenance: 0, total: 0 }
+  });
+  const [alertesGpao, setAlertesGpao] = useState<any[]>([]);
+
   const chartData = avancements.map(a => ({
     poste: a.poste,
     terminé: a.tachesTerminees,
@@ -190,21 +208,177 @@ const DashboardAdministrateur = () => {
     }
   };
 
+  // Chargement des données depuis l'API
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      // Charger les tâches
+      const tachesRes = await tachesService.getTaches().catch(() => ({ data: { data: [] } }));
+      const tachesData = Array.isArray(tachesRes.data?.data) ? tachesRes.data.data : [];
+      setTaches(tachesData);
+
+      // Calculer les statistiques
+      const total = tachesData.length;
+      const terminees = tachesData.filter((t: Tache) => t.statut === 'termine').length;
+      const enCours = tachesData.filter((t: Tache) => t.statut === 'en_cours').length;
+      const retard = tachesData.filter((t: Tache) => t.statut === 'retard').length;
+      setStatsGlobales({
+        tachesTotal: total,
+        tachesTerminees: terminees,
+        tachesEnCours: enCours,
+        tachesRetard: retard,
+        tauxCompletion: total > 0 ? Math.round((terminees / total) * 100) : 0
+      });
+
+      // Calculer avancements par poste
+      const postesMap = new Map<string, { total: number; terminees: number; enCours: number; retard: number }>();
+      tachesData.forEach((t: Tache) => {
+        const current = postesMap.get(t.poste) || { total: 0, terminees: 0, enCours: 0, retard: 0 };
+        current.total++;
+        if (t.statut === 'termine') current.terminees++;
+        else if (t.statut === 'en_cours') current.enCours++;
+        else if (t.statut === 'retard') current.retard++;
+        postesMap.set(t.poste, current);
+      });
+
+      const avancementsData: Avancement[] = Array.from(postesMap.entries()).map(([poste, stats]) => ({
+        poste,
+        tachesTotal: stats.total,
+        tachesTerminees: stats.terminees,
+        tachesEnCours: stats.enCours,
+        tachesRetard: stats.retard,
+        progression: stats.total > 0 ? Math.round((stats.terminees / stats.total) * 100) : 0
+      }));
+      setAvancements(avancementsData);
+
+      // Charger les données financières (si disponibles)
+      try {
+        const coutsRes = await coutsService.getBudgets().catch(() => null);
+        // Ici on pourrait mapper les données réelles, pour l'instant on garde les mockées comme fallback
+      } catch (error) {
+        console.warn('Erreur chargement données financières:', error);
+      }
+
+      // Données fabrication / GPAO
+      try {
+        const [interventionsRes, alertesRes, tachesGanttRes, ofsRes, machinesRes] = await Promise.all([
+          maintenanceService.getInterventions().catch(() => ({ data: { data: { interventions: [] } } })),
+          maintenanceService.getAlertes({ lue: 'false' }).catch(() => ({ data: { data: [] } })),
+          planificationGanttService.getTaches().catch(() => ({ data: { data: { taches: [] } } })),
+          ofService.getOFs({}).catch(() => ({ data: { data: [] } })),
+          machinesService.getMachines({}).catch(() => ({ data: { data: [] } }))
+        ]);
+        const interventions = (interventionsRes.data?.data?.interventions ?? interventionsRes.data?.interventions ?? []) as any[];
+        const alertesData = (alertesRes.data?.data ?? alertesRes.data ?? []) as any[];
+        const tachesGantt = (tachesGanttRes.data?.data?.taches ?? tachesGanttRes.data?.taches ?? []) as any[];
+        const ofs = (ofsRes.data?.data ?? ofsRes.data ?? []) as any[];
+        const machines = (machinesRes.data?.data ?? machinesRes.data ?? []) as any[];
+
+        const ofsEnCours = ofs.filter((of: any) => (of.statut || '').toLowerCase() === 'en_cours').length;
+        const ofsTermines = ofs.filter((of: any) => (of.statut || '').toLowerCase() === 'termine').length;
+        const quantiteProduite = ofs.reduce((sum: number, of: any) => sum + (parseFloat(of.quantite_produite) || 0), 0);
+        const quantitePrevue = ofs.reduce((sum: number, of: any) => sum + (parseFloat(of.quantite_a_produire) || 0), 0);
+        const tauxRendement = quantitePrevue > 0 ? Math.round((quantiteProduite / quantitePrevue) * 100) : 0;
+        const machinesOp = machines.filter((m: any) => (m.statut || '').toLowerCase() === 'operationnel').length;
+
+        setStatsFabrication({
+          production: {
+            ofs_en_cours: ofsEnCours,
+            ofs_termines: ofsTermines,
+            quantite_produite: quantiteProduite,
+            quantite_prevue: quantitePrevue,
+            taux_rendement: tauxRendement,
+            total_ofs: ofs.length
+          },
+          interventions: {
+            total: interventions.length,
+            en_cours: interventions.filter((i: any) => (i.statut || '').toUpperCase() === 'EN_COURS').length,
+            planifiees: interventions.filter((i: any) => (i.statut || '').toUpperCase() === 'PLANIFIEE').length
+          },
+          alertes: {
+            total: alertesData.length,
+            urgentes: alertesData.filter((a: any) => a.priorite === 1).length
+          },
+          taches: {
+            total: tachesGantt.length,
+            en_cours: tachesGantt.filter((t: any) => (t.statut || '').toUpperCase() === 'EN_COURS').length,
+            terminees: tachesGantt.filter((t: any) => (t.statut || '').toUpperCase() === 'TERMINEE').length
+          },
+          machines: {
+            operationnelles: machinesOp,
+            en_maintenance: interventions.filter((i: any) => (i.statut || '').toUpperCase() === 'EN_COURS').length,
+            total: machines.length
+          }
+        });
+        setAlertesGpao(alertesData.slice(0, 5));
+      } catch (err) {
+        console.warn('Erreur chargement données fabrication:', err);
+      }
+
+    } catch (error) {
+      console.error('Erreur chargement données dashboard:', error);
+      setMessage({ type: 'error', text: 'Erreur lors du chargement des données' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleModifierTache = (tache: Tache) => {
-    setSelectedTache(tache);
+    setSelectedTache({ ...tache });
   };
 
-  const handleSauvegarderTache = () => {
+  const handleSauvegarderTache = async () => {
     if (!selectedTache) return;
-    setTaches(prev => prev.map(t => t.id === selectedTache.id ? selectedTache : t));
-    setSelectedTache(null);
+    setSaving(true);
+    try {
+      // Convertir l'ID string en number si nécessaire pour l'API
+      const tacheId = parseInt(selectedTache.id.toString().replace('T', ''));
+      if (!isNaN(tacheId)) {
+        await tachesService.terminerTache(tacheId, {
+          statut: selectedTache.statut,
+          priorite: selectedTache.priorite,
+          progression: selectedTache.progression
+        });
+      }
+      
+      // Mettre à jour localement
+      setTaches(prev => prev.map(t => t.id === selectedTache.id ? selectedTache : t));
+      setSelectedTache(null);
+      setMessage({ type: 'success', text: 'Tâche mise à jour avec succès' });
+      await loadData(); // Recharger pour synchroniser
+    } catch (error: any) {
+      console.error('Erreur sauvegarde tâche:', error);
+      setMessage({ type: 'error', text: error.response?.data?.error?.message || 'Erreur lors de la sauvegarde' });
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleEnvoyerMessage = () => {
-    // Logique d'envoi de message push
-    alert(`Message ${messageData.urgent ? 'URGENT' : ''} envoyé à ${messageData.destinataire}:\n\n${messageData.message}`);
-    setShowMessageModal(false);
-    setMessageData({ destinataire: '', message: '', urgent: false });
+  const handleEnvoyerMessage = async () => {
+    if (!messageData.destinataire || !messageData.message) return;
+    
+    setSaving(true);
+    try {
+      await messagesService.envoyerMessage({
+        destinataire: messageData.destinataire,
+        message: messageData.message,
+        urgent: messageData.urgent,
+        type: 'admin_message'
+      });
+      
+      setMessage({ type: 'success', text: `Message ${messageData.urgent ? 'URGENT ' : ''}envoyé avec succès` });
+      setShowMessageModal(false);
+      setMessageData({ destinataire: '', message: '', urgent: false });
+    } catch (error: any) {
+      console.error('Erreur envoi message:', error);
+      setMessage({ type: 'error', text: error.response?.data?.error?.message || 'Erreur lors de l\'envoi du message' });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const tachesFiltrees = taches.filter(t => {
@@ -215,66 +389,57 @@ const DashboardAdministrateur = () => {
 
   const postes = Array.from(new Set(taches.map(t => t.poste)));
 
+  // Masquer le message après 5 secondes
+  useEffect(() => {
+    if (message) {
+      const timer = setTimeout(() => setMessage(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [message]);
+
+  if (loading && taches.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <RefreshCw className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Chargement des données...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 ml-64">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Dashboard Administrateur
-              </h1>
-              <p className="text-sm text-gray-600 mt-1">
-                Vue globale - Gestion des tâches et interventions
-              </p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setShowMessageModal(true)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
-              >
-                <MessageSquare className="w-4 h-4" />
-                Envoyer Message
-              </button>
-            </div>
+    <DashboardLayout
+      title="Dashboard Administrateur"
+      subtitle="Vue globale - Gestion des tâches et interventions"
+      activeSection={activeTab}
+      onSectionChange={setActiveTab}
+      sidebarFooter={
+        <button
+          type="button"
+          onClick={() => setShowMessageModal(true)}
+          className="w-full h-full flex items-center justify-center text-white rounded-full"
+          aria-label="Envoyer Message"
+        >
+          <Feather className="w-7 h-7" strokeWidth={2.5} />
+        </button>
+      }
+    >
+      {/* Message de notification */}
+      {message && (
+        <div className={`fixed top-20 right-4 z-50 px-4 py-3 rounded-lg shadow-lg ${
+          message.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+        }`}>
+          <div className="flex items-center gap-2">
+            {message.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
+            <span>{message.text}</span>
+            <button onClick={() => setMessage(null)} className="ml-4 text-white hover:text-gray-200">
+              <X className="w-4 h-4" />
+            </button>
           </div>
         </div>
-      </div>
-
-      {/* Navigation Tabs */}
-      <div className="bg-white border-b sticky top-0 z-10 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex space-x-1 overflow-x-auto">
-            {[
-              { id: 'vue-generale', label: 'Vue Générale', icon: LayoutDashboard },
-              { id: 'taches', label: 'Tâches', icon: CheckCircle },
-              { id: 'avancements', label: 'Avancements', icon: TrendingUp },
-              { id: 'financier', label: 'Coûts & CA', icon: DollarSign },
-              { id: 'interventions', label: 'Interventions', icon: Wrench }
-            ].map(tab => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center space-x-2 px-4 py-3 border-b-2 transition-colors whitespace-nowrap ${
-                    activeTab === tab.id
-                      ? 'border-blue-600 text-blue-600 bg-blue-50'
-                      : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span className="text-sm font-medium">{tab.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      )}
+      <>
         {/* Vue Générale */}
         {activeTab === 'vue-generale' && (
           <div className="space-y-6">
@@ -458,6 +623,117 @@ const DashboardAdministrateur = () => {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Fabrication & GPAO (menu dashboard admin) */}
+        {activeTab === 'fabrication-gpao' && (
+          <div className="space-y-6">
+            <h2 className="text-xl font-bold text-gray-900">Fabrication & GPAO</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">OFs en cours</p>
+                    <p className="text-2xl font-bold text-gray-900">{statsFabrication.production.ofs_en_cours}</p>
+                    <p className="text-xs text-gray-500">{statsFabrication.production.total_ofs} au total</p>
+                  </div>
+                  <FileText className="w-10 h-10 text-blue-500 opacity-80" />
+                </div>
+              </div>
+              <div className="bg-white rounded-lg shadow p-4 border-l-4 border-green-500">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Quantité produite</p>
+                    <p className="text-2xl font-bold text-gray-900">{statsFabrication.production.quantite_produite.toLocaleString('fr-FR')}</p>
+                    <p className="text-xs text-gray-500">Prévu: {statsFabrication.production.quantite_prevue.toLocaleString('fr-FR')}</p>
+                  </div>
+                  <Package className="w-10 h-10 text-green-500 opacity-80" />
+                </div>
+              </div>
+              <div className="bg-white rounded-lg shadow p-4 border-l-4 border-yellow-500">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Taux rendement</p>
+                    <p className="text-2xl font-bold text-gray-900">{statsFabrication.production.taux_rendement}%</p>
+                    <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                      <div className={`h-1.5 rounded-full ${statsFabrication.production.taux_rendement >= 90 ? 'bg-green-600' : statsFabrication.production.taux_rendement >= 70 ? 'bg-yellow-600' : 'bg-red-600'}`} style={{ width: `${Math.min(100, statsFabrication.production.taux_rendement)}%` }} />
+                    </div>
+                  </div>
+                  <Target className="w-10 h-10 text-yellow-500 opacity-80" />
+                </div>
+              </div>
+              <div className="bg-white rounded-lg shadow p-4 border-l-4 border-emerald-500">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">OFs terminés</p>
+                    <p className="text-2xl font-bold text-gray-900">{statsFabrication.production.ofs_termines}</p>
+                    <p className="text-xs text-green-600">
+                      {statsFabrication.production.total_ofs > 0 ? Math.round((statsFabrication.production.ofs_termines / statsFabrication.production.total_ofs) * 100) : 0}% du total
+                    </p>
+                  </div>
+                  <CheckCircle className="w-10 h-10 text-emerald-500 opacity-80" />
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-white rounded-lg shadow p-4 border-l-4 border-indigo-500">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Interventions</p>
+                    <p className="text-2xl font-bold text-gray-900">{statsFabrication.interventions.total}</p>
+                    <p className="text-xs text-gray-500">{statsFabrication.interventions.en_cours} en cours</p>
+                  </div>
+                  <Wrench className="w-10 h-10 text-indigo-500 opacity-80" />
+                </div>
+              </div>
+              <div className="bg-white rounded-lg shadow p-4 border-l-4 border-red-500">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Alertes</p>
+                    <p className="text-2xl font-bold text-gray-900">{statsFabrication.alertes.total}</p>
+                    <p className="text-xs text-red-600">{statsFabrication.alertes.urgentes} urgentes</p>
+                  </div>
+                  <AlertTriangle className="w-10 h-10 text-red-500 opacity-80" />
+                </div>
+              </div>
+              <div className="bg-white rounded-lg shadow p-4 border-l-4 border-teal-500">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Tâches planning</p>
+                    <p className="text-2xl font-bold text-gray-900">{statsFabrication.taches.total}</p>
+                    <p className="text-xs text-green-600">{statsFabrication.taches.terminees} terminées</p>
+                  </div>
+                  <CheckCircle className="w-10 h-10 text-teal-500 opacity-80" />
+                </div>
+              </div>
+              <div className="bg-white rounded-lg shadow p-4 border-l-4 border-orange-500">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Machines</p>
+                    <p className="text-2xl font-bold text-gray-900">{statsFabrication.machines.operationnelles}</p>
+                    <p className="text-xs text-orange-600">{statsFabrication.machines.en_maintenance} en maintenance</p>
+                  </div>
+                  <Activity className="w-10 h-10 text-orange-500 opacity-80" />
+                </div>
+              </div>
+            </div>
+            {alertesGpao.length > 0 && (
+              <div className="bg-white rounded-lg shadow p-4">
+                <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-red-600" />
+                  Alertes maintenance (récentes)
+                </h4>
+                <div className="space-y-2">
+                  {alertesGpao.map((a: any) => (
+                    <div key={a.id_alerte || a.id} className={`p-2 rounded border-l-2 ${a.priorite === 1 ? 'bg-red-50 border-red-500' : 'bg-yellow-50 border-yellow-500'}`}>
+                      <p className="font-medium text-sm">{a.type_alerte || a.type}</p>
+                      <p className="text-xs text-gray-600">{a.message}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -764,7 +1040,7 @@ const DashboardAdministrateur = () => {
             </div>
           </div>
         )}
-      </div>
+            </>
 
       {/* Modal Modification Tâche */}
       {selectedTache && (
@@ -855,76 +1131,83 @@ const DashboardAdministrateur = () => {
         </div>
       )}
 
-      {/* Modal Message Push */}
+      {/* Panneau Envoyer Message style Facebook – en bas à droite */}
       {showMessageModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-            <div className="p-6 border-b">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold">Envoyer Message Push</h3>
-                <button onClick={() => setShowMessageModal(false)} className="text-gray-400 hover:text-gray-600">
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
+        <div
+          className="fixed bottom-24 right-6 z-50 w-[380px] max-w-[calc(100vw-2rem)] bg-white rounded-t-2xl rounded-bl-2xl shadow-2xl border border-gray-200 overflow-hidden slide-in-from-bottom-4"
+          style={{ boxShadow: '0 -4px 20px rgba(0,0,0,0.15), 0 0 1px rgba(0,0,0,0.1)' }}
+        >
+          {/* Header style Messenger */}
+          <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="w-5 h-5" />
+              <h3 className="font-semibold">Envoyer un message</h3>
             </div>
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Destinataire</label>
-                <select
-                  value={messageData.destinataire}
-                  onChange={(e) => setMessageData({...messageData, destinataire: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                >
-                  <option value="">Sélectionner...</option>
-                  <option value="Tous les postes">Tous les postes</option>
-                  <option value="Tissage">Tissage</option>
-                  <option value="Coupe">Coupe</option>
-                  <option value="Atelier">Atelier</option>
-                  <option value="Mécanique">Mécanique</option>
-                  <option value="Magasin MP">Magasin MP</option>
-                  <option value="Contrôle Qualité">Contrôle Qualité</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Message</label>
-                <textarea
-                  value={messageData.message}
-                  onChange={(e) => setMessageData({...messageData, message: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                  rows={4}
-                  placeholder="Tapez votre message..."
-                />
-              </div>
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={messageData.urgent}
-                  onChange={(e) => setMessageData({...messageData, urgent: e.target.checked})}
-                  className="mr-2"
-                />
-                <label className="text-sm font-medium">Message urgent</label>
-              </div>
-            </div>
-            <div className="p-6 border-t bg-gray-50 flex justify-end space-x-3">
-              <button
-                onClick={() => setShowMessageModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100"
+            <button
+              onClick={() => setShowMessageModal(false)}
+              className="p-1.5 rounded-full hover:bg-white/20 transition-colors"
+              aria-label="Fermer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="p-4 space-y-4 max-h-[60vh] overflow-y-auto">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Destinataire</label>
+              <select
+                value={messageData.destinataire}
+                onChange={(e) => setMessageData({ ...messageData, destinataire: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                Annuler
-              </button>
-              <button
-                onClick={handleEnvoyerMessage}
-                disabled={!messageData.destinataire || !messageData.message}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                <Send className="w-4 h-4" />
-                Envoyer
-              </button>
+                <option value="">Sélectionner...</option>
+                <option value="Tous les postes">Tous les postes</option>
+                <option value="Tissage">Tissage</option>
+                <option value="Coupe">Coupe</option>
+                <option value="Atelier">Atelier</option>
+                <option value="Mécanique">Mécanique</option>
+                <option value="Magasin MP">Magasin MP</option>
+                <option value="Contrôle Qualité">Contrôle Qualité</option>
+              </select>
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
+              <textarea
+                value={messageData.message}
+                onChange={(e) => setMessageData({ ...messageData, message: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                rows={4}
+                placeholder="Tapez votre message..."
+              />
+            </div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={messageData.urgent}
+                onChange={(e) => setMessageData({ ...messageData, urgent: e.target.checked })}
+                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="text-sm font-medium text-gray-700">Message urgent</span>
+            </label>
+          </div>
+          <div className="p-4 border-t bg-gray-50 flex justify-end gap-2">
+            <button
+              onClick={() => setShowMessageModal(false)}
+              className="px-4 py-2 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-medium"
+            >
+              Annuler
+            </button>
+            <button
+              onClick={handleEnvoyerMessage}
+              disabled={!messageData.destinataire || !messageData.message}
+              className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2 font-medium transition-colors"
+            >
+              <Send className="w-4 h-4" />
+              Envoyer
+            </button>
           </div>
         </div>
       )}
-    </div>
+    </DashboardLayout>
   );
 };
 

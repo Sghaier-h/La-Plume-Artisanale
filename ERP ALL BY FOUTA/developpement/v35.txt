@@ -1,0 +1,2928 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  LayoutDashboard, Package, Calendar, Users, Cog, Bell, Menu, X, 
+  AlertCircle, CheckCircle, Clock, TrendingUp, Scissors, Factory, 
+  ClipboardList, Truck, BarChart3, Upload, Box, Boxes, Package2, 
+  ShoppingBag, UserCheck, ChevronDown, ChevronRight, Activity, Zap, 
+  AlertTriangle, Download, Eye, Plus, Camera, Database, RefreshCw, 
+  Save, Trash2, Edit, Search, Filter, LogOut, LogIn, QrCode, Printer,
+  FileSpreadsheet, Wifi, WifiOff, Target, Settings, Layers, Warehouse,
+  FileText, Image, Tag, Ruler, Palette, Grid, Briefcase, Building,
+  ShoppingCart, UserPlus, CalendarRange, GitBranch
+} from 'lucide-react';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+
+// ==================== DATA MANAGER ====================
+const DataManager = {
+  STORAGE_KEY: 'fouta_erp_data',
+  
+  saveData(key, data) {
+    try {
+      const allData = this.getAllData();
+      allData[key] = data;
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(allData));
+      return true;
+    } catch (error) {
+      console.error('Erreur sauvegarde:', error);
+      return false;
+    }
+  },
+  
+  getData(key) {
+    try {
+      const allData = this.getAllData();
+      return allData[key] || null;
+    } catch (error) {
+      console.error('Erreur lecture:', error);
+      return null;
+    }
+  },
+  
+  getAllData() {
+    try {
+      const data = localStorage.getItem(this.STORAGE_KEY);
+      return data ? JSON.parse(data) : {};
+    } catch (error) {
+      return {};
+    }
+  },
+  
+  clearAll() {
+    localStorage.clear();
+  }
+};
+
+// ==================== PERMISSIONS MANAGER ====================
+const PermissionsManager = {
+  PERMISSIONS_KEY: 'fouta_permissions',
+  
+  getDefaultPermissions() {
+    return {
+      Admin: ['dashboard', 'commandes', 'ordres-fabrication', 'planning', 'ensouples', 'articles', 'matiere-premiere', 'fournitures', 'bom', 'equipes', 'entrepots', 'etiquettes', 'tableaux-bord', 'clients', 'import-export', 'permissions', 'settings'],
+      Tisseur: ['dashboard', 'ordres-fabrication', 'ensouples', 'tableaux-bord', 'etiquettes'],
+      Coupeur: ['dashboard', 'ordres-fabrication', 'tableaux-bord', 'etiquettes'],
+      Magasinier: ['dashboard', 'ensouples', 'matiere-premiere', 'fournitures', 'entrepots', 'tableaux-bord'],
+      Commercial: ['dashboard', 'commandes', 'clients', 'articles', 'planning'],
+      Production: ['dashboard', 'commandes', 'ordres-fabrication', 'planning', 'ensouples', 'articles', 'bom', 'equipes', 'tableaux-bord', 'etiquettes']
+    };
+  },
+  
+  getPermissions() {
+    const stored = localStorage.getItem(this.PERMISSIONS_KEY);
+    return stored ? JSON.parse(stored) : this.getDefaultPermissions();
+  },
+  
+  savePermissions(permissions) {
+    localStorage.setItem(this.PERMISSIONS_KEY, JSON.stringify(permissions));
+  },
+  
+  canAccess(role, module) {
+    if (role === 'Admin') return true; // Admin a accès à tout
+    const permissions = this.getPermissions();
+    return permissions[role]?.includes(module) || false;
+  },
+  
+  updateRolePermissions(role, modules) {
+    const permissions = this.getPermissions();
+    permissions[role] = modules;
+    this.savePermissions(permissions);
+  }
+};
+
+// ==================== AUTH MANAGER ====================
+const AuthManager = {
+  USER_KEY: 'fouta_current_user',
+  USERS_DB: 'fouta_users',
+  
+  login(username, password) {
+    const users = this.getUsers();
+    const user = users.find(u => u.username === username && u.password === password);
+    
+    if (user) {
+      const userSession = { ...user };
+      delete userSession.password;
+      localStorage.setItem(this.USER_KEY, JSON.stringify(userSession));
+      return userSession;
+    }
+    return null;
+  },
+  
+  logout() {
+    localStorage.removeItem(this.USER_KEY);
+  },
+  
+  getCurrentUser() {
+    const userData = localStorage.getItem(this.USER_KEY);
+    return userData ? JSON.parse(userData) : null;
+  },
+  
+  getUsers() {
+    const stored = localStorage.getItem(this.USERS_DB);
+    if (stored) return JSON.parse(stored);
+    
+    const defaultUsers = [
+      { id: '1', username: 'admin', password: 'admin123', nom: 'Administrateur', role: 'Admin', email: 'admin@fouta.tn' },
+      { id: '2', username: 'tisseur', password: 'tiss123', nom: 'Zied Tisseur', role: 'Tisseur', email: 'tisseur@fouta.tn' },
+      { id: '3', username: 'coupeur', password: 'coup123', nom: 'Ahmed Coupeur', role: 'Coupeur', email: 'coupeur@fouta.tn' },
+      { id: '4', username: 'magasinier', password: 'mag123', nom: 'Mohamed Magasinier', role: 'Magasinier', email: 'mag@fouta.tn' },
+      { id: '5', username: 'commercial', password: 'com123', nom: 'Sarah Commercial', role: 'Commercial', email: 'com@fouta.tn' },
+      { id: '6', username: 'production', password: 'prod123', nom: 'Karim Production', role: 'Production', email: 'prod@fouta.tn' }
+    ];
+    
+    localStorage.setItem(this.USERS_DB, JSON.stringify(defaultUsers));
+    return defaultUsers;
+  },
+  
+  saveUsers(users) {
+    localStorage.setItem(this.USERS_DB, JSON.stringify(users));
+  }
+};
+
+// ==================== QR CODE GENERATOR ====================
+const generateQRCode = (data) => {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = 200;
+  canvas.height = 200;
+  
+  if (ctx) {
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, 200, 200);
+    ctx.fillStyle = '#000';
+    
+    // Dessiner un motif QR simplifié
+    for (let i = 0; i < 10; i++) {
+      for (let j = 0; j < 10; j++) {
+        if ((i + j + data.length) % 2 === 0) {
+          ctx.fillRect(i * 20, j * 20, 18, 18);
+        }
+      }
+    }
+    
+    // Ajouter le texte des données
+    ctx.fillStyle = '#666';
+    ctx.font = '8px monospace';
+    ctx.fillText(data.substring(0, 20), 10, 195);
+  }
+  
+  return canvas.toDataURL();
+};
+
+// ==================== EXPORT EXCEL ====================
+const exportToExcel = (data, filename) => {
+  const headers = Object.keys(data[0] || {});
+  const csv = [
+    headers.join(','),
+    ...data.map(row => headers.map(h => row[h] || '').join(','))
+  ].join('\n');
+  
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `${filename}_${new Date().toISOString().split('T')[0]}.csv`;
+  link.click();
+};
+
+// ==================== IMPORT EXCEL ====================
+const importFromExcel = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target.result;
+        const lines = text.split('\n');
+        const headers = lines[0].split(',');
+        const data = lines.slice(1).map(line => {
+          const values = line.split(',');
+          const obj = {};
+          headers.forEach((h, i) => obj[h.trim()] = values[i]?.trim());
+          return obj;
+        }).filter(row => Object.values(row).some(v => v));
+        resolve(data);
+      } catch (error) {
+        reject(error);
+      }
+    };
+    reader.onerror = reject;
+    reader.readAsText(file);
+  });
+};
+
+// ==================== DONNÉES INITIALES ====================
+const initialMachines = [
+  { id: 'M2301', type: 'HTVS4/S', nbFils: 966, ensoupleRestant: 320, ensoupleTotal: 5000, status: 'alert', operateur: 'Majdi', operationsEnCours: 2 },
+  { id: 'M2302', type: 'HTVS6/S', nbFils: 966, ensoupleRestant: 1750, ensoupleTotal: 5000, status: 'ok', operateur: 'Zied', operationsEnCours: 1 },
+  { id: 'M2303', type: 'HTVS4/S', nbFils: 1450, ensoupleRestant: 2100, ensoupleTotal: 5000, status: 'ok', operateur: 'Majdi', operationsEnCours: 0 },
+  { id: 'M2304', type: 'GTN6/SD', nbFils: 1820, ensoupleRestant: 920, ensoupleTotal: 5000, status: 'ok', operateur: 'Badie', operationsEnCours: 1 },
+  { id: 'M2305', type: 'HTV8/S', nbFils: 2140, ensoupleRestant: 350, ensoupleTotal: 5000, status: 'alert', operateur: 'Dimatex', operationsEnCours: 3 },
+  { id: 'M2306', type: 'HTV8/S', nbFils: 966, ensoupleRestant: 1200, ensoupleTotal: 5000, status: 'ok', operateur: 'Majdi', operationsEnCours: 1 }
+];
+
+const initialOFs = [
+  { id: 'OF244980', article: 'ND LILI 1020', client: 'CL00296', quantite: 70, machine: null, position: 0, couleur1: null, couleur2: null, status: 'attente', priority: 'normal' },
+  { id: 'OF244981', article: 'IBIZA 2426', client: 'CL00352', quantite: 50, machine: null, position: 0, couleur1: null, couleur2: null, status: 'attente', priority: 'normal' },
+  { id: 'OF244982', article: 'ARTHUR 1020', client: 'CL00145', quantite: 85, machine: 'M2301', position: 1, couleur1: 'C20', couleur2: 'C01', status: 'en_cours', priority: 'urgent' },
+  { id: 'OF244983', article: 'MARINIERE 1626', client: 'CL00220', quantite: 60, machine: 'M2302', position: 1, couleur1: 'C15', couleur2: 'C32', status: 'en_cours', priority: 'normal' }
+];
+
+const initialClients = [
+  { id: 'CL00296', nom: 'TEXTILE PARIS', contact: 'Jean Dupont', telephone: '+33 1 23 45 67 89', email: 'contact@textile-paris.fr', adresse: '15 Rue de la Paix, Paris', pays: 'France' },
+  { id: 'CL00352', nom: 'MAISON DECOR', contact: 'Marie Martin', telephone: '+33 4 56 78 90 12', email: 'info@maison-decor.fr', adresse: '28 Avenue Victor Hugo, Lyon', pays: 'France' },
+  { id: 'CL00145', nom: 'HOME STYLE', contact: 'Sophie Bernard', telephone: '+32 2 345 67 89', email: 'orders@homestyle.be', adresse: '42 Rue de la Loi, Bruxelles', pays: 'Belgique' }
+];
+
+const couleursDisponibles = [
+  { code: 'C01', nom: 'BLANC', nm: 'NM05-01.00', stock: 381.5 },
+  { code: 'C20', nom: 'ROUGE', nm: 'NM05-20.00', stock: 445.2 },
+  { code: 'C15', nom: 'BLEU', nm: 'NM05-15.00', stock: 567.8 },
+  { code: 'C32', nom: 'VERT', nm: 'NM05-32.00', stock: 692.3 },
+  { code: 'C45', nom: 'JAUNE', nm: 'NM05-45.00', stock: 0 }
+];
+
+// ==================== NOUVELLES DONNÉES POUR MODULES ====================
+
+// Articles / Catalogue
+const initialArticles = [
+  { 
+    id: 'ART001', 
+    refCommerciale: 'IB1020-B20-01',
+    refFabrication: 'IB1020-B-20-01',
+    modele: 'IBIZA', 
+    dimensions: '100x200', 
+    nbCouleurs: 2,
+    couleur1: 'Rouge',
+    couleur2: 'Blanc',
+    typeTissage: 'Tissage Plat', 
+    finition: 'Frange',
+    prixVente: 9.75,
+    prixRevient: 7.50,
+    stock: 145,
+    photo: null
+  },
+  { 
+    id: 'ART002', 
+    refCommerciale: 'ND1020-B15-32',
+    refFabrication: 'ND1020-B-15-32',
+    modele: 'ND LILI', 
+    dimensions: '100x200', 
+    nbCouleurs: 2,
+    couleur1: 'Bleu',
+    couleur2: 'Vert',
+    typeTissage: 'Tissage Plat', 
+    finition: 'Frange',
+    prixVente: 10.50,
+    prixRevient: 8.20,
+    stock: 87,
+    photo: null
+  },
+  { 
+    id: 'ART003', 
+    refCommerciale: 'AR2426-T01-20-15',
+    refFabrication: 'AR2426-T-01-20-15',
+    modele: 'ARTHUR', 
+    dimensions: '240x260', 
+    nbCouleurs: 3,
+    couleur1: 'Blanc',
+    couleur2: 'Rouge',
+    couleur3: 'Bleu',
+    typeTissage: 'Jacquard', 
+    finition: 'Ourlet',
+    prixVente: 15.80,
+    prixRevient: 12.40,
+    stock: 52,
+    photo: null
+  }
+];
+
+// Matières Premières
+const initialMatieresPremiere = [
+  { id: 'MP001', codeCommercial: 'C01', nom: 'BLANC', numeroMetrique: 'NM 2/50', composition: 'Coton 100%', type: 'Chaîne', stock: 381.5, unite: 'kg', prixUnitaire: 8.50 },
+  { id: 'MP002', codeCommercial: 'C20', nom: 'ROUGE', numeroMetrique: 'NM 2/50', composition: 'Coton 100%', type: 'Chaîne', stock: 445.2, unite: 'kg', prixUnitaire: 9.20 },
+  { id: 'MP003', codeCommercial: 'C15', nom: 'BLEU', numeroMetrique: 'NM 2/50', composition: 'Coton 100%', type: 'Trame', stock: 567.8, unite: 'kg', prixUnitaire: 8.80 },
+  { id: 'MP004', codeCommercial: 'C32', nom: 'VERT', numeroMetrique: 'NM 2/50', composition: 'Coton 100%', type: 'Trame', stock: 692.3, unite: 'kg', prixUnitaire: 8.90 },
+  { id: 'MP005', codeCommercial: 'C45', nom: 'JAUNE', numeroMetrique: 'NM 2/52', composition: 'Coton/Polyester', type: 'Chaîne', stock: 0, unite: 'kg', prixUnitaire: 7.80 }
+];
+
+// Fournitures
+const initialFournitures = [
+  { id: 'FOU001', nom: 'Étiquette composition', reference: 'ETI-COMP-01', stock: 5000, unite: 'pcs', prixUnitaire: 0.05 },
+  { id: 'FOU002', nom: 'Étiquette marque', reference: 'ETI-MAR-01', stock: 3500, unite: 'pcs', prixUnitaire: 0.08 },
+  { id: 'FOU003', nom: 'Sachet plastique', reference: 'SAC-PL-01', stock: 8000, unite: 'pcs', prixUnitaire: 0.12 },
+  { id: 'FOU004', nom: 'Carton emballage', reference: 'CAR-EMB-01', stock: 450, unite: 'pcs', prixUnitaire: 0.85 }
+];
+
+// BOM (Bill of Materials)
+const initialBOMs = [
+  {
+    id: 'BOM001',
+    codeParametrage: 'IB1020(FR)-B',
+    modele: 'IBIZA',
+    dimensions: '100x200',
+    typeTissage: 'Tissage Plat',
+    finition: 'Frange',
+    nbCouleurs: 2,
+    largeurTissage: 100,
+    longueurTissage: 240,
+    duiteParCm: 10.8,
+    nbDuiteTotal: 2592,
+    consommationCouleur1: 0.24,
+    consommationCouleur2: 0.11,
+    tempsProduction: 8.5
+  },
+  {
+    id: 'BOM002',
+    codeParametrage: 'ND1020(FR)-B',
+    modele: 'ND LILI',
+    dimensions: '100x200',
+    typeTissage: 'Tissage Plat',
+    finition: 'Frange',
+    nbCouleurs: 2,
+    largeurTissage: 100,
+    longueurTissage: 240,
+    duiteParCm: 11.2,
+    nbDuiteTotal: 2688,
+    consommationCouleur1: 0.26,
+    consommationCouleur2: 0.12,
+    tempsProduction: 9.0
+  }
+];
+
+// Équipes et Salariés
+const initialEquipes = [
+  { id: 'EQ001', nom: 'Équipe Matin', horaire: '05:00 - 13:00', chef: 'Majdi' },
+  { id: 'EQ002', nom: 'Équipe Après-midi', horaire: '13:00 - 21:00', chef: 'Zied' },
+  { id: 'EQ003', nom: 'Équipe Nuit', horaire: '21:00 - 05:00', chef: 'Badie' }
+];
+
+const initialSalaries = [
+  { id: 'SAL001', nom: 'Majdi Ben Ali', poste: 'Tisseur', equipe: 'EQ001', tauxHoraire: 4.5, telephone: '+216 20 123 456', dateEmbauche: '2020-03-15' },
+  { id: 'SAL002', nom: 'Zied Gharbi', poste: 'Tisseur', equipe: 'EQ002', tauxHoraire: 4.8, telephone: '+216 22 234 567', dateEmbauche: '2019-08-22' },
+  { id: 'SAL003', nom: 'Ahmed Sassi', poste: 'Coupeur', equipe: 'EQ001', tauxHoraire: 4.2, telephone: '+216 24 345 678', dateEmbauche: '2021-01-10' },
+  { id: 'SAL004', nom: 'Mohamed Triki', poste: 'Magasinier MP', equipe: 'EQ001', tauxHoraire: 3.8, telephone: '+216 26 456 789', dateEmbauche: '2020-11-05' },
+  { id: 'SAL005', nom: 'Badie Jomaa', poste: 'Tisseur', equipe: 'EQ003', tauxHoraire: 5.0, telephone: '+216 28 567 890', dateEmbauche: '2018-05-12' },
+  { id: 'SAL006', nom: 'Nadia Khlifi', poste: 'Contrôle Qualité', equipe: 'EQ001', tauxHoraire: 4.0, telephone: '+216 23 678 901', dateEmbauche: '2021-06-18' }
+];
+
+// Entrepôts
+const initialEntrepots = [
+  { id: 'ENT001', nom: 'Entrepôt Principal', type: 'Usine', adresse: 'Zone Industrielle, Tunis', capacite: '1000 m²', responsable: 'Mohamed Triki' },
+  { id: 'ENT002', nom: 'Entrepôt E2', type: 'Matière Première', adresse: 'Route de Bizerte, Km 12', capacite: '500 m²', responsable: 'Ahmed Ben Salem' },
+  { id: 'ENT003', nom: 'Entrepôt E3', type: 'Produits Finis', adresse: 'Zone Logistique, Ariana', capacite: '800 m²', responsable: 'Sami Hamdi' }
+];
+
+// Commandes
+const initialCommandes = [
+  { 
+    id: 'CMD001', 
+    numCommande: 'CM-FT0069',
+    client: 'CL00296',
+    dateCommande: '2025-10-01',
+    dateLivraison: '2025-10-20',
+    statut: 'En production',
+    articles: [
+      { article: 'ART001', quantite: 70, prixUnitaire: 9.75 }
+    ],
+    montantTotal: 682.50
+  },
+  { 
+    id: 'CMD002', 
+    numCommande: 'CM-FT0070',
+    client: 'CL00352',
+    dateCommande: '2025-10-05',
+    dateLivraison: '2025-10-25',
+    statut: 'En attente',
+    articles: [
+      { article: 'ART002', quantite: 50, prixUnitaire: 10.50 },
+      { article: 'ART003', quantite: 30, prixUnitaire: 15.80 }
+    ],
+    montantTotal: 999.00
+  }
+];
+
+// ==================== MAIN COMPONENT ====================
+export default function FoutaERP() {
+  // Auth state
+  const [currentUser, setCurrentUser] = useState(AuthManager.getCurrentUser());
+  const [loginUsername, setLoginUsername] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  
+  // UI state
+  const [currentView, setCurrentView] = useState('dashboard');
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  
+  // Menu states
+  const [stockMenuOpen, setStockMenuOpen] = useState(false);
+  const [productionMenuOpen, setProductionMenuOpen] = useState(false);
+  
+  // Modal states
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [qrData, setQRData] = useState('');
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [showPlanningModal, setShowPlanningModal] = useState(false);
+  const [selectedOF, setSelectedOF] = useState(null);
+  const [showClientModal, setShowClientModal] = useState(false);
+  const [editingClient, setEditingClient] = useState(null);
+  
+  // Data states
+  const [machines, setMachines] = useState(() => {
+    const saved = DataManager.getData('machines');
+    return saved || initialMachines;
+  });
+  
+  const [ofs, setOfs] = useState(() => {
+    const saved = DataManager.getData('ofs');
+    return saved || initialOFs;
+  });
+  
+  const [clients, setClients] = useState(() => {
+    const saved = DataManager.getData('clients');
+    return saved || initialClients;
+  });
+  
+  const [notifications, setNotifications] = useState(() => {
+    const saved = DataManager.getData('notifications');
+    return saved || [
+      { id: 1, type: 'alert', message: 'Machine M2301 - Ensouple à 320m', time: '2min', read: false },
+      { id: 2, type: 'alert', message: 'Machine M2305 - Ensouple à 350m', time: '15min', read: false },
+      { id: 3, type: 'info', message: 'OF244982 démarré sur M2301', time: '1h', read: false }
+    ];
+  });
+  
+  const [etiquettes, setEtiquettes] = useState(() => {
+    const saved = DataManager.getData('etiquettes');
+    return saved || [];
+  });
+
+  // Nouveaux états pour les modules
+  const [articles, setArticles] = useState(() => {
+    const saved = DataManager.getData('articles');
+    return saved || initialArticles;
+  });
+
+  const [matieresPremiere, setMatieresPremiere] = useState(() => {
+    const saved = DataManager.getData('matieresPremiere');
+    return saved || initialMatieresPremiere;
+  });
+
+  const [fournitures, setFournitures] = useState(() => {
+    const saved = DataManager.getData('fournitures');
+    return saved || initialFournitures;
+  });
+
+  const [boms, setBoms] = useState(() => {
+    const saved = DataManager.getData('boms');
+    return saved || initialBOMs;
+  });
+
+  const [equipes, setEquipes] = useState(() => {
+    const saved = DataManager.getData('equipes');
+    return saved || initialEquipes;
+  });
+
+  const [salaries, setSalaries] = useState(() => {
+    const saved = DataManager.getData('salaries');
+    return saved || initialSalaries;
+  });
+
+  const [entrepots, setEntrepots] = useState(() => {
+    const saved = DataManager.getData('entrepots');
+    return saved || initialEntrepots;
+  });
+
+  const [commandes, setCommandes] = useState(() => {
+    const saved = DataManager.getData('commandes');
+    return saved || initialCommandes;
+  });
+
+  // Save data to localStorage
+  useEffect(() => {
+    DataManager.saveData('machines', machines);
+  }, [machines]);
+  
+  useEffect(() => {
+    DataManager.saveData('ofs', ofs);
+  }, [ofs]);
+  
+  useEffect(() => {
+    DataManager.saveData('clients', clients);
+  }, [clients]);
+  
+  useEffect(() => {
+    DataManager.saveData('notifications', notifications);
+  }, [notifications]);
+  
+  useEffect(() => {
+    DataManager.saveData('etiquettes', etiquettes);
+  }, [etiquettes]);
+
+  useEffect(() => {
+    DataManager.saveData('articles', articles);
+  }, [articles]);
+
+  useEffect(() => {
+    DataManager.saveData('matieresPremiere', matieresPremiere);
+  }, [matieresPremiere]);
+
+  useEffect(() => {
+    DataManager.saveData('fournitures', fournitures);
+  }, [fournitures]);
+
+  useEffect(() => {
+    DataManager.saveData('boms', boms);
+  }, [boms]);
+
+  useEffect(() => {
+    DataManager.saveData('equipes', equipes);
+  }, [equipes]);
+
+  useEffect(() => {
+    DataManager.saveData('salaries', salaries);
+  }, [salaries]);
+
+  useEffect(() => {
+    DataManager.saveData('entrepots', entrepots);
+  }, [entrepots]);
+
+  useEffect(() => {
+    DataManager.saveData('commandes', commandes);
+  }, [commandes]);
+
+  // Monitor connectivity
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Auto-check ensouples
+  useEffect(() => {
+    if (!currentUser) return; // Ne rien faire si pas connecté
+    
+    const interval = setInterval(() => {
+      const alertes = machines.filter(m => m.ensoupleRestant <= 500 && m.ensoupleRestant > 0);
+      alertes.forEach(machine => {
+        const notifExists = notifications.some(n => 
+          n.message.includes(machine.id) && !n.read
+        );
+        if (!notifExists) {
+          const newNotif = {
+            id: Date.now() + Math.random(),
+            type: 'alert',
+            message: `Machine ${machine.id} - Ensouple critique à ${machine.ensoupleRestant}m`,
+            time: 'maintenant',
+            read: false
+          };
+          setNotifications(prev => [newNotif, ...prev.slice(0, 19)]);
+        }
+      });
+    }, 30000); // Toutes les 30 secondes
+    
+    return () => clearInterval(interval);
+  }, [machines, notifications, currentUser]);
+
+  // ==================== HANDLERS ====================
+  const handleLogin = () => {
+    setLoginError('');
+    const user = AuthManager.login(loginUsername, loginPassword);
+    
+    if (user) {
+      setCurrentUser(user);
+      setLoginUsername('');
+      setLoginPassword('');
+    } else {
+      setLoginError('Identifiants incorrects');
+    }
+  };
+
+  const handleLogout = () => {
+    AuthManager.logout();
+    setCurrentUser(null);
+    setCurrentView('dashboard');
+  };
+
+  const handleDragStart = (e, of) => {
+    e.dataTransfer.setData('ofId', of.id);
+  };
+
+  const handleDrop = (e, machineId, position) => {
+    e.preventDefault();
+    const ofId = e.dataTransfer.getData('ofId');
+    
+    setOfs(prev => prev.map(of => {
+      if (of.id === ofId) {
+        // Notifier changement
+        const newNotif = {
+          id: Date.now(),
+          type: 'info',
+          message: `${of.id} assigné à ${machineId} position ${position}`,
+          time: 'maintenant',
+          read: false
+        };
+        setNotifications(n => [newNotif, ...n.slice(0, 19)]);
+        
+        return { ...of, machine: machineId, position, status: 'planifie' };
+      }
+      return of;
+    }));
+  };
+
+  const handleAttributionCouleurs = (ofId, couleur1, couleur2) => {
+    setOfs(prev => prev.map(of => 
+      of.id === ofId ? { ...of, couleur1, couleur2 } : of
+    ));
+    
+    const newNotif = {
+      id: Date.now(),
+      type: 'success',
+      message: `Couleurs attribuées à ${ofId}`,
+      time: 'maintenant',
+      read: false
+    };
+    setNotifications(n => [newNotif, ...n.slice(0, 19)]);
+  };
+
+  const handleDemarrerOF = (ofId) => {
+    setOfs(prev => prev.map(of => 
+      of.id === ofId ? { ...of, status: 'en_cours' } : of
+    ));
+    
+    const of = ofs.find(o => o.id === ofId);
+    if (of && of.machine) {
+      const machine = machines.find(m => m.id === of.machine);
+      if (machine) {
+        // Créer étiquette de démarrage
+        const etiquette = {
+          id: `ETQ-${Date.now()}`,
+          ofId: ofId,
+          type: 'debut_tissage',
+          machine: of.machine,
+          operateur: machine.operateur,
+          date: new Date().toISOString(),
+          qrCode: generateQRCode(`${ofId}_${of.machine}_${Date.now()}`)
+        };
+        setEtiquettes(prev => [...prev, etiquette]);
+        
+        const newNotif = {
+          id: Date.now(),
+          type: 'success',
+          message: `${ofId} démarré sur ${of.machine}`,
+          time: 'maintenant',
+          read: false
+        };
+        setNotifications(n => [newNotif, ...n.slice(0, 19)]);
+      }
+    }
+  };
+
+  const handleTerminerOF = (ofId) => {
+    const of = ofs.find(o => o.id === ofId);
+    if (of && of.machine) {
+      // Consommer l'ensouple
+      setMachines(prev => prev.map(m => {
+        if (m.id === of.machine) {
+          const consommation = of.quantite * 2.4; // 2.4m par pièce (exemple)
+          const nouveauRestant = Math.max(0, m.ensoupleRestant - consommation);
+          
+          // Créer alerte si critique
+          if (nouveauRestant <= 500) {
+            const newNotif = {
+              id: Date.now(),
+              type: 'alert',
+              message: `⚠️ Machine ${m.id} - Ensouple critique à ${nouveauRestant.toFixed(0)}m`,
+              time: 'maintenant',
+              read: false
+            };
+            setNotifications(n => [newNotif, ...n.slice(0, 19)]);
+          }
+          
+          return { ...m, ensoupleRestant: nouveauRestant };
+        }
+        return m;
+      }));
+      
+      // Marquer OF terminé
+      setOfs(prev => prev.map(o => 
+        o.id === ofId ? { ...o, status: 'termine' } : o
+      ));
+      
+      // Créer étiquette fin fabrication
+      const etiquette = {
+        id: `ETQ-FIN-${Date.now()}`,
+        ofId: ofId,
+        type: 'fin_fabrication',
+        machine: of.machine,
+        date: new Date().toISOString(),
+        qrCode: generateQRCode(`FIN_${ofId}_${Date.now()}`)
+      };
+      setEtiquettes(prev => [...prev, etiquette]);
+      
+      const newNotif = {
+        id: Date.now(),
+        type: 'success',
+        message: `✅ ${ofId} terminé - Prêt pour coupe`,
+        time: 'maintenant',
+        read: false
+      };
+      setNotifications(n => [newNotif, ...n.slice(0, 19)]);
+    }
+  };
+
+  const handleDemanderOrdissage = (machineId) => {
+    const machine = machines.find(m => m.id === machineId);
+    if (machine) {
+      const poidsNecessaire = (5000 * machine.nbFils * 2) / 50000; // Formule NM 2/50
+      
+      const newNotif = {
+        id: Date.now(),
+        type: 'info',
+        message: `🔄 Ordissage demandé pour ${machineId} - ${poidsNecessaire.toFixed(1)}kg nécessaire`,
+        time: 'maintenant',
+        read: false
+      };
+      setNotifications(n => [newNotif, ...n.slice(0, 19)]);
+    }
+  };
+
+  const handleAjouterClient = (client) => {
+    const newClient = {
+      ...client,
+      id: `CL${String(clients.length + 1).padStart(5, '0')}`
+    };
+    setClients(prev => [...prev, newClient]);
+    setShowClientModal(false);
+    setEditingClient(null);
+    
+    const newNotif = {
+      id: Date.now(),
+      type: 'success',
+      message: `Client ${newClient.nom} ajouté`,
+      time: 'maintenant',
+      read: false
+    };
+    setNotifications(n => [newNotif, ...n.slice(0, 19)]);
+  };
+
+  const handleImport = async (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      try {
+        const data = await importFromExcel(file);
+        console.log('Données importées:', data);
+        alert(`✅ ${data.length} lignes importées !`);
+        setShowImportModal(false);
+      } catch (error) {
+        alert('❌ Erreur import');
+      }
+    }
+  };
+
+  // Check permissions avant d'afficher un module
+  const hasAccessToCurrentView = () => {
+    if (!currentUser) return false;
+    if (currentUser.role === 'Admin') return true;
+    return PermissionsManager.canAccess(currentUser.role, currentView);
+  };
+
+  // Rediriger vers dashboard si accès refusé
+  useEffect(() => {
+    if (currentUser && !hasAccessToCurrentView() && currentView !== 'dashboard') {
+      setCurrentView('dashboard');
+      const newNotif = {
+        id: Date.now(),
+        type: 'alert',
+        message: '⚠️ Accès refusé - Module non autorisé pour votre rôle',
+        time: 'maintenant',
+        read: false
+      };
+      setNotifications(prev => [newNotif, ...prev.slice(0, 19)]);
+    }
+  }, [currentView, currentUser]);
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+  const ofsEnAttente = ofs.filter(of => of.status === 'attente');
+  const ofsEnCours = ofs.filter(of => of.status === 'en_cours');
+  const machinesEnAlerte = machines.filter(m => m.ensoupleRestant <= 500);
+
+  // ==================== LOGIN SCREEN ====================
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
+          <div className="text-center mb-8">
+            <Scissors className="w-16 h-16 mx-auto mb-4 text-blue-600" />
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">FOUTA ERP</h1>
+            <p className="text-gray-600">Gestion Production Textile</p>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Nom d'utilisateur</label>
+              <input
+                type="text"
+                value={loginUsername}
+                onChange={(e) => setLoginUsername(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                placeholder="admin"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Mot de passe</label>
+              <input
+                type="password"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                placeholder="••••••••"
+              />
+            </div>
+
+            {loginError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-red-600" />
+                <p className="text-sm text-red-800">{loginError}</p>
+              </div>
+            )}
+
+            <button
+              onClick={handleLogin}
+              className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold flex items-center justify-center gap-2"
+            >
+              <LogIn className="w-5 h-5" />
+              Se connecter
+            </button>
+
+            <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+              <p className="text-sm text-blue-800 font-medium mb-2">🔐 Comptes de test :</p>
+              <div className="space-y-1 text-xs text-blue-700">
+                <p>• <strong>admin</strong> / admin123 (Accès complet)</p>
+                <p>• <strong>tisseur</strong> / tiss123 (Production)</p>
+                <p>• <strong>coupeur</strong> / coup123 (Coupe)</p>
+                <p>• <strong>magasinier</strong> / mag123 (Stock)</p>
+                <p>• <strong>commercial</strong> / com123 (Clients)</p>
+                <p>• <strong>production</strong> / prod123 (Planification)</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ==================== MENU ITEMS ====================
+  const allMenuItems = [
+    { id: 'dashboard', label: 'Tableau de Bord', icon: LayoutDashboard, description: 'Vue d\'ensemble du système' },
+    { id: 'commandes', label: 'Commandes', icon: ShoppingCart, badge: commandes.length, description: 'Gestion des commandes clients' },
+    { id: 'ordres-fabrication', label: 'Ordres Fabrication', icon: ClipboardList, badge: ofs.length, description: 'OFs avec BOM et suivi Gantt' },
+    { id: 'planning', label: 'Planification', icon: Target, badge: ofsEnAttente.length, description: 'Planification de la production' },
+    { id: 'ensouples', label: 'Suivi Ensouples', icon: Zap, badge: machinesEnAlerte.length, description: 'Suivi des ensouples et alertes' },
+    { id: 'articles', label: 'Articles / Catalogue', icon: Tag, badge: articles.length, description: 'Gestion du catalogue produits' },
+    { id: 'matiere-premiere', label: 'Matière Première', icon: GitBranch, badge: matieresPremiere.length, description: 'Gestion des MP (chaîne/trame)' },
+    { id: 'fournitures', label: 'Fournitures', icon: Package2, badge: fournitures.length, description: 'Gestion des fournitures' },
+    { id: 'bom', label: 'BOM', icon: Layers, badge: boms.length, description: 'Bill of Materials' },
+    { id: 'equipes', label: 'Équipes & Salariés', icon: Users, badge: salaries.length, description: 'Gestion du personnel' },
+    { id: 'entrepots', label: 'Entrepôts', icon: Warehouse, badge: entrepots.length, description: 'Gestion des entrepôts' },
+    { id: 'etiquettes', label: 'Étiquettes', icon: QrCode, badge: etiquettes.length, description: 'Gestion des étiquettes et QR codes' },
+    { id: 'tableaux-bord', label: 'Tableaux Métiers', icon: Activity, description: 'Tableaux de bord par poste' },
+    { id: 'clients', label: 'Clients', icon: UserCheck, badge: clients.length, description: 'Gestion des clients' },
+    { id: 'import-export', label: 'Import/Export', icon: FileSpreadsheet, description: 'Import et export de données' },
+    { id: 'permissions', label: 'Permissions', icon: Settings, description: 'Gestion des permissions (Admin uniquement)', adminOnly: true },
+    { id: 'settings', label: 'Paramètres', icon: Cog, description: 'Paramètres système' }
+  ];
+
+  // Filtrer les menus selon les permissions de l'utilisateur
+  const menuItems = allMenuItems.filter(item => {
+    if (!currentUser) return false;
+    if (item.adminOnly && currentUser.role !== 'Admin') return false;
+    return PermissionsManager.canAccess(currentUser.role, item.id);
+  });
+
+  // ==================== MAIN INTERFACE ====================
+  return (
+    <div className="min-h-screen bg-gray-100">
+      {/* Sidebar */}
+      <aside className={`fixed left-0 top-0 h-full bg-white shadow-lg transition-all duration-300 z-20 overflow-y-auto ${
+        sidebarOpen ? 'w-64' : 'w-20'
+      }`}>
+        <div className="p-4">
+          <div className="flex items-center gap-2 mb-8">
+            <Scissors className="w-8 h-8 text-blue-600" />
+            {sidebarOpen && <span className="font-bold text-gray-800">FOUTA ERP</span>}
+          </div>
+
+          <nav className="space-y-1">
+            {menuItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setCurrentView(item.id)}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                  currentView === item.id ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <item.icon className="w-5 h-5" />
+                {sidebarOpen && <span className="font-medium">{item.label}</span>}
+                {item.badge && sidebarOpen && (
+                  <span className="ml-auto px-2 py-1 text-xs rounded-full bg-red-500 text-white font-bold">
+                    {item.badge}
+                  </span>
+                )}
+              </button>
+            ))}
+          </nav>
+        </div>
+      </aside>
+
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b fixed top-0 right-0 left-0 z-10" style={{ marginLeft: sidebarOpen ? '256px' : '80px' }}>
+        <div className="px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 hover:bg-gray-100 rounded-lg">
+              <Menu className="w-5 h-5" />
+            </button>
+            
+            <div className="flex items-center gap-2">
+              {isOnline ? (
+                <Wifi className="w-5 h-5 text-green-600" />
+              ) : (
+                <WifiOff className="w-5 h-5 text-red-600" />
+              )}
+              <span className="text-sm text-gray-600">
+                {new Date().toLocaleDateString('fr-FR')}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setShowNotifications(!showNotifications)}
+              className="relative p-2 hover:bg-gray-100 rounded-lg"
+            >
+              <Bell className="w-5 h-5 text-gray-600" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center font-bold">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+
+            {showNotifications && (
+              <div className="absolute right-4 top-16 w-96 bg-white rounded-lg shadow-2xl border z-50 max-h-96 overflow-y-auto">
+                <div className="p-4 border-b sticky top-0 bg-white">
+                  <h3 className="font-semibold">Notifications ({unreadCount})</h3>
+                </div>
+                {notifications.map(notif => (
+                  <div 
+                    key={notif.id}
+                    onClick={() => setNotifications(prev => prev.map(n => n.id === notif.id ? {...n, read: true} : n))}
+                    className={`p-4 border-b hover:bg-gray-50 cursor-pointer ${notif.read ? 'opacity-50' : ''}`}
+                  >
+                    <div className="flex items-start gap-3">
+                      {notif.type === 'alert' ? (
+                        <AlertTriangle className="w-5 h-5 text-red-600" />
+                      ) : notif.type === 'success' ? (
+                        <CheckCircle className="w-5 h-5 text-green-600" />
+                      ) : (
+                        <Activity className="w-5 h-5 text-blue-600" />
+                      )}
+                      <div>
+                        <p className="text-sm text-gray-800">{notif.message}</p>
+                        <p className="text-xs text-gray-500 mt-1">{notif.time}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {currentUser && (
+              <>
+                <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-medium ${
+                    currentUser.role === 'Admin' ? 'bg-red-600' : 'bg-blue-600'
+                  }`}>
+                    {currentUser.nom.charAt(0)}
+                  </div>
+                  <div className="hidden md:block">
+                    <p className="text-sm font-medium text-gray-800">{currentUser.nom}</p>
+                    <p className="text-xs text-gray-500">
+                      {currentUser.role} 
+                      {currentUser.role === 'Admin' && ' - Accès complet'}
+                    </p>
+                  </div>
+                </div>
+
+                <button onClick={handleLogout} className="p-2 hover:bg-red-50 rounded-lg text-red-600">
+                  <LogOut className="w-5 h-5" />
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="pt-16 p-6 transition-all" style={{ marginLeft: sidebarOpen ? '256px' : '80px' }}>
+        
+        {/* DASHBOARD */}
+        {currentView === 'dashboard' && currentUser && (
+          <div className="space-y-6">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-800">
+                👋 Bienvenue, {currentUser.nom}
+              </h1>
+              <p className="text-gray-600 mt-1">
+                {currentUser.role === 'Admin' 
+                  ? '🔓 Vous avez un accès complet au système'
+                  : `Vous avez accès à ${menuItems.length} module(s)`
+                }
+              </p>
+            </div>
+
+            {currentUser.role !== 'Admin' && (
+              <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-6 h-6 text-blue-600 mt-1" />
+                  <div>
+                    <p className="font-semibold text-blue-900">Vos accès sont limités</p>
+                    <p className="text-sm text-blue-800 mt-1">
+                      Votre rôle <strong>{currentUser.role}</strong> vous permet d'accéder uniquement aux modules autorisés ci-dessous.
+                      Contactez l'administrateur pour obtenir plus d'accès.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-5 text-white">
+                <ShoppingCart className="w-8 h-8 mb-2 opacity-80" />
+                <p className="text-sm opacity-90">Commandes</p>
+                <p className="text-3xl font-bold mt-1">{commandes.length}</p>
+              </div>
+              
+              <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-5 text-white">
+                <ClipboardList className="w-8 h-8 mb-2 opacity-80" />
+                <p className="text-sm opacity-90">OFs Actifs</p>
+                <p className="text-3xl font-bold mt-1">{ofs.length}</p>
+              </div>
+
+              <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg p-5 text-white">
+                <AlertTriangle className="w-8 h-8 mb-2 opacity-80" />
+                <p className="text-sm opacity-90">Alertes Ensouples</p>
+                <p className="text-3xl font-bold mt-1">{machinesEnAlerte.length}</p>
+              </div>
+
+              <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-5 text-white">
+                <Tag className="w-8 h-8 mb-2 opacity-80" />
+                <p className="text-sm opacity-90">Articles Catalogue</p>
+                <p className="text-3xl font-bold mt-1">{articles.length}</p>
+              </div>
+
+              <div className="bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl shadow-lg p-5 text-white">
+                <GitBranch className="w-8 h-8 mb-2 opacity-80" />
+                <p className="text-sm opacity-90">Matières Première</p>
+                <p className="text-3xl font-bold mt-1">{matieresPremiere.length}</p>
+              </div>
+
+              <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl shadow-lg p-5 text-white">
+                <Users className="w-8 h-8 mb-2 opacity-80" />
+                <p className="text-sm opacity-90">Salariés</p>
+                <p className="text-3xl font-bold mt-1">{salaries.length}</p>
+              </div>
+
+              <div className="bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-xl shadow-lg p-5 text-white">
+                <Warehouse className="w-8 h-8 mb-2 opacity-80" />
+                <p className="text-sm opacity-90">Entrepôts</p>
+                <p className="text-3xl font-bold mt-1">{entrepots.length}</p>
+              </div>
+
+              <div className="bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl shadow-lg p-5 text-white">
+                <Layers className="w-8 h-8 mb-2 opacity-80" />
+                <p className="text-sm opacity-90">BOMs</p>
+                <p className="text-3xl font-bold mt-1">{boms.length}</p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h2 className="text-xl font-bold mb-4">
+                🎯 {currentUser.role === 'Admin' ? 'Tous les Modules' : 'Vos Modules Autorisés'}
+              </h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {menuItems.map(item => (
+                  <button
+                    key={item.id}
+                    onClick={() => setCurrentView(item.id)}
+                    className="p-4 border-2 border-green-200 bg-green-50 rounded-lg hover:border-green-500 hover:bg-green-100 transition-all"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <item.icon className="w-8 h-8 text-green-600" />
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                    </div>
+                    <p className="font-semibold text-sm text-center text-gray-900">{item.label}</p>
+                    {item.badge && (
+                      <span className="inline-block mt-2 px-2 py-1 text-xs bg-red-100 text-red-700 rounded-full">
+                        {item.badge}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {currentUser.role === 'Admin' && (
+              <div className="bg-gradient-to-r from-red-500 to-pink-600 rounded-xl shadow-lg p-6 text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold mb-2">⚙️ Administration</h2>
+                    <p className="text-sm opacity-90 mb-4">
+                      Gérez les permissions et les accès de tous les utilisateurs
+                    </p>
+                    <button
+                      onClick={() => setCurrentView('permissions')}
+                      className="px-6 py-3 bg-white text-red-600 rounded-lg font-semibold hover:bg-red-50 transition-colors"
+                    >
+                      Gérer les Permissions →
+                    </button>
+                  </div>
+                  <Settings className="w-24 h-24 opacity-30" />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* MODULE COMMANDES */}
+        {currentView === 'commandes' && currentUser && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl font-bold text-gray-800">🛒 Gestion des Commandes</h1>
+              <div className="flex gap-2">
+                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                  <Plus className="w-5 h-5" />
+                  Nouvelle Commande
+                </button>
+                <button 
+                  onClick={() => exportToExcel(commandes, 'commandes')}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+                >
+                  <Download className="w-5 h-5" />
+                  Export
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
+                <ShoppingCart className="w-8 h-8 text-blue-600 mb-2" />
+                <p className="text-sm text-gray-600">Total Commandes</p>
+                <p className="text-3xl font-bold text-blue-600">{commandes.length}</p>
+              </div>
+              <div className="bg-orange-50 border-2 border-orange-300 rounded-lg p-4">
+                <Clock className="w-8 h-8 text-orange-600 mb-2" />
+                <p className="text-sm text-gray-600">En attente</p>
+                <p className="text-3xl font-bold text-orange-600">
+                  {commandes.filter(c => c.statut === 'En attente').length}
+                </p>
+              </div>
+              <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
+                <Activity className="w-8 h-8 text-green-600 mb-2" />
+                <p className="text-sm text-gray-600">En production</p>
+                <p className="text-3xl font-bold text-green-600">
+                  {commandes.filter(c => c.statut === 'En production').length}
+                </p>
+              </div>
+              <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-4">
+                <TrendingUp className="w-8 h-8 text-purple-600 mb-2" />
+                <p className="text-sm text-gray-600">Montant Total</p>
+                <p className="text-2xl font-bold text-purple-600">
+                  {commandes.reduce((acc, c) => acc + c.montantTotal, 0).toFixed(2)} TND
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-lg p-6">
+              <h2 className="text-lg font-bold mb-4">Liste des Commandes</h2>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">N° Commande</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Client</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Date Commande</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Date Livraison</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Statut</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Montant</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {commandes.map(cmd => {
+                      const client = clients.find(c => c.id === cmd.client);
+                      return (
+                        <tr key={cmd.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 font-semibold text-blue-600">{cmd.numCommande}</td>
+                          <td className="px-4 py-3">{client?.nom || cmd.client}</td>
+                          <td className="px-4 py-3 text-sm">{new Date(cmd.dateCommande).toLocaleDateString('fr-FR')}</td>
+                          <td className="px-4 py-3 text-sm">{new Date(cmd.dateLivraison).toLocaleDateString('fr-FR')}</td>
+                          <td className="px-4 py-3">
+                            <span className={`px-3 py-1 text-xs rounded-full font-semibold ${
+                              cmd.statut === 'En production' ? 'bg-green-100 text-green-800' :
+                              cmd.statut === 'En attente' ? 'bg-orange-100 text-orange-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {cmd.statut}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 font-bold">{cmd.montantTotal.toFixed(2)} TND</td>
+                          <td className="px-4 py-3">
+                            <button className="p-2 hover:bg-gray-100 rounded">
+                              <Eye className="w-4 h-4 text-gray-600" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODULE ORDRES DE FABRICATION avec BOM */}
+        {currentView === 'ordres-fabrication' && currentUser && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl font-bold text-gray-800">📋 Ordres de Fabrication & BOM</h1>
+              <button 
+                onClick={() => exportToExcel(ofs, 'ordres_fabrication')}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+              >
+                <Download className="w-5 h-5" />
+                Export
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="bg-orange-50 border-2 border-orange-300 rounded-lg p-4">
+                <Clock className="w-8 h-8 text-orange-600 mb-2" />
+                <p className="text-sm text-gray-600">En Attente</p>
+                <p className="text-3xl font-bold text-orange-600">{ofsEnAttente.length}</p>
+              </div>
+              <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
+                <Activity className="w-8 h-8 text-green-600 mb-2" />
+                <p className="text-sm text-gray-600">En Cours</p>
+                <p className="text-3xl font-bold text-green-600">{ofsEnCours.length}</p>
+              </div>
+              <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
+                <CheckCircle className="w-8 h-8 text-blue-600 mb-2" />
+                <p className="text-sm text-gray-600">Terminés</p>
+                <p className="text-3xl font-bold text-blue-600">
+                  {ofs.filter(of => of.status === 'termine').length}
+                </p>
+              </div>
+              <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-4">
+                <Layers className="w-8 h-8 text-purple-600 mb-2" />
+                <p className="text-sm text-gray-600">BOMs Configurés</p>
+                <p className="text-3xl font-bold text-purple-600">{boms.length}</p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-lg p-6">
+              <h2 className="text-lg font-bold mb-4">Liste des OFs avec BOM</h2>
+              <div className="space-y-4">
+                {ofs.map(of => {
+                  const bom = boms.find(b => b.modele === of.article.split(' ')[0]);
+                  return (
+                    <div key={of.id} className={`border-2 rounded-lg p-4 ${
+                      of.status === 'en_cours' ? 'bg-green-50 border-green-300' :
+                      of.status === 'attente' ? 'bg-orange-50 border-orange-300' :
+                      of.status === 'termine' ? 'bg-blue-50 border-blue-300' :
+                      'bg-gray-50 border-gray-300'
+                    }`}>
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <h3 className="font-bold text-lg">{of.id}</h3>
+                          <p className="text-sm text-gray-600">{of.article} - {of.quantite} pièces</p>
+                        </div>
+                        <span className={`px-3 py-1 text-xs rounded-full font-semibold ${
+                          of.status === 'en_cours' ? 'bg-green-600 text-white' :
+                          of.status === 'attente' ? 'bg-orange-600 text-white' :
+                          of.status === 'termine' ? 'bg-blue-600 text-white' :
+                          'bg-gray-600 text-white'
+                        }`}>
+                          {of.status}
+                        </span>
+                      </div>
+
+                      {bom && (
+                        <div className="mt-3 pt-3 border-t border-gray-300">
+                          <p className="text-sm font-semibold text-gray-700 mb-2">📋 BOM: {bom.codeParametrage}</p>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                            <div className="bg-white p-2 rounded">
+                              <p className="text-xs text-gray-500">Dimensions tissage</p>
+                              <p className="font-semibold">{bom.largeurTissage}x{bom.longueurTissage} cm</p>
+                            </div>
+                            <div className="bg-white p-2 rounded">
+                              <p className="text-xs text-gray-500">Duite/cm</p>
+                              <p className="font-semibold">{bom.duiteParCm}</p>
+                            </div>
+                            <div className="bg-white p-2 rounded">
+                              <p className="text-xs text-gray-500">Consommation MP</p>
+                              <p className="font-semibold">{(bom.consommationCouleur1 + bom.consommationCouleur2).toFixed(2)} kg/pc</p>
+                            </div>
+                            <div className="bg-white p-2 rounded">
+                              <p className="text-xs text-gray-500">Temps prod.</p>
+                              <p className="font-semibold">{bom.tempsProduction}h</p>
+                            </div>
+                          </div>
+                          <div className="mt-3 bg-white p-3 rounded">
+                            <p className="text-xs font-semibold text-gray-600 mb-2">Consommation totale pour cet OF:</p>
+                            <div className="flex gap-4 text-sm">
+                              <div>
+                                <span className="text-gray-600">Couleur 1:</span>
+                                <span className="font-bold ml-2">{(bom.consommationCouleur1 * of.quantite).toFixed(2)} kg</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-600">Couleur 2:</span>
+                                <span className="font-bold ml-2">{(bom.consommationCouleur2 * of.quantite).toFixed(2)} kg</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-600">Temps total:</span>
+                                <span className="font-bold ml-2">{(bom.tempsProduction * of.quantite / 100).toFixed(1)}h</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODULE ARTICLES / CATALOGUE */}
+        {currentView === 'articles' && currentUser && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl font-bold text-gray-800">🏷️ Articles & Catalogue</h1>
+              <div className="flex gap-2">
+                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                  <Plus className="w-5 h-5" />
+                  Nouvel Article
+                </button>
+                <button 
+                  onClick={() => exportToExcel(articles, 'articles')}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+                >
+                  <Download className="w-5 h-5" />
+                  Export
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
+                <Tag className="w-8 h-8 text-blue-600 mb-2" />
+                <p className="text-sm text-gray-600">Total Articles</p>
+                <p className="text-3xl font-bold text-blue-600">{articles.length}</p>
+              </div>
+              <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
+                <CheckCircle className="w-8 h-8 text-green-600 mb-2" />
+                <p className="text-sm text-gray-600">En Stock</p>
+                <p className="text-3xl font-bold text-green-600">
+                  {articles.filter(a => a.stock > 0).length}
+                </p>
+              </div>
+              <div className="bg-orange-50 border-2 border-orange-300 rounded-lg p-4">
+                <AlertTriangle className="w-8 h-8 text-orange-600 mb-2" />
+                <p className="text-sm text-gray-600">Stock Faible</p>
+                <p className="text-3xl font-bold text-orange-600">
+                  {articles.filter(a => a.stock < 50).length}
+                </p>
+              </div>
+              <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-4">
+                <Grid className="w-8 h-8 text-purple-600 mb-2" />
+                <p className="text-sm text-gray-600">Modèles</p>
+                <p className="text-3xl font-bold text-purple-600">
+                  {[...new Set(articles.map(a => a.modele))].length}
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-lg p-6">
+              <h2 className="text-lg font-bold mb-4">Catalogue Produits</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {articles.map(article => (
+                  <div key={article.id} className="border-2 border-gray-300 rounded-lg p-4 hover:shadow-lg transition-shadow">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-bold text-lg">{article.modele}</h3>
+                      <button className="p-2 hover:bg-gray-100 rounded">
+                        <Edit className="w-4 h-4 text-gray-600" />
+                      </button>
+                    </div>
+                    
+                    <div className="mb-3">
+                      {article.photo ? (
+                        <img src={article.photo} alt={article.modele} className="w-full h-32 object-cover rounded" />
+                      ) : (
+                        <div className="w-full h-32 bg-gray-100 rounded flex items-center justify-center">
+                          <Image className="w-12 h-12 text-gray-400" />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center gap-2">
+                        <Tag className="w-4 h-4 text-gray-500" />
+                        <span className="font-semibold">{article.refCommerciale}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Ruler className="w-4 h-4 text-gray-500" />
+                        <span>{article.dimensions} cm</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Palette className="w-4 h-4 text-gray-500" />
+                        <span>{article.nbCouleurs} couleur(s) - {article.couleur1}{article.couleur2 && `, ${article.couleur2}`}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Grid className="w-4 h-4 text-gray-500" />
+                        <span>{article.typeTissage} - {article.finition}</span>
+                      </div>
+                      <div className="flex items-center justify-between pt-2 border-t">
+                        <span className="text-gray-600">Stock:</span>
+                        <span className={`font-bold ${article.stock > 50 ? 'text-green-600' : article.stock > 0 ? 'text-orange-600' : 'text-red-600'}`}>
+                          {article.stock} pcs
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">Prix:</span>
+                        <span className="font-bold text-blue-600">{article.prixVente.toFixed(2)} TND</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODULE MATIÈRE PREMIÈRE */}
+        {currentView === 'matiere-premiere' && currentUser && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl font-bold text-gray-800">🧵 Matière Première (Chaîne & Trame)</h1>
+              <div className="flex gap-2">
+                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                  <Plus className="w-5 h-5" />
+                  Nouvelle MP
+                </button>
+                <button 
+                  onClick={() => exportToExcel(matieresPremiere, 'matiere_premiere')}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+                >
+                  <Download className="w-5 h-5" />
+                  Export
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
+                <GitBranch className="w-8 h-8 text-blue-600 mb-2" />
+                <p className="text-sm text-gray-600">Total MP</p>
+                <p className="text-3xl font-bold text-blue-600">{matieresPremiere.length}</p>
+              </div>
+              <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-4">
+                <Layers className="w-8 h-8 text-purple-600 mb-2" />
+                <p className="text-sm text-gray-600">Fil de Chaîne</p>
+                <p className="text-3xl font-bold text-purple-600">
+                  {matieresPremiere.filter(mp => mp.type === 'Chaîne').length}
+                </p>
+              </div>
+              <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
+                <GitBranch className="w-8 h-8 text-green-600 mb-2" />
+                <p className="text-sm text-gray-600">Fil de Trame</p>
+                <p className="text-3xl font-bold text-green-600">
+                  {matieresPremiere.filter(mp => mp.type === 'Trame').length}
+                </p>
+              </div>
+              <div className="bg-orange-50 border-2 border-orange-300 rounded-lg p-4">
+                <AlertTriangle className="w-8 h-8 text-orange-600 mb-2" />
+                <p className="text-sm text-gray-600">Stock Critique</p>
+                <p className="text-3xl font-bold text-orange-600">
+                  {matieresPremiere.filter(mp => mp.stock < 100).length}
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-lg p-6">
+              <h2 className="text-lg font-bold mb-4">Stock Matière Première</h2>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Code</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Nom</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">N° Métrique</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Composition</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Type</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Stock</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Prix</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {matieresPremiere.map(mp => (
+                      <tr key={mp.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 font-bold text-blue-600">{mp.codeCommercial}</td>
+                        <td className="px-4 py-3 font-semibold">{mp.nom}</td>
+                        <td className="px-4 py-3 text-sm">{mp.numeroMetrique}</td>
+                        <td className="px-4 py-3 text-sm">{mp.composition}</td>
+                        <td className="px-4 py-3">
+                          <span className={`px-3 py-1 text-xs rounded-full font-semibold ${
+                            mp.type === 'Chaîne' ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800'
+                          }`}>
+                            {mp.type}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`font-bold ${
+                            mp.stock < 100 ? 'text-red-600' : mp.stock < 500 ? 'text-orange-600' : 'text-green-600'
+                          }`}>
+                            {mp.stock.toFixed(1)} {mp.unite}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 font-semibold">{mp.prixUnitaire.toFixed(2)} TND</td>
+                        <td className="px-4 py-3">
+                          <button className="p-2 hover:bg-gray-100 rounded">
+                            <Edit className="w-4 h-4 text-gray-600" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODULE FOURNITURES */}
+        {currentView === 'fournitures' && currentUser && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl font-bold text-gray-800">📦 Fournitures</h1>
+              <div className="flex gap-2">
+                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                  <Plus className="w-5 h-5" />
+                  Nouvelle Fourniture
+                </button>
+                <button 
+                  onClick={() => exportToExcel(fournitures, 'fournitures')}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+                >
+                  <Download className="w-5 h-5" />
+                  Export
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
+                <Package2 className="w-8 h-8 text-blue-600 mb-2" />
+                <p className="text-sm text-gray-600">Total Fournitures</p>
+                <p className="text-3xl font-bold text-blue-600">{fournitures.length}</p>
+              </div>
+              <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
+                <CheckCircle className="w-8 h-8 text-green-600 mb-2" />
+                <p className="text-sm text-gray-600">Stock Suffisant</p>
+                <p className="text-3xl font-bold text-green-600">
+                  {fournitures.filter(f => f.stock > 1000).length}
+                </p>
+              </div>
+              <div className="bg-orange-50 border-2 border-orange-300 rounded-lg p-4">
+                <AlertTriangle className="w-8 h-8 text-orange-600 mb-2" />
+                <p className="text-sm text-gray-600">À Réapprovisionner</p>
+                <p className="text-3xl font-bold text-orange-600">
+                  {fournitures.filter(f => f.stock < 1000).length}
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-lg p-6">
+              <h2 className="text-lg font-bold mb-4">Stock Fournitures</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {fournitures.map(fou => (
+                  <div key={fou.id} className={`border-2 rounded-lg p-4 ${
+                    fou.stock < 1000 ? 'bg-orange-50 border-orange-300' : 'bg-green-50 border-green-300'
+                  }`}>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-bold">{fou.nom}</h3>
+                      <button className="p-2 hover:bg-white rounded">
+                        <Edit className="w-4 h-4 text-gray-600" />
+                      </button>
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Référence:</span>
+                        <span className="font-semibold">{fou.reference}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Stock:</span>
+                        <span className={`font-bold ${
+                          fou.stock < 1000 ? 'text-orange-600' : 'text-green-600'
+                        }`}>
+                          {fou.stock} {fou.unite}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Prix unitaire:</span>
+                        <span className="font-bold text-blue-600">{fou.prixUnitaire.toFixed(3)} TND</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODULE BOM */}
+        {currentView === 'bom' && currentUser && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl font-bold text-gray-800">📐 Bill of Materials (BOM)</h1>
+              <div className="flex gap-2">
+                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                  <Plus className="w-5 h-5" />
+                  Nouveau BOM
+                </button>
+                <button 
+                  onClick={() => exportToExcel(boms, 'bom')}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+                >
+                  <Download className="w-5 h-5" />
+                  Export
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
+                <Layers className="w-8 h-8 text-blue-600 mb-2" />
+                <p className="text-sm text-gray-600">Total BOMs</p>
+                <p className="text-3xl font-bold text-blue-600">{boms.length}</p>
+              </div>
+              <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-4">
+                <Grid className="w-8 h-8 text-purple-600 mb-2" />
+                <p className="text-sm text-gray-600">Modèles</p>
+                <p className="text-3xl font-bold text-purple-600">
+                  {[...new Set(boms.map(b => b.modele))].length}
+                </p>
+              </div>
+              <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
+                <Ruler className="w-8 h-8 text-green-600 mb-2" />
+                <p className="text-sm text-gray-600">Dimensions</p>
+                <p className="text-3xl font-bold text-green-600">
+                  {[...new Set(boms.map(b => b.dimensions))].length}
+                </p>
+              </div>
+              <div className="bg-orange-50 border-2 border-orange-300 rounded-lg p-4">
+                <Clock className="w-8 h-8 text-orange-600 mb-2" />
+                <p className="text-sm text-gray-600">Temps Moy.</p>
+                <p className="text-2xl font-bold text-orange-600">
+                  {(boms.reduce((acc, b) => acc + b.tempsProduction, 0) / boms.length).toFixed(1)}h
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-lg p-6">
+              <h2 className="text-lg font-bold mb-4">Configurations BOM</h2>
+              <div className="space-y-4">
+                {boms.map(bom => (
+                  <div key={bom.id} className="border-2 border-gray-300 rounded-lg p-4 hover:shadow-lg transition-shadow">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h3 className="font-bold text-xl">{bom.codeParametrage}</h3>
+                        <p className="text-sm text-gray-600">{bom.modele} - {bom.dimensions}</p>
+                      </div>
+                      <button className="p-2 hover:bg-gray-100 rounded">
+                        <Edit className="w-4 h-4 text-gray-600" />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="bg-blue-50 p-3 rounded">
+                        <p className="text-xs text-gray-600">Type Tissage</p>
+                        <p className="font-bold">{bom.typeTissage}</p>
+                      </div>
+                      <div className="bg-purple-50 p-3 rounded">
+                        <p className="text-xs text-gray-600">Finition</p>
+                        <p className="font-bold">{bom.finition}</p>
+                      </div>
+                      <div className="bg-green-50 p-3 rounded">
+                        <p className="text-xs text-gray-600">Nb Couleurs</p>
+                        <p className="font-bold">{bom.nbCouleurs}</p>
+                      </div>
+                      <div className="bg-orange-50 p-3 rounded">
+                        <p className="text-xs text-gray-600">Temps Prod.</p>
+                        <p className="font-bold">{bom.tempsProduction}h</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 pt-4 border-t grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+                      <div>
+                        <p className="text-xs text-gray-500">Largeur</p>
+                        <p className="font-semibold">{bom.largeurTissage} cm</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Longueur</p>
+                        <p className="font-semibold">{bom.longueurTissage} cm</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Duite/cm</p>
+                        <p className="font-semibold">{bom.duiteParCm}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Duites Total</p>
+                        <p className="font-semibold">{bom.nbDuiteTotal}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Conso. Totale</p>
+                        <p className="font-semibold">{(bom.consommationCouleur1 + bom.consommationCouleur2).toFixed(2)} kg</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODULE ÉQUIPES & SALARIÉS */}
+        {currentView === 'equipes' && currentUser && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl font-bold text-gray-800">👥 Équipes & Salariés</h1>
+              <div className="flex gap-2">
+                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                  <UserPlus className="w-5 h-5" />
+                  Nouveau Salarié
+                </button>
+                <button 
+                  onClick={() => exportToExcel(salaries, 'salaries')}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+                >
+                  <Download className="w-5 h-5" />
+                  Export
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
+                <Users className="w-8 h-8 text-blue-600 mb-2" />
+                <p className="text-sm text-gray-600">Total Salariés</p>
+                <p className="text-3xl font-bold text-blue-600">{salaries.length}</p>
+              </div>
+              <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-4">
+                <CalendarRange className="w-8 h-8 text-purple-600 mb-2" />
+                <p className="text-sm text-gray-600">Équipes</p>
+                <p className="text-3xl font-bold text-purple-600">{equipes.length}</p>
+              </div>
+              <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
+                <Briefcase className="w-8 h-8 text-green-600 mb-2" />
+                <p className="text-sm text-gray-600">Postes</p>
+                <p className="text-3xl font-bold text-green-600">
+                  {[...new Set(salaries.map(s => s.poste))].length}
+                </p>
+              </div>
+              <div className="bg-orange-50 border-2 border-orange-300 rounded-lg p-4">
+                <TrendingUp className="w-8 h-8 text-orange-600 mb-2" />
+                <p className="text-sm text-gray-600">Taux Horaire Moy.</p>
+                <p className="text-2xl font-bold text-orange-600">
+                  {(salaries.reduce((acc, s) => acc + s.tauxHoraire, 0) / salaries.length).toFixed(2)} TND
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {equipes.map(equipe => (
+                <div key={equipe.id} className="bg-white rounded-lg shadow-lg p-6">
+                  <div className="mb-4">
+                    <h2 className="text-lg font-bold text-gray-800">{equipe.nom}</h2>
+                    <p className="text-sm text-gray-600">{equipe.horaire}</p>
+                    <p className="text-sm text-blue-600">Chef: {equipe.chef}</p>
+                  </div>
+
+                  <div className="space-y-3">
+                    {salaries.filter(s => s.equipe === equipe.id).map(sal => (
+                      <div key={sal.id} className="border-2 border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow">
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="font-bold">{sal.nom}</h3>
+                          <button className="p-1 hover:bg-gray-100 rounded">
+                            <Edit className="w-3 h-3 text-gray-600" />
+                          </button>
+                        </div>
+                        <div className="space-y-1 text-sm">
+                          <p><span className="text-gray-600">Poste:</span> <span className="font-semibold">{sal.poste}</span></p>
+                          <p><span className="text-gray-600">Taux:</span> <span className="font-semibold">{sal.tauxHoraire} TND/h</span></p>
+                          <p><span className="text-gray-600">Tél:</span> <span>{sal.telephone}</span></p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* MODULE ENTREPÔTS */}
+        {currentView === 'entrepots' && currentUser && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl font-bold text-gray-800">🏭 Gestion Entrepôts</h1>
+              <div className="flex gap-2">
+                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                  <Plus className="w-5 h-5" />
+                  Nouvel Entrepôt
+                </button>
+                <button 
+                  onClick={() => exportToExcel(entrepots, 'entrepots')}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+                >
+                  <Download className="w-5 h-5" />
+                  Export
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
+                <Warehouse className="w-8 h-8 text-blue-600 mb-2" />
+                <p className="text-sm text-gray-600">Total Entrepôts</p>
+                <p className="text-3xl font-bold text-blue-600">{entrepots.length}</p>
+              </div>
+              <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-4">
+                <Building className="w-8 h-8 text-purple-600 mb-2" />
+                <p className="text-sm text-gray-600">Entrepôt Usine</p>
+                <p className="text-3xl font-bold text-purple-600">
+                  {entrepots.filter(e => e.type === 'Usine').length}
+                </p>
+              </div>
+              <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
+                <Box className="w-8 h-8 text-green-600 mb-2" />
+                <p className="text-sm text-gray-600">Entrepôts Externes</p>
+                <p className="text-3xl font-bold text-green-600">
+                  {entrepots.filter(e => e.type !== 'Usine').length}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {entrepots.map(ent => (
+                <div key={ent.id} className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
+                  <div className="flex items-center justify-between mb-4">
+                    <Warehouse className={`w-10 h-10 ${
+                      ent.type === 'Usine' ? 'text-blue-600' : 
+                      ent.type === 'Matière Première' ? 'text-purple-600' : 
+                      'text-green-600'
+                    }`} />
+                    <button className="p-2 hover:bg-gray-100 rounded">
+                      <Edit className="w-4 h-4 text-gray-600" />
+                    </button>
+                  </div>
+
+                  <h3 className="font-bold text-lg mb-2">{ent.nom}</h3>
+                  
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-start gap-2">
+                      <Tag className="w-4 h-4 text-gray-500 mt-1" />
+                      <div>
+                        <p className="text-gray-600">Type</p>
+                        <p className="font-semibold">{ent.type}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Building className="w-4 h-4 text-gray-500 mt-1" />
+                      <div>
+                        <p className="text-gray-600">Adresse</p>
+                        <p className="font-semibold">{ent.adresse}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Grid className="w-4 h-4 text-gray-500 mt-1" />
+                      <div>
+                        <p className="text-gray-600">Capacité</p>
+                        <p className="font-semibold">{ent.capacite}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Users className="w-4 h-4 text-gray-500 mt-1" />
+                      <div>
+                        <p className="text-gray-600">Responsable</p>
+                        <p className="font-semibold">{ent.responsable}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* MODULE PLANIFICATION */}
+        {currentView === 'planning' && currentUser && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl font-bold text-gray-800">🎯 Planification Production - Drag & Drop</h1>
+              <button 
+                onClick={() => exportToExcel(ofs, 'planification')}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+              >
+                <Download className="w-5 h-5" />
+                Export
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* OFs en Attente */}
+              <div className="bg-white rounded-lg shadow-lg p-6">
+                <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-orange-600" />
+                  En Attente ({ofsEnAttente.length})
+                </h2>
+                <div className="space-y-3">
+                  {ofsEnAttente.map(of => (
+                    <div
+                      key={of.id}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, of)}
+                      className="p-4 border-2 border-dashed border-orange-300 rounded-lg bg-orange-50 cursor-move hover:bg-orange-100"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="font-bold text-gray-900">{of.id}</p>
+                        {of.priority === 'urgent' && (
+                          <span className="px-2 py-1 text-xs bg-red-500 text-white rounded-full">URGENT</span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-700">{of.article}</p>
+                      <p className="text-xs text-gray-600 mt-1">Client: {of.client}</p>
+                      <p className="text-xs text-gray-600">Qté: {of.quantite} pcs</p>
+                      {!of.couleur1 && (
+                        <button
+                          onClick={() => {
+                            setSelectedOF(of);
+                            setShowPlanningModal(true);
+                          }}
+                          className="mt-2 w-full px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                        >
+                          Attribuer Couleurs
+                        </button>
+                      )}
+                      {of.couleur1 && (
+                        <div className="mt-2 text-xs">
+                          <span className="text-green-600">✓ Couleurs: {of.couleur1}, {of.couleur2}</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Machines */}
+              <div className="lg:col-span-2 bg-white rounded-lg shadow-lg p-6">
+                <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+                  <Factory className="w-5 h-5 text-blue-600" />
+                  Machines
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {machines.map(machine => (
+                    <div key={machine.id} className="border-2 border-gray-300 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="font-bold text-lg">{machine.id}</h3>
+                        <span className={`w-3 h-3 rounded-full ${
+                          machine.ensoupleRestant <= 500 ? 'bg-red-500 animate-pulse' : 'bg-green-500'
+                        }`} />
+                      </div>
+                      <p className="text-sm text-gray-600 mb-2">{machine.type} - {machine.operateur}</p>
+                      <p className="text-xs text-gray-500 mb-3">
+                        Ensouple: {machine.ensoupleRestant}m / {machine.ensoupleTotal}m
+                      </p>
+                      
+                      {/* Positions */}
+                      <div className="space-y-2">
+                        {[1, 2, 3].map(position => {
+                          const ofInPosition = ofs.find(of => of.machine === machine.id && of.position === position);
+                          
+                          return (
+                            <div
+                              key={position}
+                              onDragOver={(e) => e.preventDefault()}
+                              onDrop={(e) => handleDrop(e, machine.id, position)}
+                              className={`p-3 border-2 border-dashed rounded min-h-[60px] ${
+                                ofInPosition 
+                                  ? ofInPosition.status === 'en_cours' 
+                                    ? 'bg-green-50 border-green-500'
+                                    : 'bg-blue-50 border-blue-300'
+                                  : 'bg-gray-50 border-gray-300'
+                              }`}
+                            >
+                              {ofInPosition ? (
+                                <div>
+                                  <div className="flex items-center justify-between">
+                                    <p className="font-bold text-sm">{ofInPosition.id}</p>
+                                    {ofInPosition.status === 'en_cours' ? (
+                                      <span className="text-xs text-green-600 font-bold">EN COURS</span>
+                                    ) : (
+                                      <button
+                                        onClick={() => handleDemarrerOF(ofInPosition.id)}
+                                        className="text-xs px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700"
+                                      >
+                                        Démarrer
+                                      </button>
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-gray-600 mt-1">{ofInPosition.article}</p>
+                                  {ofInPosition.status === 'en_cours' && (
+                                    <button
+                                      onClick={() => handleTerminerOF(ofInPosition.id)}
+                                      className="mt-2 text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                    >
+                                      Terminer
+                                    </button>
+                                  )}
+                                </div>
+                              ) : (
+                                <p className="text-xs text-gray-400 text-center">Position {position} - Glisser OF ici</p>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODULE ENSOUPLES */}
+        {currentView === 'ensouples' && currentUser && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl font-bold text-gray-800">⚡ Suivi Ensouples & Alertes</h1>
+              <button 
+                onClick={() => exportToExcel(machines, 'ensouples')}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+              >
+                <Download className="w-5 h-5" />
+                Export
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4">
+                <AlertTriangle className="w-8 h-8 text-red-600 mb-2" />
+                <p className="text-sm text-gray-600">Machines Critiques</p>
+                <p className="text-3xl font-bold text-red-600">{machinesEnAlerte.length}</p>
+              </div>
+              <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
+                <CheckCircle className="w-8 h-8 text-green-600 mb-2" />
+                <p className="text-sm text-gray-600">Machines OK</p>
+                <p className="text-3xl font-bold text-green-600">{machines.length - machinesEnAlerte.length}</p>
+              </div>
+              <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
+                <Zap className="w-8 h-8 text-blue-600 mb-2" />
+                <p className="text-sm text-gray-600">Total Machines</p>
+                <p className="text-3xl font-bold text-blue-600">{machines.length}</p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-lg p-6">
+              <h2 className="text-lg font-bold mb-4">État Détaillé des Ensouples</h2>
+              <div className="space-y-4">
+                {machines.map(machine => {
+                  const pourcentage = (machine.ensoupleRestant / machine.ensoupleTotal) * 100;
+                  const isCritique = machine.ensoupleRestant <= 500;
+                  const isWarning = machine.ensoupleRestant <= 1000 && machine.ensoupleRestant > 500;
+                  
+                  return (
+                    <div key={machine.id} className={`p-4 border-2 rounded-lg ${
+                      isCritique ? 'bg-red-50 border-red-300' :
+                      isWarning ? 'bg-orange-50 border-orange-300' :
+                      'bg-green-50 border-green-300'
+                    }`}>
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <h3 className="font-bold text-lg">{machine.id}</h3>
+                          <p className="text-sm text-gray-600">{machine.type} - {machine.nbFils} fils - {machine.operateur}</p>
+                        </div>
+                        {isCritique && (
+                          <button
+                            onClick={() => handleDemanderOrdissage(machine.id)}
+                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2"
+                          >
+                            <RefreshCw className="w-4 h-4" />
+                            Demander Ordissage
+                          </button>
+                        )}
+                      </div>
+                      
+                      <div className="mb-2">
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="font-semibold">Métrage Restant</span>
+                          <span className="font-bold">{machine.ensoupleRestant}m / {machine.ensoupleTotal}m ({pourcentage.toFixed(1)}%)</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-4">
+                          <div 
+                            className={`h-4 rounded-full transition-all ${
+                              isCritique ? 'bg-red-500' :
+                              isWarning ? 'bg-orange-500' :
+                              'bg-green-500'
+                            }`}
+                            style={{ width: `${pourcentage}%` }}
+                          />
+                        </div>
+                      </div>
+                      
+                      {isCritique && (
+                        <div className="mt-3 p-3 bg-red-100 rounded-lg">
+                          <p className="text-sm text-red-800 font-semibold">
+                            ⚠️ ALERTE CRITIQUE - Ordissage nécessaire : {((5000 * machine.nbFils * 2) / 50000).toFixed(1)} kg de fil
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODULE ÉTIQUETTES */}
+        {currentView === 'etiquettes' && currentUser && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl font-bold text-gray-800">🏷️ Gestion Étiquettes & QR Codes</h1>
+              <button 
+                onClick={() => {
+                  const qr = generateQRCode(`TEST_${Date.now()}`);
+                  setQRData(qr);
+                  setShowQRModal(true);
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+              >
+                <QrCode className="w-5 h-5" />
+                Générer Test
+              </button>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-lg p-6">
+              <h2 className="text-lg font-bold mb-4">Étiquettes Générées ({etiquettes.length})</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {etiquettes.map(etiq => (
+                  <div key={etiq.id} className="border-2 border-gray-300 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-bold">{etiq.id}</h3>
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        etiq.type === 'debut_tissage' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
+                      }`}>
+                        {etiq.type}
+                      </span>
+                    </div>
+                    <img src={etiq.qrCode} alt="QR Code" className="w-full h-32 object-contain mb-2" />
+                    <div className="text-sm space-y-1">
+                      <p><strong>OF:</strong> {etiq.ofId}</p>
+                      <p><strong>Machine:</strong> {etiq.machine}</p>
+                      <p><strong>Opérateur:</strong> {etiq.operateur}</p>
+                      <p className="text-xs text-gray-500">{new Date(etiq.date).toLocaleString('fr-FR')}</p>
+                    </div>
+                    <button
+                      onClick={() => window.print()}
+                      className="mt-3 w-full px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center justify-center gap-2"
+                    >
+                      <Printer className="w-4 h-4" />
+                      Imprimer
+                    </button>
+                  </div>
+                ))}
+                
+                {etiquettes.length === 0 && (
+                  <div className="col-span-full text-center py-12">
+                    <QrCode className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500">Aucune étiquette générée</p>
+                    <p className="text-sm text-gray-400">Les étiquettes seront créées automatiquement lors des opérations</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODULE TABLEAUX DE BORD MÉTIERS */}
+        {currentView === 'tableaux-bord' && currentUser && (
+          <div className="space-y-6">
+            <h1 className="text-2xl font-bold text-gray-800">👷 Tableaux de Bord Métiers</h1>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Tableau Tisseur */}
+              <div className="bg-white rounded-lg shadow-lg p-6">
+                <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-blue-600" />
+                  Tisseur
+                </h2>
+                <div className="space-y-3">
+                  {ofsEnCours.map(of => (
+                    <div key={of.id} className="p-3 bg-green-50 border border-green-300 rounded-lg">
+                      <p className="font-bold text-sm">{of.id}</p>
+                      <p className="text-xs text-gray-600">Machine: {of.machine}</p>
+                      <p className="text-xs text-gray-600">{of.article} - {of.quantite} pcs</p>
+                      <div className="mt-2 flex gap-2">
+                        <button className="flex-1 px-2 py-1 text-xs bg-orange-600 text-white rounded">
+                          Pause
+                        </button>
+                        <button 
+                          onClick={() => handleTerminerOF(of.id)}
+                          className="flex-1 px-2 py-1 text-xs bg-blue-600 text-white rounded"
+                        >
+                          Terminer
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {ofsEnCours.length === 0 && (
+                    <p className="text-sm text-gray-400 text-center py-4">Aucun OF en cours</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Tableau Coupeur */}
+              <div className="bg-white rounded-lg shadow-lg p-6">
+                <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+                  <Scissors className="w-5 h-5 text-purple-600" />
+                  Coupeur
+                </h2>
+                <div className="space-y-3">
+                  {ofs.filter(of => of.status === 'termine').map(of => (
+                    <div key={of.id} className="p-3 bg-purple-50 border border-purple-300 rounded-lg">
+                      <p className="font-bold text-sm">{of.id}</p>
+                      <p className="text-xs text-gray-600">{of.article}</p>
+                      <p className="text-xs text-green-600 font-semibold">✓ Prêt pour coupe</p>
+                      <button className="mt-2 w-full px-2 py-1 text-xs bg-purple-600 text-white rounded">
+                        Démarrer Coupe
+                      </button>
+                    </div>
+                  ))}
+                  {ofs.filter(of => of.status === 'termine').length === 0 && (
+                    <p className="text-sm text-gray-400 text-center py-4">Aucun OF prêt</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Tableau Magasinier */}
+              <div className="bg-white rounded-lg shadow-lg p-6">
+                <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+                  <Package className="w-5 h-5 text-orange-600" />
+                  Magasinier MP
+                </h2>
+                <div className="space-y-3">
+                  {machinesEnAlerte.map(machine => (
+                    <div key={machine.id} className="p-3 bg-red-50 border border-red-300 rounded-lg">
+                      <p className="font-bold text-sm">{machine.id}</p>
+                      <p className="text-xs text-red-600">⚠️ Ensouple: {machine.ensoupleRestant}m</p>
+                      <button 
+                        onClick={() => handleDemanderOrdissage(machine.id)}
+                        className="mt-2 w-full px-2 py-1 text-xs bg-red-600 text-white rounded"
+                      >
+                        Ordissage
+                      </button>
+                    </div>
+                  ))}
+                  {machinesEnAlerte.length === 0 && (
+                    <p className="text-sm text-gray-400 text-center py-4">✓ Tout est OK</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODULE CLIENTS */}
+        {currentView === 'clients' && currentUser && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl font-bold text-gray-800">👥 Gestion Clients</h1>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => {
+                    setEditingClient(null);
+                    setShowClientModal(true);
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                >
+                  <Plus className="w-5 h-5" />
+                  Nouveau Client
+                </button>
+                <button 
+                  onClick={() => exportToExcel(clients, 'clients')}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+                >
+                  <Download className="w-5 h-5" />
+                  Export
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {clients.map(client => (
+                <div key={client.id} className="bg-white rounded-lg shadow-lg p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-bold text-lg">{client.id}</h3>
+                    <button className="p-2 hover:bg-gray-100 rounded">
+                      <Edit className="w-4 h-4 text-gray-600" />
+                    </button>
+                  </div>
+                  <h4 className="font-bold text-gray-900 mb-2">{client.nom}</h4>
+                  <div className="space-y-1 text-sm text-gray-600">
+                    <p>👤 {client.contact}</p>
+                    <p>📞 {client.telephone}</p>
+                    <p>✉️ {client.email}</p>
+                    <p>📍 {client.pays}</p>
+                  </div>
+                  <div className="mt-4 pt-4 border-t">
+                    <p className="text-xs text-gray-500">
+                      OFs: {ofs.filter(of => of.client === client.id).length}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* MODULE IMPORT/EXPORT */}
+        {currentView === 'import-export' && currentUser && (
+          <div className="space-y-6">
+            <h1 className="text-2xl font-bold text-gray-800">📊 Import / Export Données</h1>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white rounded-lg shadow-lg p-6">
+                <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+                  <Upload className="w-5 h-5 text-blue-600" />
+                  Import Excel/CSV
+                </h2>
+                <div className="space-y-4">
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                    <Upload className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                    <label className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer">
+                      <FileSpreadsheet className="w-4 h-4" />
+                      Sélectionner fichier
+                      <input type="file" accept=".csv,.xlsx,.xls" onChange={handleImport} className="hidden" />
+                    </label>
+                    <p className="text-xs text-gray-500 mt-2">Formats: CSV, Excel</p>
+                  </div>
+                  
+                  <div className="bg-blue-50 rounded-lg p-4">
+                    <p className="text-sm font-semibold text-blue-800 mb-2">📝 Templates disponibles:</p>
+                    <div className="space-y-1 text-sm text-blue-700">
+                      <p>• template_commandes.xlsx</p>
+                      <p>• template_clients.xlsx</p>
+                      <p>• template_machines.xlsx</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg shadow-lg p-6">
+                <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+                  <Download className="w-5 h-5 text-green-600" />
+                  Export Données
+                </h2>
+                <div className="space-y-3">
+                  <button 
+                    onClick={() => exportToExcel(machines, 'machines')}
+                    className="w-full px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-lg text-left flex items-center justify-between"
+                  >
+                    <span className="font-medium">Machines ({machines.length})</span>
+                    <Download className="w-5 h-5 text-gray-600" />
+                  </button>
+                  
+                  <button 
+                    onClick={() => exportToExcel(ofs, 'ordres_fabrication')}
+                    className="w-full px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-lg text-left flex items-center justify-between"
+                  >
+                    <span className="font-medium">Ordres de Fabrication ({ofs.length})</span>
+                    <Download className="w-5 h-5 text-gray-600" />
+                  </button>
+                  
+                  <button 
+                    onClick={() => exportToExcel(clients, 'clients')}
+                    className="w-full px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-lg text-left flex items-center justify-between"
+                  >
+                    <span className="font-medium">Clients ({clients.length})</span>
+                    <Download className="w-5 h-5 text-gray-600" />
+                  </button>
+                  
+                  <button 
+                    onClick={() => exportToExcel(etiquettes, 'etiquettes')}
+                    className="w-full px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-lg text-left flex items-center justify-between"
+                  >
+                    <span className="font-medium">Étiquettes ({etiquettes.length})</span>
+                    <Download className="w-5 h-5 text-gray-600" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODULE PERMISSIONS (Admin uniquement) */}
+        {currentView === 'permissions' && (
+          currentUser && currentUser.role === 'Admin' ? (
+            <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl font-bold text-gray-800">🔐 Gestion des Permissions</h1>
+              <button 
+                onClick={() => {
+                  PermissionsManager.savePermissions(PermissionsManager.getDefaultPermissions());
+                  window.location.reload();
+                }}
+                className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center gap-2"
+              >
+                <RefreshCw className="w-5 h-5" />
+                Réinitialiser
+              </button>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-6 h-6 text-blue-600 mt-1" />
+                <div>
+                  <p className="font-semibold text-blue-900">Information Importante</p>
+                  <p className="text-sm text-blue-800 mt-1">
+                    En tant qu'administrateur, vous avez accès à tous les modules. 
+                    Configurez ici les accès pour chaque rôle d'utilisateur.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {(() => {
+              const [permissions, setPermissions] = useState(PermissionsManager.getPermissions());
+              const roles = Object.keys(permissions);
+              
+              const handleTogglePermission = (role, moduleId) => {
+                const newPermissions = { ...permissions };
+                if (newPermissions[role].includes(moduleId)) {
+                  newPermissions[role] = newPermissions[role].filter(m => m !== moduleId);
+                } else {
+                  newPermissions[role] = [...newPermissions[role], moduleId];
+                }
+                setPermissions(newPermissions);
+                PermissionsManager.savePermissions(newPermissions);
+              };
+
+              return (
+                <div className="grid grid-cols-1 gap-6">
+                  {roles.map(role => (
+                    <div key={role} className="bg-white rounded-lg shadow-lg p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h2 className="text-xl font-bold text-gray-800">{role}</h2>
+                          <p className="text-sm text-gray-600">
+                            {AuthManager.getUsers().filter(u => u.role === role).length} utilisateur(s)
+                          </p>
+                        </div>
+                        <span className={`px-4 py-2 rounded-full font-semibold ${
+                          role === 'Admin' 
+                            ? 'bg-red-100 text-red-800' 
+                            : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          {permissions[role].length} module(s)
+                        </span>
+                      </div>
+
+                      {role === 'Admin' ? (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                          <p className="text-sm text-red-800 font-semibold">
+                            ⚠️ Les administrateurs ont accès à tous les modules par défaut
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {allMenuItems.filter(item => !item.adminOnly).map(module => {
+                            const hasAccess = permissions[role]?.includes(module.id);
+                            
+                            return (
+                              <button
+                                key={module.id}
+                                onClick={() => handleTogglePermission(role, module.id)}
+                                className={`p-4 rounded-lg border-2 text-left transition-all ${
+                                  hasAccess
+                                    ? 'bg-green-50 border-green-500'
+                                    : 'bg-gray-50 border-gray-300 hover:border-gray-400'
+                                }`}
+                              >
+                                <div className="flex items-center justify-between mb-2">
+                                  <module.icon className={`w-6 h-6 ${
+                                    hasAccess ? 'text-green-600' : 'text-gray-400'
+                                  }`} />
+                                  {hasAccess ? (
+                                    <CheckCircle className="w-5 h-5 text-green-600" />
+                                  ) : (
+                                    <div className="w-5 h-5 border-2 border-gray-300 rounded" />
+                                  )}
+                                </div>
+                                <p className={`font-semibold text-sm ${
+                                  hasAccess ? 'text-gray-900' : 'text-gray-500'
+                                }`}>
+                                  {module.label}
+                                </p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  {module.description}
+                                </p>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* Liste des utilisateurs avec ce rôle */}
+                      <div className="mt-6 pt-6 border-t">
+                        <h3 className="font-semibold text-sm text-gray-700 mb-3">
+                          Utilisateurs avec ce rôle :
+                        </h3>
+                        <div className="flex flex-wrap gap-2">
+                          {AuthManager.getUsers()
+                            .filter(u => u.role === role)
+                            .map(user => (
+                              <div
+                                key={user.id}
+                                className="px-3 py-2 bg-gray-100 rounded-lg flex items-center gap-2"
+                              >
+                                <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                                  {user.nom.charAt(0)}
+                                </div>
+                                <span className="text-sm font-medium">{user.nom}</span>
+                              </div>
+                            ))
+                          }
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+
+            <div className="bg-white rounded-lg shadow-lg p-6">
+              <h2 className="text-lg font-bold mb-4">📊 Résumé des Permissions</h2>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b-2 border-gray-300">
+                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Module</th>
+                      {Object.keys(PermissionsManager.getPermissions()).map(role => (
+                        <th key={role} className="text-center py-3 px-4 font-semibold text-gray-700">
+                          {role}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {allMenuItems.filter(item => !item.adminOnly).map(module => (
+                      <tr key={module.id} className="border-b border-gray-200 hover:bg-gray-50">
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2">
+                            <module.icon className="w-4 h-4 text-gray-600" />
+                            <span className="font-medium">{module.label}</span>
+                          </div>
+                        </td>
+                        {Object.keys(PermissionsManager.getPermissions()).map(role => {
+                          const hasAccess = role === 'Admin' || 
+                            PermissionsManager.getPermissions()[role]?.includes(module.id);
+                          
+                          return (
+                            <td key={role} className="text-center py-3 px-4">
+                              {hasAccess ? (
+                                <CheckCircle className="w-5 h-5 text-green-600 mx-auto" />
+                              ) : (
+                                <X className="w-5 h-5 text-red-400 mx-auto" />
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="min-h-[60vh] flex items-center justify-center">
+            <div className="bg-white rounded-xl shadow-2xl p-12 max-w-md text-center">
+              <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Settings className="w-12 h-12 text-red-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">Accès Administrateur Requis</h2>
+              <p className="text-gray-600 mb-6">
+                La gestion des permissions est réservée aux administrateurs uniquement.
+              </p>
+              <button
+                onClick={() => setCurrentView('dashboard')}
+                className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold"
+              >
+                Retour au Tableau de Bord
+              </button>
+            </div>
+          </div>
+        )
+        )}
+
+        {/* MODULE SETTINGS */}
+        {currentView === 'settings' && currentUser && (
+          <div className="space-y-6">
+            <h1 className="text-2xl font-bold text-gray-800">⚙️ Paramètres Système</h1>
+            
+            {currentUser.role === 'Admin' && (
+              <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-6 text-white">
+                <div className="flex items-center gap-3 mb-3">
+                  <Settings className="w-8 h-8" />
+                  <div>
+                    <h2 className="text-xl font-bold">Accès Administrateur</h2>
+                    <p className="text-sm opacity-90">Vous avez un accès complet au système</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setCurrentView('permissions')}
+                  className="mt-2 px-4 py-2 bg-white text-blue-600 rounded-lg font-semibold hover:bg-blue-50"
+                >
+                  → Gérer les Permissions
+                </button>
+              </div>
+            )}
+            
+            <div className="bg-white rounded-lg shadow-lg p-6">
+              <h2 className="text-lg font-bold mb-4">Utilisateurs Système</h2>
+              <div className="space-y-3">
+                {AuthManager.getUsers().map(user => {
+                  const userPermissions = PermissionsManager.getPermissions()[user.role] || [];
+                  const permissionCount = user.role === 'Admin' ? allMenuItems.length : userPermissions.length;
+                  
+                  return (
+                    <div key={user.id} className="p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold ${
+                            user.role === 'Admin' ? 'bg-red-600' : 'bg-blue-600'
+                          }`}>
+                            {user.nom.charAt(0)}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-gray-900">{user.nom}</p>
+                            <p className="text-sm text-gray-600">{user.role} - {user.email}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className={`px-3 py-1 text-xs rounded-full font-semibold ${
+                            currentUser.id === user.id 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {currentUser.id === user.id ? '● Connecté' : 'Disponible'}
+                          </span>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {permissionCount} module(s) autorisé(s)
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {/* Affichage des permissions */}
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <p className="text-xs font-semibold text-gray-600 mb-2">Modules autorisés :</p>
+                        <div className="flex flex-wrap gap-2">
+                          {user.role === 'Admin' ? (
+                            <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold">
+                              🔓 Accès Complet
+                            </span>
+                          ) : (
+                            userPermissions.map(moduleId => {
+                              const module = allMenuItems.find(m => m.id === moduleId);
+                              return module ? (
+                                <span 
+                                  key={moduleId}
+                                  className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs flex items-center gap-1"
+                                >
+                                  <module.icon className="w-3 h-3" />
+                                  {module.label}
+                                </span>
+                              ) : null;
+                            })
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-lg p-6">
+              <h2 className="text-lg font-bold mb-4">Mes Accès</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {menuItems.map(item => (
+                  <div 
+                    key={item.id}
+                    className="p-4 bg-green-50 border-2 border-green-300 rounded-lg"
+                  >
+                    <div className="flex items-center gap-3 mb-2">
+                      <item.icon className="w-5 h-5 text-green-600" />
+                      <CheckCircle className="w-4 h-4 text-green-600" />
+                    </div>
+                    <p className="font-semibold text-sm text-gray-900">{item.label}</p>
+                    {item.description && (
+                      <p className="text-xs text-gray-600 mt-1">{item.description}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-lg p-6">
+              <h2 className="text-lg font-bold mb-4">Sauvegarde & Données</h2>
+              <div className="space-y-3">
+                <button 
+                  onClick={() => {
+                    const allData = {
+                      machines,
+                      ofs,
+                      clients,
+                      etiquettes,
+                      notifications,
+                      users: AuthManager.getUsers(),
+                      permissions: PermissionsManager.getPermissions()
+                    };
+                    const json = JSON.stringify(allData, null, 2);
+                    const blob = new Blob([json], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `fouta_backup_${new Date().toISOString().split('T')[0]}.json`;
+                    a.click();
+                  }}
+                  className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2"
+                >
+                  <Save className="w-5 h-5" />
+                  Sauvegarder Toutes les Données (JSON)
+                </button>
+                <button 
+                  onClick={() => {
+                    if (window.confirm('Voulez-vous vraiment réinitialiser aux valeurs par défaut ?')) {
+                      localStorage.clear();
+                      window.location.reload();
+                    }
+                  }}
+                  className="w-full px-4 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center justify-center gap-2"
+                >
+                  <RefreshCw className="w-5 h-5" />
+                  Réinitialiser aux Valeurs par Défaut
+                </button>
+                {currentUser.role === 'Admin' && (
+                  <button 
+                    onClick={() => {
+                      if (window.confirm('⚠️ ATTENTION : Toutes les données seront effacées définitivement. Continuer ?')) {
+                        DataManager.clearAll();
+                        AuthManager.logout();
+                        window.location.reload();
+                      }
+                    }}
+                    className="w-full px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center justify-center gap-2"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                    Effacer Toutes les Données (Admin uniquement)
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+        {/* MESSAGE ACCÈS REFUSÉ */}
+        {currentUser && !hasAccessToCurrentView() && currentView !== 'dashboard' && (
+          <div className="min-h-[60vh] flex items-center justify-center">
+            <div className="bg-white rounded-xl shadow-2xl p-12 max-w-md text-center">
+              <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <AlertCircle className="w-12 h-12 text-red-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">Accès Refusé</h2>
+              <p className="text-gray-600 mb-6">
+                Vous n'avez pas l'autorisation d'accéder à ce module avec votre rôle <strong>{currentUser.role}</strong>.
+              </p>
+              <div className="space-y-3">
+                <button
+                  onClick={() => setCurrentView('dashboard')}
+                  className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold"
+                >
+                  Retour au Tableau de Bord
+                </button>
+                {currentUser.role !== 'Admin' && (
+                  <p className="text-sm text-gray-500">
+                    Contactez l'administrateur pour obtenir l'accès
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* MODAL ATTRIBUTION COULEURS */}
+      {showPlanningModal && selectedOF && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-2xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Attribution Couleurs - {selectedOF.id}</h3>
+              <button onClick={() => setShowPlanningModal(false)} className="p-2 hover:bg-gray-100 rounded">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Couleur 1</label>
+                <select 
+                  onChange={(e) => {
+                    const couleur2 = document.getElementById('couleur2').value;
+                    if (e.target.value && couleur2) {
+                      handleAttributionCouleurs(selectedOF.id, e.target.value, couleur2);
+                      setShowPlanningModal(false);
+                    }
+                  }}
+                  className="w-full px-3 py-2 border rounded-lg"
+                >
+                  <option value="">Sélectionner...</option>
+                  {couleursDisponibles.map(c => (
+                    <option key={c.code} value={c.code} disabled={c.stock === 0}>
+                      {c.code} - {c.nom} ({c.stock}kg)
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-2">Couleur 2</label>
+                <select 
+                  id="couleur2"
+                  className="w-full px-3 py-2 border rounded-lg"
+                >
+                  <option value="">Sélectionner...</option>
+                  {couleursDisponibles.map(c => (
+                    <option key={c.code} value={c.code} disabled={c.stock === 0}>
+                      {c.code} - {c.nom} ({c.stock}kg)
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL QR CODE */}
+      {showQRModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-2xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">QR Code Généré</h3>
+              <button onClick={() => setShowQRModal(false)} className="p-2 hover:bg-gray-100 rounded">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex justify-center">
+              <img src={qrData} alt="QR Code" className="w-64 h-64 border-2 border-gray-200 rounded-lg" />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

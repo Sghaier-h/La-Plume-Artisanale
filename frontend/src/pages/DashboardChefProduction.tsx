@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { AlertCircle, CheckCircle, Clock, TrendingUp, TrendingDown, Package, Scissors, Users, Wrench, Box, Truck, Warehouse, Activity, Calendar, Plus, Search, Filter, Download, Printer, Move, AlertTriangle } from 'lucide-react';
+import DashboardLayout from '../components/DashboardLayout';
 
 const DashboardChefProduction = () => {
+  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('vue-generale');
   const [draggedOF, setDraggedOF] = useState<any>(null);
   const [selectedMachine, setSelectedMachine] = useState<string | null>(null);
@@ -220,18 +223,6 @@ const DashboardChefProduction = () => {
     { label: 'Taux de panne', value: '4.2%', objectif: '<5%', status: 'good' },
     { label: 'Taux de rebut', value: '2.8%', objectif: '<3%', status: 'good' },
     { label: 'Respect planning', value: '94%', objectif: '100%', status: 'warning' }
-  ];
-
-  const sections = [
-    { id: 'vue-generale', label: 'Vue Générale', icon: Activity },
-    { id: 'planification', label: 'Planification', icon: Calendar },
-    { id: 'fabrication', label: 'Fabrication', icon: Activity },
-    { id: 'coupe', label: 'Coupe', icon: Scissors },
-    { id: 'atelier', label: 'Atelier', icon: Users },
-    { id: 'mecanique', label: 'Mécanique', icon: Wrench },
-    { id: 'matieres', label: 'Matières 1ères', icon: Box },
-    { id: 'sous-traitance', label: 'Sous-traitance', icon: Truck },
-    { id: 'magasin', label: 'Magasin PF', icon: Warehouse }
   ];
 
   // Fonctions Drag & Drop
@@ -1025,56 +1016,13 @@ const DashboardChefProduction = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 ml-64">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Tableau de Bord Chef de Production
-              </h1>
-              <p className="text-sm text-gray-600 mt-1">
-                Samedi 18 Octobre 2025 - 14:30
-              </p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="text-right">
-                <p className="text-sm text-gray-600">Production Aujourd'hui</p>
-                <p className="text-xl font-bold text-green-600">1,240 pièces</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Navigation Tabs */}
-      <div className="bg-white border-b sticky top-0 z-10 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex space-x-1 overflow-x-auto">
-            {sections.map((section) => {
-              const Icon = section.icon;
-              return (
-                <button
-                  key={section.id}
-                  onClick={() => setActiveSection(section.id)}
-                  className={`flex items-center space-x-2 px-4 py-3 border-b-2 transition-colors whitespace-nowrap ${
-                    activeSection === section.id
-                      ? 'border-blue-600 text-blue-600 bg-blue-50'
-                      : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span className="text-sm font-medium">{section.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 py-6">
+    <DashboardLayout
+      title="Tableau de Bord Chef de Production"
+      subtitle="Samedi 18 Octobre 2025 - 14:30"
+      activeSection={activeSection}
+      onSectionChange={setActiveSection}
+    >
+      <div className="space-y-6">
         {activeSection === 'vue-generale' && renderVueGenerale()}
         {activeSection === 'planification' && renderPlanification()}
         {activeSection === 'fabrication' && renderFabrication()}
@@ -1082,21 +1030,15 @@ const DashboardChefProduction = () => {
         {activeSection === 'atelier' && renderAtelier()}
         {activeSection === 'sous-traitance' && renderSousTraitance()}
         {activeSection === 'matieres' && renderMatieres()}
-        
-        {/* Placeholder pour les autres sections */}
         {!['vue-generale', 'planification', 'fabrication', 'coupe', 'atelier', 'sous-traitance', 'matieres'].includes(activeSection) && (
           <div className="bg-white rounded-lg shadow p-8 text-center">
             <Activity className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-600 mb-2">
-              Section en construction
-            </h3>
-            <p className="text-gray-500">
-              {sections.find(s => s.id === activeSection)?.label} - Disponible prochainement
-            </p>
+            <h3 className="text-xl font-semibold text-gray-600 mb-2">Section en construction</h3>
+            <p className="text-gray-500">{activeSection} - Disponible prochainement</p>
           </div>
         )}
       </div>
-    </div>
+    </DashboardLayout>
   );
 };
 

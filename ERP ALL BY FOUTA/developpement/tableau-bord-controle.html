@@ -1,0 +1,2851 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tableau de Bord Contrôle Central</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+        }
+        
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 280px;
+            height: 100vh;
+            background: #1a1a2e;
+            color: white;
+            padding: 20px;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 30px;
+            color: #4CAF50;
+            text-align: center;
+        }
+        
+        .menu-section {
+            margin-bottom: 25px;
+        }
+        
+        .menu-title {
+            font-size: 12px;
+            color: #888;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .menu-item {
+            padding: 12px 15px;
+            margin-bottom: 5px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .menu-item:hover {
+            background: rgba(76, 175, 80, 0.1);
+            transform: translateX(5px);
+        }
+        
+        .menu-item.active {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .menu-icon {
+            font-size: 20px;
+        }
+        
+        .main-content {
+            margin-left: 280px;
+            padding: 20px;
+        }
+        
+        .header {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header-left h1 {
+            color: #1a1a2e;
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+        
+        .header-left .subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .header-right {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .alert-badge {
+            background: #ff5252;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        
+        .alert-badge:hover {
+            transform: scale(1.05);
+        }
+        
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #f5f5f5;
+            padding: 8px 15px;
+            border-radius: 25px;
+        }
+        
+        .user-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: #4CAF50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .kpi-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #4CAF50, #45a049);
+        }
+        
+        .kpi-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        
+        .kpi-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .kpi-title {
+            font-size: 14px;
+            color: #666;
+            font-weight: 600;
+        }
+        
+        .kpi-icon {
+            font-size: 32px;
+            opacity: 0.3;
+        }
+        
+        .kpi-value {
+            font-size: 36px;
+            font-weight: bold;
+            color: #1a1a2e;
+            margin-bottom: 8px;
+        }
+        
+        .kpi-label {
+            font-size: 13px;
+            color: #999;
+        }
+        
+        .kpi-trend {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        
+        .trend-up {
+            background: #e8f5e9;
+            color: #4CAF50;
+        }
+        
+        .trend-down {
+            background: #ffebee;
+            color: #f44336;
+        }
+        
+        .section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #1a1a2e;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .section-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #333;
+        }
+        
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .tab {
+            padding: 12px 24px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            color: #4CAF50;
+            border-bottom-color: #4CAF50;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .data-table thead {
+            background: #f8f9fa;
+        }
+        
+        .data-table th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            font-size: 13px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        .data-table td {
+            padding: 15px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .data-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .status-conforme {
+            background: #e8f5e9;
+            color: #4CAF50;
+        }
+        
+        .status-non-conforme {
+            background: #ffebee;
+            color: #f44336;
+        }
+        
+        .status-encours {
+            background: #e3f2fd;
+            color: #2196F3;
+        }
+        
+        .status-termine {
+            background: #f3e5f5;
+            color: #9c27b0;
+        }
+        
+        .status-retard {
+            background: #fff3e0;
+            color: #ff9800;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 20px;
+        }
+        
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .stat-item {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #4CAF50;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1a1a2e;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .alert-box {
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .alert-warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            color: #856404;
+        }
+        
+        .alert-danger {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            color: #721c24;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            color: #155724;
+        }
+        
+        .progress-container {
+            margin-top: 15px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #45a049);
+            border-radius: 4px;
+            transition: width 0.5s;
+        }
+        
+        .rating-stars {
+            display: inline-flex;
+            gap: 5px;
+            font-size: 18px;
+        }
+        
+        .star {
+            color: #ddd;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        
+        .star.filled {
+            color: #ffc107;
+        }
+        
+        .evaluation-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #4CAF50;
+        }
+        
+        .evaluation-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .employee-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1a1a2e;
+        }
+        
+        .employee-role {
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .criteria-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .criteria-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+        }
+        
+        .criteria-label {
+            font-size: 13px;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .score-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 50px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .score-excellent {
+            background: #e8f5e9;
+            color: #4CAF50;
+        }
+        
+        .score-bon {
+            background: #e3f2fd;
+            color: #2196F3;
+        }
+        
+        .score-moyen {
+            background: #fff3e0;
+            color: #ff9800;
+        }
+        
+        .score-faible {
+            background: #ffebee;
+            color: #f44336;
+        }
+        
+        .overall-score {
+            font-size: 48px;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            font-size: 36px;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .incident-card {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .incident-card.danger {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .modal-title {
+            font-size: 22px;
+            font-weight: bold;
+            color: #1a1a2e;
+        }
+        
+        .close-modal {
+            font-size: 28px;
+            cursor: pointer;
+            color: #999;
+        }
+        
+        .close-modal:hover {
+            color: #333;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+        
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        .rating-input {
+            display: flex;
+            gap: 10px;
+            margin-top: 8px;
+        }
+        
+        .rating-option {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+        
+        .rating-option:hover {
+            border-color: #4CAF50;
+        }
+        
+        .rating-option.selected {
+            border-color: #4CAF50;
+            background: #e8f5e9;
+            color: #4CAF50;
+        }
+        
+        .page {
+            display: none;
+        }
+        
+        .page.active {
+            display: block;
+        }
+        
+        .metric-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+        }
+        
+        .metric-title {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 8px;
+        }
+        
+        .metric-value {
+            font-size: 32px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="logo">🏭 CONTRÔLE CENTRAL</div>
+        
+        <div class="menu-section">
+            <div class="menu-title">Navigation Principale</div>
+            <div class="menu-item active" onclick="showPage('dashboard')">
+                <span class="menu-icon">📊</span>
+                <span>Vue d'ensemble</span>
+            </div>
+            <div class="menu-item" onclick="showPage('fabrication')">
+                <span class="menu-icon">🏭</span>
+                <span>Fabrication</span>
+            </div>
+            <div class="menu-item" onclick="showPage('qualite')">
+                <span class="menu-icon">✅</span>
+                <span>Contrôle Qualité</span>
+            </div>
+            <div class="menu-item" onclick="showPage('atelier')">
+                <span class="menu-icon">🧺</span>
+                <span>Atelier</span>
+            </div>
+        </div>
+        
+        <div class="menu-section">
+            <div class="menu-title">Ressources</div>
+            <div class="menu-item" onclick="showPage('matieres')">
+                <span class="menu-icon">🧵</span>
+                <span>Matières Premières</span>
+            </div>
+            <div class="menu-item" onclick="showPage('mecanique')">
+                <span class="menu-icon">⚙️</span>
+                <span>Mécanique</span>
+            </div>
+            <div class="menu-item" onclick="showPage('soustraitance')">
+                <span class="menu-icon">🤝</span>
+                <span>Sous-traitance</span>
+            </div>
+        </div>
+        
+        <div class="menu-section">
+            <div class="menu-title">Personnel & Sécurité</div>
+            <div class="menu-item" onclick="showPage('personnel')">
+                <span class="menu-icon">👥</span>
+                <span>Personnel & Discipline</span>
+            </div>
+            <div class="menu-item" onclick="showPage('securite')">
+                <span class="menu-icon">🛡️</span>
+                <span>Environnement & Sécurité</span>
+            </div>
+        </div>
+        
+        <div class="menu-section">
+            <div class="menu-title">Reporting</div>
+            <div class="menu-item" onclick="showPage('performance')">
+                <span class="menu-icon">📈</span>
+                <span>Performance</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <h1 id="pageTitle">Vue d'ensemble - Contrôle Central</h1>
+                <div class="subtitle" id="currentDate"></div>
+            </div>
+            <div class="header-right">
+                <div class="alert-badge">🔔 12 Alertes</div>
+                <div class="user-profile">
+                    <div class="user-avatar">CQ</div>
+                    <div>
+                        <div style="font-size: 14px; font-weight: 600;">Contrôleur Qualité</div>
+                        <div style="font-size: 11px; color: #999;">En ligne</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Page: Dashboard -->
+        <div id="dashboard" class="page active">
+            <!-- KPIs -->
+            <div class="dashboard-grid">
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <div class="kpi-title">COMMANDES ACTIVES</div>
+                        <div class="kpi-icon">📦</div>
+                    </div>
+                    <div class="kpi-value">284</div>
+                    <div class="kpi-label">Commandes en cours de traitement</div>
+                    <div class="kpi-trend trend-up">↑ +12% vs semaine dernière</div>
+                </div>
+                
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <div class="kpi-title">TRS GLOBAL</div>
+                        <div class="kpi-icon">⚙️</div>
+                    </div>
+                    <div class="kpi-value">87.3%</div>
+                    <div class="kpi-label">Taux de Rendement Synthétique</div>
+                    <div class="kpi-trend trend-up">↑ Objectif: >85%</div>
+                </div>
+                
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <div class="kpi-title">QUALITÉ PRODUIT</div>
+                        <div class="kpi-icon">✅</div>
+                    </div>
+                    <div class="kpi-value">96.8%</div>
+                    <div class="kpi-label">Taux de conformité</div>
+                    <div class="kpi-trend trend-up">↑ +2.3%</div>
+                </div>
+                
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <div class="kpi-title">PRODUCTION JOUR</div>
+                        <div class="kpi-icon">🏭</div>
+                    </div>
+                    <div class="kpi-value">1,247</div>
+                    <div class="kpi-label">Unités produites aujourd'hui</div>
+                    <div class="kpi-trend trend-down">↓ -5% vs objectif</div>
+                </div>
+            </div>
+            
+            <!-- Répartition Commandes -->
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-title">📊 Répartition des Commandes</div>
+                    <div class="section-actions">
+                        <button class="btn btn-secondary">Exporter</button>
+                        <button class="btn btn-primary">Nouvelle commande</button>
+                    </div>
+                </div>
+                
+                <div class="stat-grid">
+                    <div class="stat-item">
+                        <div class="stat-value">156</div>
+                        <div class="stat-label">En fabrication 🟢</div>
+                    </div>
+                    <div class="stat-item" style="border-left-color: #9c27b0;">
+                        <div class="stat-value">78</div>
+                        <div class="stat-label">Sous-traitance 🟣</div>
+                    </div>
+                    <div class="stat-item" style="border-left-color: #ff9800;">
+                        <div class="stat-value">32</div>
+                        <div class="stat-label">Atelier 🟠</div>
+                    </div>
+                    <div class="stat-item" style="border-left-color: #f44336;">
+                        <div class="stat-value">18</div>
+                        <div class="stat-label">Retard 🔴</div>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <canvas id="chartCommandes"></canvas>
+                </div>
+            </div>
+            
+            <!-- Indicateurs Production -->
+            <div class="dashboard-grid">
+                <div class="section">
+                    <div class="section-title">⚙️ Processus de Fabrication</div>
+                    <div class="stat-grid" style="grid-template-columns: 1fr 1fr;">
+                        <div class="stat-item">
+                            <div class="stat-value">91.2%</div>
+                            <div class="stat-label">Rendement réel</div>
+                        </div>
+                        <div class="stat-item" style="border-left-color: #ff9800;">
+                            <div class="stat-value">3.8%</div>
+                            <div class="stat-label">Taux de panne</div>
+                        </div>
+                        <div class="stat-item" style="border-left-color: #f44336;">
+                            <div class="stat-value">2.1%</div>
+                            <div class="stat-label">Taux de rebut</div>
+                        </div>
+                        <div class="stat-item" style="border-left-color: #4CAF50;">
+                            <div class="stat-value">97%</div>
+                            <div class="stat-label">Respect planning</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">🧵 Matières Premières</div>
+                    <div class="progress-container">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span style="font-size: 13px; color: #666;">Disponibilité matière</span>
+                            <span style="font-size: 13px; font-weight: 600;">94%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 94%;"></div>
+                        </div>
+                    </div>
+                    <div class="alert-box alert-warning">
+                        <span>⚠️</span>
+                        <span><strong>5 articles</strong> en dessous du seuil minimal</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Page: Fabrication -->
+        <div id="fabrication" class="page">
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-title">🏭 Processus de Fabrication</div>
+                </div>
+                
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('tissage')">🧵 Tissage</button>
+                    <button class="tab" onclick="switchTab('coupe')">✂️ Coupe</button>
+                    <button class="tab" onclick="switchTab('planification')">📋 Planification</button>
+                </div>
+                
+                <div id="tissage" class="tab-content active">
+                    <div class="dashboard-grid">
+                        <div class="metric-card">
+                            <div class="metric-title">Machines actives</div>
+                            <div class="metric-value">12 / 15</div>
+                        </div>
+                        <div class="metric-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                            <div class="metric-title">Opérateurs</div>
+                            <div class="metric-value">18</div>
+                        </div>
+                        <div class="metric-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                            <div class="metric-title">Production/h</div>
+                            <div class="metric-value">156 m</div>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <canvas id="chartTissage"></canvas>
+                    </div>
+                    
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Machine</th>
+                                <th>Opérateur</th>
+                                <th>OF</th>
+                                <th>Modèle</th>
+                                <th>Avancement</th>
+                                <th>Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>M-01</strong></td>
+                                <td>Ahmed K.</td>
+                                <td>OF249780</td>
+                                <td>IBIZA 1020</td>
+                                <td>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: 75%;"></div>
+                                    </div>
+                                </td>
+                                <td><span class="status-badge status-encours">En cours</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>M-03</strong></td>
+                                <td>Sara M.</td>
+                                <td>OF249781</td>
+                                <td>FOUTA CLASSIQUE</td>
+                                <td>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: 45%;"></div>
+                                    </div>
+                                </td>
+                                <td><span class="status-badge status-encours">En cours</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>M-05</strong></td>
+                                <td>Mohamed B.</td>
+                                <td>OF249782</td>
+                                <td>HAMMAN LUXE</td>
+                                <td>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: 100%;"></div>
+                                    </div>
+                                </td>
+                                <td><span class="status-badge status-termine">Terminé</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>M-07</strong></td>
+                                <td>Fatima Z.</td>
+                                <td>OF249785</td>
+                                <td>SERVIETTE SPA</td>
+                                <td>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: 20%; background: linear-gradient(90deg, #ff9800, #ff5722);"></div>
+                                    </div>
+                                </td>
+                                <td><span class="status-badge status-retard">Retard</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div id="coupe" class="tab-content">
+                    <div class="stat-grid">
+                        <div class="stat-item">
+                            <div class="stat-value">847</div>
+                            <div class="stat-label">Pièces coupées aujourd'hui</div>
+                        </div>
+                        <div class="stat-item" style="border-left-color: #ff9800;">
+                            <div class="stat-value">1.2%</div>
+                            <div class="stat-label">Taux de rebut coupe</div>
+                        </div>
+                        <div class="stat-item" style="border-left-color: #9c27b0;">
+                            <div class="stat-value">6</div>
+                            <div class="stat-label">Opérateurs actifs</div>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <canvas id="chartCoupe"></canvas>
+                    </div>
+                </div>
+                
+                <div id="planification" class="tab-content">
+                    <div class="alert-box alert-success">
+                        <span>✓</span>
+                        <span><strong>97%</strong> des OF sont dans les délais prévus</span>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <canvas id="chartPlanif"></canvas>
+                    </div>
+                    
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Sous OF</th>
+                                <th>Machine</th>
+                                <th>Client</th>
+                                <th>Modèle</th>
+                                <th>Qté à fabriquer</th>
+                                <th>Qté fabriquée</th>
+                                <th>Tisseur</th>
+                                <th>État</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>SOF-2025-001</strong></td>
+                                <td>M-01</td>
+                                <td>CL00884</td>
+                                <td>IBIZA</td>
+                                <td>320</td>
+                                <td>240</td>
+                                <td>Ahmed K.</td>
+                                <td><span class="status-badge status-encours">En cours</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>SOF-2025-002</strong></td>
+                                <td>M-03</td>
+                                <td>CL00892</td>
+                                <td>FOUTA CLASSIQUE</td>
+                                <td>500</td>
+                                <td>500</td>
+                                <td>Sara M.</td>
+                                <td><span class="status-badge status-termine">Terminé</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Page: Qualité -->
+        <div id="qualite" class="page">
+            <div class="dashboard-grid">
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <div class="kpi-title">CONTRÔLES JOUR</div>
+                        <div class="kpi-icon">✅</div>
+                    </div>
+                    <div class="kpi-value">47</div>
+                    <div class="kpi-label">Contrôles effectués aujourd'hui</div>
+                </div>
+                
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <div class="kpi-title">CONFORMITÉ</div>
+                        <div class="kpi-icon">📊</div>
+                    </div>
+                    <div class="kpi-value">96.8%</div>
+                    <div class="kpi-label">Taux de conformité global</div>
+                </div>
+                
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <div class="kpi-title">NON-CONFORMITÉS</div>
+                        <div class="kpi-icon">⚠️</div>
+                    </div>
+                    <div class="kpi-value">8</div>
+                    <div class="kpi-label">En attente de correction</div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-title">✅ Contrôles par Secteur</div>
+                    <button class="btn btn-primary">Nouveau contrôle</button>
+                </div>
+                
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('qualite-fabrication')">🏭 Fabrication</button>
+                    <button class="tab" onclick="switchTab('qualite-atelier')">🧺 Atelier</button>
+                    <button class="tab" onclick="switchTab('qualite-magasin')">📦 Magasin PF</button>
+                    <button class="tab" onclick="switchTab('qualite-entrepot')">🏠 Entrepôt</button>
+                </div>
+                
+                <div id="qualite-fabrication" class="tab-content active">
+                    <div class="chart-container">
+                        <canvas id="chartQualiteFab"></canvas>
+                    </div>
+                    
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Date/Heure</th>
+                                <th>Poste</th>
+                                <th>QR Code</th>
+                                <th>Type de contrôle</th>
+                                <th>Résultat</th>
+                                <th>Contrôleur</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>19/10 14:23</td>
+                                <td><strong>Tissage M-01</strong></td>
+                                <td>QR-TIS-2025-047</td>
+                                <td>Conformité matière</td>
+                                <td><span class="status-badge status-conforme">Conforme</span></td>
+                                <td>CQ Central</td>
+                                <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Détails</button></td>
+                            </tr>
+                            <tr>
+                                <td>19/10 13:15</td>
+                                <td><strong>Tissage M-05</strong></td>
+                                <td>QR-TIS-2025-046</td>
+                                <td>Densité</td>
+                                <td><span class="status-badge status-non-conforme">Non conforme</span></td>
+                                <td>CQ Central</td>
+                                <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Actions correctives</button></td>
+                            </tr>
+                            <tr>
+                                <td>19/10 11:45</td>
+                                <td><strong>Coupe</strong></td>
+                                <td>QR-COU-2025-123</td>
+                                <td>Dimensions</td>
+                                <td><span class="status-badge status-conforme">Conforme</span></td>
+                                <td>CQ Central</td>
+                                <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Détails</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div id="qualite-atelier" class="tab-content">
+                    <div class="stat-grid">
+                        <div class="stat-item">
+                            <div class="stat-value">98.5%</div>
+                            <div class="stat-label">Qualité pliage</div>
+                        </div>
+                        <div class="stat-item" style="border-left-color: #9c27b0;">
+                            <div class="stat-value">97.2%</div>
+                            <div class="stat-label">Qualité couture</div>
+                        </div>
+                        <div class="stat-item" style="border-left-color: #4CAF50;">
+                            <div class="stat-value">99.1%</div>
+                            <div class="stat-label">Étiquetage correct</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="qualite-magasin" class="tab-content">
+                    <div class="alert-box alert-success">
+                        <span>✓</span>
+                        <span><strong>Dernier contrôle:</strong> 100% conforme - 47 produits contrôlés</span>
+                    </div>
+                </div>
+                
+                <div id="qualite-entrepot" class="tab-content">
+                    <div class="stat-grid">
+                        <div class="stat-item">
+                            <div class="stat-value">Excellent</div>
+                            <div class="stat-label">Conditions de stockage</div>
+                        </div>
+                        <div class="stat-item" style="border-left-color: #4CAF50;">
+                            <div class="stat-value">100%</div>
+                            <div class="stat-label">Propreté</div>
+                        </div>
+                        <div class="stat-item" style="border-left-color: #2196F3;">
+                            <div class="stat-value">100%</div>
+                            <div class="stat-label">Identification</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Page: Atelier -->
+        <div id="atelier" class="page">
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-title">🧺 Atelier Finition</div>
+                    <button class="btn btn-primary">Scanner nouveau lot</button>
+                </div>
+                
+                <div class="dashboard-grid">
+                    <div class="stat-item">
+                        <div class="stat-value">234</div>
+                        <div class="stat-label">Lots en cours</div>
+                    </div>
+                    <div class="stat-item" style="border-left-color: #9c27b0;">
+                        <div class="stat-value">1,247</div>
+                        <div class="stat-label">Pièces traitées aujourd'hui</div>
+                    </div>
+                    <div class="stat-item" style="border-left-color: #4CAF50;">
+                        <div class="stat-value">97.8%</div>
+                        <div class="stat-label">Taux de conformité</div>
+                    </div>
+                    <div class="stat-item" style="border-left-color: #ff9800;">
+                        <div class="stat-value">12</div>
+                        <div class="stat-label">Opérateurs actifs</div>
+                    </div>
+                </div>
+                
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('atelier-pliage')">Pliage</button>
+                    <button class="tab" onclick="switchTab('atelier-couture')">Couture</button>
+                    <button class="tab" onclick="switchTab('atelier-etiquetage')">Étiquetage</button>
+                    <button class="tab" onclick="switchTab('atelier-emballage')">Emballage</button>
+                </div>
+                
+                <div id="atelier-pliage" class="tab-content active">
+                    <div class="chart-container">
+                        <canvas id="chartPliage"></canvas>
+                    </div>
+                </div>
+                
+                <div id="atelier-couture" class="tab-content">
+                    <div class="stat-grid">
+                        <div class="stat-item">
+                            <div class="stat-value">456</div>
+                            <div class="stat-label">Pièces cousues</div>
+                        </div>
+                        <div class="stat-item" style="border-left-color: #4CAF50;">
+                            <div class="stat-value">98.2%</div>
+                            <div class="stat-label">Qualité couture</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="atelier-etiquetage" class="tab-content">
+                    <div class="alert-box alert-warning">
+                        <span>⚠️</span>
+                        <span><strong>Stock étiquettes:</strong> Niveau bas pour étiquettes type A</span>
+                    </div>
+                </div>
+                
+                <div id="atelier-emballage" class="tab-content">
+                    <div class="stat-grid">
+                        <div class="stat-item">
+                            <div class="stat-value">342</div>
+                            <div class="stat-label">Colis préparés</div>
+                        </div>
+                        <div class="stat-item" style="border-left-color: #9c27b0;">
+                            <div class="stat-value">28</div>
+                            <div class="stat-label">Palettes complètes</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Page: Matières -->
+        <div id="matieres" class="page">
+            <div class="dashboard-grid">
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <div class="kpi-title">ARTICLES MP</div>
+                        <div class="kpi-icon">🧵</div>
+                    </div>
+                    <div class="kpi-value">416</div>
+                    <div class="kpi-label">Articles en stock</div>
+                </div>
+                
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <div class="kpi-title">FOURNITURES</div>
+                        <div class="kpi-icon">📦</div>
+                    </div>
+                    <div class="kpi-value">64</div>
+                    <div class="kpi-label">Types de fournitures</div>
+                </div>
+                
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <div class="kpi-title">DISPONIBILITÉ</div>
+                        <div class="kpi-icon">✅</div>
+                    </div>
+                    <div class="kpi-value">94%</div>
+                    <div class="kpi-label">Matière disponible</div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-title">🧵 Gestion des Matières Premières</div>
+                    <div class="section-actions">
+                        <button class="btn btn-secondary">Demande réappro</button>
+                        <button class="btn btn-primary">Nouvelle entrée</button>
+                    </div>
+                </div>
+                
+                <div class="alert-box alert-warning">
+                    <span>⚠️</span>
+                    <div>
+                        <strong>5 articles en alerte</strong>
+                        <div style="font-size: 12px; margin-top: 5px;">Stock inférieur au seuil minimal</div>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <canvas id="chartMP"></canvas>
+                </div>
+                
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Code MP</th>
+                            <th>Désignation</th>
+                            <th>Type</th>
+                            <th>Stock actuel</th>
+                            <th>Seuil min</th>
+                            <th>Unité</th>
+                            <th>Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>MP-001</strong></td>
+                            <td>Fil Coton 100% Blanc</td>
+                            <td>Fil</td>
+                            <td>2,450 kg</td>
+                            <td>500 kg</td>
+                            <td>kg</td>
+                            <td><span class="status-badge status-conforme">OK</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>MP-015</strong></td>
+                            <td>Fil Coton Bleu Marine</td>
+                            <td>Fil</td>
+                            <td>380 kg</td>
+                            <td>500 kg</td>
+                            <td>kg</td>
+                            <td><span class="status-badge status-non-conforme">Alerte</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>MP-027</strong></td>
+                            <td>Fil Bambou Naturel</td>
+                            <td>Fil</td>
+                            <td>1,850 kg</td>
+                            <td>300 kg</td>
+                            <td>kg</td>
+                            <td><span class="status-badge status-conforme">OK</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Page: Mécanique -->
+        <div id="mecanique" class="page">
+            <div class="dashboard-grid">
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <div class="kpi-title">DISPONIBILITÉ</div>
+                        <div class="kpi-icon">⚙️</div>
+                    </div>
+                    <div class="kpi-value">96.2%</div>
+                    <div class="kpi-label">Taux de disponibilité machines</div>
+                </div>
+                
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <div class="kpi-title">MTTR</div>
+                        <div class="kpi-icon">🔧</div>
+                    </div>
+                    <div class="kpi-value">2.3h</div>
+                    <div class="kpi-label">Délai moyen de réparation</div>
+                </div>
+                
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <div class="kpi-title">MTBF</div>
+                        <div class="kpi-icon">📊</div>
+                    </div>
+                    <div class="kpi-value">187h</div>
+                    <div class="kpi-label">Temps moyen entre pannes</div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-title">⚙️ Maintenance et Interventions</div>
+                    <button class="btn btn-primary">Nouvelle intervention</button>
+                </div>
+                
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Machine</th>
+                            <th>Type intervention</th>
+                            <th>Priorité</th>
+                            <th>Statut</th>
+                            <th>Date</th>
+                            <th>Mécanicien</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>M-07</strong></td>
+                            <td>Réparation urgente</td>
+                            <td><span class="status-badge status-non-conforme">Haute</span></td>
+                            <td><span class="status-badge status-encours">En cours</span></td>
+                            <td>19/10 14:00</td>
+                            <td>Karim T.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>M-12</strong></td>
+                            <td>Maintenance préventive</td>
+                            <td><span class="status-badge status-retard">Moyenne</span></td>
+                            <td><span class="status-badge status-encours">Planifiée</span></td>
+                            <td>20/10 08:00</td>
+                            <td>Hassan M.</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <div class="alert-box alert-success" style="margin-top: 20px;">
+                    <span>✓</span>
+                    <span><strong>Contrôle première pièce:</strong> 3 validations effectuées aujourd'hui</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Page: Sous-traitance -->
+        <div id="soustraitance" class="page">
+            <div class="dashboard-grid">
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <div class="kpi-title">EN COURS</div>
+                        <div class="kpi-icon">🤝</div>
+                    </div>
+                    <div class="kpi-value">78</div>
+                    <div class="kpi-label">Lots chez sous-traitants</div>
+                </div>
+                
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <div class="kpi-title">RETOURS JOUR</div>
+                        <div class="kpi-icon">📦</div>
+                    </div>
+                    <div class="kpi-value">23</div>
+                    <div class="kpi-label">Lots retournés aujourd'hui</div>
+                </div>
+                
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <div class="kpi-title">DÉLAI MOYEN</div>
+                        <div class="kpi-icon">⏱️</div>
+                    </div>
+                    <div class="kpi-value">3.2j</div>
+                    <div class="kpi-label">Temps moyen de traitement</div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-title">🤝 Suivi Sous-traitance</div>
+                    <div class="section-actions">
+                        <button class="btn btn-secondary">État quotidien</button>
+                        <button class="btn btn-primary">Nouvel envoi</button>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <canvas id="chartSousTraitance"></canvas>
+                </div>
+                
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Sous-traitant</th>
+                            <th>QR Code</th>
+                            <th>Type opération</th>
+                            <th>Qté totale</th>
+                            <th>Qté retournée</th>
+                            <th>Reste</th>
+                            <th>Date envoi</th>
+                            <th>Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>ST-FRANGE-01</strong></td>
+                            <td>QR-ST-2025-045</td>
+                            <td>Frange</td>
+                            <td>500</td>
+                            <td>350</td>
+                            <td>150</td>
+                            <td>15/10/2025</td>
+                            <td><span class="status-badge status-encours">En cours</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>ST-COUTURE-02</strong></td>
+                            <td>QR-ST-2025-042</td>
+                            <td>Couture</td>
+                            <td>320</td>
+                            <td>320</td>
+                            <td>0</td>
+                            <td>12/10/2025</td>
+                            <td><span class="status-badge status-termine">Terminé</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>ST-BRODERIE-01</strong></td>
+                            <td>QR-ST-2025-047</td>
+                            <td>Broderie</td>
+                            <td>200</td>
+                            <td>0</td>
+                            <td>200</td>
+                            <td>18/10/2025</td>
+                            <td><span class="status-badge status-encours">En cours</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        
+        <!-- Page: Personnel & Discipline -->
+        <div id="personnel" class="page">
+            <div class="dashboard-grid">
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <div class="kpi-title">PERSONNEL TOTAL</div>
+                        <div class="kpi-icon">👥</div>
+                    </div>
+                    <div class="kpi-value">47</div>
+                    <div class="kpi-label">Employés actifs</div>
+                </div>
+                
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <div class="kpi-title">NOTE MOYENNE</div>
+                        <div class="kpi-icon">⭐</div>
+                    </div>
+                    <div class="kpi-value">8.4/10</div>
+                    <div class="kpi-label">Performance globale</div>
+                </div>
+                
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <div class="kpi-title">PONCTUALITÉ</div>
+                        <div class="kpi-icon">⏰</div>
+                    </div>
+                    <div class="kpi-value">94%</div>
+                    <div class="kpi-label">Taux de présence à l'heure</div>
+                </div>
+                
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <div class="kpi-title">INCIDENTS</div>
+                        <div class="kpi-icon">⚠️</div>
+                    </div>
+                    <div class="kpi-value">3</div>
+                    <div class="kpi-label">Ce mois-ci</div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-title">👥 Évaluation du Personnel</div>
+                    <div class="section-actions">
+                        <button class="btn btn-secondary" onclick="generateReport()">Rapport mensuel</button>
+                        <button class="btn btn-primary" onclick="openEvaluationModal()">Nouvelle évaluation</button>
+                    </div>
+                </div>
+                
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('personnel-tissage')">🧵 Tissage</button>
+                    <button class="tab" onclick="switchTab('personnel-coupe')">✂️ Coupe</button>
+                    <button class="tab" onclick="switchTab('personnel-atelier')">🧺 Atelier</button>
+                    <button class="tab" onclick="switchTab('personnel-mecanique')">⚙️ Mécanique</button>
+                </div>
+                
+                <div id="personnel-tissage" class="tab-content active">
+                    <!-- Évaluation Employé 1 -->
+                    <div class="evaluation-card">
+                        <div class="evaluation-header">
+                            <div>
+                                <div class="employee-name">Ahmed Karim</div>
+                                <div class="employee-role">Tisseur - Machine M-01</div>
+                            </div>
+                            <div class="score-circle" style="background: linear-gradient(135deg, #4CAF50, #45a049); width: 80px; height: 80px; font-size: 24px;">
+                                8.7
+                            </div>
+                        </div>
+                        
+                        <div class="criteria-grid">
+                            <div class="criteria-item">
+                                <span class="criteria-label">📊 Rendement</span>
+                                <span class="score-badge score-excellent">9/10</span>
+                            </div>
+                            <div class="criteria-item">
+                                <span class="criteria-label">⏰ Ponctualité</span>
+                                <span class="score-badge score-excellent">10/10</span>
+                            </div>
+                            <div class="criteria-item">
+                                <span class="criteria-label">🎯 Attention au poste</span>
+                                <span class="score-badge score-bon">8/10</span>
+                            </div>
+                            <div class="criteria-item">
+                                <span class="criteria-label">🤝 Comportement</span>
+                                <span class="score-badge score-excellent">9/10</span>
+                            </div>
+                            <div class="criteria-item">
+                                <span class="criteria-label">🧹 Hygiène</span>
+                                <span class="score-badge score-bon">8/10</span>
+                            </div>
+                            <div class="criteria-item">
+                                <span class="criteria-label">⚙️ Respect matériel</span>
+                                <span class="score-badge score-excellent">9/10</span>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div style="font-size: 12px; color: #666;">
+                                    <strong>Dernière évaluation:</strong> 15/10/2025 par CQ Central
+                                </div>
+                                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Historique</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Évaluation Employé 2 -->
+                    <div class="evaluation-card">
+                        <div class="evaluation-header">
+                            <div>
+                                <div class="employee-name">Sara Mansour</div>
+                                <div class="employee-role">Tisseuse - Machine M-03</div>
+                            </div>
+                            <div class="score-circle" style="background: linear-gradient(135deg, #2196F3, #1976d2); width: 80px; height: 80px; font-size: 24px;">
+                                7.8
+                            </div>
+                        </div>
+                        
+                        <div class="criteria-grid">
+                            <div class="criteria-item">
+                                <span class="criteria-label">📊 Rendement</span>
+                                <span class="score-badge score-bon">8/10</span>
+                            </div>
+                            <div class="criteria-item">
+                                <span class="criteria-label">⏰ Ponctualité</span>
+                                <span class="score-badge score-moyen">7/10</span>
+                            </div>
+                            <div class="criteria-item">
+                                <span class="criteria-label">🎯 Attention au poste</span>
+                                <span class="score-badge score-bon">8/10</span>
+                            </div>
+                            <div class="criteria-item">
+                                <span class="criteria-label">🤝 Comportement</span>
+                                <span class="score-badge score-excellent">9/10</span>
+                            </div>
+                            <div class="criteria-item">
+                                <span class="criteria-label">🧹 Hygiène</span>
+                                <span class="score-badge score-bon">8/10</span>
+                            </div>
+                            <div class="criteria-item">
+                                <span class="criteria-label">⚙️ Respect matériel</span>
+                                <span class="score-badge score-moyen">7/10</span>
+                            </div>
+                        </div>
+                        
+                        <div class="alert-box alert-warning" style="margin-top: 15px;">
+                            <span>⚠️</span>
+                            <span><strong>Observation:</strong> 2 retards ce mois-ci - Suivi nécessaire</span>
+                        </div>
+                        
+                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div style="font-size: 12px; color: #666;">
+                                    <strong>Dernière évaluation:</strong> 17/10/2025 par CQ Central
+                                </div>
+                                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Historique</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Évaluation Employé 3 -->
+                    <div class="evaluation-card" style="border-left-color: #ff9800;">
+                        <div class="evaluation-header">
+                            <div>
+                                <div class="employee-name">Mohamed Ben Ali</div>
+                                <div class="employee-role">Tisseur - Machine M-05</div>
+                            </div>
+                            <div class="score-circle" style="background: linear-gradient(135deg, #ff9800, #f57c00); width: 80px; height: 80px; font-size: 24px;">
+                                6.5
+                            </div>
+                        </div>
+                        
+                        <div class="criteria-grid">
+                            <div class="criteria-item">
+                                <span class="criteria-label">📊 Rendement</span>
+                                <span class="score-badge score-moyen">7/10</span>
+                            </div>
+                            <div class="criteria-item">
+                                <span class="criteria-label">⏰ Ponctualité</span>
+                                <span class="score-badge score-faible">5/10</span>
+                            </div>
+                            <div class="criteria-item">
+                                <span class="criteria-label">🎯 Attention au poste</span>
+                                <span class="score-badge score-moyen">6/10</span>
+                            </div>
+                            <div class="criteria-item">
+                                <span class="criteria-label">🤝 Comportement</span>
+                                <span class="score-badge score-moyen">7/10</span>
+                            </div>
+                            <div class="criteria-item">
+                                <span class="criteria-label">🧹 Hygiène</span>
+                                <span class="score-badge score-moyen">7/10</span>
+                            </div>
+                            <div class="criteria-item">
+                                <span class="criteria-label">⚙️ Respect matériel</span>
+                                <span class="score-badge score-moyen">7/10</span>
+                            </div>
+                        </div>
+                        
+                        <div class="alert-box alert-danger" style="margin-top: 15px;">
+                            <span>🚨</span>
+                            <span><strong>Action corrective requise:</strong> Ponctualité insuffisante - Entretien prévu avec responsable</span>
+                        </div>
+                        
+                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div style="font-size: 12px; color: #666;">
+                                    <strong>Dernière évaluation:</strong> 18/10/2025 par CQ Central
+                                </div>
+                                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Actions correctives</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="personnel-coupe" class="tab-content">
+                    <div class="stat-grid">
+                        <div class="stat-item">
+                            <div class="stat-value">8.6/10</div>
+                            <div class="stat-label">Note moyenne département</div>
+                        </div>
+                        <div class="stat-item" style="border-left-color: #4CAF50;">
+                            <div class="stat-value">6</div>
+                            <div class="stat-label">Opérateurs évalués</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="personnel-atelier" class="tab-content">
+                    <div class="stat-grid">
+                        <div class="stat-item">
+                            <div class="stat-value">8.9/10</div>
+                            <div class="stat-label">Note moyenne département</div>
+                        </div>
+                        <div class="stat-item" style="border-left-color: #4CAF50;">
+                            <div class="stat-value">12</div>
+                            <div class="stat-label">Opérateurs évalués</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="personnel-mecanique" class="tab-content">
+                    <div class="stat-grid">
+                        <div class="stat-item">
+                            <div class="stat-value">9.1/10</div>
+                            <div class="stat-label">Note moyenne département</div>
+                        </div>
+                        <div class="stat-item" style="border-left-color: #4CAF50;">
+                            <div class="stat-value">4</div>
+                            <div class="stat-label">Mécaniciens évalués</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Graphiques Performance -->
+            <div class="dashboard-grid">
+                <div class="section">
+                    <div class="section-title">📊 Évolution Performance Globale</div>
+                    <div class="chart-container">
+                        <canvas id="chartPerformancePersonnel"></canvas>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">📈 Performance par Département</div>
+                    <div class="chart-container">
+                        <canvas id="chartDepartements"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Page: Sécurité & Environnement -->
+        <div id="securite" class="page">
+            <div class="dashboard-grid">
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <div class="kpi-title">CONFORMITÉ SÉCURITÉ</div>
+                        <div class="kpi-icon">🛡️</div>
+                    </div>
+                    <div class="kpi-value">97%</div>
+                    <div class="kpi-label">Taux de conformité</div>
+                </div>
+                
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <div class="kpi-title">INCIDENTS</div>
+                        <div class="kpi-icon">⚠️</div>
+                    </div>
+                    <div class="kpi-value">2</div>
+                    <div class="kpi-label">Ce mois-ci</div>
+                </div>
+                
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <div class="kpi-title">JOURS SANS ACCIDENT</div>
+                        <div class="kpi-icon">✅</div>
+                    </div>
+                    <div class="kpi-value">247</div>
+                    <div class="kpi-label">Objectif: 365 jours</div>
+                </div>
+                
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <div class="kpi-title">PROPRETÉ</div>
+                        <div class="kpi-icon">🧹</div>
+                    </div>
+                    <div class="kpi-value">9.2/10</div>
+                    <div class="kpi-label">Note moyenne</div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-title">🛡️ Contrôles Sécurité & Environnement</div>
+                    <button class="btn btn-primary" onclick="openSecurityModal()">Nouveau contrôle</button>
+                </div>
+                
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('securite-fabrication')">🏭 Fabrication</button>
+                    <button class="tab" onclick="switchTab('securite-atelier')">🧺 Atelier</button>
+                    <button class="tab" onclick="switchTab('securite-magasins')">📦 Magasins</button>
+                    <button class="tab" onclick="switchTab('securite-entrepots')">🏠 Entrepôts</button>
+                </div>
+                
+                <div id="securite-fabrication" class="tab-content active">
+                    <!-- Zone Tissage -->
+                    <div class="evaluation-card">
+                        <div class="evaluation-header">
+                            <div>
+                                <div class="employee-name">Zone Tissage</div>
+                                <div class="employee-role">Contrôle du 19/10/2025 - 14:30</div>
+                            </div>
+                            <div class="score-circle" style="background: linear-gradient(135deg, #4CAF50, #45a049); width: 80px; height: 80px; font-size: 24px;">
+                                9.1
+                            </div>
+                        </div>
+                        
+                        <div class="criteria-grid">
+                            <div class="criteria-item">
+                                <span class="criteria-label">🧹 Propreté zone</span>
+                                <span class="score-badge score-excellent">9/10</span>
+                            </div>
+                            <div class="criteria-item">
+                                <span class="criteria-label">🛡️ Équipements sécurité</span>
+                                <span class="score-badge score-excellent">10/10</span>
+                            </div>
+                            <div class="criteria-item">
+                                <span class="criteria-label">📦 Organisation poste</span>
+                                <span class="score-badge score-excellent">9/10</span>
+                            </div>
+                            <div class="criteria-item">
+                                <span class="criteria-label">⚠️ Risques identifiés</span>
+                                <span class="score-badge score-excellent">9/10</span>
+                            </div>
+                            <div class="criteria-item">
+                                <span class="criteria-label">🚪 Voies évacuation</span>
+                                <span class="score-badge score-excellent">10/10</span>
+                            </div>
+                            <div class="criteria-item">
+                                <span class="criteria-label">🧯 Matériel sécurité</span>
+                                <span class="score-badge score-bon">8/10</span>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 15px; padding: 15px; background: white; border-radius: 8px;">
+                            <div style="font-size: 13px; color: #666; margin-bottom: 8px;"><strong>Observations:</strong></div>
+                            <div style="font-size: 13px; color: #333;">Zone bien entretenue. Prévoir vérification extincteurs Zone B avant fin de semaine.</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Zone Coupe -->
+                    <div class="evaluation-card">
+                        <div class="evaluation-header">
+                            <div>
+                                <div class="employee-name">Zone Coupe</div>
+                                <div class="employee-role">Contrôle du 19/10/2025 - 15:15</div>
+                            </div>
+                            <div class="score-circle" style="background: linear-gradient(135deg, #2196F3, #1976d2); width: 80px; height: 80px; font-size: 24px;">
+                                8.5
+                            </div>
+                        </div>
+                        
+                        <div class="criteria-grid">
+                            <div class="criteria-item">
+                                <span class="criteria-label">🧹 Propreté zone</span>
+                                <span class="score-badge score-bon">8/10</span>
+                            </div>
+                            <div class="criteria-item">
+                                <span class="criteria-label">🛡️ Équipements sécurité</span>
+                                <span class="score-badge score-excellent">9/10</span>
+                            </div>
+                            <div class="criteria-item">
+                                <span class="criteria-label">📦 Organisation poste</span>
+                                <span class="score-badge score-bon">8/10</span>
+                            </div>
+                            <div class="criteria-item">
+                                <span class="criteria-label">⚠️ Risques identifiés</span>
+                                <span class="score-badge score-excellent">9/10</span>
+                            </div>
+                            <div class="criteria-item">
+                                <span class="criteria-label">🚪 Voies évacuation</span>
+                                <span class="score-badge score-excellent">9/10</span>
+                            </div>
+                            <div class="criteria-item">
+                                <span class="criteria-label">🧯 Matériel sécurité</span>
+                                <span class="score-badge score-bon">8/10</span>
+                            </div>
+                        </div>
+                        
+                        <div class="alert-box alert-warning" style="margin-top: 15px;">
+                            <span>⚠️</span>
+                            <span><strong>À corriger:</strong> Chutes de tissu au sol - Nettoyage à effectuer en fin de poste</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="securite-atelier" class="tab-content">
+                    <div class="alert-box alert-success">
+                        <span>✓</span>
+                        <span><strong>Dernier contrôle:</strong> 18/10/2025 - Note 9.5/10 - Excellente conformité</span>
+                    </div>
+                </div>
+                
+                <div id="securite-magasins" class="tab-content">
+                    <div class="stat-grid">
+                        <div class="stat-item">
+                            <div class="stat-value">9.8/10</div>
+                            <div class="stat-label">Magasin Matière Première</div>
+                        </div>
+                        <div class="stat-item" style="border-left-color: #4CAF50;">
+                            <div class="stat-value">9.5/10</div>
+                            <div class="stat-label">Magasin Produit Fini</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="securite-entrepots" class="tab-content">
+                    <div class="stat-grid">
+                        <div class="stat-item">
+                            <div class="stat-value">9.3/10</div>
+                            <div class="stat-label">Entrepôt Principal</div>
+                        </div>
+                        <div class="stat-item" style="border-left-color: #2196F3;">
+                            <div class="stat-value">8.9/10</div>
+                            <div class="stat-label">Entrepôt Secondaire</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Historique Incidents -->
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-title">⚠️ Historique des Incidents</div>
+                </div>
+                
+                <div class="incident-card">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                        <div>
+                            <strong>Incident mineur - Zone Tissage</strong>
+                            <div style="font-size: 12px; color: #666; margin-top: 3px;">12/10/2025 - 10:45</div>
+                        </div>
+                        <span class="status-badge status-termine">Résolu</span>
+                    </div>
+                    <div style="font-size: 13px; color: #666;">
+                        Huile renversée près Machine M-07. Nettoyage immédiat effectué. Aucun blessé.
+                    </div>
+                </div>
+                
+                <div class="incident-card danger">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                        <div>
+                            <strong>Incident sécurité - Atelier</strong>
+                            <div style="font-size: 12px; color: #721c24; margin-top: 3px;">05/10/2025 - 14:20</div>
+                        </div>
+                        <span class="status-badge status-termine">Résolu</span>
+                    </div>
+                    <div style="font-size: 13px; color: #721c24;">
+                        Coupure mineure opérateur couture. Premiers soins administrés. Formation sécurité renforcée effectuée.
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Graphiques -->
+            <div class="dashboard-grid">
+                <div class="section">
+                    <div class="section-title">📊 Conformité par Zone</div>
+                    <div class="chart-container">
+                        <canvas id="chartSecuriteZones"></canvas>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">📈 Évolution Incidents</div>
+                    <div class="chart-container">
+                        <canvas id="chartIncidents"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Page: Performance -->
+        <div id="performance" class="page">
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-title">📈 Indicateurs de Performance</div>
+                    <button class="btn btn-primary">Générer rapport</button>
+                </div>
+                
+                <div class="dashboard-grid">
+                    <div class="metric-card">
+                        <div class="metric-title">TRS Hebdomadaire</div>
+                        <div class="metric-value">87.3%</div>
+                    </div>
+                    <div class="metric-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                        <div class="metric-title">Rendement Global</div>
+                        <div class="metric-value">91.2%</div>
+                    </div>
+                    <div class="metric-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                        <div class="metric-title">Taux de Qualité</div>
+                        <div class="metric-value">96.8%</div>
+                    </div>
+                    <div class="metric-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                        <div class="metric-title">Respect Délais</div>
+                        <div class="metric-value">97.0%</div>
+                    </div>
+                </div>
+                
+                <div class="dashboard-grid" style="margin-top: 20px;">
+                    <div class="section">
+                        <h3 style="margin-bottom: 15px; color: #1a1a2e;">Evolution TRS</h3>
+                        <div class="chart-container">
+                            <canvas id="chartTRS"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="section">
+                        <h3 style="margin-bottom: 15px; color: #1a1a2e;">Production Mensuelle</h3>
+                        <div class="chart-container">
+                            <canvas id="chartProductionMois"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Évaluation Personnel -->
+    <div id="evaluationModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Nouvelle Évaluation Personnel</div>
+                <span class="close-modal" onclick="closeModal('evaluationModal')">&times;</span>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Sélectionner l'employé</label>
+                <select class="form-select">
+                    <option>Ahmed Karim - Tisseur</option>
+                    <option>Sara Mansour - Tisseuse</option>
+                    <option>Mohamed Ben Ali - Tisseur</option>
+                    <option>Fatima Zouari - Coupeuse</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">📊 Rendement (Quantité, respect temps de poste)</label>
+                <div class="rating-input">
+                    <div class="rating-option">1</div>
+                    <div class="rating-option">2</div>
+                    <div class="rating-option">3</div>
+                    <div class="rating-option">4</div>
+                    <div class="rating-option">5</div>
+                    <div class="rating-option">6</div>
+                    <div class="rating-option">7</div>
+                    <div class="rating-option">8</div>
+                    <div class="rating-option selected">9</div>
+                    <div class="rating-option">10</div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">⏰ Ponctualité</label>
+                <div class="rating-input">
+                    <div class="rating-option">1</div>
+                    <div class="rating-option">2</div>
+                    <div class="rating-option">3</div>
+                    <div class="rating-option">4</div>
+                    <div class="rating-option">5</div>
+                    <div class="rating-option">6</div>
+                    <div class="rating-option">7</div>
+                    <div class="rating-option">8</div>
+                    <div class="rating-option">9</div>
+                    <div class="rating-option selected">10</div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">🎯 Attention et organisation au poste</label>
+                <div class="rating-input">
+                    <div class="rating-option">1</div>
+                    <div class="rating-option">2</div>
+                    <div class="rating-option">3</div>
+                    <div class="rating-option">4</div>
+                    <div class="rating-option">5</div>
+                    <div class="rating-option">6</div>
+                    <div class="rating-option">7</div>
+                    <div class="rating-option selected">8</div>
+                    <div class="rating-option">9</div>
+                    <div class="rating-option">10</div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">🤝 Comportement professionnel (discipline, esprit d'équipe)</label>
+                <div class="rating-input">
+                    <div class="rating-option">1</div>
+                    <div class="rating-option">2</div>
+                    <div class="rating-option">3</div>
+                    <div class="rating-option">4</div>
+                    <div class="rating-option">5</div>
+                    <div class="rating-option">6</div>
+                    <div class="rating-option">7</div>
+                    <div class="rating-option">8</div>
+                    <div class="rating-option selected">9</div>
+                    <div class="rating-option">10</div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">🧹 Hygiène et propreté</label>
+                <div class="rating-input">
+                    <div class="rating-option">1</div>
+                    <div class="rating-option">2</div>
+                    <div class="rating-option">3</div>
+                    <div class="rating-option">4</div>
+                    <div class="rating-option">5</div>
+                    <div class="rating-option">6</div>
+                    <div class="rating-option">7</div>
+                    <div class="rating-option selected">8</div>
+                    <div class="rating-option">9</div>
+                    <div class="rating-option">10</div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">⚙️ Respect du matériel et de la sécurité</label>
+                <div class="rating-input">
+                    <div class="rating-option">1</div>
+                    <div class="rating-option">2</div>
+                    <div class="rating-option">3</div>
+                    <div class="rating-option">4</div>
+                    <div class="rating-option">5</div>
+                    <div class="rating-option">6</div>
+                    <div class="rating-option">7</div>
+                    <div class="rating-option">8</div>
+                    <div class="rating-option selected">9</div>
+                    <div class="rating-option">10</div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Observations / Remarques</label>
+                <textarea class="form-textarea" placeholder="Observations détaillées..."></textarea>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="btn btn-secondary" onclick="closeModal('evaluationModal')" style="flex: 1;">Annuler</button>
+                <button class="btn btn-primary" onclick="saveEvaluation()" style="flex: 1;">Enregistrer l'évaluation</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Contrôle Sécurité -->
+    <div id="securityModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Nouveau Contrôle Sécurité</div>
+                <span class="close-modal" onclick="closeModal('securityModal')">&times;</span>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Zone contrôlée</label>
+                <select class="form-select">
+                    <option>Zone Tissage</option>
+                    <option>Zone Coupe</option>
+                    <option>Atelier Finition</option>
+                    <option>Magasin Matière Première</option>
+                    <option>Magasin Produit Fini</option>
+                    <option>Entrepôt Principal</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">🧹 Propreté de la zone</label>
+                <div class="rating-input">
+                    <div class="rating-option">1</div>
+                    <div class="rating-option">2</div>
+                    <div class="rating-option">3</div>
+                    <div class="rating-option">4</div>
+                    <div class="rating-option">5</div>
+                    <div class="rating-option">6</div>
+                    <div class="rating-option">7</div>
+                    <div class="rating-option">8</div>
+                    <div class="rating-option selected">9</div>
+                    <div class="rating-option">10</div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">🛡️ Équipements de sécurité</label>
+                <div class="rating-input">
+                    <div class="rating-option">1</div>
+                    <div class="rating-option">2</div>
+                    <div class="rating-option">3</div>
+                    <div class="rating-option">4</div>
+                    <div class="rating-option">5</div>
+                    <div class="rating-option">6</div>
+                    <div class="rating-option">7</div>
+                    <div class="rating-option">8</div>
+                    <div class="rating-option">9</div>
+                    <div class="rating-option selected">10</div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">📦 Organisation du poste</label>
+                <div class="rating-input">
+                    <div class="rating-option">1</div>
+                    <div class="rating-option">2</div>
+                    <div class="rating-option">3</div>
+                    <div class="rating-option">4</div>
+                    <div class="rating-option">5</div>
+                    <div class="rating-option">6</div>
+                    <div class="rating-option">7</div>
+                    <div class="rating-option">8</div>
+                    <div class="rating-option selected">9</div>
+                    <div class="rating-option">10</div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">⚠️ Gestion des risques</label>
+                <div class="rating-input">
+                    <div class="rating-option">1</div>
+                    <div class="rating-option">2</div>
+                    <div class="rating-option">3</div>
+                    <div class="rating-option">4</div>
+                    <div class="rating-option">5</div>
+                    <div class="rating-option">6</div>
+                    <div class="rating-option">7</div>
+                    <div class="rating-option">8</div>
+                    <div class="rating-option selected">9</div>
+                    <div class="rating-option">10</div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">🚪 Voies d'évacuation</label>
+                <div class="rating-input">
+                    <div class="rating-option">1</div>
+                    <div class="rating-option">2</div>
+                    <div class="rating-option">3</div>
+                    <div class="rating-option">4</div>
+                    <div class="rating-option">5</div>
+                    <div class="rating-option">6</div>
+                    <div class="rating-option">7</div>
+                    <div class="rating-option">8</div>
+                    <div class="rating-option">9</div>
+                    <div class="rating-option selected">10</div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">🧯 Matériel de sécurité (extincteurs, etc.)</label>
+                <div class="rating-input">
+                    <div class="rating-option">1</div>
+                    <div class="rating-option">2</div>
+                    <div class="rating-option">3</div>
+                    <div class="rating-option">4</div>
+                    <div class="rating-option">5</div>
+                    <div class="rating-option">6</div>
+                    <div class="rating-option">7</div>
+                    <div class="rating-option selected">8</div>
+                    <div class="rating-option">9</div>
+                    <div class="rating-option">10</div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Observations / Points à améliorer</label>
+                <textarea class="form-textarea" placeholder="Détails du contrôle..."></textarea>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="btn btn-secondary" onclick="closeModal('securityModal')" style="flex: 1;">Annuler</button>
+                <button class="btn btn-primary" onclick="saveSecurityCheck()" style="flex: 1;">Enregistrer le contrôle</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Afficher la date
+        document.getElementById('currentDate').textContent = new Date().toLocaleDateString('fr-FR', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        // Navigation
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+            
+            document.getElementById(pageId).classList.add('active');
+            event.target.closest('.menu-item').classList.add('active');
+            
+            const titles = {
+                'dashboard': 'Vue d\'ensemble - Contrôle Central',
+                'fabrication': 'Processus de Fabrication',
+                'qualite': 'Contrôle Qualité Central',
+                'atelier': 'Atelier Finition',
+                'matieres': 'Matières Premières',
+                'mecanique': 'Mécanique et Maintenance',
+                'soustraitance': 'Gestion Sous-traitance',
+                'personnel': 'Évaluation Personnel & Discipline',
+                'securite': 'Environnement de Travail & Sécurité',
+                'performance': 'Indicateurs de Performance'
+            };
+            
+            document.getElementById('pageTitle').textContent = titles[pageId];
+        }
+        
+        function switchTab(tabId) {
+            const parent = event.target.closest('.section');
+            parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            parent.querySelector('#' + tabId).classList.add('active');
+        }
+        
+        // Graphiques
+        const chartColors = {
+            primary: 'rgba(76, 175, 80, 0.8)',
+            secondary: 'rgba(33, 150, 243, 0.8)',
+            warning: 'rgba(255, 152, 0, 0.8)',
+            danger: 'rgba(244, 67, 54, 0.8)',
+            purple: 'rgba(156, 39, 176, 0.8)'
+        };
+        
+        // Graphique Commandes
+        new Chart(document.getElementById('chartCommandes'), {
+            type: 'line',
+            data: {
+                labels: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
+                datasets: [{
+                    label: 'Commandes reçues',
+                    data: [45, 52, 38, 48, 56, 42, 47],
+                    borderColor: chartColors.primary,
+                    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }, {
+                    label: 'Commandes terminées',
+                    data: [38, 45, 42, 51, 48, 39, 44],
+                    borderColor: chartColors.secondary,
+                    backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true, position: 'top' }
+                }
+            }
+        });
+        
+        // Graphique Tissage
+        new Chart(document.getElementById('chartTissage'), {
+            type: 'bar',
+            data: {
+                labels: ['M-01', 'M-03', 'M-05', 'M-07', 'M-09', 'M-11'],
+                datasets: [{
+                    label: 'Production (mètres)',
+                    data: [1250, 1180, 1320, 980, 1290, 1150],
+                    backgroundColor: chartColors.primary
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+        
+        // Graphique Coupe
+        new Chart(document.getElementById('chartCoupe'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Opérateur 1', 'Opérateur 2', 'Opérateur 3', 'Opérateur 4', 'Opérateur 5'],
+                datasets: [{
+                    data: [180, 165, 195, 170, 137],
+                    backgroundColor: [
+                        chartColors.primary,
+                        chartColors.secondary,
+                        chartColors.warning,
+                        chartColors.purple,
+                        chartColors.danger
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'right' }
+                }
+            }
+        });
+        
+        // Graphique Planification
+        new Chart(document.getElementById('chartPlanif'), {
+            type: 'pie',
+            data: {
+                labels: ['En cours', 'Terminé', 'En attente', 'Retard'],
+                datasets: [{
+                    data: [156, 98, 32, 18],
+                    backgroundColor: [
+                        chartColors.secondary,
+                        chartColors.primary,
+                        chartColors.warning,
+                        chartColors.danger
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'right' }
+                }
+            }
+        });
+        
+        // Graphique Qualité Fabrication
+        new Chart(document.getElementById('chartQualiteFab'), {
+            type: 'bar',
+            data: {
+                labels: ['Tissage', 'Coupe', 'Atelier', 'Magasin PF', 'Entrepôt'],
+                datasets: [{
+                    label: 'Contrôles effectués',
+                    data: [28, 15, 32, 18, 12],
+                    backgroundColor: chartColors.primary
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: { beginAtZero: true }
+                }
+            }
+        });
+        
+        // Graphique Pliage
+        new Chart(document.getElementById('chartPliage'), {
+            type: 'line',
+            data: {
+                labels: ['8h', '10h', '12h', '14h', '16h', '18h'],
+                datasets: [{
+                    label: 'Pièces pliées',
+                    data: [120, 235, 340, 480, 625, 747],
+                    borderColor: chartColors.primary,
+                    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true }
+                },
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+        
+        // Graphique MP
+        new Chart(document.getElementById('chartMP'), {
+            type: 'bar',
+            data: {
+                labels: ['Coton', 'Bambou', 'Lin', 'Polyester', 'Mélange'],
+                datasets: [{
+                    label: 'Stock (kg)',
+                    data: [2450, 1850, 980, 1120, 760],
+                    backgroundColor: [
+                        chartColors.primary,
+                        chartColors.secondary,
+                        chartColors.warning,
+                        chartColors.purple,
+                        chartColors.danger
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+        
+        // Graphique Sous-traitance
+        new Chart(document.getElementById('chartSousTraitance'), {
+            type: 'bar',
+            data: {
+                labels: ['Frange', 'Couture', 'Broderie', 'Sérigraphie'],
+                datasets: [{
+                    label: 'En cours',
+                    data: [450, 320, 200, 150],
+                    backgroundColor: chartColors.warning
+                }, {
+                    label: 'Retournés',
+                    data: [350, 280, 120, 95],
+                    backgroundColor: chartColors.primary
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true, position: 'top' }
+                },
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+        
+        // Graphique TRS
+        new Chart(document.getElementById('chartTRS'), {
+            type: 'line',
+            data: {
+                labels: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'],
+                datasets: [{
+                    label: 'TRS (%)',
+                    data: [84.5, 86.2, 87.8, 87.3],
+                    borderColor: chartColors.primary,
+                    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true }
+                },
+                scales: {
+                    y: { 
+                        beginAtZero: false,
+                        min: 80,
+                        max: 100
+                    }
+                }
+            }
+        });
+        
+        // Graphique Production Mensuelle
+        new Chart(document.getElementById('chartProductionMois'), {
+            type: 'bar',
+            data: {
+                labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin'],
+                datasets: [{
+                    label: 'Production (unités)',
+                    data: [24500, 26800, 25300, 28100, 27500, 26900],
+                    backgroundColor: chartColors.secondary
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+        
+        // Graphique Performance Personnel
+        new Chart(document.getElementById('chartPerformancePersonnel'), {
+            type: 'line',
+            data: {
+                labels: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'],
+                datasets: [{
+                    label: 'Note moyenne',
+                    data: [8.1, 8.3, 8.5, 8.4],
+                    borderColor: chartColors.primary,
+                    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true }
+                },
+                scales: {
+                    y: { 
+                        beginAtZero: false,
+                        min: 0,
+                        max: 10
+                    }
+                }
+            }
+        });
+        
+        // Graphique Performance par Département
+        new Chart(document.getElementById('chartDepartements'), {
+            type: 'bar',
+            data: {
+                labels: ['Tissage', 'Coupe', 'Atelier', 'Mécanique'],
+                datasets: [{
+                    label: 'Note moyenne /10',
+                    data: [8.4, 8.6, 8.9, 9.1],
+                    backgroundColor: [
+                        chartColors.primary,
+                        chartColors.secondary,
+                        chartColors.purple,
+                        chartColors.warning
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { 
+                        beginAtZero: true,
+                        max: 10
+                    }
+                }
+            }
+        });
+        
+        // Graphique Sécurité par Zone
+        new Chart(document.getElementById('chartSecuriteZones'), {
+            type: 'radar',
+            data: {
+                labels: ['Tissage', 'Coupe', 'Atelier', 'Magasin MP', 'Magasin PF', 'Entrepôt'],
+                datasets: [{
+                    label: 'Conformité /10',
+                    data: [9.1, 8.5, 9.5, 9.8, 9.5, 9.3],
+                    borderColor: chartColors.primary,
+                    backgroundColor: 'rgba(76, 175, 80, 0.2)',
+                    pointBackgroundColor: chartColors.primary
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true }
+                },
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        max: 10
+                    }
+                }
+            }
+        });
+        
+        // Graphique Évolution Incidents
+        new Chart(document.getElementById('chartIncidents'), {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct'],
+                datasets: [{
+                    label: 'Incidents',
+                    data: [5, 3, 4, 2, 1, 3, 2, 1, 2, 2],
+                    borderColor: chartColors.danger,
+                    backgroundColor: 'rgba(244, 67, 54, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true }
+                },
+                scales: {
+                    y: { 
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Fonctions Modal
+        function openEvaluationModal() {
+            document.getElementById('evaluationModal').classList.add('active');
+        }
+        
+        function openSecurityModal() {
+            document.getElementById('securityModal').classList.add('active');
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+        
+        function saveEvaluation() {
+            alert('Évaluation enregistrée avec succès !');
+            closeModal('evaluationModal');
+        }
+        
+        function saveSecurityCheck() {
+            alert('Contrôle de sécurité enregistré avec succès !');
+            closeModal('securityModal');
+        }
+        
+        function generateReport() {
+            alert('Génération du rapport mensuel en cours...');
+        }
+        
+        // Interaction rating buttons
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('rating-option')) {
+                const parent = e.target.parentElement;
+                parent.querySelectorAll('.rating-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                e.target.classList.add('selected');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { commandesService, clientsService, articlesService } from '../services/api';
-import { ShoppingCart, Plus, Edit, Trash2, Search, Eye, X, CheckCircle, Package, Calendar, User, DollarSign } from 'lucide-react';
+import { commandesService, clientsService, articlesService, bonsLivraisonService, parametresCatalogueService } from '../services/api';
+import { ShoppingCart, Plus, Edit, Trash2, Search, Eye, X, CheckCircle, Package, Calendar, User, DollarSign, Truck, Upload, File } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
 
 const Commandes: React.FC = () => {
   const [commandes, setCommandes] = useState<any[]>([]);
   const [clients, setClients] = useState<any[]>([]);
   const [articles, setArticles] = useState<any[]>([]);
+  const [typesPersonnalisation, setTypesPersonnalisation] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingCommande, setEditingCommande] = useState<any>(null);
@@ -15,13 +17,19 @@ const Commandes: React.FC = () => {
 
   const [formData, setFormData] = useState({
     id_client: '',
+    ref_client: '',
+    num_commande_client: '',
     date_commande: new Date().toISOString().split('T')[0],
     date_livraison_prevue: '',
+    date_envoie: '',
     priorite: 'normale',
     devise: 'TND',
     conditions_paiement: '',
+    statut: 'en_attente',
     lignes: [] as any[]
   });
+  
+  const [uploadingFiles, setUploadingFiles] = useState<{ [key: number]: boolean }>({});
 
   useEffect(() => {
     loadData();
@@ -29,14 +37,16 @@ const Commandes: React.FC = () => {
 
   const loadData = async () => {
     try {
-      const [cmdRes, clientsRes, articlesRes] = await Promise.all([
+      const [cmdRes, clientsRes, articlesRes, typesPersoRes] = await Promise.all([
         commandesService.getCommandes({ ...filters, search }),
         clientsService.getClients(),
-        articlesService.getArticles()
+        articlesService.getArticles(),
+        parametresCatalogueService.getTypesPersonnalisation().catch(() => ({ data: { data: [] } }))
       ]);
       setCommandes(cmdRes.data.data);
       setClients(clientsRes.data.data);
       setArticles(articlesRes.data.data);
+      setTypesPersonnalisation(typesPersoRes.data.data || []);
     } catch (error) {
       console.error('Erreur chargement commandes:', error);
     } finally {
@@ -68,7 +78,17 @@ const Commandes: React.FC = () => {
   const addLigne = () => {
     setFormData({
       ...formData,
-      lignes: [...formData.lignes, { id_article: '', quantite_commandee: '', prix_unitaire: '', remise: '0', date_livraison_prevue: '' }]
+      lignes: [...formData.lignes, { 
+        id_article: '', 
+        ref_commerciale: '',
+        quantite_commandee: '', 
+        prix_unitaire: '', 
+        prix_total_ht: 0,
+        remise: '0', 
+        date_livraison_prevue: '',
+        personnalisation: false,
+        details_personnalisation: ''
+      }]
     });
   };
 
@@ -90,20 +110,60 @@ const Commandes: React.FC = () => {
       try {
         await commandesService.validerCommande(id);
         loadData();
-      } catch (error) {
-        alert('Erreur lors de la validation');
+        alert('Commande validée avec succès');
+      } catch (error: any) {
+        alert(error.response?.data?.error?.message || 'Erreur lors de la validation');
       }
     }
+  };
+
+  const handleCreerBL = async (commandeId: number) => {
+    if (window.confirm('Créer un bon de livraison depuis cette commande ?')) {
+      try {
+        const result = await bonsLivraisonService.createFromCommande(commandeId, {
+          date_livraison: new Date().toISOString().split('T')[0],
+          statut: 'BROUILLON'
+        });
+        if (result.data?.success) {
+          alert('Bon de livraison créé avec succès !');
+          loadData();
+        }
+      } catch (error: any) {
+        alert(error.response?.data?.error?.message || 'Erreur lors de la création du BL');
+      }
+    }
+  };
+
+  const handleEdit = (commande: any) => {
+    setEditingCommande(commande);
+    setFormData({
+      id_client: commande.id_client || '',
+      ref_client: commande.ref_client || '',
+      num_commande_client: commande.num_commande_client || '',
+      date_commande: commande.date_commande ? commande.date_commande.split('T')[0] : new Date().toISOString().split('T')[0],
+      date_livraison_prevue: commande.date_livraison_prevue ? commande.date_livraison_prevue.split('T')[0] : '',
+      date_envoie: commande.date_envoie ? commande.date_envoie.split('T')[0] : '',
+      priorite: commande.priorite || 'normale',
+      devise: commande.devise || 'TND',
+      conditions_paiement: commande.conditions_paiement || '',
+      statut: commande.statut || 'en_attente',
+      lignes: commande.lignes || []
+    });
+    setShowForm(true);
   };
 
   const resetForm = () => {
     setFormData({
       id_client: '',
+      ref_client: '',
+      num_commande_client: '',
       date_commande: new Date().toISOString().split('T')[0],
       date_livraison_prevue: '',
+      date_envoie: '',
       priorite: 'normale',
       devise: 'TND',
       conditions_paiement: '',
+      statut: 'en_attente',
       lignes: []
     });
   };
@@ -165,13 +225,20 @@ const Commandes: React.FC = () => {
           <div className="bg-white p-6 rounded-lg shadow mb-6">
             <h2 className="text-xl font-bold mb-4">{editingCommande ? 'Modifier' : 'Nouvelle'} Commande</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">Client *</label>
                   <select
                     required
                     value={formData.id_client}
-                    onChange={(e) => setFormData({ ...formData, id_client: e.target.value })}
+                    onChange={(e) => {
+                      const client = clients.find(c => c.id_client === parseInt(e.target.value));
+                      setFormData({ 
+                        ...formData, 
+                        id_client: e.target.value,
+                        ref_client: client?.code_client || ''
+                      });
+                    }}
                     className="w-full px-4 py-2 border rounded"
                   >
                     <option value="">Sélectionner...</option>
@@ -179,6 +246,26 @@ const Commandes: React.FC = () => {
                       <option key={client.id_client} value={client.id_client}>{client.raison_sociale}</option>
                     ))}
                   </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Référence Client</label>
+                  <input
+                    type="text"
+                    value={formData.ref_client}
+                    onChange={(e) => setFormData({ ...formData, ref_client: e.target.value })}
+                    className="w-full px-4 py-2 border rounded"
+                    placeholder="Référence client (optionnel)"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Num Commande Client</label>
+                  <input
+                    type="text"
+                    value={formData.num_commande_client}
+                    onChange={(e) => setFormData({ ...formData, num_commande_client: e.target.value })}
+                    className="w-full px-4 py-2 border rounded"
+                    placeholder="Numéro de commande client (optionnel)"
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Date Commande *</label>
@@ -200,6 +287,29 @@ const Commandes: React.FC = () => {
                   />
                 </div>
                 <div>
+                  <label className="block text-sm font-medium mb-1">Date d'Envoie</label>
+                  <input
+                    type="date"
+                    value={formData.date_envoie}
+                    onChange={(e) => setFormData({ ...formData, date_envoie: e.target.value })}
+                    className="w-full px-4 py-2 border rounded"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">État</label>
+                  <select
+                    value={formData.statut}
+                    onChange={(e) => setFormData({ ...formData, statut: e.target.value })}
+                    className="w-full px-4 py-2 border rounded"
+                  >
+                    <option value="en_attente">En attente</option>
+                    <option value="validee">Validée</option>
+                    <option value="en_production">En production</option>
+                    <option value="livree">Livrée</option>
+                    <option value="annulee">Annulée</option>
+                  </select>
+                </div>
+                <div>
                   <label className="block text-sm font-medium mb-1">Priorité</label>
                   <select
                     value={formData.priorite}
@@ -219,58 +329,203 @@ const Commandes: React.FC = () => {
                   <label className="block text-sm font-medium">Lignes de Commande *</label>
                   <button type="button" onClick={addLigne} className="text-blue-600 hover:text-blue-800 text-sm">+ Ajouter ligne</button>
                 </div>
-                {formData.lignes.map((ligne, index) => (
-                  <div key={index} className="grid grid-cols-12 gap-2 mb-2 p-3 bg-gray-50 rounded">
-                    <div className="col-span-4">
-                      <select
-                        required
-                        value={ligne.id_article}
-                        onChange={(e) => updateLigne(index, 'id_article', e.target.value)}
-                        className="w-full px-2 py-1 border rounded text-sm"
-                      >
-                        <option value="">Article...</option>
-                        {articles.filter(a => a.actif).map((article) => (
-                          <option key={article.id_article} value={article.id_article}>{article.code_article} - {article.designation}</option>
-                        ))}
-                      </select>
+                {formData.lignes.map((ligne, index) => {
+                  const selectedArticle = articles.find(a => a.id_article === parseInt(ligne.id_article) || a.ref_commercial === ligne.ref_commerciale);
+                  const prixUnitaire = parseFloat(ligne.prix_unitaire) || 0;
+                  const quantite = parseFloat(ligne.quantite_commandee) || 0;
+                  const remise = parseFloat(ligne.remise) || 0;
+                  const prixTotalHT = prixUnitaire * quantite * (1 - remise / 100);
+                  
+                  return (
+                    <div key={index} className="border border-gray-200 rounded-lg p-4 mb-4 bg-white">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                        {/* Référence Commerciale */}
+                        <div className="col-span-1">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Référence Commerciale *</label>
+                          <select
+                            required
+                            value={ligne.ref_commerciale || ligne.id_article}
+                            onChange={(e) => {
+                              const article = articles.find(a => a.ref_commercial === e.target.value || a.id_article === parseInt(e.target.value));
+                              updateLigne(index, 'ref_commerciale', e.target.value);
+                              updateLigne(index, 'id_article', article?.id_article || '');
+                              updateLigne(index, 'description_article', article?.description_article || article?.designation_article || '');
+                              updateLigne(index, 'dimensions', article?.dimensions || '');
+                              updateLigne(index, 'type_finition', article?.type_finition || '');
+                              updateLigne(index, 'prix_unitaire', article?.prix_vente || article?.prix_unitaire_base || '');
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="">Sélectionner un article...</option>
+                            {articles.filter(a => a.actif && a.dans_catalogue_produit).map((article) => (
+                              <option key={article.id_article} value={article.ref_commercial || article.id_article}>
+                                {article.ref_commercial} - {article.designation_article || article.modele}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Description Article (automatique) */}
+                        <div className="col-span-1">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Description Article</label>
+                          <input
+                            type="text"
+                            value={ligne.description_article || selectedArticle?.description_article || selectedArticle?.designation_article || ''}
+                            readOnly
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50"
+                            placeholder="Généré automatiquement"
+                          />
+                        </div>
+
+                        {/* Dimensions (automatique) */}
+                        <div className="col-span-1">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Dimensions</label>
+                          <input
+                            type="text"
+                            value={ligne.dimensions || selectedArticle?.dimensions || ''}
+                            readOnly
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50"
+                            placeholder="Généré automatiquement"
+                          />
+                        </div>
+
+                        {/* Type de Finition (automatique) */}
+                        <div className="col-span-1">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Type de Finition</label>
+                          <input
+                            type="text"
+                            value={ligne.type_finition || selectedArticle?.type_finition || ''}
+                            readOnly
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50"
+                            placeholder="Généré automatiquement"
+                          />
+                        </div>
+
+                        {/* Quantité */}
+                        <div className="col-span-1">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Quantité Commandée *</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            required
+                            value={ligne.quantite_commandee}
+                            onChange={(e) => {
+                              updateLigne(index, 'quantite_commandee', e.target.value);
+                              const qte = parseFloat(e.target.value) || 0;
+                              const prix = parseFloat(ligne.prix_unitaire) || 0;
+                              const rem = parseFloat(ligne.remise) || 0;
+                              updateLigne(index, 'prix_total_ht', (prix * qte * (1 - rem / 100)).toFixed(2));
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+
+                        {/* Prix Unitaire */}
+                        <div className="col-span-1">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Prix Unitaire (HT) *</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            required
+                            value={ligne.prix_unitaire}
+                            onChange={(e) => {
+                              updateLigne(index, 'prix_unitaire', e.target.value);
+                              const prix = parseFloat(e.target.value) || 0;
+                              const qte = parseFloat(ligne.quantite_commandee) || 0;
+                              const rem = parseFloat(ligne.remise) || 0;
+                              updateLigne(index, 'prix_total_ht', (prix * qte * (1 - rem / 100)).toFixed(2));
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+
+                        {/* Remise */}
+                        <div className="col-span-1">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Remise (%)</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={ligne.remise || 0}
+                            onChange={(e) => {
+                              updateLigne(index, 'remise', e.target.value);
+                              const rem = parseFloat(e.target.value) || 0;
+                              const prix = parseFloat(ligne.prix_unitaire) || 0;
+                              const qte = parseFloat(ligne.quantite_commandee) || 0;
+                              updateLigne(index, 'prix_total_ht', (prix * qte * (1 - rem / 100)).toFixed(2));
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+
+                        {/* Prix Total HT */}
+                        <div className="col-span-1">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Prix Total HT</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={ligne.prix_total_ht || prixTotalHT.toFixed(2)}
+                            readOnly
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 font-semibold"
+                          />
+                        </div>
+
+                        {/* Personnalisation */}
+                        <div className="col-span-1">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Personnalisation</label>
+                          <select
+                            value={ligne.personnalisation ? 'oui' : 'non'}
+                            onChange={(e) => {
+                              updateLigne(index, 'personnalisation', e.target.value === 'oui');
+                              if (e.target.value === 'non') {
+                                updateLigne(index, 'details_personnalisation', '');
+                              }
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="non">Non</option>
+                            <option value="oui">Oui</option>
+                          </select>
+                        </div>
+
+                        {/* Détails Personnalisation (si Oui) */}
+                        {ligne.personnalisation && (
+                          <div className="col-span-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Détails Personnalisation *</label>
+                            <textarea
+                              required
+                              value={ligne.details_personnalisation || ''}
+                              onChange={(e) => updateLigne(index, 'details_personnalisation', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                              rows={2}
+                              placeholder="Décrire les détails de la personnalisation..."
+                            />
+                          </div>
+                        )}
+
+                        {/* Date Livraison Prévue */}
+                        <div className="col-span-1">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Date Livraison Prévue</label>
+                          <input
+                            type="date"
+                            value={ligne.date_livraison_prevue || formData.date_livraison_prevue}
+                            onChange={(e) => updateLigne(index, 'date_livraison_prevue', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="flex justify-end mt-2">
+                        <button 
+                          type="button" 
+                          onClick={() => removeLigne(index)} 
+                          className="text-red-600 hover:text-red-800 text-sm font-medium"
+                        >
+                          Supprimer cette ligne
+                        </button>
+                      </div>
                     </div>
-                    <div className="col-span-2">
-                      <input
-                        type="number"
-                        step="0.01"
-                        required
-                        placeholder="Quantité"
-                        value={ligne.quantite_commandee}
-                        onChange={(e) => updateLigne(index, 'quantite_commandee', e.target.value)}
-                        className="w-full px-2 py-1 border rounded text-sm"
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <input
-                        type="number"
-                        step="0.01"
-                        required
-                        placeholder="Prix unitaire"
-                        value={ligne.prix_unitaire}
-                        onChange={(e) => updateLigne(index, 'prix_unitaire', e.target.value)}
-                        className="w-full px-2 py-1 border rounded text-sm"
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <input
-                        type="number"
-                        step="0.01"
-                        placeholder="Remise %"
-                        value={ligne.remise}
-                        onChange={(e) => updateLigne(index, 'remise', e.target.value)}
-                        className="w-full px-2 py-1 border rounded text-sm"
-                      />
-                    </div>
-                    <div className="col-span-2 flex gap-1">
-                      <button type="button" onClick={() => removeLigne(index)} className="text-red-600 hover:text-red-800 text-sm">Supprimer</button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               <div className="flex gap-4">
@@ -317,23 +572,13 @@ const Commandes: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                     <div className="flex gap-2">
-                      <button 
-                        onClick={async () => {
-                          try {
-                            const result = await commandesService.getCommande(commande.id_commande);
-                            if (result.data?.data) {
-                              setSelectedCommande(result.data.data);
-                            }
-                          } catch (error: any) {
-                            console.error('Erreur chargement commande:', error);
-                            setSelectedCommande(commande);
-                          }
-                        }}
+                      <Link
+                        to={`/commandes/${commande.id_commande}`}
                         className="text-blue-600 hover:text-blue-900"
                         title="Consulter"
                       >
                         <Eye className="w-4 h-4" />
-                      </button>
+                      </Link>
                       <button 
                         onClick={() => {
                           handleEdit(commande);
@@ -505,6 +750,17 @@ const Commandes: React.FC = () => {
                     >
                       <CheckCircle className="w-4 h-4" />
                       Valider
+                    </button>
+                  )}
+                  {selectedCommande.statut === 'validee' && !selectedCommande.id_bl && (
+                    <button
+                      onClick={() => {
+                        handleCreerBL(selectedCommande.id_commande);
+                      }}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                    >
+                      <Truck className="w-4 h-4" />
+                      Créer BL
                     </button>
                   )}
                   <button

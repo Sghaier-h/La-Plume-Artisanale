@@ -3,11 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const Login: React.FC = () => {
-  const [email, setEmail] = useState('admin@system.local');
-  const [password, setPassword] = useState('Admin123!');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showCredentials, setShowCredentials] = useState(true);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -29,12 +28,76 @@ const Login: React.FC = () => {
       if (response.data.success) {
         // Stocker le token
         localStorage.setItem('token', response.data.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.data.user));
+        // S'assurer que le rôle est en majuscules pour la cohérence
+        const userData = {
+          ...response.data.data.user,
+          role: response.data.data.user.role?.toUpperCase() || response.data.data.user.role
+        };
+        localStorage.setItem('user', JSON.stringify(userData));
         
         // Configurer axios pour les requêtes futures
         axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.data.token}`;
         
-        // Rediriger vers le dashboard
+        // Rediriger vers le dashboard approprié selon le rôle et les dashboards attribués
+        const userRole = userData.role?.toUpperCase() || '';
+        const dashboardsAttribues = userData.dashboardsAttribues || [];
+        
+        // Mapping des dashboards (doit correspondre exactement aux chemins dans App.tsx)
+        const dashboardPaths: { [key: string]: string } = {
+          'dashboard': '/dashboard-admin',
+          'admin': '/dashboard-admin',
+          'tisseur': '/dashboard-tisseur',
+          'chef-production': '/dashboard-chef-production',
+          'magasinier-mp': '/dashboard-magasinier-mp',
+          'controle-central': '/dashboard-controle-central',
+          'post-coupe': '/dashboard-post-coupe',
+          'chef-atelier': '/chef-atelier-dashboard',
+          'magasinier-soustraitants': '/dashboard-magasinier-soustraitants',
+          'gpao': '/dashboard-admin',
+          'mecanicien': '/mecanicien',
+          'magasin-pf': '/magasin-pf',
+        };
+        
+        // Si admin, toujours rediriger vers dashboard-admin
+        if (userRole === 'ADMIN') {
+          navigate('/dashboard-admin');
+          return;
+        }
+        
+        // Si des dashboards sont attribués, utiliser le premier
+        if (dashboardsAttribues.length > 0) {
+          const firstDashboard = dashboardPaths[dashboardsAttribues[0]];
+          if (firstDashboard) {
+            navigate(firstDashboard);
+            return;
+          }
+        }
+        
+        // Mapping rôle -> dashboard par défaut
+        const roleToDashboard: { [key: string]: string } = {
+          'TISSEUR': '/dashboard-tisseur',
+          'CHEF_PRODUCTION': '/dashboard-chef-production',
+          'CHEF_PRODUCT': '/dashboard-chef-production',
+          'MAGASINIER': '/dashboard-magasinier-mp',
+          'COUPEUR': '/dashboard-post-coupe',
+          'CONTROLEUR': '/dashboard-controle-central',
+          'CONTROLEUR_QUALITE': '/dashboard-controle-central',
+          'QUALITE': '/dashboard-controle-central',
+          'CHEF_ATELIER': '/chef-atelier-dashboard',
+          'MAGASINIER_SOUSTRAITANTS': '/dashboard-magasinier-soustraitants',
+          'GPAO': '/dashboard-admin',
+          'MECANICIEN': '/mecanicien',
+          'MAGASIN_PF': '/magasin-pf',
+        };
+        
+        // Utiliser le mapping rôle -> dashboard par défaut
+        const defaultDashboard = roleToDashboard[userRole];
+        if (defaultDashboard) {
+          navigate(defaultDashboard);
+          return;
+        }
+        
+        // Fallback: dashboard admin
         navigate('/dashboard-admin');
       }
     } catch (err: any) {
@@ -49,6 +112,13 @@ const Login: React.FC = () => {
         errorMessage = 'La connexion au serveur a été interrompue. Vérifiez que le backend est bien démarré et accessible.';
       } else if (err.response?.status === 401) {
         errorMessage = err.response?.data?.error?.message || 'Email ou mot de passe incorrect';
+      } else if (err.response?.status === 429) {
+        // Erreur de rate limiting
+        const retryAfter = err.response.headers['retry-after'];
+        errorMessage = err.response?.data?.error?.message || 
+          (retryAfter 
+            ? `Trop de tentatives de connexion. Veuillez patienter ${retryAfter} secondes avant de réessayer.`
+            : 'Trop de tentatives de connexion. Veuillez patienter quelques minutes avant de réessayer.');
       } else if (err.response?.status === 500) {
         errorMessage = 'Erreur serveur. Vérifiez les logs du backend.';
       } else if (err.response?.data?.error?.message) {
@@ -64,23 +134,9 @@ const Login: React.FC = () => {
     }
   };
 
-  const testUsers = [
-    { email: 'admin@system.local', password: 'Admin123!', role: 'ADMIN', label: 'Administrateur' },
-    { email: 'chef.production@entreprise.local', password: 'User123!', role: 'CHEF_PRODUCTION', label: 'Chef Production' },
-    { email: 'tisseur@entreprise.local', password: 'User123!', role: 'TISSEUR', label: 'Tisseur' },
-    { email: 'magasinier.mp@entreprise.local', password: 'User123!', role: 'MAGASINIER', label: 'Magasinier MP' },
-    { email: 'coupeur@entreprise.local', password: 'User123!', role: 'COUPEUR', label: 'Coupeur' },
-    { email: 'controleur.qualite@entreprise.local', password: 'User123!', role: 'QUALITE', label: 'Contrôleur Qualité' },
-    { email: 'commercial@entreprise.local', password: 'User123!', role: 'COMMERCIAL', label: 'Commercial' }
-  ];
-
-  const fillCredentials = (userEmail: string, userPassword: string) => {
-    setEmail(userEmail);
-    setPassword(userPassword);
-  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600">
+    <div className={`min-h-screen flex bg-gradient-to-br from-blue-500 to-purple-600 ${error ? 'items-start pt-6 sm:pt-8 justify-center' : 'items-center justify-center'}`}>
       <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
         <div className="text-center mb-6">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">
@@ -91,8 +147,9 @@ const Login: React.FC = () => {
         
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-              {error}
+            <div className="flex items-center gap-2 bg-white border border-red-400 text-red-700 px-3 py-2 rounded text-sm">
+              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center text-xs font-bold">!</span>
+              <span>{error}</span>
             </div>
           )}
 
@@ -106,7 +163,7 @@ const Login: React.FC = () => {
               onChange={(e) => setEmail(e.target.value)}
               required
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="admin@system.local"
+              placeholder="votre@email.com"
             />
           </div>
 
@@ -133,49 +190,6 @@ const Login: React.FC = () => {
           </button>
         </form>
 
-        {/* Comptes de test */}
-        <div className="mt-6">
-          <button
-            onClick={() => setShowCredentials(!showCredentials)}
-            className="w-full text-sm text-blue-600 hover:text-blue-800 font-medium"
-          >
-            {showCredentials ? '▼' : '▶'} Comptes de test disponibles
-          </button>
-          
-          {showCredentials && (
-            <div className="mt-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="text-sm font-semibold text-blue-800 mb-3">
-                🔑 Identifiants Staging (Mode Mock)
-              </div>
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {testUsers.map((user, index) => (
-                  <div
-                    key={index}
-                    className="p-2 bg-white rounded border border-blue-100 hover:border-blue-300 cursor-pointer transition-colors"
-                    onClick={() => fillCredentials(user.email, user.password)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="font-medium text-sm text-gray-800">{user.label}</div>
-                        <div className="text-xs text-gray-600">{user.email}</div>
-                      </div>
-                      <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                        {user.role}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-3 text-xs text-blue-600 italic">
-                Cliquez sur un compte pour remplir automatiquement les champs
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="mt-4 text-center text-xs text-gray-500">
-          <p>Mode Staging - Authentification Mock Activée</p>
-        </div>
       </div>
     </div>
   );

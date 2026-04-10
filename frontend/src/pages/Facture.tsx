@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Receipt, Plus, Edit, Trash2, Search, Download, Eye, Send, X, CheckCircle, FileText } from 'lucide-react';
-import { facturesService, clientsService, commandesService, bonsLivraisonService } from '../services/api';
+import { Receipt, Plus, Edit, Trash2, Search, Download, Eye, Send, X, CheckCircle, FileText, ArrowLeft } from 'lucide-react';
+import { facturesService, clientsService, commandesService, bonsLivraisonService, avoirsService } from '../services/api';
 
 interface LigneFacture {
   id_article?: number;
@@ -901,6 +901,32 @@ const Facture: React.FC = () => {
                     <Edit className="w-4 h-4 inline mr-2" />
                     Modifier
                   </button>
+                  {(selectedFacture.statut === 'REGLEE' || selectedFacture.statut === 'PARTIELLEMENT_REGLEE') && !selectedFacture.id_avoir && (
+                    <button
+                      onClick={async () => {
+                        if (window.confirm('Créer un avoir pour cette facture ?')) {
+                          try {
+                            const result = await avoirsService.createFromFacture(selectedFacture.id_facture, {
+                              date_avoir: new Date().toISOString().split('T')[0],
+                              statut: 'BROUILLON'
+                            });
+                            if (result.data?.success) {
+                              alert('Avoir créé avec succès !');
+                              setSelectedFacture(null);
+                              loadData();
+                            }
+                          } catch (error: any) {
+                            console.error('Erreur création avoir:', error);
+                            alert(error.response?.data?.error?.message || 'Erreur lors de la création de l\'avoir');
+                          }
+                        }
+                      }}
+                      className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center gap-2"
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                      Créer Avoir
+                    </button>
+                  )}
                   <button
                     onClick={() => setSelectedFacture(null)}
                     className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"

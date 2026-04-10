@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ClipboardList, Plus, Search, Edit, CheckCircle, XCircle, List, Grid, Package, Eye, X } from 'lucide-react';
+import { ClipboardList, Plus, Search, Edit, CheckCircle, XCircle, List, Grid, Package, Eye, X, Trash2 } from 'lucide-react';
+import { inventaireService } from '../services/api';
 
 interface Inventaire {
   id_inventaire?: number;
@@ -49,8 +50,12 @@ const Inventaire: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      // TODO: Remplacer par l'API réelle
-      const mockInventaires: Inventaire[] = [
+      const response = await inventaireService.getInventaires({ search });
+      if (response.data?.success) {
+        setInventaires(response.data.data || []);
+      } else {
+        // Fallback sur données mockées si l'API ne retourne pas success
+        const mockInventaires: Inventaire[] = [
         {
           id_inventaire: 1,
           numero_inventaire: 'INV-2024-001',
@@ -80,8 +85,10 @@ const Inventaire: React.FC = () => {
         }
       ];
       setInventaires(mockInventaires);
+      }
     } catch (error) {
       console.error('Erreur chargement inventaires:', error);
+      setInventaires([]);
     } finally {
       setLoading(false);
     }
@@ -90,20 +97,20 @@ const Inventaire: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      // TODO: Appel API
-      if (editingInventaire) {
-        // Update
-        setInventaires(inventaires.map(inv => inv.id_inventaire === editingInventaire.id_inventaire ? formData : inv));
+      if (editingInventaire && editingInventaire.id_inventaire) {
+        await inventaireService.updateInventaire(editingInventaire.id_inventaire, formData);
+        alert('Inventaire modifié avec succès');
       } else {
-        // Create
-        const newInventaire = { ...formData, id_inventaire: Date.now() };
-        setInventaires([...inventaires, newInventaire]);
+        await inventaireService.createInventaire(formData);
+        alert('Inventaire créé avec succès');
       }
       setShowForm(false);
       setEditingInventaire(null);
       resetForm();
-    } catch (error) {
+      loadData();
+    } catch (error: any) {
       console.error('Erreur sauvegarde:', error);
+      alert(error.response?.data?.error?.message || 'Erreur lors de la sauvegarde');
     }
   };
 
@@ -115,7 +122,13 @@ const Inventaire: React.FC = () => {
 
   const handleDelete = async (id: number) => {
     if (window.confirm('Supprimer cet inventaire ?')) {
-      setInventaires(inventaires.filter(inv => inv.id_inventaire !== id));
+      try {
+        await inventaireService.deleteInventaire(id);
+        alert('Inventaire supprimé avec succès');
+        loadData();
+      } catch (error: any) {
+        alert(error.response?.data?.error?.message || 'Erreur lors de la suppression');
+      }
     }
   };
 

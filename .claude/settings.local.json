@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__Claude_Preview__preview_start",
+      "Bash(curl -s http://localhost:5000/api/auth/login -X POST -H 'Content-Type: application/json' -d '{\"email\":\"admin@system.local\",\"password\":\"DevLocal2024!\"}')",
+      "Bash(curl -s http://localhost:5000/api/multisociete/societes -H \"Authorization: Bearer $\\(curl -s http://localhost:5000/api/auth/login -X POST -H 'Content-Type: application/json' -d '{\"email\":\"admin@system.local\",\"password\":\"DevLocal2024!\"}')",
+      "Bash(npx tsc:*)",
+      "Bash(curl -s http://localhost:5000/health)",
+      "Bash(curl -s http://localhost:5000/api/auth/login -X POST -H \"Content-Type: application/json\" -d '{\"email\":\"admin@system.local\",\"password\":\"DevLocal2024!\"}')",
+      "Bash(node -e \"const d=JSON.parse\\(require\\('fs'\\).readFileSync\\(0,'utf8'\\)\\); console.log\\('Login:', d.success ? 'OK' : 'FAIL'\\)\")",
+      "Bash(npm run:*)",
+      "Bash(npm install:*)",
+      "Bash(curl -s -w \"\\\\n%{http_code}\" http://localhost:5000/api/clients -X POST -H \"Content-Type: application/json\" -H \"Authorization: Bearer $\\(curl -s http://localhost:5000/api/auth/login -X POST -H 'Content-Type: application/json' -d '{\"email\":\"admin@system.local\",\"password\":\"DevLocal2024!\"}')",
+      "Bash(curl -s http://localhost:5000/api/clients -X POST -H \"Content-Type: application/json\" -H \"Authorization: Bearer $\\(curl -s http://localhost:5000/api/auth/login -X POST -H 'Content-Type: application/json' -d '{\"email\":\"admin@system.local\",\"password\":\"DevLocal2024!\"}')",
+      "Bash(curl -s -w \"\\\\nHTTP_CODE:%{http_code}\" http://localhost:5000/api/clients -X POST -H \"Content-Type: application/json\" -H \"Authorization: Bearer $\\(curl -s http://localhost:5000/api/auth/login -X POST -H 'Content-Type: application/json' -d '{\"email\":\"admin@system.local\",\"password\":\"DevLocal2024!\"}')",
+      "Bash(find \"D:/OneDrive - FLYING TEX/Projet Logiciel/La-Plume-Artisanale/backend\" -name \"*.sql\" -exec grep -l \"articles_catalogue\\\\|articles_commande\\\\|commandes\" {} \\\\;)",
+      "Bash(node -e ':*)"
+    ]
+  }
+}

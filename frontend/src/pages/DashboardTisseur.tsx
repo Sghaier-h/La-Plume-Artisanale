@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Package, AlertTriangle, CheckCircle, Clock, Printer, Play, Square, AlertCircle, ChevronDown, ChevronRight, Wrench, Activity, Zap, Boxes, FileWarning, Box, FileText } from 'lucide-react';
+import WhatsAppWidget from '../components/WhatsAppWidget';
+import DashboardLayout from '../components/DashboardLayout';
 
 const DashboardTisseur = () => {
+  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('machines');
   const [selectedMachine, setSelectedMachine] = useState<string | null>(null);
   const [expandedOF, setExpandedOF] = useState<string | null>(null);
@@ -231,12 +235,6 @@ const DashboardTisseur = () => {
       duree: 45
     }
   ]);
-
-  const sections = [
-    { id: 'machines', label: 'Mes Machines', icon: Box },
-    { id: 'incidents', label: 'Incidents', icon: AlertTriangle },
-    { id: 'rendement', label: 'Mon Rendement', icon: Activity }
-  ];
 
   const typesIncident = [
     { value: 'mp_manque', label: '🧶 Manque Matière Première', icon: Boxes, needsColor: true },
@@ -1001,56 +999,13 @@ const DashboardTisseur = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 ml-64">
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Tableau de Bord Tisseur
-              </h1>
-              <p className="text-sm text-gray-600 mt-1">
-                Samedi 18 Octobre 2025 - 14:30
-              </p>
-            </div>
-            <div className="flex items-center space-x-3">
-              <div className="text-right">
-                <p className="text-sm font-medium text-gray-700">{tisseurNom}</p>
-                <p className="text-xs text-gray-500">Tisseur - Poste 1</p>
-              </div>
-              <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold">
-                AB
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white border-b sticky top-0 z-10 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex space-x-1">
-            {sections.map((section) => {
-              const Icon = section.icon;
-              return (
-                <button
-                  key={section.id}
-                  onClick={() => setActiveSection(section.id)}
-                  className={`flex items-center space-x-2 px-4 py-3 border-b-2 transition-colors ${
-                    activeSection === section.id
-                      ? 'border-blue-600 text-blue-600 bg-blue-50'
-                      : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span className="text-sm font-medium">{section.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 py-6">
+    <DashboardLayout
+      title="Tableau de Bord Tisseur"
+      subtitle={`${tisseurNom} - Samedi 18 Octobre 2025`}
+      activeSection={activeSection}
+      onSectionChange={setActiveSection}
+    >
+      <div className="space-y-6">
         {activeSection === 'machines' && renderMachines()}
         {activeSection === 'incidents' && renderIncidents()}
         {activeSection === 'rendement' && renderRendement()}
@@ -1461,7 +1416,13 @@ const DashboardTisseur = () => {
           </div>
         </div>
       )}
-    </div>
+      
+      {/* Widget WhatsApp pour ce dashboard */}
+      <WhatsAppWidget 
+        dashboardName="Tisseur"
+        position="bottom-right"
+      />
+    </DashboardLayout>
   );
 };
 

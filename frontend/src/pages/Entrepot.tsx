@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Warehouse, Plus, Search, Edit, Trash2, List, Grid, MapPin } from 'lucide-react';
+import { entrepotService } from '../services/api';
 
 interface Entrepot {
   id_entrepot?: number;
@@ -45,8 +46,13 @@ const Entrepot: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      // TODO: Remplacer par l'API réelle
-      const mockEntrepots: Entrepot[] = [
+      const response = await entrepotService.getEntrepots({ search });
+      if (response.data?.success || response.data?.data) {
+        const entrepotsData = response.data.data?.entrepots || response.data.data || [];
+        setEntrepots(entrepotsData);
+      } else {
+        // Fallback sur données mockées si l'API ne retourne pas success
+        const mockEntrepots: Entrepot[] = [
         {
           id_entrepot: 1,
           code_entrepot: 'ENT-001',
@@ -85,8 +91,10 @@ const Entrepot: React.FC = () => {
         }
       ];
       setEntrepots(mockEntrepots);
+      }
     } catch (error) {
       console.error('Erreur chargement entrepôts:', error);
+      setEntrepots([]);
     } finally {
       setLoading(false);
     }
@@ -94,19 +102,25 @@ const Entrepot: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.code_entrepot || !formData.nom_entrepot) {
+      alert('Code et nom d\'entrepôt requis');
+      return;
+    }
     try {
-      // TODO: Appel API
-      if (editingEntrepot) {
-        setEntrepots(entrepots.map(ent => ent.id_entrepot === editingEntrepot.id_entrepot ? formData : ent));
+      if (editingEntrepot && editingEntrepot.id_entrepot) {
+        await entrepotService.updateEntrepot(editingEntrepot.id_entrepot, formData);
+        alert('Entrepôt modifié avec succès');
       } else {
-        const newEntrepot = { ...formData, id_entrepot: Date.now() };
-        setEntrepots([...entrepots, newEntrepot]);
+        await entrepotService.createEntrepot(formData);
+        alert('Entrepôt créé avec succès');
       }
       setShowForm(false);
       setEditingEntrepot(null);
       resetForm();
-    } catch (error) {
+      loadData();
+    } catch (error: any) {
       console.error('Erreur sauvegarde:', error);
+      alert(error.response?.data?.error?.message || 'Erreur lors de la sauvegarde');
     }
   };
 
@@ -118,7 +132,13 @@ const Entrepot: React.FC = () => {
 
   const handleDelete = async (id: number) => {
     if (window.confirm('Supprimer cet entrepôt ?')) {
-      setEntrepots(entrepots.filter(ent => ent.id_entrepot !== id));
+      try {
+        await entrepotService.deleteEntrepot(id);
+        alert('Entrepôt supprimé avec succès');
+        loadData();
+      } catch (error: any) {
+        alert(error.response?.data?.error?.message || 'Erreur lors de la suppression');
+      }
     }
   };
 

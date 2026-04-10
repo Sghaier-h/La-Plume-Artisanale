@@ -1,0 +1,113 @@
+openapi: 3.0.0
+info:
+  title: ERP La Plume Artisanale API
+  description: API REST pour le système ERP La Plume Artisanale
+  version: 1.0.0
+  contact:
+    name: Support API
+    email: support@laplume-artisanale.local
+
+servers:
+  - url: http://localhost:5000
+    description: Serveur de développement
+  - url: https://api.laplume-artisanale.com
+    description: Serveur de production
+
+tags:
+  - name: Authentication
+    description: Authentification et gestion des utilisateurs
+  - name: Sales
+    description: Gestion des ventes et commandes
+  - name: Production
+    description: Gestion de la production et OF
+  - name: Stock
+    description: Gestion du stock et inventaires
+  - name: Accounting
+    description: Gestion comptable
+  - name: CRM
+    description: Gestion de la relation client
+  - name: Multi-Company
+    description: Gestion multi-société
+
+paths:
+  /api/auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Connexion utilisateur
+      description: Authentifie un utilisateur et retourne un token JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: admin@system.local
+                password:
+                  type: string
+                  format: password
+                  example: Admin123!
+      responses:
+        '200':
+          description: Connexion réussie
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  token:
+                    type: string
+                  user:
+                    type: object
+        '401':
+          description: Identifiants invalides
+        '429':
+          description: Trop de tentatives de connexion
+
+  /api/sale/orders:
+    get:
+      tags:
+        - Sales
+      summary: Liste des commandes de vente
+      description: Récupère la liste des commandes de vente avec pagination et filtres
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Liste des commandes
+        '401':
+          description: Non authentifié
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - bearerAuth: []

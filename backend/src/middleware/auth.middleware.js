@@ -126,3 +126,4 @@ export const authorize = (...roles) => {
 // Alias pour compatibilité
 export const authenticateToken = authenticate;
 export const requireRole = authorize;
+export const authMiddleware = authenticate; // Alias pour les routes Odoo

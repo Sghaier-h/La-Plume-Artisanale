@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { 
-  LayoutDashboard, Factory, CheckCircle, Package, FlaskConical, Wrench, Users2, Users, Shield, 
-  TrendingUp, AlertTriangle, Bell, User, Calendar, Scissors, FileText, Plus, Download, 
+import {
+  LayoutDashboard, Factory, CheckCircle, Package, FlaskConical, Wrench, Users2, Users, Shield,
+  TrendingUp, AlertTriangle, Bell, User, Calendar, Scissors, FileText, Plus, Download,
   Settings, Eye, Edit, X, Save, Clock, Star, Award, AlertCircle
 } from 'lucide-react';
+import DashboardLayout from '../components/DashboardLayout';
 
 const DashboardControleCentral = () => {
+  const navigate = useNavigate();
   const [activePage, setActivePage] = useState('dashboard');
   const [activeTab, setActiveTab] = useState('tissage');
   const [showEvaluationModal, setShowEvaluationModal] = useState(false);
@@ -1311,164 +1314,38 @@ const DashboardControleCentral = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 to-blue-700">
-      <div className="flex">
-        {/* Sidebar Dashboard Contrôle Central */}
-        <div className="w-64 bg-gray-900 text-white fixed left-64 top-0 h-screen overflow-y-auto z-30">
-          <div className="p-6 border-b border-gray-700">
-            <div className="text-2xl font-bold text-green-500 text-center">🏭 CONTRÔLE CENTRAL</div>
+    <DashboardLayout
+      title={pageTitles[activePage]}
+      subtitle={new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+      activeSection={activePage}
+      onSectionChange={setActivePage}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+        <div className="flex items-center gap-4">
+          <div className="bg-red-500 text-white px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2">
+            <Bell size={16} />
+            12 Alertes
           </div>
-          
-          <div className="p-4">
-            <div className="mb-6">
-              <div className="text-xs text-gray-400 uppercase font-semibold mb-3 px-4">Navigation Principale</div>
-              <button
-                onClick={() => setActivePage('dashboard')}
-                className={`w-full text-left px-4 py-3 rounded-lg mb-1 transition-colors flex items-center gap-3 ${
-                  activePage === 'dashboard' ? 'bg-green-600 text-white' : 'text-gray-300 hover:bg-gray-800'
-                }`}
-              >
-                <LayoutDashboard size={18} />
-                <span>Vue d'ensemble</span>
-              </button>
-              <button
-                onClick={() => setActivePage('fabrication')}
-                className={`w-full text-left px-4 py-3 rounded-lg mb-1 transition-colors flex items-center gap-3 ${
-                  activePage === 'fabrication' ? 'bg-green-600 text-white' : 'text-gray-300 hover:bg-gray-800'
-                }`}
-              >
-                <Factory size={18} />
-                <span>Fabrication</span>
-              </button>
-              <button
-                onClick={() => setActivePage('qualite')}
-                className={`w-full text-left px-4 py-3 rounded-lg mb-1 transition-colors flex items-center gap-3 ${
-                  activePage === 'qualite' ? 'bg-green-600 text-white' : 'text-gray-300 hover:bg-gray-800'
-                }`}
-              >
-                <CheckCircle size={18} />
-                <span>Contrôle Qualité</span>
-              </button>
-              <button
-                onClick={() => setActivePage('atelier')}
-                className={`w-full text-left px-4 py-3 rounded-lg mb-1 transition-colors flex items-center gap-3 ${
-                  activePage === 'atelier' ? 'bg-green-600 text-white' : 'text-gray-300 hover:bg-gray-800'
-                }`}
-              >
-                <Package size={18} />
-                <span>Atelier</span>
-              </button>
-            </div>
-
-            <div className="mb-6">
-              <div className="text-xs text-gray-400 uppercase font-semibold mb-3 px-4">Ressources</div>
-              <button
-                onClick={() => setActivePage('matieres')}
-                className={`w-full text-left px-4 py-3 rounded-lg mb-1 transition-colors flex items-center gap-3 ${
-                  activePage === 'matieres' ? 'bg-green-600 text-white' : 'text-gray-300 hover:bg-gray-800'
-                }`}
-              >
-                <FlaskConical size={18} />
-                <span>Matières Premières</span>
-              </button>
-              <button
-                onClick={() => setActivePage('mecanique')}
-                className={`w-full text-left px-4 py-3 rounded-lg mb-1 transition-colors flex items-center gap-3 ${
-                  activePage === 'mecanique' ? 'bg-green-600 text-white' : 'text-gray-300 hover:bg-gray-800'
-                }`}
-              >
-                <Wrench size={18} />
-                <span>Mécanique</span>
-              </button>
-              <button
-                onClick={() => setActivePage('soustraitance')}
-                className={`w-full text-left px-4 py-3 rounded-lg mb-1 transition-colors flex items-center gap-3 ${
-                  activePage === 'soustraitance' ? 'bg-green-600 text-white' : 'text-gray-300 hover:bg-gray-800'
-                }`}
-              >
-                <Users2 size={18} />
-                <span>Sous-traitance</span>
-              </button>
-            </div>
-
-            <div className="mb-6">
-              <div className="text-xs text-gray-400 uppercase font-semibold mb-3 px-4">Personnel & Sécurité</div>
-              <button
-                onClick={() => setActivePage('personnel')}
-                className={`w-full text-left px-4 py-3 rounded-lg mb-1 transition-colors flex items-center gap-3 ${
-                  activePage === 'personnel' ? 'bg-green-600 text-white' : 'text-gray-300 hover:bg-gray-800'
-                }`}
-              >
-                <Users size={18} />
-                <span>Personnel & Discipline</span>
-              </button>
-              <button
-                onClick={() => setActivePage('securite')}
-                className={`w-full text-left px-4 py-3 rounded-lg mb-1 transition-colors flex items-center gap-3 ${
-                  activePage === 'securite' ? 'bg-green-600 text-white' : 'text-gray-300 hover:bg-gray-800'
-                }`}
-              >
-                <Shield size={18} />
-                <span>Environnement & Sécurité</span>
-              </button>
-            </div>
-
+          <div className="flex items-center gap-3 bg-gray-100 px-4 py-2 rounded-full">
+            <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center text-white font-bold">CQ</div>
             <div>
-              <div className="text-xs text-gray-400 uppercase font-semibold mb-3 px-4">Reporting</div>
-              <button
-                onClick={() => setActivePage('performance')}
-                className={`w-full text-left px-4 py-3 rounded-lg mb-1 transition-colors flex items-center gap-3 ${
-                  activePage === 'performance' ? 'bg-green-600 text-white' : 'text-gray-300 hover:bg-gray-800'
-                }`}
-              >
-                <TrendingUp size={18} />
-                <span>Performance</span>
-              </button>
+              <div className="text-sm font-semibold">Contrôleur Qualité</div>
+              <div className="text-xs text-gray-500">En ligne</div>
             </div>
           </div>
         </div>
-
-        {/* Main Content */}
-        <div className="flex-1 ml-64 pl-64 min-h-screen">
-          {/* Header */}
-          <div className="bg-white rounded-lg shadow-md p-6 m-6 mb-0">
-            <div className="flex justify-between items-center">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-800">{pageTitles[activePage]}</h1>
-                <p className="text-gray-600 mt-1">{new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="bg-red-500 text-white px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2">
-                  <Bell size={16} />
-                  12 Alertes
-                </div>
-                <div className="flex items-center gap-3 bg-gray-100 px-4 py-2 rounded-full">
-                  <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center text-white font-bold">
-                    CQ
-                  </div>
-                  <div>
-                    <div className="text-sm font-semibold">Contrôleur Qualité</div>
-                    <div className="text-xs text-gray-500">En ligne</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Page Content */}
-          <div className="p-6">
-            {activePage === 'dashboard' && renderDashboard()}
-            {activePage === 'fabrication' && renderFabrication()}
-            {activePage === 'qualite' && renderQualite()}
-            {activePage === 'atelier' && renderAtelier()}
-            {activePage === 'matieres' && renderMatieres()}
-            {activePage === 'mecanique' && renderMecanique()}
-            {activePage === 'soustraitance' && renderSoustraitance()}
-            {activePage === 'personnel' && renderPersonnel()}
-            {activePage === 'securite' && renderSecurite()}
-            {activePage === 'performance' && renderPerformance()}
-          </div>
-        </div>
+      </div>
+      <div className="space-y-6">
+        {activePage === 'dashboard' && renderDashboard()}
+        {activePage === 'fabrication' && renderFabrication()}
+        {activePage === 'qualite' && renderQualite()}
+        {activePage === 'atelier' && renderAtelier()}
+        {activePage === 'matieres' && renderMatieres()}
+        {activePage === 'mecanique' && renderMecanique()}
+        {activePage === 'soustraitance' && renderSoustraitance()}
+        {activePage === 'personnel' && renderPersonnel()}
+        {activePage === 'securite' && renderSecurite()}
+        {activePage === 'performance' && renderPerformance()}
       </div>
 
       {/* Modal Évaluation */}
@@ -1593,7 +1470,7 @@ const DashboardControleCentral = () => {
           </div>
         </div>
       )}
-    </div>
+    </DashboardLayout>
   );
 };
 

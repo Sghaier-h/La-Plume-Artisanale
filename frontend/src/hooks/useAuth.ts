@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 
-interface User {
+export interface User {
   id: string;
   email: string;
   nom: string;
   prenom: string;
   role: string;
   dashboardsAttribues?: string[];
+  /** URL de la photo de profil (si fournie par l'API) */
+  photo?: string;
+  avatar?: string;
 }
 
 export const useAuth = () => {
