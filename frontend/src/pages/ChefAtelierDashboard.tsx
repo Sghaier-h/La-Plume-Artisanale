@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Camera, Package, AlertTriangle, Printer, Clock, ArrowRight, Scissors, Tag, Zap, PackageCheck, Bell, XCircle, CheckCircle, AlertCircle, Activity, BarChart3, Users, Wrench, Settings } from 'lucide-react';
+import DashboardLayout from '../components/DashboardLayout';
 
 const ChefAtelierDashboard = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('operations');
   const [showScanModal, setShowScanModal] = useState(false);
   const [showDeuxiemeModal, setShowDeuxiemeModal] = useState(false);
   const [showComplementModal, setShowComplementModal] = useState(false);
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
   const [scannedCode, setScannedCode] = useState('');
-  const [selectedOperation, setSelectedOperation] = useState(null);
+  const [selectedOperation, setSelectedOperation] = useState<string | null>(null);
   const [expandedCommandes, setExpandedCommandes] = useState({});
 
   const operations = [
@@ -20,7 +23,7 @@ const ChefAtelierDashboard = () => {
     { id: 'emballage', label: 'Emballage', icon: PackageCheck, color: 'bg-indigo-500' }
   ];
 
-  const [commandesEnCours] = useState([
+  const [commandesEnCours] = useState<any[]>([
     {
       id: 'CMD001',
       numCommande: 'CM-FT0108',
@@ -538,8 +541,8 @@ const ChefAtelierDashboard = () => {
           <div className="space-y-3">
             {commandesEnCours.map(cmd => 
               cmd.articles.map(article =>
-                article.suivis.filter(s => s.operations[selectedOperation]).map(suivi => {
-                  const op = suivi.operations[selectedOperation];
+                article.suivis.filter(s => (s.operations as any)[selectedOperation!]).map(suivi => {
+                  const op = (suivi.operations as any)[selectedOperation!];
                   return (
                     <div key={suivi.numSuivi} className="border rounded-lg p-4 hover:bg-gray-50">
                       <div className="flex items-center justify-between mb-3">
@@ -977,14 +980,13 @@ const ChefAtelierDashboard = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 ml-64">
-      <div className="max-w-7xl mx-auto">
-        <div className="bg-gradient-to-r from-indigo-600 to-purple-700 rounded-lg shadow-lg p-6 mb-6 text-white">
-          <h1 className="text-3xl font-bold mb-2">Chef d'Atelier - Finition & Emballage</h1>
-          <p className="text-indigo-100">Gestion des flux continus - {new Date().toLocaleDateString('fr-FR')}</p>
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <DashboardLayout
+      title="Chef d'Atelier - Finition & Emballage"
+      subtitle={`Gestion des flux continus - ${new Date().toLocaleDateString('fr-FR')}`}
+      activeSection={activeTab}
+      onSectionChange={setActiveTab}
+    >
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-white rounded-lg p-4 shadow-md border-l-4 border-blue-500">
             <div className="text-sm text-gray-600">Commandes actives</div>
             <div className="text-2xl font-bold text-blue-600">{commandesEnCours.length}</div>
@@ -1049,55 +1051,19 @@ const ChefAtelierDashboard = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md mb-6">
-          <div className="border-b">
-            <div className="flex overflow-x-auto">
-              {[
-                { id: 'operations', label: 'Par Opération', icon: Activity },
-                { id: 'commandes', label: 'Par Commande', icon: Package },
-                { id: 'alertes', label: 'Alertes', icon: Bell },
-                { id: 'maintenance', label: 'Maintenance', icon: Settings },
-                { id: 'analyse', label: 'Analyse 2ème', icon: BarChart3 }
-              ].map(tab => {
-                const TabIcon = tab.icon;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 px-6 py-3 font-medium transition-colors whitespace-nowrap ${
-                      activeTab === tab.id
-                        ? 'border-b-2 border-indigo-600 text-indigo-600'
-                        : 'text-gray-600 hover:text-indigo-600'
-                    }`}
-                  >
-                    <TabIcon className="w-4 h-4" />
-                    {tab.label}
-                    {tab.id === 'alertes' && alertes.filter(a => a.urgent).length > 0 && (
-                      <span className="px-2 py-0.5 bg-red-500 text-white rounded-full text-xs">
-                        {alertes.filter(a => a.urgent).length}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="p-6">
-            {activeTab === 'operations' && <OperationsView />}
-            {activeTab === 'commandes' && <CommandesView />}
-            {activeTab === 'alertes' && <AlertesView />}
-            {activeTab === 'maintenance' && <MaintenanceView />}
-            {activeTab === 'analyse' && <AnalyseDeuxiemeView />}
-          </div>
-        </div>
+      <div className="bg-white rounded-lg shadow-md p-6">
+        {activeTab === 'operations' && <OperationsView />}
+        {activeTab === 'commandes' && <CommandesView />}
+        {activeTab === 'alertes' && <AlertesView />}
+        {activeTab === 'maintenance' && <MaintenanceView />}
+        {activeTab === 'analyse' && <AnalyseDeuxiemeView />}
       </div>
 
       <ScanModal />
       <DeuxiemeChoixModal />
       <ComplementUrgentModal />
       <MaintenanceModal />
-    </div>
+    </DashboardLayout>
   );
 };
 

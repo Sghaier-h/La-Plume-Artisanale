@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Package, Truck, AlertTriangle, CheckCircle, Clock, Search, Scan, 
+import { useNavigate } from 'react-router-dom';
+import {
+  Package, Truck, AlertTriangle, CheckCircle, Clock, Search, Scan,
   ArrowRight, ArrowLeft, Plus, Filter, FileText, Calendar, Building2,
   Phone, Mail, MapPin, MessageSquare, Eye, BarChart3, TrendingUp, Bell,
   X, User, Mail as MailIcon, Phone as PhoneIcon, AlertCircle, Zap
 } from 'lucide-react';
+import DashboardLayout from '../components/DashboardLayout';
 import { soustraitantsService, ofService, messagesService } from '../services/api';
 
 interface Mouvement {
@@ -60,6 +62,7 @@ interface MessageUrgent {
 }
 
 const DashboardMagasinierSoustraitants: React.FC = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'vue-ensemble' | 'soustraitants' | 'sorties' | 'retours' | 'messages'>('vue-ensemble');
   const [mouvements, setMouvements] = useState<Mouvement[]>([]);
   const [soustraitants, setSoustraitants] = useState<SoustraitantDetails[]>([]);
@@ -172,16 +175,16 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
       const qualiteAlertes = soustraitantsDetails
         .filter(st => {
           // Alerte si taux qualité < 90% ou si beaucoup de retours en retard
-          return (st.taux_qualite !== null && st.taux_qualite < 90) ||
+          return (st.taux_qualite !== null && st.taux_qualite !== undefined && st.taux_qualite < 90) ||
                  (st.statistiques && st.statistiques.en_retard > 2);
         })
         .map(st => ({
           id_sous_traitant: st.id_sous_traitant,
           raison_sociale: st.raison_sociale,
-          type_alerte: st.taux_qualite !== null && st.taux_qualite < 90 ? 'qualite_faible' : 'retards_frequents',
+          type_alerte: st.taux_qualite != null && st.taux_qualite < 90 ? 'qualite_faible' : 'retards_frequents',
           taux_qualite: st.taux_qualite,
           nb_retards: st.statistiques?.en_retard || 0,
-          message: st.taux_qualite !== null && st.taux_qualite < 90
+          message: st.taux_qualite != null && st.taux_qualite < 90
             ? `Taux de qualité faible: ${st.taux_qualite}%`
             : `Nombre de retards élevé: ${st.statistiques?.en_retard || 0}`
         }));
@@ -347,46 +350,32 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 ml-64">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Dashboard Magasinier Sous-Traitants
-              </h1>
-              <p className="text-sm text-gray-600 mt-1">
-                Gestion complète des transferts et retours vers/des sous-traitants
-              </p>
-            </div>
-            <div className="flex items-center space-x-4">
-              {messagesUrgents.filter(m => !m.lu).length > 0 && (
-                <div className="relative">
-                  <Bell className="w-6 h-6 text-red-600 animate-pulse" />
-                  <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                    {messagesUrgents.filter(m => !m.lu).length}
-                  </span>
-                </div>
-              )}
-              <button
-                onClick={() => {
-                  if (activeTab === 'sorties') {
-                    setShowModalSortie(true);
-                  } else if (activeTab === 'retours') {
-                    setShowModalRetour(true);
-                  }
-                }}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                {activeTab === 'sorties' ? 'Nouvelle Sortie' : activeTab === 'retours' ? 'Enregistrer Retour' : 'Action'}
-              </button>
-            </div>
+    <DashboardLayout
+      title="Dashboard Magasinier Sous-Traitants"
+      subtitle="Gestion complète des transferts et retours vers/des sous-traitants"
+      activeSection={activeTab}
+      onSectionChange={(id) => setActiveTab(id as any)}
+    >
+      <div className="flex flex-wrap items-center justify-end gap-4 mb-4">
+        {messagesUrgents.filter(m => !m.lu).length > 0 && (
+          <div className="relative">
+            <Bell className="w-6 h-6 text-red-600 animate-pulse" />
+            <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+              {messagesUrgents.filter(m => !m.lu).length}
+            </span>
           </div>
-        </div>
+        )}
+        <button
+          onClick={() => {
+            if (activeTab === 'sorties') setShowModalSortie(true);
+            else if (activeTab === 'retours') setShowModalRetour(true);
+          }}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          {activeTab === 'sorties' ? 'Nouvelle Sortie' : activeTab === 'retours' ? 'Enregistrer Retour' : 'Action'}
+        </button>
       </div>
-
       {/* Messages Urgents Banner */}
       {messagesUrgents.filter(m => !m.lu).length > 0 && (
         <div className="max-w-7xl mx-auto px-4 py-3">
@@ -542,76 +531,8 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
         </div>
       )}
 
-      {/* Navigation Tabs */}
-      <div className="bg-white border-b sticky top-0 z-10 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex space-x-1 overflow-x-auto">
-            <button
-              onClick={() => setActiveTab('vue-ensemble')}
-              className={`flex items-center space-x-2 px-4 py-3 border-b-2 transition-colors whitespace-nowrap ${
-                activeTab === 'vue-ensemble'
-                  ? 'border-blue-600 text-blue-600 bg-blue-50'
-                  : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              <BarChart3 className="w-4 h-4" />
-              <span className="font-medium">Vue d'Ensemble</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('soustraitants')}
-              className={`flex items-center space-x-2 px-4 py-3 border-b-2 transition-colors whitespace-nowrap ${
-                activeTab === 'soustraitants'
-                  ? 'border-blue-600 text-blue-600 bg-blue-50'
-                  : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              <Building2 className="w-4 h-4" />
-              <span className="font-medium">Sous-Traitants</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('sorties')}
-              className={`flex items-center space-x-2 px-4 py-3 border-b-2 transition-colors whitespace-nowrap ${
-                activeTab === 'sorties'
-                  ? 'border-blue-600 text-blue-600 bg-blue-50'
-                  : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              <ArrowRight className="w-4 h-4" />
-              <span className="font-medium">Sorties</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('retours')}
-              className={`flex items-center space-x-2 px-4 py-3 border-b-2 transition-colors whitespace-nowrap ${
-                activeTab === 'retours'
-                  ? 'border-blue-600 text-blue-600 bg-blue-50'
-                  : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span className="font-medium">Retours</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('messages')}
-              className={`flex items-center space-x-2 px-4 py-3 border-b-2 transition-colors whitespace-nowrap relative ${
-                activeTab === 'messages'
-                  ? 'border-blue-600 text-blue-600 bg-blue-50'
-                  : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              <MessageSquare className="w-4 h-4" />
-              <span className="font-medium">Messages</span>
-              {messagesUrgents.filter(m => !m.lu).length > 0 && (
-                <span className="absolute top-1 right-1 bg-red-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-                  {messagesUrgents.filter(m => !m.lu).length}
-                </span>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-
       {/* Content selon l'onglet actif */}
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="space-y-6">
         {activeTab === 'vue-ensemble' && (
           <div className="space-y-6">
             {/* OF à Sortir en Priorité */}
@@ -1384,7 +1305,7 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+    </DashboardLayout>
   );
 };
 

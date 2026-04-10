@@ -5,10 +5,10 @@ const TableauBordMecanicien = () => {
   const [activeTab, setActiveTab] = useState('planning');
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState('');
-  const [selectedItem, setSelectedItem] = useState(null);
+  const [selectedItem, setSelectedItem] = useState<any>(null);
 
   // Planning des machines
-  const [planningMachines, setPlanningMachines] = useState([
+  const [planningMachines, setPlanningMachines] = useState<any[]>([
     { 
       id: 'M2301', 
       ofActuel: 'OF-2501', 
@@ -92,7 +92,7 @@ const TableauBordMecanicien = () => {
     },
   ]);
 
-  const [alertesPannes, setAlertesPannes] = useState([
+  const [alertesPannes, setAlertesPannes] = useState<any[]>([
     { 
       id: 1, 
       machine: 'M2303', 
@@ -119,7 +119,7 @@ const TableauBordMecanicien = () => {
     },
   ]);
 
-  const [demandes, setDemandes] = useState([
+  const [demandes, setDemandes] = useState<any[]>([
     { id: 1, type: 'Réparation', demandeur: 'Chef Atelier', poste: 'Chef Atelier', description: 'Ciseau machine M2303', urgence: 'Haute', statut: 'En attente', date: '2025-10-19 08:30', tempsEcoule: 95 },
     { id: 2, type: 'Entretien', demandeur: 'Ahmed Mansour', poste: 'Magasinier', description: 'Transpalette T-05 - Roues bloquées', urgence: 'Moyenne', statut: 'En cours', date: '2025-10-19 09:15', tempsEcoule: 15, tempsDebut: '2025-10-19 10:45' },
     { id: 3, type: 'Électrique', demandeur: 'Salah Ben Ali', poste: 'Coupeur', description: 'Ampoule zone découpe - Éclairage insuffisant', urgence: 'Basse', statut: 'En attente', date: '2025-10-19 10:00', tempsEcoule: 5 },
@@ -127,13 +127,13 @@ const TableauBordMecanicien = () => {
     { id: 5, type: 'Risque', demandeur: 'Mohamed Kacem', poste: 'Chef Atelier', description: 'Câble électrique apparent M2302 - Risque électrocution', urgence: 'Critique', statut: 'En attente', date: '2025-10-19 10:50', tempsEcoule: 0 },
   ]);
 
-  const [ensouples, setEnsouples] = useState([
+  const [ensouples, setEnsouples] = useState<any[]>([
     { id: 'ENS-2305-D', modele: 'Ibiza', metrage: 5000, nbFils: 4320, machine: 'Réserve', statut: 'Disponible', soustraitant: 'Ourdissage Pro', dateReception: '2025-10-18', besoinNouage: true, prixOurdissage: 850 },
     { id: 'ENS-2306-E', modele: 'Capri', metrage: 4800, nbFils: 4100, machine: 'Réserve', statut: 'Disponible', soustraitant: 'Ourdissage Pro', dateReception: '2025-10-17', besoinNouage: false, prixOurdissage: 820 },
     { id: 'ENS-2301-A', modele: 'Ibiza', metrage: 2450, nbFils: 4320, machine: 'M2301', statut: 'En cours', soustraitant: 'Ourdissage Pro', dateReception: '2025-10-15', besoinNouage: false, prixOurdissage: 850 },
   ]);
 
-  const [demandesOurdissage, setDemandesOurdissage] = useState([
+  const [demandesOurdissage, setDemandesOurdissage] = useState<any[]>([
     { 
       id: 1, 
       modele: 'Malta', 
@@ -164,7 +164,7 @@ const TableauBordMecanicien = () => {
     },
   ]);
 
-  const [receptionOurdissage, setReceptionOurdissage] = useState([
+  const [receptionOurdissage, setReceptionOurdissage] = useState<any[]>([
     {
       id: 1,
       ensouple: 'ENS-2307-F',
@@ -181,7 +181,7 @@ const TableauBordMecanicien = () => {
     }
   ]);
 
-  const [demandesNouage, setDemandesNouage] = useState([
+  const [demandesNouage, setDemandesNouage] = useState<any[]>([
     { 
       id: 1, 
       ensouple: 'ENS-2305-D', 
@@ -209,12 +209,12 @@ const TableauBordMecanicien = () => {
     },
   ]);
 
-  const [demandesAchat, setDemandesAchat] = useState([
+  const [demandesAchat, setDemandesAchat] = useState<any[]>([
     { id: 1, article: 'Courroie type B - Référence CTB-450', quantite: 2, prixApprox: 85, type: 'Pièce', statut: 'En attente', urgent: true, demandeur: 'Ali Mécanicien', date: '2025-10-19', emailEnvoye: false },
     { id: 2, article: 'Intervention électricien - Câblage M2302', quantite: 1, prixApprox: 150, type: 'Externe', statut: 'Validé', urgent: false, demandeur: 'Ali Mécanicien', date: '2025-10-18', emailEnvoye: true },
   ]);
 
-  const [planRevisions, setPlanRevisions] = useState([
+  const [planRevisions, setPlanRevisions] = useState<any[]>([
     { id: 1, machine: 'M2301', type: 'Vidange huile', frequenceJours: 90, derniere: '2025-09-15', prochaine: '2025-12-14', statut: 'À venir', joursRestants: 56 },
     { id: 2, machine: 'M2302', type: 'Graissage roulements', frequenceJours: 30, derniere: '2025-10-05', prochaine: '2025-11-04', statut: 'À venir', joursRestants: 16 },
     { id: 3, machine: 'M2303', type: 'Contrôle courroies', frequenceJours: 60, derniere: '2025-09-20', prochaine: '2025-11-19', statut: 'Urgent', joursRestants: 31 },
@@ -222,7 +222,7 @@ const TableauBordMecanicien = () => {
     { id: 5, machine: 'M2301', type: 'Nettoyage filtres', frequenceJours: 15, derniere: '2025-10-10', prochaine: '2025-10-25', statut: 'À venir', joursRestants: 6 },
   ]);
 
-  const [controles, setControles] = useState([
+  const [controles, setControles] = useState<any[]>([
     { id: 1, machine: 'M2301', of: 'OF-2501', modele: 'Ibiza', mesure: '145cm', poids: '285g/m²', conforme: true, date: '2025-10-19 07:30', operateur: 'Ali Ben Salem', observations: 'RAS - Changement de dessin effectué' },
     { id: 2, machine: 'M2302', of: 'OF-2503', modele: 'Capri', mesure: '150cm', poids: '310g/m²', conforme: true, date: '2025-10-19 06:15', operateur: 'Mohamed Trabelsi', observations: 'Conforme aux spécifications' },
   ]);
