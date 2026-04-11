@@ -200,9 +200,9 @@ const ChefAtelierDashboard = () => {
     let termine = 0;
     let enAttente = 0;
 
-    commandesEnCours.forEach(cmd => {
-      cmd.articles.forEach(article => {
-        article.suivis.forEach(suivi => {
+    commandesEnCours.forEach((cmd: any) => {
+      cmd.articles.forEach((article: any) => {
+        article.suivis.forEach((suivi: any) => {
           if (suivi.operations[operationId]) {
             const op = suivi.operations[operationId];
             if (op.statut === 'en_cours') enCours += op.qteEnCours;
@@ -539,9 +539,9 @@ const ChefAtelierDashboard = () => {
             Commandes - {operations.find(o => o.id === selectedOperation)?.label}
           </h3>
           <div className="space-y-3">
-            {commandesEnCours.map(cmd => 
-              cmd.articles.map(article =>
-                article.suivis.filter(s => (s.operations as any)[selectedOperation!]).map(suivi => {
+            {commandesEnCours.map((cmd: any) =>
+              cmd.articles.map((article: any) =>
+                article.suivis.filter((s: any) => (s.operations as any)[selectedOperation!]).map((suivi: any) => {
                   const op = (suivi.operations as any)[selectedOperation!];
                   return (
                     <div key={suivi.numSuivi} className="border rounded-lg p-4 hover:bg-gray-50">
@@ -623,9 +623,9 @@ const ChefAtelierDashboard = () => {
 
   const CommandesView = () => (
     <div className="space-y-4">
-      {commandesEnCours.map(cmd => {
+      {commandesEnCours.map((cmd: any) => {
         const totalArticles = cmd.articles.length;
-        const isExpanded = expandedCommandes[cmd.id];
+        const isExpanded = (expandedCommandes as any)[cmd.id];
 
         return (
           <div key={cmd.id} className="border rounded-lg p-6 bg-white shadow-sm">
@@ -658,7 +658,7 @@ const ChefAtelierDashboard = () => {
 
             {cmd.alertes && cmd.alertes.length > 0 && (
               <div className="space-y-2 mb-4">
-                {cmd.alertes.map((alerte, idx) => (
+                {cmd.alertes.map((alerte: any, idx: number) => (
                   <div key={idx} className={`flex items-center gap-2 p-3 rounded-lg ${
                     alerte.urgent ? 'bg-red-50 border border-red-200' : 'bg-yellow-50 border border-yellow-200'
                   }`}>
@@ -673,7 +673,7 @@ const ChefAtelierDashboard = () => {
 
             {/* Articles de la commande */}
             <div className="space-y-4">
-              {cmd.articles.map((article, artIdx) => {
+              {cmd.articles.map((article: any, artIdx: number) => {
                 const totalPremierChoix = (article.suivis as any[]).reduce((sum: number, s: any) => sum + (s.qteLot - s.qteDeuxieme - s.qteRebut), 0) as number;
                 const totalDeuxieme = (article.suivis as any[]).reduce((sum: number, s: any) => sum + s.qteDeuxieme, 0) as number;
                 const totalRebut = (article.suivis as any[]).reduce((sum: number, s: any) => sum + s.qteRebut, 0) as number;
@@ -726,7 +726,7 @@ const ChefAtelierDashboard = () => {
 
                     {isExpanded && (
                       <div className="space-y-3 mt-3">
-                        {article.suivis.map(suivi => (
+                        {article.suivis.map((suivi: any) => (
                           <div key={suivi.numSuivi} className="border rounded-lg p-3 bg-gray-50">
                             <div className="flex items-center justify-between mb-2">
                               <h5 className="font-bold flex items-center gap-2">

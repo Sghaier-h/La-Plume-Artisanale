@@ -260,6 +260,11 @@ export const soustraitantsService = {
 
 export const dashboardService = {
   getKPIs: () => api.get('/dashboard/kpis'),
+  getKpisAdmin: () => api.get('/dashboard/kpis-admin'),
+  getKpisProduction: () => api.get('/dashboard/kpis-production'),
+  getActiviteRecente: (limit = 10) => api.get(`/dashboard/activite-recente?limit=${limit}`),
+  getVentesParMois: () => api.get('/dashboard/ventes-par-mois'),
+  getTopClients: (limit = 10) => api.get(`/dashboard/top-clients?limit=${limit}`),
   getProductionStats: (params?: any) => api.get('/dashboard/production', { params }),
   getCommandesStats: (params?: any) => api.get('/dashboard/commandes', { params }),
   getAlertes: () => api.get('/dashboard/alertes'),

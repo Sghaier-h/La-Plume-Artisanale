@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, PieChart as RechartsPieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import DashboardLayout from '../components/DashboardLayout';
+import KpiBanner from '../components/KpiBanner';
 import { dashboardService, tachesService, messagesService, maintenanceService, coutsService, planificationGanttService, ofService, machinesService } from '../services/api';
 
 interface Tache {
@@ -443,7 +444,10 @@ const DashboardAdministrateur = () => {
         {/* Vue Générale */}
         {activeTab === 'vue-generale' && (
           <div className="space-y-6">
-            {/* KPIs */}
+            {/* KPIs temps réel (API /dashboard/kpis-admin) */}
+            <KpiBanner />
+
+            {/* KPIs tâches */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
                 <div className="flex items-center justify-between">

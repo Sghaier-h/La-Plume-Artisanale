@@ -598,7 +598,7 @@ const DashboardTisseur = () => {
                                 </div>
                                 <div className="flex items-center space-x-2 mt-1">
                                   <div className="flex items-center space-x-1">
-                                    {of.selecteurs.map((sel, idx) => (
+                                    {of.selecteurs.map((sel: any, idx: number) => (
                                       <span key={idx} className="text-xs px-2 py-0.5 bg-gray-100 rounded">
                                         S{sel.sel}: {sel.codeFab}
                                       </span>
@@ -710,7 +710,7 @@ const DashboardTisseur = () => {
                             <div className="mb-4">
                               <p className="text-sm font-semibold text-gray-700 mb-2">Matières Premières (Code Fabrication):</p>
                               <div className="grid grid-cols-2 gap-2">
-                                {of.selecteurs.map((sel, idx) => (
+                                {of.selecteurs.map((sel: any, idx: number) => (
                                   <div key={idx} className="p-2 bg-white border border-gray-200 rounded">
                                     <p className="text-xs text-gray-600">Sélecteur {sel.sel}</p>
                                     <p className="text-sm font-bold">{sel.codeFab}</p>

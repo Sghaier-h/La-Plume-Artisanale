@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+// @ts-ignore - react-beautiful-dnd has no types
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 
 interface KanbanColumn {
@@ -105,7 +106,7 @@ const KanbanView: React.FC<KanbanViewProps> = ({
       <div className="erp-kanban">
         {localColumns.map(column => (
           <Droppable key={column.id} droppableId={column.id}>
-            {(provided, snapshot) => (
+            {(provided: any, snapshot: any) => (
               <div
                 ref={provided.innerRef}
                 {...provided.droppableProps}
@@ -125,7 +126,7 @@ const KanbanView: React.FC<KanbanViewProps> = ({
                     draggableId={item.id?.toString() || item.id_demande?.toString() || index.toString()}
                     index={index}
                   >
-                    {(provided, snapshot) => (
+                    {(provided: any, snapshot: any) => (
                       <div
                         ref={provided.innerRef}
                         {...provided.draggableProps}

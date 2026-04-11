@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { AlertCircle, CheckCircle, Clock, TrendingUp, TrendingDown, Package, Scissors, Users, Wrench, Box, Truck, Warehouse, Activity, Calendar, Plus, Search, Filter, Download, Printer, Move, AlertTriangle } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
+import KpiBanner from '../components/KpiBanner';
 
 const DashboardChefProduction = () => {
   const navigate = useNavigate();
@@ -308,7 +309,10 @@ const DashboardChefProduction = () => {
   const renderVueGenerale = () => (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-gray-800">Vue Générale de Production</h2>
-      
+
+      {/* KPIs temps réel (API) */}
+      <KpiBanner />
+
       {/* KPIs Principaux */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatCard

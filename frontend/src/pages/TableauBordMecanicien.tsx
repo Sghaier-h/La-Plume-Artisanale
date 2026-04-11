@@ -239,13 +239,13 @@ const TableauBordMecanicien = () => {
     nbPannesElec: 1,
   });
 
-  const openModal = (type, item = null) => {
+  const openModal = (type: any, item: any = null) => {
     setModalType(type);
     setSelectedItem(item);
     setShowModal(true);
   };
 
-  const getUrgenceColor = (urgence) => {
+  const getUrgenceColor = (urgence: any) => {
     switch(urgence) {
       case 'Critique': return 'bg-purple-100 text-purple-800 border-purple-500';
       case 'Haute': return 'bg-red-100 text-red-800 border-red-500';
@@ -255,7 +255,7 @@ const TableauBordMecanicien = () => {
     }
   };
 
-  const getStatutColor = (statut) => {
+  const getStatutColor = (statut: any) => {
     switch(statut) {
       case 'En attente': return 'bg-orange-100 text-orange-800';
       case 'En cours': return 'bg-blue-100 text-blue-800';

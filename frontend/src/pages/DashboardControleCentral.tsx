@@ -7,6 +7,7 @@ import {
   Settings, Eye, Edit, X, Save, Clock, Star, Award, AlertCircle
 } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
+import KpiBanner from '../components/KpiBanner';
 
 const DashboardControleCentral = () => {
   const navigate = useNavigate();
@@ -143,6 +144,9 @@ const DashboardControleCentral = () => {
 
   const renderDashboard = () => (
     <div className="space-y-6">
+      {/* KPIs temps réel (API) */}
+      <KpiBanner />
+
       {/* KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white rounded-lg shadow-md p-6 border-t-4 border-green-500 relative overflow-hidden">
