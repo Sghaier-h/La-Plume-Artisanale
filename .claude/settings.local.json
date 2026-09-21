@@ -14,7 +14,26 @@
       "Bash(curl -s http://localhost:5000/api/clients -X POST -H \"Content-Type: application/json\" -H \"Authorization: Bearer $\\(curl -s http://localhost:5000/api/auth/login -X POST -H 'Content-Type: application/json' -d '{\"email\":\"admin@system.local\",\"password\":\"DevLocal2024!\"}')",
       "Bash(curl -s -w \"\\\\nHTTP_CODE:%{http_code}\" http://localhost:5000/api/clients -X POST -H \"Content-Type: application/json\" -H \"Authorization: Bearer $\\(curl -s http://localhost:5000/api/auth/login -X POST -H 'Content-Type: application/json' -d '{\"email\":\"admin@system.local\",\"password\":\"DevLocal2024!\"}')",
       "Bash(find \"D:/OneDrive - FLYING TEX/Projet Logiciel/La-Plume-Artisanale/backend\" -name \"*.sql\" -exec grep -l \"articles_catalogue\\\\|articles_commande\\\\|commandes\" {} \\\\;)",
-      "Bash(node -e ':*)"
+      "Bash(node -e ':*)",
+      "Bash(ls *.md)",
+      "Bash(docker compose:*)",
+      "Bash(grep -c \"^function \" *.gs)",
+      "Bash(node -e \"const d=JSON.parse\\(require\\('fs'\\).readFileSync\\(0,'utf8'\\)\\); if\\(d.success\\){ console.log\\('Total:', d.data.pagination.total\\); console.log\\('Premier article:'\\); console.log\\(JSON.stringify\\(d.data.data[0], null, 2\\)\\); } else { console.log\\('FAIL:', d.error?.message\\); }\")",
+      "Bash(node -e \"const d=JSON.parse\\(require\\('fs'\\).readFileSync\\(0,'utf8'\\)\\); if\\(d.success\\){ d.data.forEach\\(r => console.log\\(r.code_modele, '\\(' + r.libelle + '\\): ' + r.nb_articles + ' articles'\\)\\); } else { console.log\\('FAIL:', d.error?.message\\); }\")",
+      "Bash(node -e \"const d=JSON.parse\\(require\\('fs'\\).readFileSync\\(0,'utf8'\\)\\); if\\(d.success\\){ console.log\\('Total matching:', d.data.pagination.total\\); d.data.data.slice\\(0,3\\).forEach\\(a => console.log\\('  -', a.code_article, '|', a.designation\\)\\); }\")",
+      "Bash(node -e \"const d=JSON.parse\\(require\\('fs'\\).readFileSync\\(0,'utf8'\\)\\); if\\(d.success\\){ console.log\\('Créé:'\\); console.log\\('  id_article:', d.data.id_article\\); console.log\\('  code_article:', d.data.code_article\\); console.log\\('  ref_commerciale:', d.data.ref_commerciale\\); console.log\\('  ref_fabrication:', d.data.ref_fabrication\\); console.log\\('  designation:', d.data.designation\\); } else { console.log\\('FAIL:', JSON.stringify\\(d.error\\)\\); }\")",
+      "Bash(node -e \"const d=JSON.parse\\(require\\('fs'\\).readFileSync\\(0,'utf8'\\)\\); console.log\\(d.success ? 'Article test supprimé' : 'Erreur: ' + d.error?.message\\)\")",
+      "Bash(node -e \"const d=JSON.parse\\(require\\('fs'\\).readFileSync\\(0,'utf8'\\)\\); if\\(d.success\\){ console.log\\('✓ code_bom_master:', d.data.code_bom_master\\); console.log\\('  id:', d.data.id_bom_master\\); global.bomId = d.data.id_bom_master; require\\('fs'\\).writeFileSync\\('/tmp/bomid.txt', String\\(d.data.id_bom_master\\)\\); } else { console.log\\('FAIL:', JSON.stringify\\(d.error\\)\\); }\")",
+      "Bash(node -e \"const d=JSON.parse\\(require\\('fs'\\).readFileSync\\(0,'utf8'\\)\\); if\\(d.success\\){ console.log\\('✓ code:', d.data.code_bom_composant\\); console.log\\('  longueur \\(auto\\):', d.data.longueur_tissage_cm, '\\(attendu: 200\\)'\\); console.log\\('  duite/cm:', d.data.duite_par_cm\\); console.log\\('  total:', d.data.nombre_duite_total\\); } else { console.log\\('FAIL:', JSON.stringify\\(d.error\\)\\); }\")",
+      "Bash(node -e \"const d=JSON.parse\\(require\\('fs'\\).readFileSync\\(0,'utf8'\\)\\); console.log\\(JSON.stringify\\(d.data, null, 2\\)\\)\")",
+      "Bash(node -e \"const d=JSON.parse\\(require\\('fs'\\).readFileSync\\(0,'utf8'\\)\\); if\\(d.success\\){ console.log\\('Stats:', JSON.stringify\\(d.data.stats, null, 2\\)\\); console.log\\('\\\\\\\\nTop 5 articles à alimenter:'\\); d.data.articles.forEach\\(a => console.log\\('  -', a.code_article, '| déficit:', a.deficit, '| action:', a.action_recommandee, '| qté suggérée:', a.qte_a_produire_suggerer, '| OF en cours:', a.nb_of_en_cours\\)\\); } else { console.log\\('FAIL:', d.error?.message\\); }\")",
+      "Bash(node -e \"const d=JSON.parse\\(require\\('fs'\\).readFileSync\\(0,'utf8'\\)\\); if\\(d.success\\){ console.log\\('OF créé:'\\); console.log\\('  numero:', d.data.numero_of\\); console.log\\('  quantite_a_produire:', d.data.quantite_a_produire\\); console.log\\('  statut:', d.data.statut\\); console.log\\('  observations:', d.data.observations\\); } else { console.log\\('FAIL:', JSON.stringify\\(d.error\\)\\); }\")",
+      "Bash(node -e \"const d=JSON.parse\\(require\\('fs'\\).readFileSync\\(0,'utf8'\\)\\); if\\(d.success\\){ d.data.forEach\\(a => console.log\\('  -', a.code_article, '|', a.modele_libelle, '| Qté:', a.quantite_commandee, '/', a.quantite_produite, '| CA:', a.ca_estime.toFixed\\(2\\), '| Commandes:', a.nb_commandes, '| Clients:', a.nb_clients\\)\\); } else { console.log\\('FAIL:', d.error?.message\\); }\")",
+      "Bash(node -e \"const d=JSON.parse\\(require\\('fs'\\).readFileSync\\(0,'utf8'\\)\\); console.log\\(d.data?.message || d.error?.message\\)\")",
+      "Bash(node src/server.js)",
+      "Bash(node -e \"import multer from 'multer'; console.log\\('multer OK:', typeof multer\\);\")",
+      "Bash(node -e \"import fs from 'fs'; import path from 'path'; const UPLOAD_DIR = path.resolve\\(process.cwd\\(\\), 'uploads', 'tmp'\\); if \\(!fs.existsSync\\(UPLOAD_DIR\\)\\) { fs.mkdirSync\\(UPLOAD_DIR, { recursive: true }\\); }; console.log\\('OK:', UPLOAD_DIR\\);\")",
+      "Bash(pkill -f \"node src/server.js\")"
     ]
   }
 }
