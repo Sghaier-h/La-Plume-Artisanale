@@ -6,10 +6,10 @@ import { pool } from '../../../src/utils/db.js';
 import { getUserId } from '../../../src/utils/audit.helper.js';
 import { sendError, sendSuccess, handleError } from '../../../src/utils/error.helper.js';
 
-// GET /api/crm/crm_opportunity - Liste tous les enregistrements
+// GET /api/crm/opportunites_crm - Liste tous les enregistrements
 export const getCrmOpportunity = async (req, res) => {
   try {
-    const query = `SELECT * FROM crm_opportunitys ORDER BY created_at DESC`;
+    const query = `SELECT * FROM opportunites_crm ORDER BY created_at DESC`;
     const result = await pool.query(query);
     return sendSuccess(res, result.rows, 'CrmOpportunity récupérés avec succès');
   } catch (error) {
@@ -17,11 +17,11 @@ export const getCrmOpportunity = async (req, res) => {
   }
 };
 
-// GET /api/crm/crm_opportunity/:id - Récupère un enregistrement
+// GET /api/crm/opportunites_crm/:id - Récupère un enregistrement
 export const getCrmOpportunityById = async (req, res) => {
   try {
     const { id } = req.params;
-    const query = `SELECT * FROM crm_opportunitys WHERE id = $1`;
+    const query = `SELECT * FROM opportunites_crm WHERE id = $1`;
     const result = await pool.query(query, [id]);
     
     if (result.rows.length === 0) {
@@ -34,7 +34,7 @@ export const getCrmOpportunityById = async (req, res) => {
   }
 };
 
-// POST /api/crm/crm_opportunity - Crée un enregistrement
+// POST /api/crm/opportunites_crm - Crée un enregistrement
 export const createCrmOpportunity = async (req, res) => {
   try {
     const userId = getUserId(req) || 1;
@@ -53,7 +53,7 @@ export const createCrmOpportunity = async (req, res) => {
     const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
     
     const query = `
-      INSERT INTO crm_opportunitys (${fields.join(', ')}, created_at, created_by)
+      INSERT INTO opportunites_crm (${fields.join(', ')}, created_at, created_by)
       VALUES (${placeholders}, NOW(), $${values.length + 1})
       RETURNING *
     `;
@@ -65,7 +65,7 @@ export const createCrmOpportunity = async (req, res) => {
   }
 };
 
-// PUT /api/crm/crm_opportunity/:id - Met à jour un enregistrement
+// PUT /api/crm/opportunites_crm/:id - Met à jour un enregistrement
 export const updateCrmOpportunity = async (req, res) => {
   try {
     const { id } = req.params;
@@ -85,7 +85,7 @@ export const updateCrmOpportunity = async (req, res) => {
     const setClause = fields.map((field, i) => `${field} = $${i + 1}`).join(', ');
     
     const query = `
-      UPDATE crm_opportunitys
+      UPDATE opportunites_crm
       SET ${setClause}, updated_at = NOW(), updated_by = $${values.length + 1}
       WHERE id = $${values.length + 2}
       RETURNING *
@@ -103,7 +103,7 @@ export const updateCrmOpportunity = async (req, res) => {
   }
 };
 
-// DELETE /api/crm/crm_opportunity/:id - Supprime un enregistrement
+// DELETE /api/crm/opportunites_crm/:id - Supprime un enregistrement
 export const deleteCrmOpportunity = async (req, res) => {
   try {
     const { id } = req.params;
@@ -113,7 +113,7 @@ export const deleteCrmOpportunity = async (req, res) => {
     const checkActiveQuery = `
       SELECT column_name 
       FROM information_schema.columns 
-      WHERE table_name = 'crm_opportunitys' AND column_name = 'active'
+      WHERE table_name = 'opportunites_crm' AND column_name = 'active'
     `;
     
     let query;
@@ -125,7 +125,7 @@ export const deleteCrmOpportunity = async (req, res) => {
       
       if (hasActiveField) {
         query = `
-          UPDATE crm_opportunitys
+          UPDATE opportunites_crm
           SET active = false, updated_at = NOW(), updated_by = $1
           WHERE id = $2
           RETURNING *
@@ -133,7 +133,7 @@ export const deleteCrmOpportunity = async (req, res) => {
         params = [userId, id];
       } else {
         query = `
-          DELETE FROM crm_opportunitys
+          DELETE FROM opportunites_crm
           WHERE id = $1
           RETURNING *
         `;
@@ -141,7 +141,7 @@ export const deleteCrmOpportunity = async (req, res) => {
       }
     } catch (checkError) {
       query = `
-        DELETE FROM crm_opportunitys
+        DELETE FROM opportunites_crm
         WHERE id = $1
         RETURNING *
       `;

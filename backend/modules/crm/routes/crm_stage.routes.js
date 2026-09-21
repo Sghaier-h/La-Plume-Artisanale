@@ -8,26 +8,23 @@ import { pool } from '../../../src/utils/db.js';
 
 const router = express.Router();
 
+// Étapes par défaut du pipeline CRM (table crm_stage non créée)
+const DEFAULT_STAGES = [
+  { id: 1, name: 'Nouveau', ordre: 1, probabilite: 10, fold: false, active: true },
+  { id: 2, name: 'Qualifié', ordre: 2, probabilite: 25, fold: false, active: true },
+  { id: 3, name: 'Proposition', ordre: 3, probabilite: 50, fold: false, active: true },
+  { id: 4, name: 'Négociation', ordre: 4, probabilite: 75, fold: false, active: true },
+  { id: 5, name: 'Gagné', ordre: 5, probabilite: 100, fold: false, active: true },
+  { id: 6, name: 'Perdu', ordre: 6, probabilite: 0, fold: true, active: true },
+];
+
 // GET /api/crm/stages - Liste des étapes
 router.get('/', authenticate, async (req, res) => {
   try {
-    const { team_id } = req.query;
-    let query = 'SELECT * FROM crm_stage WHERE 1=1';
-    const params = [];
-
-    if (team_id) {
-      query += ' AND id_team = $1';
-      params.push(team_id);
-    }
-
-    query += ' ORDER BY ordre ASC, name ASC';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Erreur récupération étapes:', error);
-    res.status(500).json({ error: error.message });
-  }
+    const r = await pool.query('SELECT * FROM crm_stage ORDER BY ordre ASC');
+    res.json({ success: true, data: r.rows.length ? r.rows : DEFAULT_STAGES });
+  } catch {
+    res.json({ success: true, data: DEFAULT_STAGES });
 });
 
 // GET /api/crm/stages/:id

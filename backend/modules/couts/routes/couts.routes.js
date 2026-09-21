@@ -27,11 +27,11 @@ router.post('/:id_of(\\d+)/recalculer', recalculerCouts);
 // Budgets groupés par mois
 router.get('/budgets', async (req, res) => {
   try {
-    const q = `SELECT TO_CHAR(date_creation, 'YYYY-MM') AS mois,
+    const q = `SELECT TO_CHAR(date_creation_of, 'YYYY-MM') AS mois,
                       SUM(COALESCE(cout_estime, 0))::numeric AS budget_estime,
                       SUM(COALESCE(cout_reel, 0))::numeric AS budget_reel
                  FROM ordres_fabrication
-                 WHERE date_creation IS NOT NULL
+                 WHERE date_creation_of IS NOT NULL
                  GROUP BY 1 ORDER BY 1 DESC`;
     const result = await pool.query(q);
     return sendSuccess(res, result.rows, 'Budgets par mois');
@@ -42,7 +42,7 @@ router.get('/budgets', async (req, res) => {
 
 router.get('/cout-theorique/:id_of(\\d+)', async (req, res) => {
   try {
-    const r = await pool.query(`SELECT id, cout_estime FROM ordres_fabrication WHERE id = $1`, [req.params.id_of]);
+    const r = await pool.query(`SELECT id_of, cout_estime FROM ordres_fabrication WHERE id_of = $1`, [req.params.id_of]);
     return sendSuccess(res, r.rows[0] || { cout_estime: 0 }, 'Coût théorique');
   } catch (error) {
     return handleError(res, error, 'getCoutTheorique');
@@ -51,7 +51,7 @@ router.get('/cout-theorique/:id_of(\\d+)', async (req, res) => {
 
 router.get('/cout-reel/:id_of(\\d+)', async (req, res) => {
   try {
-    const r = await pool.query(`SELECT id, cout_reel FROM ordres_fabrication WHERE id = $1`, [req.params.id_of]);
+    const r = await pool.query(`SELECT id_of, cout_reel FROM ordres_fabrication WHERE id_of = $1`, [req.params.id_of]);
     return sendSuccess(res, r.rows[0] || { cout_reel: 0 }, 'Coût réel');
   } catch (error) {
     return handleError(res, error, 'getCoutReel');
@@ -61,7 +61,7 @@ router.get('/cout-reel/:id_of(\\d+)', async (req, res) => {
 router.get('/analyse-ecarts/:id_of(\\d+)', async (req, res) => {
   try {
     const r = await pool.query(
-      `SELECT id, cout_estime, cout_reel, temps_production_estime, temps_production_reel FROM ordres_fabrication WHERE id = $1`,
+      `SELECT id_of, cout_estime, cout_reel, temps_production_estime, temps_production_reel FROM ordres_fabrication WHERE id_of = $1`,
       [req.params.id_of]
     );
     const row = r.rows[0] || {};
