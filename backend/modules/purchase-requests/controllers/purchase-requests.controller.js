@@ -27,7 +27,7 @@ export const getPurchaseRequests = async (req, res) => {
       paramIndex++;
     }
     
-    query += ` ORDER BY COALESCE(created_at, id) DESC`;
+    query += ` ORDER BY created_at DESC NULLS LAST, id DESC`;
     
     const result = await pool.query(query, params);
     let records = result.rows;

@@ -15,9 +15,9 @@ import {
 const router = express.Router();
 
 router.get('/', authenticate, getEcommerce);
-router.get('/:id', authenticate, getEcommerceById);
+router.get('/:id(\\d+)', authenticate, getEcommerceById);
 router.post('/', authenticate, createEcommerce);
-router.put('/:id', authenticate, updateEcommerce);
-router.delete('/:id', authenticate, deleteEcommerce);
+router.put('/:id(\\d+)', authenticate, updateEcommerce);
+router.delete('/:id(\\d+)', authenticate, deleteEcommerce);
 
 export default router;
