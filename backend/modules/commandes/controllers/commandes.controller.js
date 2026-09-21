@@ -79,7 +79,7 @@ export const createCommande = async (req, res) => {
 
     if (!client_id || !date_commande || !lignes || lignes.length === 0) {
       await client.query('ROLLBACK');
-      return sendError(res, HTTP_STATUS.BAD_REQUEST, 'Client, date et lignes de commande requis');
+      return sendError(res, 'Client, date et lignes de commande requis', HTTP_STATUS.BAD_REQUEST);
     }
 
     // Vérifier client
@@ -172,7 +172,7 @@ export const updateCommande = async (req, res) => {
     }
     if (existing.rows[0].statut === 'validee' && updateData.statut !== 'validee') {
       await dbClient.query('ROLLBACK');
-      return sendError(res, HTTP_STATUS.BAD_REQUEST, 'Impossible de modifier une commande validée');
+      return sendError(res, 'Impossible de modifier une commande validée', HTTP_STATUS.BAD_REQUEST);
     }
 
     const userId = getUserId(req) || 1;
@@ -259,7 +259,7 @@ export const deleteCommande = async (req, res) => {
       return sendError(res, HTTP_STATUS.NOT_FOUND, ERROR_MESSAGES.NOT_FOUND('Commande'));
     }
     if (existing.rows[0].statut === 'validee') {
-      return sendError(res, HTTP_STATUS.BAD_REQUEST, 'Impossible de supprimer une commande validée');
+      return sendError(res, 'Impossible de supprimer une commande validée', HTTP_STATUS.BAD_REQUEST);
     }
 
     await pool.query('DELETE FROM articles_commande WHERE id_commande = $1', [id]);

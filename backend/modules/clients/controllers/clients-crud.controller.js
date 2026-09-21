@@ -98,7 +98,7 @@ export const createClient = async (req, res) => {
     if (code_client) {
       const existing = await pool.query('SELECT id_client FROM clients WHERE code_client = $1', [code_client]);
       if (existing.rows.length > 0) {
-        return sendError(res, HTTP_STATUS.CONFLICT, 'Ce code client existe déjà');
+        return sendError(res, 'Ce code client existe déjà', HTTP_STATUS.CONFLICT);
       }
     }
 
@@ -145,7 +145,7 @@ export const updateClient = async (req, res) => {
         [updateData.code_client, id]
       );
       if (codeExists.rows.length > 0) {
-        return sendError(res, HTTP_STATUS.CONFLICT, 'Ce code client existe déjà');
+        return sendError(res, 'Ce code client existe déjà', HTTP_STATUS.CONFLICT);
       }
     }
 
@@ -163,7 +163,7 @@ export const updateClient = async (req, res) => {
     });
 
     if (fields.length === 0) {
-      return sendError(res, HTTP_STATUS.BAD_REQUEST, 'Aucune donnée à mettre à jour');
+      return sendError(res, 'Aucune donnée à mettre à jour', HTTP_STATUS.BAD_REQUEST);
     }
 
     if (userId) {

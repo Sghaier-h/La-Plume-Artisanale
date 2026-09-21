@@ -86,7 +86,7 @@ export const createFacture = async (req, res) => {
 
     if (!id_client || !date_facture || !lignes || lignes.length === 0) {
       await client.query('ROLLBACK');
-      return sendError(res, HTTP_STATUS.BAD_REQUEST, 'Client, date et lignes de facture requis');
+      return sendError(res, 'Client, date et lignes de facture requis', HTTP_STATUS.BAD_REQUEST);
     }
 
     // Vérifier client
@@ -405,7 +405,7 @@ export const deleteFacture = async (req, res) => {
     }
 
     if (facture.rows[0].statut === 'REGLEE') {
-      return sendError(res, HTTP_STATUS.BAD_REQUEST, 'Impossible de supprimer une facture déjà réglée');
+      return sendError(res, 'Impossible de supprimer une facture déjà réglée', HTTP_STATUS.BAD_REQUEST);
     }
 
     await pool.query('DELETE FROM factures WHERE id_facture = $1', [id]);

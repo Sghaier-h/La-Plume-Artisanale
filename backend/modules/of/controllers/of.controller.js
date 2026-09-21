@@ -77,7 +77,7 @@ export const createOf = async (req, res) => {
     } = req.body;
 
     if (!id_article || !quantite_a_produire) {
-      return sendError(res, HTTP_STATUS.BAD_REQUEST, 'Article et quantité à produire requis');
+      return sendError(res, 'Article et quantité à produire requis', HTTP_STATUS.BAD_REQUEST);
     }
 
     // Générer numéro OF
@@ -123,7 +123,7 @@ export const updateOf = async (req, res) => {
     const fields = Object.keys(data).filter(f => !excludedFields.includes(f) && data[f] !== undefined);
 
     if (fields.length === 0) {
-      return sendError(res, HTTP_STATUS.BAD_REQUEST, 'Aucune donnée à mettre à jour');
+      return sendError(res, 'Aucune donnée à mettre à jour', HTTP_STATUS.BAD_REQUEST);
     }
 
     const values = fields.map(f => data[f]);

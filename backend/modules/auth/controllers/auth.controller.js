@@ -16,7 +16,7 @@ export const login = async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return sendError(res, HTTP_STATUS.BAD_REQUEST, 'Email et mot de passe requis');
+      return sendError(res, 'Email et mot de passe requis', HTTP_STATUS.BAD_REQUEST);
     }
 
     // Mode mock : strictement NODE_ENV=development + USE_MOCK_AUTH=true
@@ -37,7 +37,7 @@ export const login = async (req, res) => {
         return sendSuccess(res, { token, user: mockUser.user });
       }
 
-      return sendError(res, HTTP_STATUS.UNAUTHORIZED, 'Identifiants invalides (mode développement)');
+      return sendError(res, 'Identifiants invalides (mode développement)', HTTP_STATUS.UNAUTHORIZED);
     }
 
     // Mode production — connexion BDD
@@ -55,13 +55,13 @@ export const login = async (req, res) => {
       );
 
       if (result.rows.length === 0) {
-        return sendError(res, HTTP_STATUS.UNAUTHORIZED, 'Identifiants invalides');
+        return sendError(res, 'Identifiants invalides', HTTP_STATUS.UNAUTHORIZED);
       }
 
       const user = result.rows[0];
 
       if (!user.actif) {
-        return sendError(res, HTTP_STATUS.UNAUTHORIZED, 'Compte inactif');
+        return sendError(res, 'Compte inactif', HTTP_STATUS.UNAUTHORIZED);
       }
 
       // Vérifier mot de passe (bcrypt puis fallback crypt() PostgreSQL)
@@ -79,7 +79,7 @@ export const login = async (req, res) => {
       }
 
       if (!isValid) {
-        return sendError(res, HTTP_STATUS.UNAUTHORIZED, 'Identifiants invalides');
+        return sendError(res, 'Identifiants invalides', HTTP_STATUS.UNAUTHORIZED);
       }
 
       const roleMap = {
@@ -130,7 +130,7 @@ export const login = async (req, res) => {
         }
       }
 
-      return sendError(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, 'Erreur serveur');
+      return sendError(res, 'Erreur serveur', HTTP_STATUS.INTERNAL_SERVER_ERROR);
     }
   } catch (error) {
     return handleError(res, error, 'login');
@@ -172,7 +172,7 @@ export const me = async (req, res) => {
       );
 
       if (result.rows.length === 0) {
-        return sendError(res, HTTP_STATUS.NOT_FOUND, 'Utilisateur non trouvé');
+        return sendError(res, 'Utilisateur non trouvé', HTTP_STATUS.NOT_FOUND);
       }
 
       const user = result.rows[0];
@@ -205,7 +205,7 @@ export const me = async (req, res) => {
         });
       }
 
-      return sendError(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, 'Erreur serveur');
+      return sendError(res, 'Erreur serveur', HTTP_STATUS.INTERNAL_SERVER_ERROR);
     }
   } catch (error) {
     return handleError(res, error, 'me');

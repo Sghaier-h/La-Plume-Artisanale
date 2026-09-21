@@ -261,7 +261,7 @@ export const updateArticleCatalogue = async (req, res) => {
 
     const fields = allowedFields.filter(f => data[f] !== undefined && !excludedFields.includes(f));
     if (fields.length === 0) {
-      return sendError(res, HTTP_STATUS.BAD_REQUEST, 'Aucune donnée à mettre à jour');
+      return sendError(res, 'Aucune donnée à mettre à jour', HTTP_STATUS.BAD_REQUEST);
     }
 
     const values = fields.map(f => data[f]);
@@ -500,12 +500,12 @@ export const importArticlesCsv = async (req, res) => {
     const userId = getUserId(req) || 1;
 
     if (!csv) {
-      return sendError(res, HTTP_STATUS.BAD_REQUEST, 'Contenu CSV requis');
+      return sendError(res, 'Contenu CSV requis', HTTP_STATUS.BAD_REQUEST);
     }
 
     const rows = fromCsv(csv);
     if (rows.length === 0) {
-      return sendError(res, HTTP_STATUS.BAD_REQUEST, 'CSV vide ou invalide');
+      return sendError(res, 'CSV vide ou invalide', HTTP_STATUS.BAD_REQUEST);
     }
 
     const report = { total: rows.length, created: 0, updated: 0, skipped: 0, errors: [] };
@@ -704,7 +704,7 @@ export const setPhotoUrl = async (req, res) => {
     try {
       new URL(image_url);
     } catch {
-      return sendError(res, HTTP_STATUS.BAD_REQUEST, 'URL invalide');
+      return sendError(res, 'URL invalide', HTTP_STATUS.BAD_REQUEST);
     }
 
     const result = await pool.query(
