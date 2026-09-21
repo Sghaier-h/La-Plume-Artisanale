@@ -46,7 +46,14 @@
       "Bash(node \"C:/Users/ALLBYF~1/AppData/Local/Temp/claude/D--OneDrive---FLYING-TEX-Projet-Logiciel-La-Plume-Artisanale/fa570a20-1e66-4661-bc3e-b85454eac093/scratchpad/test-all-endpoints.mjs\")",
       "Bash(grep -v \"path=\\\\\"/\\\\\"$\")",
       "mcp__visualize__read_me",
-      "mcp__visualize__show_widget"
+      "mcp__visualize__show_widget",
+      "Bash(curl -s http://localhost:3000 -o /dev/null -w \"frontend HTTP: %{http_code}\\\\n\")",
+      "Bash(curl -s http://localhost:3000/static/js/bundle.js -o /dev/null -w \"bundle HTTP: %{http_code}\\\\n\")",
+      "Bash(node \"C:/Users/ALLBYF~1/AppData/Local/Temp/claude/D--OneDrive---FLYING-TEX-Projet-Logiciel-La-Plume-Artisanale/fa570a20-1e66-4661-bc3e-b85454eac093/scratchpad/introspect-messages.mjs\")",
+      "Bash(cp \"C:/Users/ALLBYF~1/AppData/Local/Temp/claude/D--OneDrive---FLYING-TEX-Projet-Logiciel-La-Plume-Artisanale/fa570a20-1e66-4661-bc3e-b85454eac093/scratchpad/introspect-messages.mjs\" backend/introspect-messages.mjs)",
+      "Bash(node introspect-messages.mjs)",
+      "Bash(node introspect.mjs)",
+      "Bash(node run-messaging-migration.mjs)"
     ]
   }
 }

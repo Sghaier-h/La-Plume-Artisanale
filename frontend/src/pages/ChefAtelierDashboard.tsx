@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Camera, Package, AlertTriangle, Printer, Clock, ArrowRight, Scissors, Tag, Zap, PackageCheck, Bell, XCircle, CheckCircle, AlertCircle, Activity, BarChart3, Users, Wrench, Settings } from 'lucide-react';
+import {
+  Camera, Package, AlertTriangle, Printer, Clock, ArrowRight, Scissors, Tag, Zap,
+  PackageCheck, Bell, XCircle, CheckCircle, AlertCircle, Activity, Users, Wrench,
+} from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
+import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
 
-const ChefAtelierDashboard = () => {
-  const navigate = useNavigate();
+const ChefAtelierDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('operations');
   const [showScanModal, setShowScanModal] = useState(false);
   const [showDeuxiemeModal, setShowDeuxiemeModal] = useState(false);
@@ -12,15 +14,15 @@ const ChefAtelierDashboard = () => {
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
   const [scannedCode, setScannedCode] = useState('');
   const [selectedOperation, setSelectedOperation] = useState<string | null>(null);
-  const [expandedCommandes, setExpandedCommandes] = useState({});
+  const [expandedCommandes, setExpandedCommandes] = useState<Record<string, boolean>>({});
 
   const operations = [
-    { id: 'frange', label: 'Frange', icon: Scissors, color: 'bg-purple-500' },
-    { id: 'pliage', label: 'Pliage', icon: Package, color: 'bg-blue-500' },
-    { id: 'etiquetage', label: 'Étiquetage', icon: Tag, color: 'bg-green-500' },
-    { id: 'couture', label: 'Couture', icon: Activity, color: 'bg-orange-500' },
-    { id: 'repassage', label: 'Repassage', icon: Zap, color: 'bg-pink-500' },
-    { id: 'emballage', label: 'Emballage', icon: PackageCheck, color: 'bg-indigo-500' }
+    { id: 'frange', label: 'Frange', icon: Scissors },
+    { id: 'pliage', label: 'Pliage', icon: Package },
+    { id: 'etiquetage', label: 'Étiquetage', icon: Tag },
+    { id: 'couture', label: 'Couture', icon: Activity },
+    { id: 'repassage', label: 'Repassage', icon: Zap },
+    { id: 'emballage', label: 'Emballage', icon: PackageCheck },
   ];
 
   const [commandesEnCours] = useState<any[]>([
@@ -45,11 +47,11 @@ const ChefAtelierDashboard = () => {
                 frange: { statut: 'termine', qteSortie: 25, qteRetour: 25, qteEnCours: 0 },
                 pliage: { statut: 'en_cours', qteSortie: 25, qteRetour: 15, qteEnCours: 10 },
                 etiquetage: { statut: 'en_attente', qteSortie: 0, qteRetour: 0, qteEnCours: 0 },
-                emballage: { statut: 'en_attente', qteSortie: 0, qteRetour: 0, qteEnCours: 0 }
+                emballage: { statut: 'en_attente', qteSortie: 0, qteRetour: 0, qteEnCours: 0 },
               },
               qteDeuxieme: 0,
               qteRebut: 0,
-              sousTraitant: 'AliSassi'
+              sousTraitant: 'AliSassi',
             },
             {
               numSuivi: 'OF246533-2',
@@ -58,13 +60,13 @@ const ChefAtelierDashboard = () => {
                 frange: { statut: 'termine', qteSortie: 25, qteRetour: 25, qteEnCours: 0 },
                 pliage: { statut: 'en_cours', qteSortie: 25, qteRetour: 15, qteEnCours: 10 },
                 etiquetage: { statut: 'en_attente', qteSortie: 0, qteRetour: 0, qteEnCours: 0 },
-                emballage: { statut: 'en_attente', qteSortie: 0, qteRetour: 0, qteEnCours: 0 }
+                emballage: { statut: 'en_attente', qteSortie: 0, qteRetour: 0, qteEnCours: 0 },
               },
               qteDeuxieme: 0,
               qteRebut: 0,
-              sousTraitant: 'AliSassi'
-            }
-          ]
+              sousTraitant: 'AliSassi',
+            },
+          ],
         },
         {
           idArticle: 'ART002',
@@ -79,18 +81,18 @@ const ChefAtelierDashboard = () => {
               operations: {
                 pliage: { statut: 'termine', qteSortie: 30, qteRetour: 30, qteEnCours: 0 },
                 etiquetage: { statut: 'en_cours', qteSortie: 30, qteRetour: 20, qteEnCours: 10 },
-                emballage: { statut: 'en_attente', qteSortie: 0, qteRetour: 0, qteEnCours: 0 }
+                emballage: { statut: 'en_attente', qteSortie: 0, qteRetour: 0, qteEnCours: 0 },
               },
               qteDeuxieme: 0,
               qteRebut: 0,
-              sousTraitant: null
-            }
-          ]
-        }
+              sousTraitant: null,
+            },
+          ],
+        },
       ],
       alertes: [
-        { type: 'magasinier', message: 'Demande de finalisation pour colisage', urgent: true }
-      ]
+        { type: 'magasinier', message: 'Demande de finalisation pour colisage', urgent: true },
+      ],
     },
     {
       id: 'CMD002',
@@ -112,11 +114,11 @@ const ChefAtelierDashboard = () => {
               operations: {
                 pliage: { statut: 'termine', qteSortie: 50, qteRetour: 50, qteEnCours: 0 },
                 etiquetage: { statut: 'termine', qteSortie: 50, qteRetour: 50, qteEnCours: 0 },
-                emballage: { statut: 'en_cours', qteSortie: 50, qteRetour: 30, qteEnCours: 20 }
+                emballage: { statut: 'en_cours', qteSortie: 50, qteRetour: 30, qteEnCours: 20 },
               },
               qteDeuxieme: 2,
               qteRebut: 0,
-              sousTraitant: null
+              sousTraitant: null,
             },
             {
               numSuivi: 'CA250469-2',
@@ -124,19 +126,19 @@ const ChefAtelierDashboard = () => {
               operations: {
                 pliage: { statut: 'termine', qteSortie: 50, qteRetour: 50, qteEnCours: 0 },
                 etiquetage: { statut: 'en_cours', qteSortie: 50, qteRetour: 40, qteEnCours: 10 },
-                emballage: { statut: 'en_attente', qteSortie: 0, qteRetour: 0, qteEnCours: 0 }
+                emballage: { statut: 'en_attente', qteSortie: 0, qteRetour: 0, qteEnCours: 0 },
               },
               qteDeuxieme: 0,
               qteRebut: 0,
-              sousTraitant: null
-            }
-          ]
-        }
+              sousTraitant: null,
+            },
+          ],
+        },
       ],
       alertes: [
-        { type: 'date_proche', message: 'Date d\'envoi dans 3 jours', urgent: true }
-      ]
-    }
+        { type: 'date_proche', message: "Date d'envoi dans 3 jours", urgent: true },
+      ],
+    },
   ]);
 
   const [alertes] = useState([
@@ -146,16 +148,16 @@ const ChefAtelierDashboard = () => {
       commande: 'CM-FT0108',
       message: 'Demande finalisation pliage pour colisage (20 pièces)',
       urgent: true,
-      date: new Date().toISOString()
+      date: new Date().toISOString(),
     },
     {
       id: 'A002',
       type: 'date_envoi',
       commande: 'Stock FAF1020',
-      message: 'Date d\'envoi dans 3 jours - Reste 18 pièces à emballer',
+      message: "Date d'envoi dans 3 jours - Reste 18 pièces à emballer",
       urgent: true,
-      date: new Date().toISOString()
-    }
+      date: new Date().toISOString(),
+    },
   ]);
 
   const [analyseDeuxieme] = useState([
@@ -168,9 +170,9 @@ const ChefAtelierDashboard = () => {
       typesDefauts: [
         { type: 'Tache', quantite: 3 },
         { type: 'Couture irrégulière', quantite: 3 },
-        { type: 'Fil cassé', quantite: 2 }
-      ]
-    }
+        { type: 'Fil cassé', quantite: 2 },
+      ],
+    },
   ]);
 
   const [demandesMaintenance] = useState([
@@ -181,7 +183,7 @@ const ChefAtelierDashboard = () => {
       priorite: 'urgente',
       equipement: 'Machine de pliage #3',
       probleme: 'Arrêt complet - Ne démarre plus',
-      description: 'La machine s\'est arrêtée brutalement pendant l\'opération'
+      description: "La machine s'est arrêtée brutalement pendant l'opération",
     },
     {
       id: 'M002',
@@ -190,8 +192,8 @@ const ChefAtelierDashboard = () => {
       priorite: 'normale',
       equipement: 'Table de couture #1',
       probleme: 'Vibrations anormales',
-      description: 'Vibrations importantes lors de l\'utilisation'
-    }
+      description: "Vibrations importantes lors de l'utilisation",
+    },
   ]);
 
   const getStatsOperation = (operationId: string) => {
@@ -217,29 +219,41 @@ const ChefAtelierDashboard = () => {
     return { total, enCours, termine, enAttente };
   };
 
+  const statutBadge = (statut: string) => {
+    const map: Record<string, { bg: string; c: string }> = {
+      termine: { bg: 'var(--color-success-bg)', c: 'var(--color-success)' },
+      en_cours: { bg: 'var(--color-info-bg)', c: 'var(--color-info)' },
+      en_attente: { bg: 'var(--bg-hover)', c: 'var(--fg-secondary)' },
+    };
+    const b = map[statut] || map.en_attente;
+    return (
+      <span style={{ ...badgeBase, background: b.bg, color: b.c }}>
+        {statut.toUpperCase().replace('_', ' ')}
+      </span>
+    );
+  };
+
+  const prioriteBadge = (p: string) => {
+    if (p === 'urgente') return <span style={{ ...badgeBase, background: 'var(--color-danger-bg)', color: 'var(--color-danger)' }}>URGENTE</span>;
+    if (p === 'haute') return <span style={{ ...badgeBase, background: 'var(--color-warning-bg)', color: 'var(--color-warning)' }}>HAUTE</span>;
+    return <span style={{ ...badgeBase, background: 'var(--bg-hover)', color: 'var(--fg-secondary)' }}>NORMALE</span>;
+  };
+
+  // ─────────── Modals ───────────
   const MaintenanceModal = () => {
     const [equipement, setEquipement] = useState('');
     const [probleme, setProbleme] = useState('');
     const [description, setDescription] = useState('');
     const [priorite, setPriorite] = useState('normale');
-
     if (!showMaintenanceModal) return null;
-
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 max-w-md w-full">
-          <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-            <Wrench className="w-6 h-6 text-orange-600" />
-            Demande de Maintenance
-          </h3>
-          <div className="space-y-4">
+      <div style={modalOverlay}>
+        <div style={modalBox}>
+          <h3 style={modalTitle}><Wrench size={20} style={{ color: 'var(--accent-terracotta)' }} /> Demande de Maintenance</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--s-3)' }}>
             <div>
-              <label className="block text-sm font-medium mb-2">Équipement / Machine</label>
-              <select
-                value={equipement}
-                onChange={(e) => setEquipement(e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg"
-              >
+              <label style={labelStyle}>Équipement / Machine</label>
+              <select value={equipement} onChange={(e) => setEquipement(e.target.value)} style={inputStyle}>
                 <option value="">Sélectionner...</option>
                 <option value="Machine pliage #1">Machine pliage #1</option>
                 <option value="Machine pliage #2">Machine pliage #2</option>
@@ -251,12 +265,8 @@ const ChefAtelierDashboard = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">Type de Problème</label>
-              <select
-                value={probleme}
-                onChange={(e) => setProbleme(e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg"
-              >
+              <label style={labelStyle}>Type de Problème</label>
+              <select value={probleme} onChange={(e) => setProbleme(e.target.value)} style={inputStyle}>
                 <option value="">Sélectionner...</option>
                 <option value="Panne complète">Panne complète</option>
                 <option value="Dysfonctionnement">Dysfonctionnement</option>
@@ -268,44 +278,28 @@ const ChefAtelierDashboard = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">Priorité</label>
-              <select
-                value={priorite}
-                onChange={(e) => setPriorite(e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg"
-              >
+              <label style={labelStyle}>Priorité</label>
+              <select value={priorite} onChange={(e) => setPriorite(e.target.value)} style={inputStyle}>
                 <option value="normale">Normale</option>
                 <option value="haute">Haute</option>
                 <option value="urgente">Urgente (arrêt production)</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">Description détaillée</label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Décrivez le problème en détail..."
-                className="w-full px-4 py-2 border rounded-lg"
-                rows={3}
-              />
+              <label style={labelStyle}>Description détaillée</label>
+              <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Décrivez le problème en détail..." style={{ ...inputStyle, minHeight: 80 }} rows={3} />
             </div>
-            <div className="flex gap-2">
+            <div style={{ display: 'flex', gap: 'var(--s-2)' }}>
               <button
                 onClick={() => {
                   alert(`Demande de maintenance envoyée au mécanicien:\n${equipement} - ${probleme}`);
                   setShowMaintenanceModal(false);
                 }}
-                className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center justify-center gap-2"
+                style={{ ...btnPrimary, flex: 1, justifyContent: 'center' }}
               >
-                <Wrench className="w-4 h-4" />
-                Envoyer au Mécanicien
+                <Wrench size={14} /> Envoyer au Mécanicien
               </button>
-              <button
-                onClick={() => setShowMaintenanceModal(false)}
-                className="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400"
-              >
-                Annuler
-              </button>
+              <button onClick={() => setShowMaintenanceModal(false)} style={btnGhost}>Annuler</button>
             </div>
           </div>
         </div>
@@ -315,36 +309,25 @@ const ChefAtelierDashboard = () => {
 
   const ScanModal = () => {
     if (!showScanModal) return null;
-
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 max-w-md w-full">
-          <h3 className="text-xl font-bold mb-4">Scanner Numéro de Suivi</h3>
-          <div className="space-y-4">
+      <div style={modalOverlay}>
+        <div style={modalBox}>
+          <h3 style={modalTitle}>Scanner Numéro de Suivi</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--s-3)' }}>
             <div>
-              <label className="block text-sm font-medium mb-2">Numéro de Suivi</label>
+              <label style={labelStyle}>Numéro de Suivi</label>
               <input
                 type="text"
                 value={scannedCode}
                 onChange={(e) => setScannedCode(e.target.value)}
                 placeholder="Scannez ou saisissez le code"
-                className="w-full px-4 py-2 border rounded-lg"
+                style={inputStyle}
                 autoFocus
               />
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowScanModal(false)}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                Valider
-              </button>
-              <button
-                onClick={() => setShowScanModal(false)}
-                className="flex-1 px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400"
-              >
-                Annuler
-              </button>
+            <div style={{ display: 'flex', gap: 'var(--s-2)' }}>
+              <button onClick={() => setShowScanModal(false)} style={{ ...btnPrimary, flex: 1, justifyContent: 'center' }}>Valider</button>
+              <button onClick={() => setShowScanModal(false)} style={{ ...btnGhost, flex: 1, justifyContent: 'center' }}>Annuler</button>
             </div>
           </div>
         </div>
@@ -356,39 +339,23 @@ const ChefAtelierDashboard = () => {
     const [qteDeuxieme, setQteDeuxieme] = useState(0);
     const [typeDefaut, setTypeDefaut] = useState('');
     const [decision, setDecision] = useState('');
-
     if (!showDeuxiemeModal) return null;
-
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 max-w-md w-full">
-          <h3 className="text-xl font-bold mb-4">Déclaration Deuxième Choix</h3>
-          <div className="space-y-4">
+      <div style={modalOverlay}>
+        <div style={modalBox}>
+          <h3 style={modalTitle}>Déclaration Deuxième Choix</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--s-3)' }}>
             <div>
-              <label className="block text-sm font-medium mb-2">Numéro de Suivi</label>
-              <input
-                type="text"
-                value={scannedCode}
-                readOnly
-                className="w-full px-4 py-2 border rounded-lg bg-gray-50"
-              />
+              <label style={labelStyle}>Numéro de Suivi</label>
+              <input type="text" value={scannedCode} readOnly style={{ ...inputStyle, background: 'var(--bg-hover)' }} />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">Quantité Deuxième</label>
-              <input
-                type="number"
-                value={qteDeuxieme}
-                onChange={(e) => setQteDeuxieme(parseInt(e.target.value) || 0)}
-                className="w-full px-4 py-2 border rounded-lg"
-              />
+              <label style={labelStyle}>Quantité Deuxième</label>
+              <input type="number" value={qteDeuxieme} onChange={(e) => setQteDeuxieme(parseInt(e.target.value) || 0)} style={inputStyle} />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">Type de Défaut</label>
-              <select
-                value={typeDefaut}
-                onChange={(e) => setTypeDefaut(e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg"
-              >
+              <label style={labelStyle}>Type de Défaut</label>
+              <select value={typeDefaut} onChange={(e) => setTypeDefaut(e.target.value)} style={inputStyle}>
                 <option value="">Sélectionner...</option>
                 <option value="Tache">Tache</option>
                 <option value="Couture irrégulière">Couture irrégulière</option>
@@ -398,33 +365,24 @@ const ChefAtelierDashboard = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">Décision</label>
-              <select
-                value={decision}
-                onChange={(e) => setDecision(e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg"
-              >
+              <label style={labelStyle}>Décision</label>
+              <select value={decision} onChange={(e) => setDecision(e.target.value)} style={inputStyle}>
                 <option value="">Sélectionner...</option>
                 <option value="approuve">Approuvé (récupérable)</option>
                 <option value="non_approuve">Non approuvé (rebut)</option>
               </select>
             </div>
-            <div className="flex gap-2">
+            <div style={{ display: 'flex', gap: 'var(--s-2)' }}>
               <button
                 onClick={() => {
                   alert(`Deuxième choix enregistré: ${qteDeuxieme} pièces - Type: ${typeDefaut} - Décision: ${decision}`);
                   setShowDeuxiemeModal(false);
                 }}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                style={{ ...btnPrimary, flex: 1, justifyContent: 'center' }}
               >
                 Enregistrer et Imprimer Étiquette
               </button>
-              <button
-                onClick={() => setShowDeuxiemeModal(false)}
-                className="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400"
-              >
-                Annuler
-              </button>
+              <button onClick={() => setShowDeuxiemeModal(false)} style={btnGhost}>Annuler</button>
             </div>
           </div>
         </div>
@@ -435,58 +393,41 @@ const ChefAtelierDashboard = () => {
   const ComplementUrgentModal = () => {
     const [qteComplement, setQteComplement] = useState(0);
     const [motif, setMotif] = useState('');
-
     if (!showComplementModal) return null;
-
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 max-w-md w-full">
-          <h3 className="text-xl font-bold mb-4 text-red-600">Demande de Complément Urgent</h3>
-          <div className="space-y-4">
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-              <p className="text-sm text-red-800">
+      <div style={modalOverlay}>
+        <div style={modalBox}>
+          <h3 style={{ ...modalTitle, color: 'var(--color-danger)' }}>Demande de Complément Urgent</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--s-3)' }}>
+            <div style={{ background: 'var(--color-danger-bg)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)', padding: 'var(--s-3)' }}>
+              <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-danger)', margin: 0 }}>
                 Cette demande sera envoyée à tous les postes de fabrication
               </p>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">Quantité à compléter</label>
-              <input
-                type="number"
-                value={qteComplement}
-                onChange={(e) => setQteComplement(parseInt(e.target.value) || 0)}
-                className="w-full px-4 py-2 border rounded-lg"
-              />
+              <label style={labelStyle}>Quantité à compléter</label>
+              <input type="number" value={qteComplement} onChange={(e) => setQteComplement(parseInt(e.target.value) || 0)} style={inputStyle} />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">Motif</label>
-              <select
-                value={motif}
-                onChange={(e) => setMotif(e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg"
-              >
+              <label style={labelStyle}>Motif</label>
+              <select value={motif} onChange={(e) => setMotif(e.target.value)} style={inputStyle}>
                 <option value="">Sélectionner...</option>
                 <option value="deuxieme_choix">Deuxième choix non récupérable</option>
                 <option value="rebut">Rebut important</option>
                 <option value="perte">Perte lors du traitement</option>
               </select>
             </div>
-            <div className="flex gap-2">
+            <div style={{ display: 'flex', gap: 'var(--s-2)' }}>
               <button
                 onClick={() => {
                   alert(`Demande de complément envoyée: ${qteComplement} pièces`);
                   setShowComplementModal(false);
                 }}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center justify-center gap-2"
+                style={{ ...btnPrimary, flex: 1, justifyContent: 'center', background: 'var(--color-danger)', borderColor: 'var(--color-danger)' }}
               >
-                <AlertTriangle className="w-4 h-4" />
-                Envoyer Demande Urgente
+                <AlertTriangle size={14} /> Envoyer Demande Urgente
               </button>
-              <button
-                onClick={() => setShowComplementModal(false)}
-                className="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400"
-              >
-                Annuler
-              </button>
+              <button onClick={() => setShowComplementModal(false)} style={btnGhost}>Annuler</button>
             </div>
           </div>
         </div>
@@ -494,176 +435,186 @@ const ChefAtelierDashboard = () => {
     );
   };
 
-  const OperationsView = () => (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        {operations.map(op => {
+  // ─────────── Views ───────────
+  const totalDeuxieme = commandesEnCours.reduce(
+    (sum: number, cmd: any) =>
+      sum + cmd.articles.reduce((s: number, art: any) => s + art.suivis.reduce((ss: number, suivi: any) => ss + suivi.qteDeuxieme, 0), 0),
+    0,
+  );
+  const totalEnCours = operations.reduce((sum, op) => sum + getStatsOperation(op.id).enCours, 0);
+
+  const tabs = [
+    { id: 'operations', label: 'Opérations' },
+    { id: 'commandes', label: 'Commandes' },
+    { id: 'alertes', label: 'Alertes' },
+    { id: 'maintenance', label: 'Maintenance' },
+    { id: 'analyse', label: 'Analyse 2ème' },
+  ];
+
+  const renderOperationsView = () => (
+    <>
+      <div className="lp-grid-3">
+        {operations.map((op) => {
           const stats = getStatsOperation(op.id);
           const OpIcon = op.icon;
+          const selected = selectedOperation === op.id;
           return (
-            <div
+            <button
               key={op.id}
-              onClick={() => setSelectedOperation(op.id)}
-              className={`${op.color} bg-opacity-10 border-2 ${
-                selectedOperation === op.id ? 'border-gray-800' : 'border-transparent'
-              } rounded-lg p-4 cursor-pointer hover:shadow-lg transition-all`}
+              onClick={() => setSelectedOperation(selected ? null : op.id)}
+              style={{
+                textAlign: 'left',
+                background: 'var(--bg-elevated)',
+                border: `1px solid ${selected ? 'var(--accent-rose)' : 'var(--border-subtle)'}`,
+                borderRadius: 'var(--radius-md)',
+                padding: 'var(--s-4)',
+                cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 'var(--s-2)',
+              }}
             >
-              <div className="flex flex-col items-center text-center">
-                <div className={`${op.color} bg-opacity-20 p-3 rounded-full mb-2`}>
-                  <OpIcon className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="font-bold text-sm mb-2">{op.label}</h3>
-                <div className="space-y-1 text-xs w-full">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">En cours:</span>
-                    <span className="font-bold text-orange-600">{stats.enCours}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Terminé:</span>
-                    <span className="font-bold text-green-600">{stats.termine}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">En attente:</span>
-                    <span className="font-bold text-gray-600">{stats.enAttente}</span>
-                  </div>
-                </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <OpIcon size={16} style={{ color: 'var(--accent-rose)' }} />
+                <span style={{ fontWeight: 600, color: 'var(--fg-primary)' }}>{op.label}</span>
               </div>
-            </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-xs)' }}>
+                <span style={{ color: 'var(--fg-muted)' }}>En cours</span>
+                <span style={{ fontWeight: 600, color: 'var(--color-warning)' }}>{stats.enCours}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-xs)' }}>
+                <span style={{ color: 'var(--fg-muted)' }}>Terminé</span>
+                <span style={{ fontWeight: 600, color: 'var(--color-success)' }}>{stats.termine}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-xs)' }}>
+                <span style={{ color: 'var(--fg-muted)' }}>En attente</span>
+                <span style={{ fontWeight: 600, color: 'var(--fg-secondary)' }}>{stats.enAttente}</span>
+              </div>
+            </button>
           );
         })}
       </div>
 
       {selectedOperation && (
-        <div className="bg-white border rounded-lg p-4">
-          <h3 className="font-bold text-lg mb-4">
-            Commandes - {operations.find(o => o.id === selectedOperation)?.label}
-          </h3>
-          <div className="space-y-3">
+        <SectionCard title={`Commandes — ${operations.find((o) => o.id === selectedOperation)?.label}`}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--s-3)' }}>
             {commandesEnCours.map((cmd: any) =>
               cmd.articles.map((article: any) =>
-                article.suivis.filter((s: any) => (s.operations as any)[selectedOperation!]).map((suivi: any) => {
-                  const op = (suivi.operations as any)[selectedOperation!];
-                  return (
-                    <div key={suivi.numSuivi} className="border rounded-lg p-4 hover:bg-gray-50">
-                      <div className="flex items-center justify-between mb-3">
-                        <div>
-                          <h4 className="font-bold">{suivi.numSuivi}</h4>
-                          <p className="text-sm text-gray-600">
-                            {article.modele} {article.dimension} - {cmd.client}
-                          </p>
-                          <p className="text-xs text-gray-500">Commande: {cmd.numCommande}</p>
+                article.suivis
+                  .filter((s: any) => s.operations[selectedOperation!])
+                  .map((suivi: any) => {
+                    const op = suivi.operations[selectedOperation!];
+                    return (
+                      <div key={suivi.numSuivi} style={cardStyle}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--s-3)' }}>
+                          <div>
+                            <h4 style={{ margin: 0, color: 'var(--fg-primary)' }}>{suivi.numSuivi}</h4>
+                            <p style={{ margin: '2px 0', fontSize: 'var(--text-sm)', color: 'var(--fg-secondary)' }}>
+                              {article.modele} {article.dimension} — {cmd.client}
+                            </p>
+                            <p style={{ margin: 0, fontSize: 'var(--text-xs)', color: 'var(--fg-muted)' }}>Commande: {cmd.numCommande}</p>
+                          </div>
+                          {statutBadge(op.statut)}
                         </div>
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          op.statut === 'termine' ? 'bg-green-100 text-green-800' :
-                          op.statut === 'en_cours' ? 'bg-blue-100 text-blue-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {op.statut.toUpperCase().replace('_', ' ')}
-                        </span>
-                      </div>
-                      
-                      <div className="grid grid-cols-4 gap-3 mb-3">
-                        <div className="bg-gray-50 p-2 rounded text-center">
-                          <div className="text-xs text-gray-500">Lot</div>
-                          <div className="text-lg font-bold">{suivi.qteLot}</div>
+                        <div className="lp-grid-3" style={{ marginBottom: 'var(--s-3)' }}>
+                          {(['qteLot', 'qteSortie', 'qteRetour', 'qteEnCours'] as const).map((k) => {
+                            const label = k === 'qteLot' ? 'Lot' : k === 'qteSortie' ? 'Sortie' : k === 'qteRetour' ? 'Retour' : 'En cours';
+                            const value = k === 'qteLot' ? suivi.qteLot : op[k];
+                            return (
+                              <div key={k} style={statTile}>
+                                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-muted)' }}>{label}</div>
+                                <div style={{ fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--fg-primary)' }}>{value}</div>
+                              </div>
+                            );
+                          })}
                         </div>
-                        <div className="bg-blue-50 p-2 rounded text-center">
-                          <div className="text-xs text-gray-500">Sortie</div>
-                          <div className="text-lg font-bold text-blue-600">{op.qteSortie}</div>
-                        </div>
-                        <div className="bg-green-50 p-2 rounded text-center">
-                          <div className="text-xs text-gray-500">Retour</div>
-                          <div className="text-lg font-bold text-green-600">{op.qteRetour}</div>
-                        </div>
-                        <div className="bg-orange-50 p-2 rounded text-center">
-                          <div className="text-xs text-gray-500">En cours</div>
-                          <div className="text-lg font-bold text-orange-600">{op.qteEnCours}</div>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-2">
-                        {op.statut === 'en_attente' && (
-                          <button className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2">
-                            <ArrowRight className="w-4 h-4" />
-                            Commencer
+                        <div style={{ display: 'flex', gap: 'var(--s-2)', flexWrap: 'wrap' }}>
+                          {op.statut === 'en_attente' && (
+                            <button style={{ ...btnPrimary, flex: 1, justifyContent: 'center' }}>
+                              <ArrowRight size={14} /> Commencer
+                            </button>
+                          )}
+                          {op.statut === 'en_cours' && op.qteEnCours > 0 && (
+                            <button style={{ ...btnPrimary, flex: 1, justifyContent: 'center' }}>
+                              <Package size={14} /> Préparer ({op.qteEnCours})
+                            </button>
+                          )}
+                          {op.qteRetour > 0 && (
+                            <button style={{ ...btnGhost, flex: 1, justifyContent: 'center' }}>
+                              <CheckCircle size={14} /> Transférer
+                            </button>
+                          )}
+                          <button
+                            onClick={() => {
+                              setScannedCode(suivi.numSuivi);
+                              setShowDeuxiemeModal(true);
+                            }}
+                            style={{ ...btnGhost, color: 'var(--color-danger)' }}
+                          >
+                            <XCircle size={14} />
                           </button>
-                        )}
-                        {op.statut === 'en_cours' && op.qteEnCours > 0 && (
-                          <button className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center justify-center gap-2">
-                            <Package className="w-4 h-4" />
-                            Préparer ({op.qteEnCours})
-                          </button>
-                        )}
-                        {op.qteRetour > 0 && (
-                          <button className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center gap-2">
-                            <CheckCircle className="w-4 h-4" />
-                            Transférer
-                          </button>
-                        )}
-                        <button
-                          onClick={() => {
-                            setScannedCode(suivi.numSuivi);
-                            setShowDeuxiemeModal(true);
-                          }}
-                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                        >
-                          <XCircle className="w-4 h-4" />
-                        </button>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })
-              )
+                    );
+                  }),
+              ),
             )}
           </div>
-        </div>
+        </SectionCard>
       )}
-    </div>
+    </>
   );
 
-  const CommandesView = () => (
-    <div className="space-y-4">
+  const renderCommandesView = () => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--s-3)' }}>
       {commandesEnCours.map((cmd: any) => {
         const totalArticles = cmd.articles.length;
-        const isExpanded = (expandedCommandes as any)[cmd.id];
-
+        const isExpanded = expandedCommandes[cmd.id];
         return (
-          <div key={cmd.id} className="border rounded-lg p-6 bg-white shadow-sm">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <h3 className="font-bold text-xl">Commande {cmd.numCommande}</h3>
-                  <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+          <div key={cmd.id} style={cardStyle}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--s-3)' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--s-2)', marginBottom: 4 }}>
+                  <h3 style={{ margin: 0, color: 'var(--fg-primary)' }}>Commande {cmd.numCommande}</h3>
+                  <span style={{ ...badgeBase, background: 'var(--color-info-bg)', color: 'var(--color-info)' }}>
                     {totalArticles} article{totalArticles > 1 ? 's' : ''}
                   </span>
                   {cmd.joursRestants <= 5 && (
-                    <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {cmd.joursRestants} jours
+                    <span style={{ ...badgeBase, background: 'var(--color-danger-bg)', color: 'var(--color-danger)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      <Clock size={10} /> {cmd.joursRestants} jours
                     </span>
                   )}
                 </div>
-                <div className="flex gap-4 text-sm">
-                  <div><span className="text-gray-500">Client:</span> <span className="font-medium">{cmd.client}</span></div>
-                  <div><span className="text-gray-500">Envoi:</span> <span className="font-medium">{new Date(cmd.dateEnvoi).toLocaleDateString('fr-FR')}</span></div>
+                <div style={{ display: 'flex', gap: 'var(--s-4)', fontSize: 'var(--text-sm)', color: 'var(--fg-secondary)' }}>
+                  <span>Client: <strong style={{ color: 'var(--fg-primary)' }}>{cmd.client}</strong></span>
+                  <span>Envoi: <strong style={{ color: 'var(--fg-primary)' }}>{new Date(cmd.dateEnvoi).toLocaleDateString('fr-FR')}</strong></span>
                 </div>
               </div>
               <button
-                onClick={() => setExpandedCommandes({...expandedCommandes, [cmd.id]: !isExpanded})}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                onClick={() => setExpandedCommandes({ ...expandedCommandes, [cmd.id]: !isExpanded })}
+                style={btnPrimary}
               >
                 {isExpanded ? 'Réduire' : 'Détails'}
               </button>
             </div>
 
-            {cmd.alertes && cmd.alertes.length > 0 && (
-              <div className="space-y-2 mb-4">
+            {cmd.alertes?.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--s-2)', marginBottom: 'var(--s-3)' }}>
                 {cmd.alertes.map((alerte: any, idx: number) => (
-                  <div key={idx} className={`flex items-center gap-2 p-3 rounded-lg ${
-                    alerte.urgent ? 'bg-red-50 border border-red-200' : 'bg-yellow-50 border border-yellow-200'
-                  }`}>
-                    <Bell className={`w-5 h-5 ${alerte.urgent ? 'text-red-600' : 'text-yellow-600'}`} />
-                    <span className={`text-sm font-medium ${alerte.urgent ? 'text-red-800' : 'text-yellow-800'}`}>
+                  <div
+                    key={idx}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: 'var(--s-3)',
+                      background: alerte.urgent ? 'var(--color-danger-bg)' : 'var(--color-warning-bg)',
+                      border: '1px solid var(--border-subtle)',
+                      borderRadius: 'var(--radius-sm)',
+                    }}
+                  >
+                    <Bell size={16} style={{ color: alerte.urgent ? 'var(--color-danger)' : 'var(--color-warning)' }} />
+                    <span style={{ fontSize: 'var(--text-sm)', color: alerte.urgent ? 'var(--color-danger)' : 'var(--color-warning)' }}>
                       {alerte.message}
                     </span>
                   </div>
@@ -671,134 +622,86 @@ const ChefAtelierDashboard = () => {
               </div>
             )}
 
-            {/* Articles de la commande */}
-            <div className="space-y-4">
-              {cmd.articles.map((article: any, artIdx: number) => {
-                const totalPremierChoix = (article.suivis as any[]).reduce((sum: number, s: any) => sum + (s.qteLot - s.qteDeuxieme - s.qteRebut), 0) as number;
-                const totalDeuxieme = (article.suivis as any[]).reduce((sum: number, s: any) => sum + s.qteDeuxieme, 0) as number;
-                const totalRebut = (article.suivis as any[]).reduce((sum: number, s: any) => sum + s.qteRebut, 0) as number;
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--s-3)' }}>
+              {cmd.articles.map((article: any) => {
+                const totalPremierChoix = article.suivis.reduce((sum: number, s: any) => sum + (s.qteLot - s.qteDeuxieme - s.qteRebut), 0);
+                const totalD = article.suivis.reduce((sum: number, s: any) => sum + s.qteDeuxieme, 0);
+                const totalRebut = article.suivis.reduce((sum: number, s: any) => sum + s.qteRebut, 0);
                 const progression = (totalPremierChoix / article.qteCommandee) * 100;
 
                 return (
-                  <div key={article.idArticle} className={`border-l-4 ${artIdx === 0 ? 'border-blue-500' : artIdx === 1 ? 'border-green-500' : 'border-purple-500'} pl-4`}>
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <h4 className="font-bold text-lg">{article.modele} {article.dimension}</h4>
-                        <p className="text-sm text-gray-600">Réf: {article.refCommercial}</p>
-                      </div>
+                  <div key={article.idArticle} style={{ borderLeft: '3px solid var(--accent-rose)', paddingLeft: 'var(--s-3)' }}>
+                    <div style={{ marginBottom: 'var(--s-2)' }}>
+                      <h4 style={{ margin: 0, color: 'var(--fg-primary)' }}>{article.modele} {article.dimension}</h4>
+                      <p style={{ margin: 0, fontSize: 'var(--text-sm)', color: 'var(--fg-muted)' }}>Réf: {article.refCommercial}</p>
                     </div>
-
-                    <div className="grid grid-cols-4 gap-4 mb-3">
-                      <div className="bg-blue-50 p-2 rounded text-center">
-                        <div className="text-xs text-gray-500">Commandée</div>
-                        <div className="text-xl font-bold text-blue-600">{article.qteCommandee}</div>
-                      </div>
-                      <div className="bg-green-50 p-2 rounded text-center">
-                        <div className="text-xs text-gray-500">Premier Choix</div>
-                        <div className="text-xl font-bold text-green-600">{totalPremierChoix}</div>
-                      </div>
-                      <div className="bg-orange-50 p-2 rounded text-center">
-                        <div className="text-xs text-gray-500">Deuxième</div>
-                        <div className="text-xl font-bold text-orange-600">{totalDeuxieme}</div>
-                      </div>
-                      <div className="bg-red-50 p-2 rounded text-center">
-                        <div className="text-xs text-gray-500">Rebut</div>
-                        <div className="text-xl font-bold text-red-600">{totalRebut}</div>
-                      </div>
+                    <div className="lp-grid-3" style={{ marginBottom: 'var(--s-3)' }}>
+                      <div style={statTile}><div style={statLabel}>Commandée</div><div style={statValue}>{article.qteCommandee}</div></div>
+                      <div style={statTile}><div style={statLabel}>Premier Choix</div><div style={{ ...statValue, color: 'var(--color-success)' }}>{totalPremierChoix}</div></div>
+                      <div style={statTile}><div style={statLabel}>Deuxième</div><div style={{ ...statValue, color: 'var(--color-warning)' }}>{totalD}</div></div>
+                      <div style={statTile}><div style={statLabel}>Rebut</div><div style={{ ...statValue, color: 'var(--color-danger)' }}>{totalRebut}</div></div>
                     </div>
-
-                    <div className="mb-3">
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="font-medium">Progression</span>
-                        <span className="font-bold text-blue-600">{progression.toFixed(1)}%</span>
+                    <div style={{ marginBottom: 'var(--s-3)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-sm)', marginBottom: 4 }}>
+                        <span style={{ color: 'var(--fg-secondary)' }}>Progression</span>
+                        <span style={{ fontWeight: 700, color: 'var(--accent-rose)' }}>{progression.toFixed(1)}%</span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className={`h-2 rounded-full transition-all ${
-                            progression >= 100 ? 'bg-green-600' : 
-                            progression >= 75 ? 'bg-blue-600' : 
-                            'bg-orange-600'
-                          }`}
-                          style={{ width: `${Math.min(progression, 100)}%` }}
-                        />
+                      <div style={{ width: '100%', height: 6, background: 'var(--border-subtle)', borderRadius: 999 }}>
+                        <div style={{ width: `${Math.min(progression, 100)}%`, height: '100%', background: 'var(--accent-rose)', borderRadius: 999 }} />
                       </div>
                     </div>
 
                     {isExpanded && (
-                      <div className="space-y-3 mt-3">
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--s-2)' }}>
                         {article.suivis.map((suivi: any) => (
-                          <div key={suivi.numSuivi} className="border rounded-lg p-3 bg-gray-50">
-                            <div className="flex items-center justify-between mb-2">
-                              <h5 className="font-bold flex items-center gap-2">
-                                <Tag className="w-4 h-4" />
-                                {suivi.numSuivi}
+                          <div key={suivi.numSuivi} style={{ ...cardStyle, background: 'var(--bg-hover)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--s-2)' }}>
+                              <h5 style={{ margin: 0, display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--fg-primary)' }}>
+                                <Tag size={14} /> {suivi.numSuivi}
                               </h5>
-                              <div className="flex gap-2 text-xs">
-                                <span className="px-2 py-1 bg-white rounded">Lot: {suivi.qteLot}</span>
+                              <div style={{ display: 'flex', gap: 6 }}>
+                                <span style={{ ...badgeBase, background: 'var(--bg-elevated)', color: 'var(--fg-secondary)' }}>Lot: {suivi.qteLot}</span>
                                 {suivi.sousTraitant && (
-                                  <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded">
-                                    S/T: {suivi.sousTraitant}
-                                  </span>
+                                  <span style={{ ...badgeBase, background: 'var(--color-info-bg)', color: 'var(--color-info)' }}>S/T: {suivi.sousTraitant}</span>
                                 )}
                               </div>
                             </div>
-
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+                            <div className="lp-grid-3">
                               {Object.entries(suivi.operations).map(([opId, opData]: [string, any]) => {
-                                const opDef = operations.find(o => o.id === opId);
+                                const opDef = operations.find((o) => o.id === opId);
                                 const OpIcon = opDef?.icon || Package;
                                 return (
-                                  <div key={opId} className={`border-2 rounded-lg p-2 ${
-                                    opData.statut === 'termine' ? 'border-green-300 bg-green-50' :
-                                    opData.statut === 'en_cours' ? 'border-blue-300 bg-blue-50' :
-                                    'border-gray-200 bg-white'
-                                  }`}>
-                                    <div className="flex items-center gap-1 mb-1">
-                                      <OpIcon className="w-3 h-3" />
-                                      <span className="text-xs font-medium">{opDef?.label}</span>
+                                  <div key={opId} style={{ padding: 'var(--s-2)', border: '1px solid var(--border-subtle)', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-sm)' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+                                      <OpIcon size={12} style={{ color: 'var(--accent-rose)' }} />
+                                      <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--fg-primary)' }}>{opDef?.label}</span>
                                     </div>
-                                    <div className="text-xs space-y-0.5">
-                                      <div className="flex justify-between">
-                                        <span className="text-gray-500">S:</span>
-                                        <span className="font-bold">{opData.qteSortie}</span>
-                                      </div>
-                                      <div className="flex justify-between">
-                                        <span className="text-gray-500">R:</span>
-                                        <span className="font-bold text-green-600">{opData.qteRetour}</span>
-                                      </div>
-                                      <div className="flex justify-between">
-                                        <span className="text-gray-500">EC:</span>
-                                        <span className="font-bold text-orange-600">{opData.qteEnCours}</span>
-                                      </div>
+                                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-secondary)' }}>
+                                      S: <strong>{opData.qteSortie}</strong> / R: <strong style={{ color: 'var(--color-success)' }}>{opData.qteRetour}</strong> / EC: <strong style={{ color: 'var(--color-warning)' }}>{opData.qteEnCours}</strong>
                                     </div>
                                   </div>
                                 );
                               })}
                             </div>
-
-                            <div className="flex gap-2 mt-3">
+                            <div style={{ display: 'flex', gap: 'var(--s-2)', marginTop: 'var(--s-2)' }}>
                               <button
                                 onClick={() => setScannedCode(suivi.numSuivi)}
-                                className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm flex items-center justify-center gap-2"
+                                style={{ ...btnPrimary, flex: 1, justifyContent: 'center' }}
                               >
-                                <Camera className="w-4 h-4" />
-                                Scanner
+                                <Camera size={12} /> Scanner
                               </button>
                               <button
                                 onClick={() => {
                                   setScannedCode(suivi.numSuivi);
                                   setShowDeuxiemeModal(true);
                                 }}
-                                className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
+                                style={{ ...btnGhost, color: 'var(--color-danger)' }}
                               >
                                 2ème
                               </button>
                               {totalPremierChoix < article.qteCommandee && (
-                                <button
-                                  onClick={() => setShowComplementModal(true)}
-                                  className="px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm"
-                                >
-                                  <AlertTriangle className="w-4 h-4" />
+                                <button onClick={() => setShowComplementModal(true)} style={{ ...btnGhost, color: 'var(--color-warning)' }}>
+                                  <AlertTriangle size={12} />
                                 </button>
                               )}
                             </div>
@@ -816,159 +719,100 @@ const ChefAtelierDashboard = () => {
     </div>
   );
 
-  const MaintenanceView = () => (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold">Demandes de Maintenance</h2>
-        <button
-          onClick={() => setShowMaintenanceModal(true)}
-          className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center gap-2"
-        >
-          <Wrench className="w-4 h-4" />
-          Nouvelle Demande
+  const renderMaintenanceView = () => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--s-3)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h3 style={{ margin: 0, color: 'var(--fg-primary)' }}>Demandes de Maintenance</h3>
+        <button onClick={() => setShowMaintenanceModal(true)} style={btnPrimary}>
+          <Wrench size={14} /> Nouvelle Demande
         </button>
       </div>
-
-      {demandesMaintenance.map(demande => (
-        <div key={demande.id} className={`border-2 rounded-lg p-4 ${
-          demande.priorite === 'urgente' ? 'border-red-300 bg-red-50' :
-          demande.priorite === 'haute' ? 'border-orange-300 bg-orange-50' :
-          'border-gray-300 bg-white'
-        }`}>
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <Wrench className={`w-5 h-5 ${
-                  demande.priorite === 'urgente' ? 'text-red-600' :
-                  demande.priorite === 'haute' ? 'text-orange-600' :
-                  'text-gray-600'
-                }`} />
-                <span className={`px-2 py-1 rounded text-xs font-medium ${
-                  demande.statut === 'en_cours' ? 'bg-blue-100 text-blue-800' :
-                  demande.statut === 'termine' ? 'bg-green-100 text-green-800' :
-                  'bg-gray-100 text-gray-800'
-                }`}>
-                  {demande.statut.toUpperCase().replace('_', ' ')}
-                </span>
-                <span className={`px-2 py-1 rounded text-xs font-medium ${
-                  demande.priorite === 'urgente' ? 'bg-red-100 text-red-800' :
-                  demande.priorite === 'haute' ? 'bg-orange-100 text-orange-800' :
-                  'bg-gray-100 text-gray-800'
-                }`}>
-                  {demande.priorite.toUpperCase()}
-                </span>
-              </div>
-              <h3 className="font-bold mb-1">{demande.equipement}</h3>
-              <p className="text-sm text-gray-700 mb-2">{demande.probleme}</p>
-              <p className="text-sm text-gray-600 italic">{demande.description}</p>
-              <p className="text-xs text-gray-500 mt-2">
-                Demande créée le {new Date(demande.date).toLocaleDateString('fr-FR')}
-              </p>
-            </div>
+      {demandesMaintenance.map((demande) => (
+        <div key={demande.id} style={cardStyle}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--s-2)', marginBottom: 'var(--s-2)' }}>
+            <Wrench size={16} style={{ color: demande.priorite === 'urgente' ? 'var(--color-danger)' : demande.priorite === 'haute' ? 'var(--color-warning)' : 'var(--fg-secondary)' }} />
+            {statutBadge(demande.statut)}
+            {prioriteBadge(demande.priorite)}
           </div>
+          <h4 style={{ margin: '0 0 4px 0', color: 'var(--fg-primary)' }}>{demande.equipement}</h4>
+          <p style={{ margin: '0 0 4px 0', fontSize: 'var(--text-sm)', color: 'var(--fg-secondary)' }}>{demande.probleme}</p>
+          <p style={{ margin: '0 0 var(--s-2) 0', fontSize: 'var(--text-sm)', fontStyle: 'italic', color: 'var(--fg-muted)' }}>{demande.description}</p>
+          <p style={{ margin: 0, fontSize: 'var(--text-xs)', color: 'var(--fg-muted)' }}>
+            Demande créée le {new Date(demande.date).toLocaleDateString('fr-FR')}
+          </p>
         </div>
       ))}
     </div>
   );
 
-  const AlertesView = () => (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold">Alertes Actives</h2>
-        <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full font-bold">
-          {alertes.filter(a => a.urgent).length} urgentes
+  const renderAlertesView = () => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--s-3)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h3 style={{ margin: 0, color: 'var(--fg-primary)' }}>Alertes Actives</h3>
+        <span style={{ ...badgeBase, background: 'var(--color-danger-bg)', color: 'var(--color-danger)' }}>
+          {alertes.filter((a) => a.urgent).length} urgentes
         </span>
       </div>
-
-      {alertes.map(alerte => (
-        <div key={alerte.id} className={`border-2 rounded-lg p-4 ${
-          alerte.urgent ? 'border-red-300 bg-red-50' : 'border-yellow-300 bg-yellow-50'
-        }`}>
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
+      {alertes.map((alerte) => (
+        <div key={alerte.id} style={cardStyle}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--s-3)' }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--s-2)', marginBottom: 'var(--s-2)' }}>
                 {alerte.urgent ? (
-                  <AlertCircle className="w-5 h-5 text-red-600" />
+                  <AlertCircle size={16} style={{ color: 'var(--color-danger)' }} />
                 ) : (
-                  <AlertTriangle className="w-5 h-5 text-yellow-600" />
+                  <AlertTriangle size={16} style={{ color: 'var(--color-warning)' }} />
                 )}
-                <span className={`px-2 py-1 rounded text-xs font-medium ${
-                  alerte.type === 'magasinier' ? 'bg-blue-100 text-blue-800' :
-                  alerte.type === 'date_envoi' ? 'bg-red-100 text-red-800' :
-                  'bg-orange-100 text-orange-800'
-                }`}>
+                <span style={{ ...badgeBase, background: alerte.type === 'date_envoi' ? 'var(--color-danger-bg)' : 'var(--color-info-bg)', color: alerte.type === 'date_envoi' ? 'var(--color-danger)' : 'var(--color-info)' }}>
                   {alerte.type.toUpperCase().replace('_', ' ')}
                 </span>
               </div>
-              <h3 className="font-bold mb-1">{alerte.commande}</h3>
-              <p className={`text-sm ${alerte.urgent ? 'text-red-800' : 'text-yellow-800'}`}>
+              <h4 style={{ margin: '0 0 4px 0', color: 'var(--fg-primary)' }}>{alerte.commande}</h4>
+              <p style={{ margin: '0 0 4px 0', fontSize: 'var(--text-sm)', color: alerte.urgent ? 'var(--color-danger)' : 'var(--color-warning)' }}>
                 {alerte.message}
               </p>
-              <p className="text-xs text-gray-500 mt-2">
+              <p style={{ margin: 0, fontSize: 'var(--text-xs)', color: 'var(--fg-muted)' }}>
                 {new Date(alerte.date).toLocaleString('fr-FR')}
               </p>
             </div>
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
-              Traiter
-            </button>
+            <button style={btnPrimary}>Traiter</button>
           </div>
         </div>
       ))}
     </div>
   );
 
-  const AnalyseDeuxiemeView = () => (
-    <div className="space-y-6">
-      <h2 className="text-xl font-bold">Analyse Deuxième Choix - Sous-Traitants</h2>
-
+  const renderAnalyseView = () => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--s-3)' }}>
       {analyseDeuxieme.map((analyse, idx) => {
-        const bgColor = analyse.tauxDeuxieme > 7 ? 'bg-red-100' : analyse.tauxDeuxieme > 5 ? 'bg-orange-100' : 'bg-green-100';
-        const textColor = analyse.tauxDeuxieme > 7 ? 'text-red-600' : analyse.tauxDeuxieme > 5 ? 'text-orange-600' : 'text-green-600';
-        
+        const tauxColor = analyse.tauxDeuxieme > 7 ? 'var(--color-danger)' : analyse.tauxDeuxieme > 5 ? 'var(--color-warning)' : 'var(--color-success)';
         return (
-          <div key={idx} className="bg-white border rounded-lg p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
+          <div key={idx} style={cardStyle}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--s-3)' }}>
               <div>
-                <h3 className="font-bold text-lg">{analyse.sousTraitant}</h3>
-                <p className="text-sm text-gray-600">Opération: {analyse.operation}</p>
+                <h4 style={{ margin: 0, color: 'var(--fg-primary)' }}>{analyse.sousTraitant}</h4>
+                <p style={{ margin: 0, fontSize: 'var(--text-sm)', color: 'var(--fg-secondary)' }}>Opération: {analyse.operation}</p>
               </div>
-              <div className={`px-4 py-2 rounded-lg ${bgColor}`}>
-                <div className={`text-2xl font-bold ${textColor}`}>
-                  {analyse.tauxDeuxieme.toFixed(1)}%
-                </div>
-                <div className="text-xs text-gray-600">Taux 2ème choix</div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: 'var(--text-2xl)', fontWeight: 700, color: tauxColor }}>{analyse.tauxDeuxieme.toFixed(1)}%</div>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-muted)' }}>Taux 2ème choix</div>
               </div>
             </div>
-
-            <div className="grid grid-cols-3 gap-4 mb-4">
-              <div className="bg-blue-50 p-3 rounded text-center">
-                <div className="text-xs text-gray-500 mb-1">Total traité</div>
-                <div className="text-xl font-bold text-blue-600">{analyse.totalTraite}</div>
-              </div>
-              <div className="bg-orange-50 p-3 rounded text-center">
-                <div className="text-xs text-gray-500 mb-1">Deuxième choix</div>
-                <div className="text-xl font-bold text-orange-600">{analyse.qteDeuxieme}</div>
-              </div>
-              <div className="bg-green-50 p-3 rounded text-center">
-                <div className="text-xs text-gray-500 mb-1">Premier choix</div>
-                <div className="text-xl font-bold text-green-600">
-                  {analyse.totalTraite - analyse.qteDeuxieme}
-                </div>
-              </div>
+            <div className="lp-grid-3" style={{ marginBottom: 'var(--s-3)' }}>
+              <div style={statTile}><div style={statLabel}>Total traité</div><div style={statValue}>{analyse.totalTraite}</div></div>
+              <div style={statTile}><div style={statLabel}>Deuxième choix</div><div style={{ ...statValue, color: 'var(--color-warning)' }}>{analyse.qteDeuxieme}</div></div>
+              <div style={statTile}><div style={statLabel}>Premier choix</div><div style={{ ...statValue, color: 'var(--color-success)' }}>{analyse.totalTraite - analyse.qteDeuxieme}</div></div>
             </div>
-
             <div>
-              <h4 className="font-medium mb-2">Répartition des défauts</h4>
-              <div className="space-y-2">
+              <h5 style={{ margin: '0 0 var(--s-2) 0', color: 'var(--fg-secondary)', fontSize: 'var(--text-sm)' }}>Répartition des défauts</h5>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--s-2)' }}>
                 {analyse.typesDefauts.map((defaut, idx2) => (
-                  <div key={idx2} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                    <span className="text-sm">{defaut.type}</span>
-                    <div className="flex items-center gap-3">
-                      <span className="font-bold">{defaut.quantite} pcs</span>
-                      <span className="text-xs text-gray-500">
-                        ({((defaut.quantite / analyse.qteDeuxieme) * 100).toFixed(0)}%)
-                      </span>
-                    </div>
+                  <div key={idx2} style={{ display: 'flex', justifyContent: 'space-between', padding: 'var(--s-2) var(--s-3)', background: 'var(--bg-hover)', borderRadius: 'var(--radius-sm)' }}>
+                    <span style={{ fontSize: 'var(--text-sm)', color: 'var(--fg-primary)' }}>{defaut.type}</span>
+                    <span style={{ fontSize: 'var(--text-sm)', color: 'var(--fg-secondary)' }}>
+                      <strong style={{ color: 'var(--fg-primary)' }}>{defaut.quantite}</strong> pcs
+                      <span style={{ marginLeft: 8, color: 'var(--fg-muted)' }}>({((defaut.quantite / analyse.qteDeuxieme) * 100).toFixed(0)}%)</span>
+                    </span>
                   </div>
                 ))}
               </div>
@@ -980,84 +824,71 @@ const ChefAtelierDashboard = () => {
   );
 
   return (
-    <DashboardLayout
-      title="Chef d'Atelier - Finition & Emballage"
-      subtitle={`Gestion des flux continus - ${new Date().toLocaleDateString('fr-FR')}`}
-      activeSection={activeTab}
-      onSectionChange={setActiveTab}
-    >
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-lg p-4 shadow-md border-l-4 border-blue-500">
-            <div className="text-sm text-gray-600">Commandes actives</div>
-            <div className="text-2xl font-bold text-blue-600">{commandesEnCours.length}</div>
-          </div>
-          <div className="bg-white rounded-lg p-4 shadow-md border-l-4 border-red-500">
-            <div className="text-sm text-gray-600">Alertes urgentes</div>
-            <div className="text-2xl font-bold text-red-600">
-              {alertes.filter(a => a.urgent).length}
-            </div>
-          </div>
-          <div className="bg-white rounded-lg p-4 shadow-md border-l-4 border-orange-500">
-            <div className="text-sm text-gray-600">Deuxième choix</div>
-            <div className="text-2xl font-bold text-orange-600">
-              {(commandesEnCours as any[]).reduce((sum: number, cmd: any) => 
-                sum + (cmd.articles as any[]).reduce((s: number, art: any) => 
-                  s + (art.suivis as any[]).reduce((ss: number, suivi: any) => ss + suivi.qteDeuxieme, 0), 0), 0
-              ) as number}
-            </div>
-          </div>
-          <div className="bg-white rounded-lg p-4 shadow-md border-l-4 border-green-500">
-            <div className="text-sm text-gray-600">Opérations en cours</div>
-            <div className="text-2xl font-bold text-green-600">
-              {operations.reduce((sum, op) => sum + getStatsOperation(op.id).enCours, 0)}
-            </div>
-          </div>
+    <DashboardLayout title="Tableau de bord — Chef d'atelier" activeSection="dashboard" onSectionChange={() => {}}>
+      <DashboardShell
+        eyebrow="Poste — Chef d'atelier"
+        title="Tableau de bord — Chef d'atelier"
+        subtitle="Coordination des postes atelier, allocation des machines et incidents."
+        headerRight={
+          <>
+            <button onClick={() => window.location.reload()} style={btnGhost} title="Actualiser">
+              <Activity size={14} /> Actualiser
+            </button>
+            <ThemeToggle />
+          </>
+        }
+      >
+        <div className="lp-metric-grid">
+          <KpiCard label="Commandes actives" value={commandesEnCours.length} icon={<Package size={18} />} tone="rose" />
+          <KpiCard label="Alertes urgentes" value={alertes.filter((a) => a.urgent).length} icon={<AlertCircle size={18} />} tone="terracotta" />
+          <KpiCard label="Deuxième choix" value={totalDeuxieme} icon={<XCircle size={18} />} tone="gold" />
+          <KpiCard label="Opérations en cours" value={totalEnCours} icon={<Activity size={18} />} tone="sage" />
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            <button
-              onClick={() => setShowScanModal(true)}
-              className="p-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex flex-col items-center gap-2"
-            >
-              <Camera className="w-6 h-6" />
-              <span className="text-sm font-medium">Scanner Lot</span>
+        <SectionCard title="Actions rapides" icon={<Users size={16} />}>
+          <div className="lp-grid-3">
+            <button onClick={() => setShowScanModal(true)} style={quickBtn}>
+              <Camera size={18} /> Scanner Lot
             </button>
-            <button
-              onClick={() => setShowDeuxiemeModal(true)}
-              className="p-4 bg-red-600 text-white rounded-lg hover:bg-red-700 flex flex-col items-center gap-2"
-            >
-              <XCircle className="w-6 h-6" />
-              <span className="text-sm font-medium">Déclarer 2ème</span>
+            <button onClick={() => setShowDeuxiemeModal(true)} style={{ ...quickBtn, borderColor: 'var(--color-danger)', color: 'var(--color-danger)' }}>
+              <XCircle size={18} /> Déclarer 2ème
             </button>
-            <button
-              onClick={() => setShowComplementModal(true)}
-              className="p-4 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex flex-col items-center gap-2"
-            >
-              <AlertTriangle className="w-6 h-6" />
-              <span className="text-sm font-medium">Complément</span>
+            <button onClick={() => setShowComplementModal(true)} style={{ ...quickBtn, borderColor: 'var(--color-warning)', color: 'var(--color-warning)' }}>
+              <AlertTriangle size={18} /> Complément
             </button>
-            <button
-              onClick={() => setShowMaintenanceModal(true)}
-              className="p-4 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 flex flex-col items-center gap-2"
-            >
-              <Wrench className="w-6 h-6" />
-              <span className="text-sm font-medium">Maintenance</span>
+            <button onClick={() => setShowMaintenanceModal(true)} style={quickBtn}>
+              <Wrench size={18} /> Maintenance
             </button>
-            <button className="p-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex flex-col items-center gap-2">
-              <Printer className="w-6 h-6" />
-              <span className="text-sm font-medium">Imprimer</span>
+            <button style={quickBtn}>
+              <Printer size={18} /> Imprimer
             </button>
           </div>
-        </div>
+        </SectionCard>
 
-      <div className="bg-white rounded-lg shadow-md p-6">
-        {activeTab === 'operations' && <OperationsView />}
-        {activeTab === 'commandes' && <CommandesView />}
-        {activeTab === 'alertes' && <AlertesView />}
-        {activeTab === 'maintenance' && <MaintenanceView />}
-        {activeTab === 'analyse' && <AnalyseDeuxiemeView />}
-      </div>
+        <SectionCard
+          title="Suivi atelier"
+          subtitle="Opérations, commandes, alertes et maintenance"
+          actions={
+            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+              {tabs.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setActiveTab(t.id)}
+                  style={activeTab === t.id ? btnPrimary : btnGhost}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          }
+        >
+          {activeTab === 'operations' && renderOperationsView()}
+          {activeTab === 'commandes' && renderCommandesView()}
+          {activeTab === 'alertes' && renderAlertesView()}
+          {activeTab === 'maintenance' && renderMaintenanceView()}
+          {activeTab === 'analyse' && renderAnalyseView()}
+        </SectionCard>
+      </DashboardShell>
 
       <ScanModal />
       <DeuxiemeChoixModal />
@@ -1066,5 +897,20 @@ const ChefAtelierDashboard = () => {
     </DashboardLayout>
   );
 };
+
+const badgeBase: React.CSSProperties = { padding: '2px 8px', borderRadius: 'var(--radius-full)', fontSize: 'var(--text-xs)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 };
+const labelStyle: React.CSSProperties = { display: 'block', fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--fg-secondary)', marginBottom: 4 };
+const inputStyle: React.CSSProperties = { width: '100%', padding: '8px 12px', background: 'var(--bg-elevated)', color: 'var(--fg-primary)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-sm)', fontSize: 'var(--text-sm)' };
+const cardStyle: React.CSSProperties = { background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: 'var(--s-4)' };
+const statTile: React.CSSProperties = { background: 'var(--bg-hover)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)', padding: 'var(--s-2) var(--s-3)', textAlign: 'center' };
+const statLabel: React.CSSProperties = { fontSize: 'var(--text-xs)', color: 'var(--fg-muted)' };
+const statValue: React.CSSProperties = { fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--fg-primary)' };
+const modalOverlay: React.CSSProperties = { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 'var(--s-4)' };
+const modalBox: React.CSSProperties = { background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: 'var(--s-5)', maxWidth: 480, width: '100%' };
+const modalTitle: React.CSSProperties = { margin: '0 0 var(--s-4) 0', color: 'var(--fg-primary)', display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 'var(--text-lg)' };
+const quickBtn: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 'var(--s-3) var(--s-4)', background: 'var(--bg-elevated)', color: 'var(--fg-primary)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)', fontSize: 'var(--text-sm)', fontWeight: 600, cursor: 'pointer' };
+
+const btnPrimary: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: 'var(--accent-rose)', color: '#fff', border: '1px solid var(--accent-rose)', borderRadius: 'var(--radius-full)', fontSize: 'var(--text-xs)', fontWeight: 600, cursor: 'pointer' };
+const btnGhost: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: 'var(--bg-hover)', color: 'var(--fg-secondary)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-full)', fontSize: 'var(--text-xs)', fontWeight: 600, cursor: 'pointer' };
 
 export default ChefAtelierDashboard;
