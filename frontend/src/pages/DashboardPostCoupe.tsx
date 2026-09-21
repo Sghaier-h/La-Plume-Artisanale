@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Users, Package, AlertTriangle, TrendingUp, Calendar, Scissors, QrCode, Camera, Printer, Edit, Search, Save, X, CheckCircle, Plus, Clock, ArrowLeft, FileText } from 'lucide-react';
+import DashboardLayout from '../components/DashboardLayout';
 
 const DashboardPostCoupe = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('saisie'); // saisie, planning, impression, analyse, correction
   const [showCamera, setShowCamera] = useState(false);
   const [showEtiquettePreview, setShowEtiquettePreview] = useState(false);
@@ -34,13 +37,13 @@ const DashboardPostCoupe = () => {
     qteDeuxieme: 0,
     qteDeuxiemeApprouvee: 0,
     qteDechet: 0,
-    typesDeuxieme: [],
-    photos: [],
+    typesDeuxieme: [] as string[],
+    photos: [] as string[],
     coupeur: 'Ahmed' // Vrai coupeur
   });
 
-  const [etiquettesEnAttente, setEtiquettesEnAttente] = useState([]);
-  const [actionFinFabrication, setActionFinFabrication] = useState(null); // 'demander' ou 'retourner'
+  const [etiquettesEnAttente, setEtiquettesEnAttente] = useState<any[]>([]);
+  const [actionFinFabrication, setActionFinFabrication] = useState<any>(null); // 'demander' ou 'retourner'
   
   // Stockage temporaire pour les modals après validation
   const [saisieTemp, setSaisieTemp] = useState({
@@ -122,7 +125,7 @@ const DashboardPostCoupe = () => {
   ];
 
   // Données de correction (historique des saisies)
-  const [saisiesHistorique, setSaisiesHistorique] = useState([
+  const [saisiesHistorique, setSaisiesHistorique] = useState<any[]>([
     { id: 1, date: '2025-10-18', numSousOF: 'OF246533', modele: 'MARINIERE', qteFabriquee: 46, qteDeuxieme: 2, qteDechet: 1, coupeur: 'Ahmed', statut: 'Validé' },
     { id: 2, date: '2025-10-18', numSousOF: 'CA250469', modele: 'FIL A FIL', qteFabriquee: 38, qteDeuxieme: 0, qteDechet: 0, coupeur: 'Karim', statut: 'Validé' },
     { id: 3, date: '2025-10-18', numSousOF: 'CA250023', modele: 'UNI SURPIQUE', qteFabriquee: 15, qteDeuxieme: 0, qteDechet: 0, coupeur: 'Ahmed', statut: 'En cours' }
@@ -163,7 +166,7 @@ const DashboardPostCoupe = () => {
 
   // Générer les étiquettes de suivi
   const genererEtiquettes = () => {
-    const etiquettes = [];
+    const etiquettes: any[] = [];
     const qteLotStandard = saisie.modele.includes('JACQUARD') ? null : 5;
     
     // Étiquettes 1er choix
@@ -883,95 +886,24 @@ const DashboardPostCoupe = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 ml-64 p-6">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Scissors size={40} className="text-blue-600" />
-            <div>
-              <h1 className="text-4xl font-bold text-gray-800">Poste Coupe</h1>
-              <p className="text-gray-600 text-lg">Saisie, Planning, Impression, Analyse & Correction</p>
-            </div>
-          </div>
-          <div className="text-right">
-            <p className="text-sm text-gray-600">Coupeur</p>
-            <select 
-              value={saisie.coupeur}
-              onChange={(e) => setSaisie({...saisie, coupeur: e.target.value})}
-              className="text-xl font-bold text-gray-800 bg-white border-2 border-gray-300 rounded px-3 py-1"
-            >
-              {coupeurs.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
+    <DashboardLayout
+      title="Poste Coupe"
+      subtitle="Saisie, Planning, Impression, Analyse & Correction"
+      activeSection={activeTab}
+      onSectionChange={(id: any) => setActiveTab(id as any)}
+    >
+      <div className="mb-4 flex justify-end">
+        <div className="text-right">
+          <p className="text-sm text-gray-600">Coupeur</p>
+          <select 
+            value={saisie.coupeur}
+            onChange={(e) => setSaisie({...saisie, coupeur: e.target.value})}
+            className="text-lg font-bold text-gray-800 bg-white border-2 border-gray-300 rounded px-3 py-1"
+          >
+            {coupeurs.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
         </div>
       </div>
-
-      {/* Tabs */}
-      <div className="mb-6 bg-white rounded-lg shadow-md p-2 flex gap-2 overflow-x-auto">
-        <button
-          onClick={() => setActiveTab('saisie')}
-          className={`px-6 py-3 rounded-lg font-semibold transition-colors whitespace-nowrap ${
-            activeTab === 'saisie' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <QrCode size={20} />
-            Saisie
-          </div>
-        </button>
-        <button
-          onClick={() => setActiveTab('planning')}
-          className={`px-6 py-3 rounded-lg font-semibold transition-colors whitespace-nowrap ${
-            activeTab === 'planning' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <Calendar size={20} />
-            Planning
-          </div>
-        </button>
-        <button
-          onClick={() => setActiveTab('impression')}
-          className={`px-6 py-3 rounded-lg font-semibold transition-colors whitespace-nowrap relative ${
-            activeTab === 'impression' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <Printer size={20} />
-            Impression
-            {etiquettesEnAttente.length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {etiquettesEnAttente.length}
-              </span>
-            )}
-          </div>
-        </button>
-        <button
-          onClick={() => setActiveTab('analyse')}
-          className={`px-6 py-3 rounded-lg font-semibold transition-colors whitespace-nowrap ${
-            activeTab === 'analyse' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <TrendingUp size={20} />
-            Analyse
-          </div>
-        </button>
-        <button
-          onClick={() => setActiveTab('correction')}
-          className={`px-6 py-3 rounded-lg font-semibold transition-colors whitespace-nowrap ${
-            activeTab === 'correction' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <Edit size={20} />
-            Correction
-          </div>
-        </button>
-      </div>
-
-      {/* Contenu selon l'onglet actif */}
       {activeTab === 'saisie' && renderSaisie()}
       {activeTab === 'planning' && renderPlanning()}
       {activeTab === 'impression' && renderImpression()}
@@ -1188,7 +1120,7 @@ const DashboardPostCoupe = () => {
           </div>
         </div>
       )}
-    </div>
+    </DashboardLayout>
   );
 };
 

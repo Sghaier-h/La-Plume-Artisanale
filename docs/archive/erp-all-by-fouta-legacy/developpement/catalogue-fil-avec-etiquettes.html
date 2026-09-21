@@ -1,0 +1,1469 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catalogue de Fils avec Étiquettes - La Plume Artisanale</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Roboto:wght@300;400;500;700&display=swap');
+        
+        @media print {
+            .no-print { display: none !important; }
+            .page-break { page-break-after: always; }
+            body { 
+                margin: 0 !important; 
+                padding: 0 !important; 
+            }
+            @page { 
+                size: A4 portrait;
+                margin: 0 !important;
+            }
+            
+            /* Mode impression catalogue */
+            body.print-catalogue .etiquettes-section {
+                display: none !important;
+            }
+            body.print-catalogue .catalogue-page {
+                margin: 0 !important;
+                padding: 0 !important;
+                box-shadow: none;
+                page-break-inside: avoid;
+            }
+            body.print-catalogue .fil-selection {
+                display: none !important;
+            }
+            body.print-catalogue .fil-item {
+                display: block !important;
+            }
+            
+            /* Mode impression étiquettes */
+            body.print-etiquettes .catalogue-page {
+                display: none !important;
+            }
+            body.print-etiquettes .etiquette-page {
+                margin: 0 !important;
+                padding: 0 !important;
+                box-shadow: none;
+                page-break-inside: avoid;
+            }
+            body.print-etiquettes .etiquette {
+                page-break-inside: avoid;
+            }
+            
+            html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            background: #f8f9fa;
+            padding: 0;
+            margin: 0;
+        }
+        
+        /* Styles page d'accueil */
+        .home-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .home-header {
+            text-align: center;
+            color: white;
+            margin-bottom: 60px;
+        }
+        
+        .home-header h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 56px;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .home-header h2 {
+            font-size: 28px;
+            font-weight: 400;
+            margin-bottom: 10px;
+        }
+        
+        .home-header .subtitle {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+        
+        .home-sections {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            width: 100%;
+        }
+        
+        .home-card {
+            background: white;
+            border-radius: 16px;
+            padding: 40px 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .home-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+        
+        .card-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        
+        .home-card h3 {
+            color: #667eea;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+        
+        .home-card h4 {
+            color: #1e293b;
+            font-size: 24px;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+        
+        .home-card p {
+            color: #64748b;
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+        
+        .card-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+        
+        .card-button:hover {
+            opacity: 0.9;
+        }
+        
+        /* Styles sections pages */
+        .section-page {
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .section-header {
+            background: white;
+            padding: 20px 30px;
+            margin-bottom: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .section-header h2 {
+            flex: 1;
+            margin: 0;
+            color: #1e293b;
+            font-family: 'Playfair Display', serif;
+            font-size: 28px;
+        }
+        
+        .back-button {
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: transform 0.2s;
+        }
+        
+        .back-button:hover {
+            transform: translateX(-5px);
+        }
+        
+        .controls {
+            background: white;
+            padding: 25px;
+            margin-bottom: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-width: 1400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        #catalogueContainer {
+            display: none;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .controls h2 {
+            color: #1e293b;
+            margin-bottom: 20px;
+            font-family: 'Playfair Display', serif;
+            text-align: center;
+            font-size: 28px;
+        }
+        
+        .section-box {
+            margin-bottom: 20px;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .section-box h3 {
+            margin-bottom: 15px;
+            font-size: 20px;
+            font-weight: 700;
+        }
+        
+        .file-input {
+            margin-bottom: 20px;
+        }
+        
+        .file-input label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #475569;
+        }
+        
+        input[type="file"] {
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            max-width: 500px;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="file"]:hover {
+            border-color: #3b82f6;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            margin-right: 10px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4);
+        }
+        
+        .info {
+            background: #f0f9ff;
+            border-left: 4px solid #3b82f6;
+            padding: 12px 16px;
+            margin-top: 15px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .info strong {
+            color: #1e40af;
+            font-size: 14px;
+        }
+        
+        .etiquette-count {
+            background: #d1fae5;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            color: #065f46;
+            font-size: 16px;
+        }
+        
+        #filsSelectionTable table {
+            font-size: 14px;
+        }
+        
+        #filsSelectionTable tbody tr:hover {
+            background-color: #f0fdf4;
+        }
+        
+        #filsSelectionTable th {
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 0.5px;
+        }
+        
+        .catalogue-page {
+            background: white;
+            width: 210mm;
+            min-height: 297mm;
+            padding: 8mm 8mm 8mm 20mm;
+            margin: 0 auto 20px auto;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        
+        .page-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 6px;
+            padding-bottom: 6px;
+            border-bottom: 2px solid #e2e8f0;
+            background: linear-gradient(to bottom, #ffffff 0%, #f8fafc 100%);
+        }
+        
+        .logo-container {
+            text-align: center;
+            margin-bottom: 0;
+            width: 100%;
+        }
+        
+        .logo-container img {
+            width: 33.33%;
+            max-width: 200px;
+            height: auto;
+            max-height: 60px;
+            object-fit: contain;
+        }
+        
+        .code-commercial-banner {
+            background: linear-gradient(135deg, #f5f5dc 0%, #e8e8c8 100%);
+            border: 3px solid #d4a574;
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .code-commercial-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: #475569;
+        }
+        
+        .table-container {
+            border: 3px solid #1e293b;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .fil-item {
+            border-bottom: 2px solid #e2e8f0;
+            display: flex;
+        }
+        
+        .fil-item:last-child {
+            border-bottom: none;
+        }
+        
+        .fil-selection {
+            width: 70px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #f8fafc;
+            border-right: 2px solid #e2e8f0;
+            padding: 8px;
+            gap: 8px;
+        }
+        
+        .fil-selection input[type="checkbox"] {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+        }
+        
+        .fil-selection input[type="number"] {
+            width: 50px;
+            padding: 4px;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .fil-selection label {
+            font-size: 10px;
+            color: #64748b;
+            font-weight: 600;
+        }
+        
+        .fil-content {
+            flex: 1;
+        }
+        
+        .fil-row-top {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .fil-row-bottom {
+            display: grid;
+            grid-template-columns: 100px 100px 1fr;
+            min-height: 120px;
+        }
+        
+        .info-cell {
+            padding: 10px 8px;
+            border-right: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .info-cell:last-child {
+            border-right: none;
+        }
+        
+        .info-label {
+            font-size: 9px;
+            text-transform: uppercase;
+            color: #64748b;
+            font-weight: 600;
+            margin-bottom: 4px;
+            letter-spacing: 0.5px;
+        }
+        
+        .info-value {
+            font-size: 12px;
+            font-weight: 600;
+            color: #1e293b;
+            text-align: center;
+        }
+        
+        .qr-cell {
+            padding: 10px;
+            border-right: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+        }
+        
+        .position-cell {
+            padding: 10px;
+            border-right: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            background: white;
+        }
+        
+        .position-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+        
+        .checkbox {
+            width: 14px;
+            height: 14px;
+            border: 2px solid #1e293b;
+            border-radius: 3px;
+            display: inline-block;
+        }
+        
+        .echantillon-cell {
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            background: #ffffff;
+            border: 2px dashed #f59e0b;
+        }
+        
+        .echantillon-icon {
+            font-size: 32px;
+        }
+        
+        .echantillon-text {
+            font-size: 11px;
+            font-weight: 700;
+            color: #92400e;
+            text-align: center;
+            line-height: 1.3;
+        }
+
+        /* Styles pour les étiquettes A4/8 */
+        .etiquettes-section {
+            display: none;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        
+        .etiquettes-section.active {
+            display: block;
+        }
+        
+        .etiquette-page {
+            width: 210mm;
+            height: 297mm;
+            background: white;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: grid;
+            grid-template-columns: 105mm 105mm;
+            grid-template-rows: 74.25mm 74.25mm 74.25mm 74.25mm;
+            gap: 0;
+            position: relative;
+            left: 0;
+            top: 0;
+            box-sizing: border-box;
+        }
+        
+        .etiquette {
+            width: 105mm;
+            height: 74.25mm;
+            border: none;
+            padding: 1.5mm;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            background: white;
+            box-sizing: border-box;
+        }
+        
+        .etiquette-header {
+            text-align: center;
+            margin-bottom: 0.8mm;
+            padding-bottom: 0.8mm;
+            border-bottom: 1px solid #1e293b;
+        }
+        
+        .etiquette-logo {
+            font-size: 10px;
+            font-weight: bold;
+            color: #1e293b;
+            margin-bottom: 0.3mm;
+        }
+        
+        .etiquette-title {
+            font-size: 7px;
+            color: #475569;
+            font-weight: 600;
+        }
+        
+        .etiquette-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .color-banner-etiquette {
+            text-align: center;
+            padding: 0.8mm;
+            margin-bottom: 0.8mm;
+            border-radius: 2px;
+            font-weight: bold;
+            font-size: 8px;
+        }
+        
+        .etiquette-body {
+            display: flex;
+            gap: 1mm;
+            margin-bottom: 0.5mm;
+        }
+        
+        .etiquette-left {
+            width: 40%;
+            display: flex;
+            flex-direction: column;
+            gap: 0.8mm;
+        }
+        
+        .etiquette-right {
+            width: 60%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+        }
+        
+        .info-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8mm;
+        }
+        
+        .info-box {
+            border: 1px solid #e2e8f0;
+            border-radius: 2px;
+            padding: 0.8mm;
+            background: #ffffff;
+        }
+        
+        .info-box-label {
+            font-size: 6px;
+            color: #64748b;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 0.3mm;
+        }
+        
+        .info-box-value {
+            font-size: 9px;
+            font-weight: bold;
+            color: #1e293b;
+            word-wrap: break-word;
+            line-height: 1.1;
+        }
+        
+        .info-box-large {
+            grid-column: span 2;
+        }
+        
+        .qr-section {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1mm;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 2px;
+            width: 100%;
+        }
+        
+        .qr-code {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .positions-section {
+            border-top: 1px solid #e2e8f0;
+            padding-top: 0.5mm;
+        }
+        
+        .positions-title {
+            font-size: 7px;
+            font-weight: bold;
+            color: #475569;
+            margin-bottom: 0.5mm;
+        }
+        
+        .positions-grid {
+            display: flex;
+            justify-content: space-between;
+            gap: 0.5mm;
+        }
+        
+        .position-checkbox {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.8mm;
+            font-size: 8px;
+            flex: 1;
+        }
+        
+        .etiquette .checkbox {
+            width: 4mm;
+            height: 4mm;
+            border: 2px solid #1e293b;
+            border-radius: 3px;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+        
+        /* Classes de couleurs pour étiquettes */
+        .color-blanc { background: #f0f0f0; color: #1e293b; border: 2px solid #64748b; }
+        .color-rouge { background: #fee2e2; color: #991b1b; border: 2px solid #dc2626; }
+        .color-bleu { background: #dbeafe; color: #1e40af; border: 2px solid #3b82f6; }
+        .color-vert { background: #dcfce7; color: #166534; border: 2px solid #22c55e; }
+        .color-jaune { background: #fef3c7; color: #854d0e; border: 2px solid #eab308; }
+        .color-orange { background: #fed7aa; color: #9a3412; border: 2px solid #f97316; }
+        .color-rose { background: #fce7f3; color: #9f1239; border: 2px solid #ec4899; }
+        .color-violet { background: #ede9fe; color: #5b21b6; border: 2px solid #8b5cf6; }
+        .color-marron { background: #d7c4b3; color: #44403c; border: 2px solid #78716c; }
+        .color-gris { background: #e5e7eb; color: #374151; border: 2px solid #6b7280; }
+        .color-noir { background: #1f2937; color: #ffffff; border: 2px solid #111827; }
+        .color-beige { background: #fef9e7; color: #78350f; border: 2px solid #d4a574; }
+    </style>
+</head>
+<body>
+    <!-- PAGE D'ACCUEIL -->
+    <div id="homePage" class="no-print">
+        <div class="home-container">
+            <div class="home-header">
+                <h1>🪶 LA PLUME ARTISANALE</h1>
+                <h2>Gestion des Matières Premières - Fils</h2>
+                <p class="subtitle">Système de catalogage et d'étiquetage pour la production textile</p>
+            </div>
+            
+            <div class="home-sections">
+                <div class="home-card" onclick="showSection('donnees')">
+                    <div class="card-icon">📥</div>
+                    <h3>SECTION 1</h3>
+                    <h4>Charger les Données</h4>
+                    <p>Importez votre fichier Excel avec les données des fils et votre logo</p>
+                    <button class="card-button">Accéder →</button>
+                </div>
+                
+                <div class="home-card" onclick="showSection('catalogue')">
+                    <div class="card-icon">📋</div>
+                    <h3>SECTION 2</h3>
+                    <h4>Catalogue des Fils</h4>
+                    <p>Consultez et imprimez le catalogue complet avec QR codes et échantillons</p>
+                    <button class="card-button">Accéder →</button>
+                </div>
+                
+                <div class="home-card" onclick="showSection('etiquettes')">
+                    <div class="card-icon">🏷️</div>
+                    <h3>SECTION 3</h3>
+                    <h4>Étiquettes A4/8</h4>
+                    <p>Recherchez et sélectionnez les fils à imprimer en étiquettes (8 par page)</p>
+                    <button class="card-button">Imprimer →</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 1 : DONNÉES -->
+    <div id="donneesSection" class="section-page no-print" style="display: none;">
+        <div class="section-header">
+            <button onclick="showSection('home')" class="back-button">← Retour à l'accueil</button>
+            <h2>📥 SECTION 1 : TÉLÉCHARGER LES DONNÉES</h2>
+        </div>
+        
+        <div class="controls">
+            <div class="section-box" style="background: linear-gradient(135deg, #fef3c7 0%, #fde047 100%); border: 2px solid #eab308;">
+                <div class="file-input">
+                    <label for="excelFile">📁 Fichier Excel (.xlsx) :</label>
+                    <input type="file" id="excelFile" accept=".xlsx,.xls">
+                </div>
+                
+                <div class="file-input">
+                    <label for="logoFile">🖼️ Logo (facultatif) :</label>
+                    <input type="file" id="logoFile" accept="image/*">
+                </div>
+                
+                <div class="info" style="background: #fef9c3; border-left: 4px solid #ca8a04;">
+                    <strong>Colonnes Excel attendues :</strong> CODE FIN, NUMERO/METRIQUE, COULEUR, CODE FAB, Num de Lot, Couleur Commercial
+                </div>
+                
+                <div style="margin-top: 20px; text-align: center;">
+                    <button onclick="showSection('catalogue')" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); font-size: 18px; padding: 16px 32px;">
+                        Suivant : Aller au Catalogue →
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 2 : CATALOGUE -->
+    <div id="catalogueSection" class="section-page no-print" style="display: none;">
+        <div class="section-header">
+            <button onclick="showSection('home')" class="back-button">← Retour à l'accueil</button>
+            <h2>📋 SECTION 2 : CATALOGUE DES FILS</h2>
+        </div>
+        
+        <div class="controls">
+            <div class="section-box" style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border: 2px solid #3b82f6;">
+                <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                    <button onclick="printCatalogue()" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); font-size: 18px; padding: 16px 32px;">
+                        🖨️ Imprimer le Catalogue
+                    </button>
+                    <button onclick="showSection('etiquettes')" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); font-size: 18px; padding: 16px 32px;">
+                        Suivant : Aller aux Étiquettes →
+                    </button>
+                </div>
+                <p style="margin-top: 15px; color: #1e40af; font-size: 14px;">
+                    📄 Le catalogue affiche tous les fils avec QR codes et zones pour coller les échantillons.<br>
+                    ✓ Cochez les fils dont vous voulez générer des étiquettes
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 3 : ÉTIQUETTES -->
+    <div id="etiquettesSection" class="section-page no-print" style="display: none;">
+        <div class="section-header">
+            <button onclick="showSection('home')" class="back-button">← Retour à l'accueil</button>
+            <h2>🏷️ SECTION 3 : SÉLECTION ET IMPRESSION DES ÉTIQUETTES (Format A4/8)</h2>
+        </div>
+        
+        <div class="controls">
+            <div class="section-box" style="background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); border: 2px solid #10b981;">
+                <h3 style="color: #065f46; margin-bottom: 20px;">🔍 Rechercher et sélectionner les fils à imprimer</h3>
+                
+                <!-- Barre de recherche -->
+                <div style="margin-bottom: 20px;">
+                    <input type="text" id="searchInput" placeholder="🔍 Rechercher par code, couleur, numéro métrique..." 
+                           onkeyup="filterFils()" 
+                           style="width: 100%; padding: 15px; font-size: 16px; border: 2px solid #10b981; border-radius: 8px; box-sizing: border-box;">
+                </div>
+                
+                <!-- Boutons d'action -->
+                <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; padding: 15px; background: white; border-radius: 8px;">
+                    <button onclick="selectAllVisible()" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                        ✓ Tout sélectionner
+                    </button>
+                    <button onclick="deselectAllVisible()" style="background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);">
+                        ✗ Tout désélectionner
+                    </button>
+                    <button onclick="generateEtiquettesFromSelection()" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); font-size: 18px; padding: 16px 32px;">
+                        🖨️ Générer et Imprimer les Étiquettes
+                    </button>
+                    <div class="etiquette-count">
+                        <span id="selectedCountEtiq">0</span> étiquette(s) sélectionnée(s)
+                    </div>
+                </div>
+                
+                <!-- Tableau de sélection -->
+                <div id="filsSelectionTable" style="background: white; border-radius: 8px; overflow: hidden; max-height: 600px; overflow-y: auto;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead style="position: sticky; top: 0; background: #065f46; color: white;">
+                            <tr>
+                                <th style="padding: 12px; text-align: center; width: 60px;">✓</th>
+                                <th style="padding: 12px; text-align: center; width: 80px;">Qté</th>
+                                <th style="padding: 12px; text-align: left;">Code</th>
+                                <th style="padding: 12px; text-align: left;">N° Métrique</th>
+                                <th style="padding: 12px; text-align: left;">Couleur</th>
+                                <th style="padding: 12px; text-align: left;">Code Fabrication</th>
+                                <th style="padding: 12px; text-align: left;">N° de Lot</th>
+                            </tr>
+                        </thead>
+                        <tbody id="filsTableBody">
+                            <!-- Les lignes seront générées par JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="info" style="background: #d1fae5; border-left: 4px solid #059669; margin-top: 20px;">
+                    <strong>Instructions :</strong> 
+                    • Utilisez la recherche pour filtrer les fils<br>
+                    • Cochez les fils souhaités et ajustez les quantités<br>
+                    • Cliquez sur "Générer et Imprimer" pour créer les étiquettes
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="catalogueContainer"></div>
+    
+    <div id="etiquettesContainer" class="etiquettes-section"></div>
+
+    <script>
+        let filsData = [];
+        let logoDataUrl = null;
+        
+        const defaultLogoSvg = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjYwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjx0ZXh0IHg9IjEwMCIgeT0iMzUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZm9udC13ZWlnaHQ9ImJvbGQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiMxZTI5M2IiPkxBIFBMVU1FPC90ZXh0Pjwvc3ZnPg==';
+
+        // Navigation entre les sections
+        function showSection(sectionName) {
+            // Masquer toutes les sections
+            document.getElementById('homePage').style.display = 'none';
+            document.getElementById('donneesSection').style.display = 'none';
+            document.getElementById('catalogueSection').style.display = 'none';
+            document.getElementById('etiquettesSection').style.display = 'none';
+            document.getElementById('catalogueContainer').style.display = 'none';
+            
+            // Afficher la section demandée
+            if (sectionName === 'home') {
+                document.getElementById('homePage').style.display = 'block';
+            } else if (sectionName === 'donnees') {
+                document.getElementById('donneesSection').style.display = 'block';
+            } else if (sectionName === 'catalogue') {
+                document.getElementById('catalogueSection').style.display = 'block';
+                document.getElementById('catalogueContainer').style.display = 'block';
+            } else if (sectionName === 'etiquettes') {
+                document.getElementById('etiquettesSection').style.display = 'block';
+                generateFilsTable();
+            }
+            
+            // Scroll en haut
+            window.scrollTo(0, 0);
+        }
+
+        // Générer le tableau de sélection des fils
+        function generateFilsTable() {
+            const tbody = document.getElementById('filsTableBody');
+            tbody.innerHTML = '';
+            
+            filsData.forEach((fil, index) => {
+                const row = document.createElement('tr');
+                row.className = 'fil-row';
+                row.style.borderBottom = '1px solid #e5e7eb';
+                row.setAttribute('data-search', `${fil.codeCommercial} ${fil.numeroMetrique} ${fil.couleur} ${fil.codeFabrication} ${fil.numLot}`.toLowerCase());
+                
+                row.innerHTML = `
+                    <td style="padding: 12px; text-align: center;">
+                        <input type="checkbox" id="fil-etiq-${index}" class="fil-checkbox-etiq" onchange="updateCountEtiq()" 
+                               style="width: 20px; height: 20px; cursor: pointer;">
+                    </td>
+                    <td style="padding: 12px; text-align: center;">
+                        <input type="number" min="1" max="99" value="1" id="qty-etiq-${index}" 
+                               style="width: 60px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; text-align: center; font-size: 14px; font-weight: 600;">
+                    </td>
+                    <td style="padding: 12px; font-weight: 600;">${fil.codeCommercial}</td>
+                    <td style="padding: 12px;">${fil.numeroMetrique}</td>
+                    <td style="padding: 12px;">${fil.couleur}</td>
+                    <td style="padding: 12px;">${fil.codeFabrication}</td>
+                    <td style="padding: 12px;">${fil.numLot}</td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+            
+            updateCountEtiq();
+        }
+
+        // Filtrer les fils selon la recherche
+        function filterFils() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const rows = document.querySelectorAll('.fil-row');
+            
+            rows.forEach(row => {
+                const searchData = row.getAttribute('data-search');
+                if (searchData.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        // Sélectionner tous les fils visibles
+        function selectAllVisible() {
+            const checkboxes = document.querySelectorAll('.fil-checkbox-etiq');
+            checkboxes.forEach(cb => {
+                const row = cb.closest('tr');
+                if (row.style.display !== 'none') {
+                    cb.checked = true;
+                }
+            });
+            updateCountEtiq();
+        }
+
+        // Désélectionner tous les fils visibles
+        function deselectAllVisible() {
+            const checkboxes = document.querySelectorAll('.fil-checkbox-etiq');
+            checkboxes.forEach(cb => {
+                const row = cb.closest('tr');
+                if (row.style.display !== 'none') {
+                    cb.checked = false;
+                }
+            });
+            updateCountEtiq();
+        }
+
+        // Mettre à jour le compteur d'étiquettes
+        function updateCountEtiq() {
+            const checkboxes = document.querySelectorAll('.fil-checkbox-etiq:checked');
+            let count = 0;
+            checkboxes.forEach(cb => {
+                const index = cb.id.replace('fil-etiq-', '');
+                const qtyInput = document.getElementById('qty-etiq-' + index);
+                count += parseInt(qtyInput.value) || 1;
+            });
+            document.getElementById('selectedCountEtiq').textContent = count;
+        }
+
+        // Générer les étiquettes depuis la sélection
+        function generateEtiquettesFromSelection() {
+            const checkboxes = document.querySelectorAll('.fil-checkbox-etiq:checked');
+            if (checkboxes.length === 0) {
+                alert('⚠️ Veuillez sélectionner au moins un fil à imprimer.');
+                return;
+            }
+
+            const selectedFils = [];
+            checkboxes.forEach(cb => {
+                const index = cb.id.replace('fil-etiq-', '');
+                const fil = filsData[index];
+                const qtyInput = document.getElementById('qty-etiq-' + index);
+                const qty = parseInt(qtyInput.value) || 1;
+                
+                for (let i = 0; i < qty; i++) {
+                    selectedFils.push(fil);
+                }
+            });
+
+            generateEtiquettesInternal(selectedFils);
+        }
+
+        function getColorStyleByFamille(couleur) {
+            const couleurLower = (couleur || '').toLowerCase();
+            if (couleurLower.includes('blanc')) return { bg: '#f8fafc', border: '#cbd5e1', text: '#1e293b', bannerBg: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)', bannerBorder: '#64748b' };
+            if (couleurLower.includes('rouge')) return { bg: '#fef2f2', border: '#fecaca', text: '#991b1b', bannerBg: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)', bannerBorder: '#dc2626' };
+            if (couleurLower.includes('bleu')) return { bg: '#eff6ff', border: '#bfdbfe', text: '#1e40af', bannerBg: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)', bannerBorder: '#3b82f6' };
+            if (couleurLower.includes('vert')) return { bg: '#f0fdf4', border: '#bbf7d0', text: '#166534', bannerBg: 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)', bannerBorder: '#22c55e' };
+            if (couleurLower.includes('jaune')) return { bg: '#fefce8', border: '#fef08a', text: '#854d0e', bannerBg: 'linear-gradient(135deg, #fef3c7 0%, #fde047 100%)', bannerBorder: '#eab308' };
+            if (couleurLower.includes('orange')) return { bg: '#fff7ed', border: '#fed7aa', text: '#9a3412', bannerBg: 'linear-gradient(135deg, #fed7aa 0%, #fb923c 100%)', bannerBorder: '#f97316' };
+            if (couleurLower.includes('rose')) return { bg: '#fdf2f8', border: '#fbcfe8', text: '#9f1239', bannerBg: 'linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%)', bannerBorder: '#ec4899' };
+            if (couleurLower.includes('violet') || couleurLower.includes('mauve')) return { bg: '#faf5ff', border: '#e9d5ff', text: '#5b21b6', bannerBg: 'linear-gradient(135deg, #ede9fe 0%, #d8b4fe 100%)', bannerBorder: '#8b5cf6' };
+            if (couleurLower.includes('marron') || couleurLower.includes('brun')) return { bg: '#fef6e7', border: '#d7c4b3', text: '#44403c', bannerBg: 'linear-gradient(135deg, #e7d4c0 0%, #d7c4b3 100%)', bannerBorder: '#78716c' };
+            if (couleurLower.includes('gris')) return { bg: '#f9fafb', border: '#d1d5db', text: '#374151', bannerBg: 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)', bannerBorder: '#6b7280' };
+            if (couleurLower.includes('noir')) return { bg: '#f5f5f5', border: '#a3a3a3', text: '#171717', bannerBg: 'linear-gradient(135deg, #737373 0%, #525252 100%)', bannerBorder: '#262626' };
+            if (couleurLower.includes('beige') || couleurLower.includes('écru')) return { bg: '#fefaf0', border: '#e8dcc8', text: '#78350f', bannerBg: 'linear-gradient(135deg, #f5f5dc 0%, #e8dcc8 100%)', bannerBorder: '#d4a574' };
+            return { bg: '#f8fafc', border: '#cbd5e1', text: '#1e293b', bannerBg: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)', bannerBorder: '#64748b' };
+        }
+
+        function getColorClass(couleur) {
+            const couleurLower = (couleur || '').toLowerCase();
+            if (couleurLower.includes('blanc')) return 'color-blanc';
+            if (couleurLower.includes('rouge')) return 'color-rouge';
+            if (couleurLower.includes('bleu')) return 'color-bleu';
+            if (couleurLower.includes('vert')) return 'color-vert';
+            if (couleurLower.includes('jaune')) return 'color-jaune';
+            if (couleurLower.includes('orange')) return 'color-orange';
+            if (couleurLower.includes('rose')) return 'color-rose';
+            if (couleurLower.includes('violet') || couleurLower.includes('mauve')) return 'color-violet';
+            if (couleurLower.includes('marron') || couleurLower.includes('brun')) return 'color-marron';
+            if (couleurLower.includes('gris')) return 'color-gris';
+            if (couleurLower.includes('noir')) return 'color-noir';
+            if (couleurLower.includes('beige') || couleurLower.includes('écru')) return 'color-beige';
+            return 'color-blanc';
+        }
+
+        document.getElementById('excelFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                
+                filsData = jsonData.map(row => ({
+                    codeCommercial: row['CODE FIN'] || row['Code Commercial'] || row['Code Fin'] || '',
+                    numeroMetrique: row['NUMERO/METRIQUE'] || row['Numéro/Métrique'] || row['Numero Metrique'] || '',
+                    couleur: row['COULEUR'] || row['Couleur'] || '',
+                    codeFabrication: row['CODE FAB'] || row['Code Fabrication MP'] || row['Code Fab'] || '',
+                    numLot: row['Num de Lot'] || row['Numéro de Lot'] || row['Numero Lot'] || '',
+                    couleurCommercial: row['Couleur Commercial'] || row['COULEUR COMMERCIAL'] || row['Famille Couleur'] || row['FAMILLE COULEUR'] || 'BLANC'
+                }));
+                
+                generateCatalogue();
+                
+                // Afficher un message de succès
+                alert(`✅ Fichier chargé avec succès !\n${filsData.length} fils importés.\n\nVous pouvez maintenant accéder au catalogue.`);
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        document.getElementById('logoFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                logoDataUrl = e.target.result;
+                if (filsData.length > 0) {
+                    generateCatalogue();
+                }
+                alert('✅ Logo chargé avec succès !');
+            };
+            reader.readAsDataURL(file);
+        });
+
+        function generateCatalogue() {
+            const container = document.getElementById('catalogueContainer');
+            container.innerHTML = '';
+
+            const groupedByCode = {};
+            filsData.forEach(fil => {
+                if (!groupedByCode[fil.codeCommercial]) {
+                    groupedByCode[fil.codeCommercial] = [];
+                }
+                groupedByCode[fil.codeCommercial].push(fil);
+            });
+
+            const FILS_PER_PAGE = 5;
+
+            Object.keys(groupedByCode).sort().forEach((codeCommercial, codeIndex) => {
+                const allFils = groupedByCode[codeCommercial];
+                const couleurCommerciale = allFils[0].couleurCommercial || allFils[0].couleur;
+                const colorStyle = getColorStyleByFamille(couleurCommerciale);
+                const logoUrl = logoDataUrl || defaultLogoSvg;
+                
+                const totalPages = Math.ceil(allFils.length / FILS_PER_PAGE);
+                
+                for (let pageNum = 0; pageNum < totalPages; pageNum++) {
+                    const startIdx = pageNum * FILS_PER_PAGE;
+                    const endIdx = Math.min(startIdx + FILS_PER_PAGE, allFils.length);
+                    const fils = allFils.slice(startIdx, endIdx);
+                    
+                    const pageDiv = document.createElement('div');
+                    pageDiv.className = 'catalogue-page page-break';
+
+                    let pageHTML = `
+                        <div class="page-header">
+                            <div class="logo-container">
+                                <img src="${logoUrl}" alt="La Plume Artisanale">
+                            </div>
+                        </div>
+                        
+                        <div class="code-commercial-banner" style="background: ${colorStyle.bannerBg}; border-color: ${colorStyle.bannerBorder};">
+                            <div class="code-commercial-title" style="color: ${colorStyle.text};">
+                                Catalogue de Fils - ${codeCommercial} - ${couleurCommerciale}
+                            </div>
+                        </div>
+                        
+                        <div class="table-container">
+                    `;
+
+                    fils.forEach((fil, filIndex) => {
+                        const qrText = `${fil.codeCommercial}_${fil.couleur}_${fil.codeFabrication}_${fil.numLot}__`;
+                        const globalIndex = startIdx + filIndex;
+                        const qrId = `qr-${codeCommercial.replace(/[^a-zA-Z0-9]/g, '')}-${globalIndex}`;
+                        const filId = `fil-${codeCommercial.replace(/[^a-zA-Z0-9]/g, '')}-${globalIndex}`;
+                        
+                        pageHTML += `
+                            <div class="fil-item" data-fil-index="${codeIndex * 1000 + startIdx + filIndex}">
+                                <div class="fil-selection">
+                                    <input type="checkbox" id="${filId}" onchange="updateCount()" data-fil='${JSON.stringify(fil)}'>
+                                    <input type="number" min="1" max="99" value="1" id="qty-${filId}" style="margin-top: 4px;">
+                                </div>
+                                <div class="fil-content">
+                                    <div class="fil-row-top">
+                                        <div class="info-cell" style="background-color: ${colorStyle.bg}; border-color: ${colorStyle.border};">
+                                            <div class="info-label">N° Métrique</div>
+                                            <div class="info-value" style="color: ${colorStyle.text};">${fil.numeroMetrique}</div>
+                                        </div>
+                                        <div class="info-cell" style="background-color: ${colorStyle.bg}; border-color: ${colorStyle.border};">
+                                            <div class="info-label">Couleur</div>
+                                            <div class="info-value" style="color: ${colorStyle.text};">${fil.couleur}</div>
+                                        </div>
+                                        <div class="info-cell" style="background-color: ${colorStyle.bg}; border-color: ${colorStyle.border};">
+                                            <div class="info-label">Code Fabrication</div>
+                                            <div class="info-value" style="color: ${colorStyle.text};">${fil.codeFabrication}</div>
+                                        </div>
+                                        <div class="info-cell" style="background-color: ${colorStyle.bg}; border-color: ${colorStyle.border};">
+                                            <div class="info-label">N° de Lot</div>
+                                            <div class="info-value" style="color: ${colorStyle.text};">${fil.numLot}</div>
+                                        </div>
+                                    </div>
+                                    <div class="fil-row-bottom">
+                                        <div class="qr-cell">
+                                            <div id="${qrId}"></div>
+                                        </div>
+                                        <div class="position-cell">
+                                            <div class="position-item">
+                                                <span class="checkbox"></span>
+                                                <span>E1</span>
+                                            </div>
+                                            <div class="position-item">
+                                                <span class="checkbox"></span>
+                                                <span>E2</span>
+                                            </div>
+                                            <div class="position-item">
+                                                <span class="checkbox"></span>
+                                                <span>E3</span>
+                                            </div>
+                                            <div class="position-item">
+                                                <span class="checkbox"></span>
+                                                <span>Usine</span>
+                                            </div>
+                                        </div>
+                                        <div class="echantillon-cell">
+                                            <div class="echantillon-icon">🧵</div>
+                                            <div class="echantillon-text">
+                                                <strong>COLLER ÉCHANTILLON</strong><br>
+                                                <strong>DE FIL ICI</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    pageHTML += `</div>`;
+
+                    pageDiv.innerHTML = pageHTML;
+                    container.appendChild(pageDiv);
+
+                    // Générer les QR codes pour cette page
+                    fils.forEach((fil, filIndex) => {
+                        const qrText = `${fil.codeCommercial}_${fil.couleur}_${fil.codeFabrication}_${fil.numLot}__`;
+                        const globalIndex = startIdx + filIndex;
+                        const qrId = `qr-${codeCommercial.replace(/[^a-zA-Z0-9]/g, '')}-${globalIndex}`;
+                        
+                        setTimeout(() => {
+                            const qrElement = document.getElementById(qrId);
+                            if (qrElement) {
+                                new QRCode(qrElement, {
+                                    text: qrText,
+                                    width: 80,
+                                    height: 80,
+                                    colorDark: "#000000",
+                                    colorLight: "#ffffff",
+                                    correctLevel: QRCode.CorrectLevel.H
+                                });
+                            }
+                        }, 50 * filIndex);
+                    });
+                }
+            });
+        }
+
+        function updateCount() {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"][id^="fil-"]');
+            let count = 0;
+            checkboxes.forEach(cb => {
+                if (cb.checked) {
+                    const qtyInput = document.getElementById('qty-' + cb.id);
+                    count += parseInt(qtyInput.value) || 1;
+                }
+            });
+            document.getElementById('selectedCount').textContent = count;
+        }
+
+        function selectAll() {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"][id^="fil-"]');
+            checkboxes.forEach(cb => cb.checked = true);
+            updateCount();
+        }
+
+        function deselectAll() {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"][id^="fil-"]');
+            checkboxes.forEach(cb => cb.checked = false);
+            updateCount();
+        }
+
+        function printCatalogue() {
+            // Masquer la section étiquettes
+            const etiquettesSection = document.getElementById('etiquettesContainer');
+            etiquettesSection.classList.remove('active');
+            
+            // Ajouter la classe pour l'impression catalogue
+            document.body.classList.add('print-catalogue');
+            document.body.classList.remove('print-etiquettes');
+            
+            // Lancer l'impression
+            window.print();
+            
+            // Retirer la classe après l'impression
+            setTimeout(() => {
+                document.body.classList.remove('print-catalogue');
+            }, 1000);
+        }
+
+        function generateEtiquettesInternal(selectedFils) {
+            const container = document.getElementById('etiquettesContainer');
+            container.innerHTML = '';
+            container.classList.add('active');
+
+            const ETIQUETTES_PAR_PAGE = 8;
+            const totalPages = Math.ceil(selectedFils.length / ETIQUETTES_PAR_PAGE);
+
+            for (let pageNum = 0; pageNum < totalPages; pageNum++) {
+                const startIdx = pageNum * ETIQUETTES_PAR_PAGE;
+                const endIdx = Math.min(startIdx + ETIQUETTES_PAR_PAGE, selectedFils.length);
+                const pageData = selectedFils.slice(startIdx, endIdx);
+                
+                const pageDiv = document.createElement('div');
+                pageDiv.className = 'etiquette-page';
+                if (pageNum < totalPages - 1) {
+                    pageDiv.classList.add('page-break');
+                }
+
+                pageData.forEach((fil, index) => {
+                    const globalIndex = startIdx + index;
+                    const qrId = `qr-etiq-${globalIndex}`;
+                    const colorClass = getColorClass(fil.couleurCommercial);
+                    
+                    const etiquetteHTML = `
+                        <div class="etiquette">
+                            <div class="etiquette-header">
+                                <div class="etiquette-logo">🪶 LA PLUME ARTISANALE</div>
+                                <div class="etiquette-title">Étiquette de Fil</div>
+                            </div>
+                            
+                            <div class="color-banner-etiquette ${colorClass}">
+                                ${fil.codeCommercial} - ${fil.couleurCommercial}
+                            </div>
+                            
+                            <div class="etiquette-content">
+                                <div class="etiquette-body">
+                                    <div class="etiquette-left">
+                                        <div class="info-grid">
+                                            <div class="info-box">
+                                                <div class="info-box-label">N° Métrique</div>
+                                                <div class="info-box-value">${fil.numeroMetrique}</div>
+                                            </div>
+                                            <div class="info-box">
+                                                <div class="info-box-label">Couleur</div>
+                                                <div class="info-box-value">${fil.couleur}</div>
+                                            </div>
+                                            <div class="info-box">
+                                                <div class="info-box-label">Code Fabrication</div>
+                                                <div class="info-box-value">${fil.codeFabrication}</div>
+                                            </div>
+                                            <div class="info-box">
+                                                <div class="info-box-label">N° de Lot</div>
+                                                <div class="info-box-value">${fil.numLot}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="etiquette-right">
+                                        <div class="qr-section">
+                                            <div class="qr-code" id="${qrId}"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="positions-section">
+                                    <div class="positions-title">📍 Emplacement :</div>
+                                    <div class="positions-grid">
+                                        <div class="position-checkbox">
+                                            <span class="checkbox"></span>
+                                            <span>E1</span>
+                                        </div>
+                                        <div class="position-checkbox">
+                                            <span class="checkbox"></span>
+                                            <span>E2</span>
+                                        </div>
+                                        <div class="position-checkbox">
+                                            <span class="checkbox"></span>
+                                            <span>E3</span>
+                                        </div>
+                                        <div class="position-checkbox">
+                                            <span class="checkbox"></span>
+                                            <span>Usine</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    pageDiv.innerHTML += etiquetteHTML;
+                });
+
+                // Remplir les étiquettes manquantes
+                const emptyCount = ETIQUETTES_PAR_PAGE - pageData.length;
+                for (let i = 0; i < emptyCount; i++) {
+                    pageDiv.innerHTML += '<div class="etiquette" style="border-style: solid; opacity: 0.3;"></div>';
+                }
+
+                container.appendChild(pageDiv);
+
+                // Générer les QR codes
+                setTimeout(() => {
+                    pageData.forEach((fil, index) => {
+                        const globalIndex = startIdx + index;
+                        const qrId = `qr-etiq-${globalIndex}`;
+                        const qrText = `${fil.codeCommercial}_${fil.couleur}_${fil.codeFabrication}_${fil.numLot}__`;
+                        
+                        const qrElement = document.getElementById(qrId);
+                        if (qrElement && qrElement.children.length === 0) {
+                            new QRCode(qrElement, {
+                                text: qrText,
+                                width: 140,
+                                height: 140,
+                                colorDark: "#000000",
+                                colorLight: "#ffffff",
+                                correctLevel: QRCode.CorrectLevel.H
+                            });
+                        }
+                    });
+                }, 100 * pageNum);
+            }
+
+            // Scroll vers les étiquettes et lancer l'impression
+            setTimeout(() => {
+                container.scrollIntoView({ behavior: 'smooth' });
+                
+                // Ajouter la classe pour l'impression étiquettes
+                document.body.classList.add('print-etiquettes');
+                document.body.classList.remove('print-catalogue');
+                
+                // Lancer l'impression après un délai pour laisser les QR codes se générer
+                setTimeout(() => {
+                    window.print();
+                    
+                    // Retirer la classe après l'impression
+                    setTimeout(() => {
+                        document.body.classList.remove('print-etiquettes');
+                    }, 1000);
+                }, 1000);
+            }, 500);
+        }
+
+        // Données de démonstration
+        const demoData = [
+            { codeCommercial: 'C01', numeroMetrique: 'NM05', couleur: 'BLANC', codeFabrication: 'NM15-01.00', numLot: 'S2023', couleurCommercial: 'BLANC' },
+            { codeCommercial: 'C01', numeroMetrique: 'NM15', couleur: 'BLANC', codeFabrication: 'NM15-01.00', numLot: 'G3515', couleurCommercial: 'BLANC' },
+            { codeCommercial: 'C01', numeroMetrique: 'NM15', couleur: 'BLANC', codeFabrication: 'NM15-01.00', numLot: 'G3577', couleurCommercial: 'BLANC' },
+            { codeCommercial: 'C01', numeroMetrique: 'NM20', couleur: 'BLANC', codeFabrication: 'NM20-01.00', numLot: 'G3580', couleurCommercial: 'BLANC' },
+            { codeCommercial: 'C01', numeroMetrique: 'NM25', couleur: 'BLANC', codeFabrication: 'NM25-01.00', numLot: 'G3585', couleurCommercial: 'BLANC' },
+            { codeCommercial: 'C01', numeroMetrique: 'NM30', couleur: 'BLANC', codeFabrication: 'NM30-01.00', numLot: 'G3590', couleurCommercial: 'BLANC' },
+            { codeCommercial: 'C02', numeroMetrique: 'NM10', couleur: 'ROUGE', codeFabrication: 'NM10-02.00', numLot: 'S2024', couleurCommercial: 'ROUGE' },
+            { codeCommercial: 'C02', numeroMetrique: 'NM12', couleur: 'ROUGE', codeFabrication: 'NM12-02.00', numLot: 'S2025', couleurCommercial: 'ROUGE' },
+            { codeCommercial: 'C03', numeroMetrique: 'NM20', couleur: 'BEIGE', codeFabrication: 'NM20-03.00', numLot: 'S2027', couleurCommercial: 'BEIGE' },
+            { codeCommercial: 'C03', numeroMetrique: 'NM20', couleur: 'BEIGE', codeFabrication: 'NM20-03.00', numLot: 'S2028', couleurCommercial: 'BEIGE' },
+            { codeCommercial: 'C04', numeroMetrique: 'NM15', couleur: 'BLEU', codeFabrication: 'NM15-04.00', numLot: 'S2031', couleurCommercial: 'BLEU' }
+        ];
+
+        window.addEventListener('load', function() {
+            // Charger les données de démo
+            filsData = demoData;
+            generateCatalogue();
+            
+            // Afficher la page d'accueil
+            showSection('home');
+        });
+    </script>
+</body>
+</html>

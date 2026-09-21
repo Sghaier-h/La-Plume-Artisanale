@@ -1,0 +1,849 @@
+openapi: 3.0.3
+info:
+  title: API ERP La Plume Artisanale
+  description: |
+    Documentation complète de l'API REST pour l'ERP La Plume Artisanale.
+    
+    Cette API permet de gérer :
+    - Les clients et fournisseurs
+    - Les commandes, devis, factures, BL
+    - Les ordres de fabrication (OF)
+    - Le stock et les matières premières
+    - La production et le suivi
+    - Les sous-traitants
+    - Les machines et le planning
+    - La qualité et les contrôles
+    - Les dashboards et KPIs
+    
+    ## Authentification
+    
+    La plupart des endpoints nécessitent une authentification JWT.
+    Inclure le token dans l'en-tête `Authorization: Bearer <token>`.
+  version: 1.0.0
+  contact:
+    name: Support API
+    email: support@laplume-artisanale.tn
+  license:
+    name: PROPRIETARY
+
+servers:
+  - url: https://fabrication.laplume-artisanale.tn/api
+    description: Production
+  - url: http://localhost:5000/api
+    description: Développement local
+
+tags:
+  - name: Authentification
+    description: Authentification et gestion des utilisateurs
+  - name: Clients
+    description: Gestion des clients
+  - name: Fournisseurs
+    description: Gestion des fournisseurs
+  - name: Commandes
+    description: Gestion des commandes
+  - name: Devis
+    description: Gestion des devis
+  - name: Factures
+    description: Gestion des factures
+  - name: Bons Livraison
+    description: Gestion des bons de livraison
+  - name: Ordres Fabrication
+    description: Gestion des ordres de fabrication (OF)
+  - name: Articles
+    description: Gestion des articles et catalogue
+  - name: Machines
+    description: Gestion des machines
+  - name: Sous-traitants
+    description: Gestion des sous-traitants et mouvements
+  - name: Dashboard
+    description: KPIs et statistiques
+  - name: Stock
+    description: Gestion du stock
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: Vérifie l'état de l'API
+      tags: []
+      responses:
+        '200':
+          description: API opérationnelle
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: OK
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /auth/login:
+    post:
+      summary: Connexion
+      description: Authentifie un utilisateur et retourne un token JWT
+      tags: [Authentification]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: admin@laplume-artisanale.tn
+                password:
+                  type: string
+                  format: password
+                  example: password123
+      responses:
+        '200':
+          description: Connexion réussie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+              example:
+                success: true
+                data:
+                  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  user:
+                    id: 1
+                    email: admin@laplume-artisanale.tn
+                    nom: Admin
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /clients:
+    get:
+      summary: Liste des clients
+      description: Récupère la liste des clients avec pagination et filtres
+      tags: [Clients]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: search
+          in: query
+          description: Recherche par code, raison sociale ou email
+          schema:
+            type: string
+        - name: actif
+          in: query
+          description: Filtrer par statut actif
+          schema:
+            type: boolean
+        - name: page
+          in: query
+          description: Numéro de page
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          description: Nombre d'éléments par page
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: Liste des clients
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      summary: Créer un client
+      description: Crée un nouveau client
+      tags: [Clients]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientCreate'
+      responses:
+        '201':
+          description: Client créé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /clients/{id}:
+    get:
+      summary: Détails d'un client
+      description: Récupère les détails d'un client avec ses commandes
+      tags: [Clients]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Détails du client
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    put:
+      summary: Modifier un client
+      description: Met à jour les informations d'un client
+      tags: [Clients]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientUpdate'
+      responses:
+        '200':
+          description: Client modifié
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /commandes:
+    get:
+      summary: Liste des commandes
+      description: Récupère la liste des commandes avec pagination
+      tags: [Commandes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: statut
+          in: query
+          schema:
+            type: string
+            enum: [BROUILLON, EN_ATTENTE, VALIDEE, EN_PREPARATION, LIVREE, ANNULEE]
+        - name: client_id
+          in: query
+          schema:
+            type: integer
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Liste des commandes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+
+    post:
+      summary: Créer une commande
+      description: Crée une nouvelle commande avec ses lignes
+      tags: [Commandes]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - client_id
+                - date_commande
+                - lignes
+              properties:
+                client_id:
+                  type: integer
+                date_commande:
+                  type: string
+                  format: date
+                date_livraison_prevue:
+                  type: string
+                  format: date
+                statut:
+                  type: string
+                  enum: [BROUILLON, EN_ATTENTE, VALIDEE]
+                  default: EN_ATTENTE
+                priorite:
+                  type: string
+                  enum: [Basse, Normale, Haute, Urgente]
+                  default: Normale
+                lignes:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - id_article
+                      - quantite_commandee
+                    properties:
+                      id_article:
+                        type: integer
+                      quantite_commandee:
+                        type: number
+                      prix_unitaire:
+                        type: number
+                      remise:
+                        type: number
+      responses:
+        '201':
+          description: Commande créée
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /commandes/{id}/valider:
+    post:
+      summary: Valider une commande
+      description: Valide une commande (changement de statut)
+      tags: [Commandes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Commande validée
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /of:
+    get:
+      summary: Liste des OF
+      description: Récupère la liste des ordres de fabrication
+      tags: [Ordres Fabrication]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: statut
+          in: query
+          schema:
+            type: string
+            enum: [PLANIFIE, ATTRIBUE, EN_COURS, TERMINE, ANNULE]
+        - name: article_id
+          in: query
+          schema:
+            type: integer
+        - name: date_debut
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: date_fin
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Liste des OF
+
+    post:
+      summary: Créer un OF
+      description: Crée un nouvel ordre de fabrication avec QR code
+      tags: [Ordres Fabrication]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id_article
+                - quantite_a_produire
+              properties:
+                id_article:
+                  type: integer
+                id_article_commande:
+                  type: integer
+                quantite_a_produire:
+                  type: number
+                date_debut_prevue:
+                  type: string
+                  format: date-time
+                date_fin_prevue:
+                  type: string
+                  format: date-time
+                priorite:
+                  type: string
+                  enum: [basse, normale, haute, urgente]
+                  default: normale
+                observations:
+                  type: string
+      responses:
+        '201':
+          description: OF créé
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /of/{id}:
+    get:
+      summary: Détails d'un OF
+      tags: [Ordres Fabrication]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Détails de l'OF
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      summary: Modifier un OF
+      description: Met à jour un OF (ne fonctionne pas si statut TERMINE ou EN_COURS)
+      tags: [Ordres Fabrication]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                quantite_a_produire:
+                  type: number
+                date_debut_prevue:
+                  type: string
+                  format: date-time
+                date_fin_prevue:
+                  type: string
+                  format: date-time
+                priorite:
+                  type: string
+                observations:
+                  type: string
+      responses:
+        '200':
+          description: OF modifié
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /of/{id}/assigner-machine:
+    post:
+      summary: Assigner une machine à un OF
+      description: Associe une machine et un opérateur à un OF
+      tags: [Ordres Fabrication]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id_machine
+                - date_debut_prevue
+                - date_fin_prevue
+              properties:
+                id_machine:
+                  type: integer
+                id_operateur:
+                  type: integer
+                date_debut_prevue:
+                  type: string
+                  format: date-time
+                date_fin_prevue:
+                  type: string
+                  format: date-time
+      responses:
+        '200':
+          description: Machine assignée
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /of/{id}/demarrer:
+    post:
+      summary: Démarrer un OF
+      description: Change le statut d'un OF à EN_COURS
+      tags: [Ordres Fabrication]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OF démarré
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /of/{id}/terminer:
+    post:
+      summary: Terminer un OF
+      description: Change le statut d'un OF à TERMINE et enregistre la quantité produite
+      tags: [Ordres Fabrication]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                quantite_produite:
+                  type: number
+      responses:
+        '200':
+          description: OF terminé
+
+  /devis:
+    get:
+      summary: Liste des devis
+      tags: [Devis]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Liste des devis
+
+    post:
+      summary: Créer un devis
+      description: Crée un devis avec calcul automatique des totaux
+      tags: [Devis]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id_client
+                - date_devis
+                - lignes
+              properties:
+                id_client:
+                  type: integer
+                date_devis:
+                  type: string
+                  format: date
+                date_validite:
+                  type: string
+                  format: date
+                lignes:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id_article:
+                        type: integer
+                      designation:
+                        type: string
+                      quantite:
+                        type: number
+                      prix_unitaire_ht:
+                        type: number
+                      taux_tva:
+                        type: number
+                      remise:
+                        type: number
+      responses:
+        '201':
+          description: Devis créé
+
+  /dashboard/kpis:
+    get:
+      summary: KPIs du dashboard
+      description: Retourne les indicateurs clés de performance
+      tags: [Dashboard]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: KPIs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      of_en_cours:
+                        type: integer
+                      taux_avancement:
+                        type: number
+                      delai_moyen:
+                        type: number
+                      taux_rebut:
+                        type: number
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtenu via /api/auth/login
+
+  schemas:
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+      required:
+        - success
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            message:
+              type: string
+            code:
+              type: string
+            details:
+              type: object
+      required:
+        - success
+        - error
+
+    PaginatedResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: array
+            pagination:
+              type: object
+              properties:
+                page:
+                  type: integer
+                limit:
+                  type: integer
+                total:
+                  type: integer
+                totalPages:
+                  type: integer
+                hasNextPage:
+                  type: boolean
+                hasPrevPage:
+                  type: boolean
+
+    ClientCreate:
+      type: object
+      required:
+        - code_client
+        - raison_sociale
+      properties:
+        code_client:
+          type: string
+          example: CLT-001
+        raison_sociale:
+          type: string
+          example: Société Exemple SARL
+        adresse:
+          type: string
+        code_postal:
+          type: string
+        ville:
+          type: string
+        pays:
+          type: string
+          default: Tunisie
+        telephone:
+          type: string
+        email:
+          type: string
+          format: email
+        contact_principal:
+          type: string
+        conditions_paiement:
+          type: string
+        plafond_credit:
+          type: number
+        devise:
+          type: string
+          default: TND
+        taux_remise:
+          type: number
+          default: 0
+        actif:
+          type: boolean
+          default: true
+
+    ClientUpdate:
+      type: object
+      properties:
+        raison_sociale:
+          type: string
+        adresse:
+          type: string
+        telephone:
+          type: string
+        email:
+          type: string
+          format: email
+        actif:
+          type: boolean
+
+  responses:
+    BadRequest:
+      description: Requête invalide
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              message: Les données fournies sont invalides
+              code: VALIDATION_ERROR
+
+    Unauthorized:
+      description: Non authentifié
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              message: Vous devez être connecté pour accéder à cette ressource
+
+    Forbidden:
+      description: Accès interdit
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              message: Vous n'avez pas les permissions nécessaires
+
+    NotFound:
+      description: Ressource non trouvée
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              message: Ressource non trouvée
+
+    InternalServerError:
+      description: Erreur serveur
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              message: Une erreur serveur est survenue

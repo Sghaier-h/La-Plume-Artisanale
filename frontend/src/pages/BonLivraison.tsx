@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Truck, Plus, Edit, Trash2, Search, Download, Eye, CheckCircle, X, Package } from 'lucide-react';
-import { bonsLivraisonService, commandesService, clientsService, articlesService } from '../services/api';
+import { Truck, Plus, Edit, Trash2, Search, Download, Eye, CheckCircle, X, Package, Receipt } from 'lucide-react';
+import { bonsLivraisonService, commandesService, clientsService, articlesService, facturesService } from '../services/api';
 
 interface LigneBL {
   id_article?: number;
@@ -114,6 +114,25 @@ const BonLivraison: React.FC = () => {
     } catch (error: any) {
       console.error('Erreur génération BL:', error);
       alert(error.response?.data?.error?.message || 'Erreur lors de la génération');
+    }
+  };
+
+  const handleGenererFacture = async (blId: number) => {
+    if (window.confirm('Générer une facture depuis ce bon de livraison ?')) {
+      try {
+        const result = await facturesService.createFromBL(blId, {
+          date_facture: new Date().toISOString().split('T')[0],
+          statut: 'BROUILLON'
+        });
+        if (result.data?.success) {
+          alert('Facture générée avec succès depuis le bon de livraison !');
+          setSelectedBL(null);
+          loadData();
+        }
+      } catch (error: any) {
+        console.error('Erreur génération facture:', error);
+        alert(error.response?.data?.error?.message || 'Erreur lors de la génération de la facture');
+      }
     }
   };
 
@@ -774,6 +793,15 @@ const BonLivraison: React.FC = () => {
                     <Edit className="w-4 h-4 inline mr-2" />
                     Modifier
                   </button>
+                  {selectedBL.statut === 'LIVREE' && !selectedBL.id_facture && (
+                    <button
+                      onClick={() => handleGenererFacture(selectedBL.id_bl)}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+                    >
+                      <Receipt className="w-4 h-4" />
+                      Générer Facture
+                    </button>
+                  )}
                   <button
                     onClick={() => setSelectedBL(null)}
                     className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"

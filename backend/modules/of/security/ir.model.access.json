@@ -1,0 +1,10 @@
+{
+  "id": "access_of",
+  "name": "Of Access",
+  "model_id": "of.of",
+  "group_id": "base.group_user",
+  "perm_read": true,
+  "perm_write": true,
+  "perm_create": true,
+  "perm_unlink": true
+}

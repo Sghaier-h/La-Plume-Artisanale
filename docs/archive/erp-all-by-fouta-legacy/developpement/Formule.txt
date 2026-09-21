@@ -1,0 +1,5 @@
+QR Fabrication=CONCATENER([@[Num OF]];"_";[@[Num Client]];"_";[@[Num Commande]];"_";[@[Ref Commercial]];"_";[@Modèle];"_";[@Dimensions])
+QR Commande=CONCATENER([@[Num Client]];"_";[@[Num Commande]])
+QR Suivis =CONCATENER([@[Num Suivis]];"_";[@[Num Client]];"_";[@[Num Commande]];"_";[@[Ref Commercial]];"_";[@Modèle];"_";[@Dimensions])
+QR MP=CONCATENER([@[Code Couleur]];"_";[@Couleur];"_";[@[Code Fabrication]];"_";[@[Num de Lot]])
+QR Fourniture = CONCATENER([@Type];"_";[@Référence])

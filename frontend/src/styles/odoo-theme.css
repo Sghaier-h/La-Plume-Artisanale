@@ -1,0 +1,786 @@
+/**
+ * Thème Odoo Moderne - Design moderne avec couleurs vibrantes et boutons élégants
+ * Inspiré d'Odoo avec un design contemporain
+ */
+
+:root {
+  /* Couleurs primaires modernes */
+  --odoo-primary: #6366f1;
+  --odoo-primary-dark: #4f46e5;
+  --odoo-primary-light: #818cf8;
+  --odoo-primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --odoo-secondary: #8b5cf6;
+  --odoo-secondary-gradient: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+  
+  /* Couleurs de statut modernes */
+  --odoo-success: #10b981;
+  --odoo-success-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  --odoo-warning: #f59e0b;
+  --odoo-warning-gradient: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  --odoo-danger: #ef4444;
+  --odoo-danger-gradient: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  --odoo-info: #3b82f6;
+  --odoo-info-gradient: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  
+  /* Couleurs de fond modernes */
+  --odoo-bg-primary: #ffffff;
+  --odoo-bg-secondary: #f8fafc;
+  --odoo-bg-tertiary: #f1f5f9;
+  --odoo-bg-hover: #f1f5f9;
+  --odoo-bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  
+  /* Couleurs de texte */
+  --odoo-text-primary: #1e293b;
+  --odoo-text-secondary: #64748b;
+  --odoo-text-muted: #94a3b8;
+  
+  /* Bordures modernes */
+  --odoo-border-color: #e2e8f0;
+  --odoo-border-radius: 8px;
+  --odoo-border-radius-lg: 12px;
+  --odoo-border-radius-xl: 16px;
+  
+  /* Ombres modernes avec profondeur */
+  --odoo-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --odoo-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --odoo-shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --odoo-shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --odoo-shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  --odoo-shadow-colored: 0 10px 15px -3px rgba(99, 102, 241, 0.3), 0 4px 6px -2px rgba(99, 102, 241, 0.2);
+  
+  /* Espacements */
+  --odoo-spacing-xs: 4px;
+  --odoo-spacing-sm: 8px;
+  --odoo-spacing-md: 16px;
+  --odoo-spacing-lg: 24px;
+  --odoo-spacing-xl: 32px;
+  
+  /* Transitions */
+  --odoo-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --odoo-transition-fast: all 0.15s ease-in-out;
+}
+
+/* Layout Odoo */
+.odoo-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+}
+
+.odoo-header {
+  background: var(--odoo-primary-gradient);
+  color: white;
+  padding: var(--odoo-spacing-md) var(--odoo-spacing-lg);
+  box-shadow: var(--odoo-shadow-lg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 1000;
+  position: relative;
+  overflow: hidden;
+}
+
+.odoo-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
+  pointer-events: none;
+}
+
+.odoo-header > * {
+  position: relative;
+  z-index: 1;
+}
+
+.odoo-sidebar {
+  background-color: var(--odoo-bg-primary);
+  border-right: 1px solid var(--odoo-border-color);
+  width: 250px;
+  min-height: calc(100vh - 64px);
+  padding: var(--odoo-spacing-md);
+  box-shadow: var(--odoo-shadow-sm);
+}
+
+.odoo-content {
+  flex: 1;
+  padding: var(--odoo-spacing-lg);
+  background-color: transparent;
+}
+
+/* Breadcrumb Odoo */
+.odoo-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: var(--odoo-spacing-sm);
+  margin-bottom: var(--odoo-spacing-md);
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.odoo-breadcrumb-item {
+  display: flex;
+  align-items: center;
+  gap: var(--odoo-spacing-sm);
+  transition: var(--odoo-transition-fast);
+}
+
+.odoo-breadcrumb-item:hover {
+  color: white;
+}
+
+.odoo-breadcrumb-separator {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Statusbar Odoo */
+.odoo-statusbar {
+  background: var(--odoo-bg-primary);
+  border: 1px solid var(--odoo-border-color);
+  border-radius: var(--odoo-border-radius-lg);
+  padding: var(--odoo-spacing-md) var(--odoo-spacing-lg);
+  margin-bottom: var(--odoo-spacing-md);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--odoo-spacing-sm);
+  box-shadow: var(--odoo-shadow);
+  backdrop-filter: blur(10px);
+}
+
+.odoo-statusbar-left {
+  display: flex;
+  align-items: center;
+  gap: var(--odoo-spacing-md);
+}
+
+.odoo-statusbar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--odoo-spacing-sm);
+}
+
+.odoo-status-badge {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: var(--odoo-shadow-sm);
+  transition: var(--odoo-transition-fast);
+}
+
+.odoo-status-badge:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--odoo-shadow);
+}
+
+.odoo-status-badge.draft {
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+.odoo-status-badge.confirmed {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  color: #1e40af;
+  border: 1px solid #93c5fd;
+}
+
+.odoo-status-badge.done {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  color: #065f46;
+  border: 1px solid #6ee7b7;
+}
+
+.odoo-status-badge.cancelled {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
+/* Form View Odoo */
+.odoo-form-view {
+  background: var(--odoo-bg-primary);
+  border: 1px solid var(--odoo-border-color);
+  border-radius: var(--odoo-border-radius-lg);
+  padding: var(--odoo-spacing-lg);
+  box-shadow: var(--odoo-shadow-md);
+  backdrop-filter: blur(10px);
+}
+
+.odoo-form-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--odoo-spacing-lg);
+  padding-bottom: var(--odoo-spacing-md);
+  border-bottom: 2px solid var(--odoo-border-color);
+}
+
+.odoo-form-title {
+  font-size: 28px;
+  font-weight: 700;
+  background: var(--odoo-primary-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.odoo-form-actions {
+  display: flex;
+  gap: var(--odoo-spacing-sm);
+}
+
+/* Notebook (Onglets) Odoo */
+.odoo-notebook {
+  margin-top: var(--odoo-spacing-lg);
+}
+
+.odoo-notebook-tabs {
+  display: flex;
+  border-bottom: 2px solid var(--odoo-border-color);
+  gap: var(--odoo-spacing-md);
+  margin-bottom: var(--odoo-spacing-md);
+  position: relative;
+}
+
+.odoo-notebook-tab {
+  padding: var(--odoo-spacing-sm) var(--odoo-spacing-md);
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  color: var(--odoo-text-secondary);
+  font-weight: 600;
+  transition: var(--odoo-transition);
+  position: relative;
+  font-size: 14px;
+}
+
+.odoo-notebook-tab::before {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--odoo-primary-gradient);
+  transform: scaleX(0);
+  transition: var(--odoo-transition);
+}
+
+.odoo-notebook-tab:hover {
+  color: var(--odoo-primary);
+}
+
+.odoo-notebook-tab.active {
+  color: var(--odoo-primary);
+}
+
+.odoo-notebook-tab.active::before {
+  transform: scaleX(1);
+}
+
+.odoo-notebook-content {
+  padding: var(--odoo-spacing-md) 0;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Button Box Odoo */
+.odoo-buttonbox {
+  display: flex;
+  gap: var(--odoo-spacing-sm);
+  padding: var(--odoo-spacing-md);
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: var(--odoo-border-radius-lg);
+  margin-top: var(--odoo-spacing-md);
+  border: 1px solid var(--odoo-border-color);
+}
+
+/* Chatter Odoo */
+.odoo-chatter {
+  margin-top: var(--odoo-spacing-lg);
+  border-top: 2px solid var(--odoo-border-color);
+  padding-top: var(--odoo-spacing-lg);
+}
+
+.odoo-chatter-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--odoo-spacing-md);
+}
+
+.odoo-chatter-title {
+  font-size: 20px;
+  font-weight: 700;
+  background: var(--odoo-primary-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.odoo-chatter-messages {
+  max-height: 400px;
+  overflow-y: auto;
+  padding: var(--odoo-spacing-md);
+  background: var(--odoo-bg-secondary);
+  border-radius: var(--odoo-border-radius-lg);
+  border: 1px solid var(--odoo-border-color);
+}
+
+.odoo-chatter-message {
+  padding: var(--odoo-spacing-md);
+  background: var(--odoo-bg-primary);
+  border-radius: var(--odoo-border-radius-lg);
+  margin-bottom: var(--odoo-spacing-sm);
+  border-left: 4px solid;
+  border-image: var(--odoo-primary-gradient) 1;
+  box-shadow: var(--odoo-shadow-sm);
+  transition: var(--odoo-transition-fast);
+}
+
+.odoo-chatter-message:hover {
+  box-shadow: var(--odoo-shadow);
+  transform: translateX(4px);
+}
+
+.odoo-chatter-message-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--odoo-spacing-xs);
+}
+
+.odoo-chatter-message-author {
+  font-weight: 700;
+  color: var(--odoo-text-primary);
+}
+
+.odoo-chatter-message-date {
+  font-size: 12px;
+  color: var(--odoo-text-muted);
+}
+
+.odoo-chatter-message-content {
+  color: var(--odoo-text-secondary);
+  line-height: 1.6;
+}
+
+/* Tree View (Liste) Odoo */
+.odoo-tree-view {
+  background: var(--odoo-bg-primary);
+  border: 1px solid var(--odoo-border-color);
+  border-radius: var(--odoo-border-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--odoo-shadow-md);
+}
+
+.odoo-tree-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--odoo-spacing-md);
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 2px solid var(--odoo-border-color);
+}
+
+.odoo-tree-search {
+  display: flex;
+  gap: var(--odoo-spacing-sm);
+  flex: 1;
+  max-width: 400px;
+}
+
+.odoo-tree-filters {
+  display: flex;
+  gap: var(--odoo-spacing-sm);
+  flex-wrap: wrap;
+}
+
+.odoo-tree-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.odoo-tree-table thead {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.odoo-tree-table th {
+  padding: var(--odoo-spacing-md) var(--odoo-spacing-lg);
+  text-align: left;
+  font-weight: 700;
+  color: var(--odoo-text-primary);
+  border-bottom: 2px solid var(--odoo-border-color);
+  cursor: pointer;
+  user-select: none;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: var(--odoo-transition-fast);
+}
+
+.odoo-tree-table th:hover {
+  background: var(--odoo-bg-hover);
+  color: var(--odoo-primary);
+}
+
+.odoo-tree-table td {
+  padding: var(--odoo-spacing-md) var(--odoo-spacing-lg);
+  border-bottom: 1px solid var(--odoo-border-color);
+  transition: var(--odoo-transition-fast);
+}
+
+.odoo-tree-table tbody tr {
+  transition: var(--odoo-transition-fast);
+}
+
+.odoo-tree-table tbody tr:hover {
+  background: linear-gradient(90deg, #f8fafc 0%, transparent 100%);
+  transform: translateX(4px);
+}
+
+.odoo-tree-table tbody tr.selected {
+  background: linear-gradient(90deg, #dbeafe 0%, transparent 100%);
+  border-left: 4px solid var(--odoo-primary);
+}
+
+/* Kanban View Odoo */
+.odoo-kanban {
+  display: flex;
+  gap: var(--odoo-spacing-lg);
+  overflow-x: auto;
+  padding: var(--odoo-spacing-md);
+  min-height: 500px;
+}
+
+.odoo-kanban-column {
+  min-width: 320px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: var(--odoo-border-radius-lg);
+  padding: var(--odoo-spacing-md);
+  border: 2px solid var(--odoo-border-color);
+  box-shadow: var(--odoo-shadow);
+}
+
+.odoo-kanban-column-header {
+  font-weight: 700;
+  color: var(--odoo-text-primary);
+  margin-bottom: var(--odoo-spacing-md);
+  padding-bottom: var(--odoo-spacing-sm);
+  border-bottom: 3px solid var(--odoo-border-color);
+  font-size: 16px;
+}
+
+.odoo-kanban-card {
+  background: var(--odoo-bg-primary);
+  border: 1px solid var(--odoo-border-color);
+  border-radius: var(--odoo-border-radius-lg);
+  padding: var(--odoo-spacing-md);
+  margin-bottom: var(--odoo-spacing-sm);
+  cursor: move;
+  box-shadow: var(--odoo-shadow);
+  transition: var(--odoo-transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.odoo-kanban-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--odoo-primary-gradient);
+  transform: scaleY(0);
+  transition: var(--odoo-transition);
+}
+
+.odoo-kanban-card:hover {
+  box-shadow: var(--odoo-shadow-lg);
+  transform: translateY(-4px) scale(1.02);
+  border-color: var(--odoo-primary-light);
+}
+
+.odoo-kanban-card:hover::before {
+  transform: scaleY(1);
+}
+
+.odoo-kanban-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--odoo-spacing-sm);
+}
+
+.odoo-kanban-card-title {
+  font-weight: 700;
+  color: var(--odoo-text-primary);
+  font-size: 15px;
+}
+
+.odoo-kanban-card-content {
+  color: var(--odoo-text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Buttons Odoo Modernes */
+.odoo-btn {
+  padding: 10px 20px;
+  border-radius: var(--odoo-border-radius-lg);
+  border: none;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: var(--odoo-transition);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--odoo-spacing-xs);
+  position: relative;
+  overflow: hidden;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: var(--odoo-shadow);
+}
+
+.odoo-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.odoo-btn:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+.odoo-btn:active {
+  transform: scale(0.98);
+}
+
+.odoo-btn-primary {
+  background: var(--odoo-primary-gradient);
+  color: white;
+  box-shadow: var(--odoo-shadow-colored);
+}
+
+.odoo-btn-primary:hover {
+  box-shadow: var(--odoo-shadow-lg), var(--odoo-shadow-colored);
+  transform: translateY(-2px);
+}
+
+.odoo-btn-primary:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.odoo-btn-secondary {
+  background: var(--odoo-secondary-gradient);
+  color: white;
+  box-shadow: 0 10px 15px -3px rgba(139, 92, 246, 0.3), 0 4px 6px -2px rgba(139, 92, 246, 0.2);
+}
+
+.odoo-btn-secondary:hover {
+  box-shadow: var(--odoo-shadow-lg), 0 10px 15px -3px rgba(139, 92, 246, 0.4);
+  transform: translateY(-2px);
+}
+
+.odoo-btn-success {
+  background: var(--odoo-success-gradient);
+  color: white;
+  box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3), 0 4px 6px -2px rgba(16, 185, 129, 0.2);
+}
+
+.odoo-btn-success:hover {
+  box-shadow: var(--odoo-shadow-lg), 0 10px 15px -3px rgba(16, 185, 129, 0.4);
+  transform: translateY(-2px);
+}
+
+.odoo-btn-warning {
+  background: var(--odoo-warning-gradient);
+  color: white;
+  box-shadow: 0 10px 15px -3px rgba(245, 158, 11, 0.3), 0 4px 6px -2px rgba(245, 158, 11, 0.2);
+}
+
+.odoo-btn-warning:hover {
+  box-shadow: var(--odoo-shadow-lg), 0 10px 15px -3px rgba(245, 158, 11, 0.4);
+  transform: translateY(-2px);
+}
+
+.odoo-btn-danger {
+  background: var(--odoo-danger-gradient);
+  color: white;
+  box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.3), 0 4px 6px -2px rgba(239, 68, 68, 0.2);
+}
+
+.odoo-btn-danger:hover {
+  box-shadow: var(--odoo-shadow-lg), 0 10px 15px -3px rgba(239, 68, 68, 0.4);
+  transform: translateY(-2px);
+}
+
+.odoo-btn-outline {
+  background: transparent;
+  border: 2px solid var(--odoo-primary);
+  color: var(--odoo-primary);
+  box-shadow: none;
+}
+
+.odoo-btn-outline:hover {
+  background: var(--odoo-primary-gradient);
+  color: white;
+  box-shadow: var(--odoo-shadow-colored);
+  transform: translateY(-2px);
+}
+
+.odoo-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.odoo-btn:disabled:hover {
+  box-shadow: var(--odoo-shadow);
+  transform: none;
+}
+
+/* Fields Odoo */
+.odoo-field {
+  margin-bottom: var(--odoo-spacing-md);
+}
+
+.odoo-field-label {
+  display: block;
+  margin-bottom: var(--odoo-spacing-xs);
+  font-weight: 600;
+  color: var(--odoo-text-primary);
+  font-size: 14px;
+}
+
+.odoo-field-required::after {
+  content: '*';
+  color: var(--odoo-danger);
+  margin-left: 4px;
+  font-weight: 700;
+}
+
+.odoo-field-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid var(--odoo-border-color);
+  border-radius: var(--odoo-border-radius-lg);
+  font-size: 14px;
+  transition: var(--odoo-transition);
+  background: var(--odoo-bg-primary);
+  color: var(--odoo-text-primary);
+}
+
+.odoo-field-input:focus {
+  outline: none;
+  border-color: var(--odoo-primary);
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1), var(--odoo-shadow);
+  transform: translateY(-1px);
+}
+
+.odoo-field-input:hover {
+  border-color: var(--odoo-primary-light);
+}
+
+.odoo-field-input::placeholder {
+  color: var(--odoo-text-muted);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .odoo-sidebar {
+    width: 100%;
+    min-height: auto;
+  }
+  
+  .odoo-kanban {
+    flex-direction: column;
+  }
+  
+  .odoo-kanban-column {
+    min-width: 100%;
+  }
+  
+  .odoo-btn {
+    padding: 8px 16px;
+    font-size: 12px;
+  }
+}
+
+/* Animations supplémentaires */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.odoo-statusbar {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Scrollbar personnalisé */
+.odoo-chatter-messages::-webkit-scrollbar,
+.odoo-tree-view::-webkit-scrollbar {
+  width: 8px;
+}
+
+.odoo-chatter-messages::-webkit-scrollbar-track,
+.odoo-tree-view::-webkit-scrollbar-track {
+  background: var(--odoo-bg-secondary);
+  border-radius: 10px;
+}
+
+.odoo-chatter-messages::-webkit-scrollbar-thumb,
+.odoo-tree-view::-webkit-scrollbar-thumb {
+  background: var(--odoo-primary-gradient);
+  border-radius: 10px;
+}
+
+.odoo-chatter-messages::-webkit-scrollbar-thumb:hover,
+.odoo-tree-view::-webkit-scrollbar-thumb:hover {
+  background: var(--odoo-primary-dark);
+}

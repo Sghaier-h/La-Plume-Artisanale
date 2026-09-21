@@ -35,7 +35,7 @@ const TabletteCoupeur: React.FC = () => {
       
       const enCours = taches.find((t: Tache) => t.statut === 'EN_COURS');
       const pretes = taches.filter((t: Tache) => t.statut === 'ASSIGNEE' || t.statut === 'EN_ATTENTE');
-      const enAttente = []; // Simuler OF en attente de tissage
+      const enAttente: any[] = []; // Simuler OF en attente de tissage
 
       setTacheEnCours(enCours || null);
       setTachesPretes(pretes);

@@ -13,13 +13,27 @@ const api = axios.create({
   },
 });
 
-// Intercepteur pour ajouter le token
+// Intercepteur pour ajouter le token et la société active
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Ajouter l'ID de la société active dans les headers si disponible
+    const activeCompanyStr = localStorage.getItem('app_active_company');
+    if (activeCompanyStr) {
+      try {
+        const activeCompany = JSON.parse(activeCompanyStr);
+        if (activeCompany?.id_societe) {
+          config.headers['X-Active-Company-Id'] = activeCompany.id_societe.toString();
+        }
+      } catch (e) {
+        console.warn('Erreur parsing société active:', e);
+      }
+    }
+    
     return config;
   },
   (error) => {
@@ -46,11 +60,26 @@ api.interceptors.response.use(
       const token = localStorage.getItem('token');
       if (token && window.location.pathname !== '/login') {
         console.warn('Token invalide ou expiré, déconnexion...');
-        localStorage.removeItem('token');
+      localStorage.removeItem('token');
         localStorage.removeItem('user');
-        window.location.href = '/login';
-      }
+      window.location.href = '/login';
     }
+    }
+
+    if (error.response?.status === 429) {
+      // Gérer l'erreur de rate limiting
+      const retryAfter = error.response.headers['retry-after'];
+      const message = error.response.data?.error?.message || 
+        (retryAfter 
+          ? `Trop de requêtes. Veuillez patienter ${retryAfter} secondes.`
+          : 'Trop de requêtes. Veuillez patienter quelques instants.');
+      
+      console.warn('Rate limit atteint:', message);
+      
+      // Afficher une notification si disponible (sera géré par le composant)
+      error.rateLimitMessage = message;
+    }
+
     return Promise.reject(error);
   }
 );
@@ -78,6 +107,36 @@ export const stockService = {
   getStockMP: () => api.get('/stock/mp'),
   getStockPF: () => api.get('/stock/pf'),
   createTransfert: (data: any) => api.post('/stock/transferts', data),
+  getMouvements: (params?: any) => api.get('/stock/mouvements', { params }),
+  getMouvement: (id: number) => api.get(`/stock/mouvements/${id}`),
+  createMouvement: (data: any) => api.post('/stock/mouvements', data),
+  updateMouvement: (id: number, data: any) => api.put(`/stock/mouvements/${id}`, data),
+  deleteMouvement: (id: number) => api.delete(`/stock/mouvements/${id}`),
+};
+
+export const inventaireService = {
+  getInventaires: (params?: any) => api.get('/inventaires', { params }),
+  getInventaire: (id: number) => api.get(`/inventaires/${id}`),
+  createInventaire: (data: any) => api.post('/inventaires', data),
+  updateInventaire: (id: number, data: any) => api.put(`/inventaires/${id}`, data),
+  deleteInventaire: (id: number) => api.delete(`/inventaires/${id}`),
+  validerInventaire: (id: number, data?: any) => api.post(`/inventaires/${id}/valider`, data),
+};
+
+export const entrepotService = {
+  getEntrepots: (params?: any) => api.get('/entrepots', { params }),
+  getEntrepot: (id: number) => api.get(`/entrepots/${id}`),
+  createEntrepot: (data: any) => api.post('/entrepots', data),
+  updateEntrepot: (id: number, data: any) => api.put(`/entrepots/${id}`, data),
+  deleteEntrepot: (id: number) => api.delete(`/entrepots/${id}`),
+};
+
+export const fournitureService = {
+  getFournitures: (params?: any) => api.get('/fournitures', { params }),
+  getFourniture: (id: number) => api.get(`/fournitures/${id}`),
+  createFourniture: (data: any) => api.post('/fournitures', data),
+  updateFourniture: (id: number, data: any) => api.put(`/fournitures/${id}`, data),
+  deleteFourniture: (id: number) => api.delete(`/fournitures/${id}`),
 };
 
 export const planningService = {
@@ -89,21 +148,29 @@ export const planningService = {
     api.post('/planning-dragdrop/reordonner', { machineId, ofIds }),
 };
 
-export const articlesService = {
-  getArticles: (params?: any) => api.get('/articles', { params }),
-  getArticle: (id: number) => api.get(`/articles/${id}`),
-  createArticle: (data: any) => api.post('/articles', data),
-  updateArticle: (id: number, data: any) => api.put(`/articles/${id}`, data),
-  deleteArticle: (id: number) => api.delete(`/articles/${id}`),
-  getTypesArticles: () => api.get('/articles/types'),
-};
-
 export const clientsService = {
   getClients: (params?: any) => api.get('/clients', { params }),
-  getClient: (id: number) => api.get(`/clients/${id}`),
+  getClient: (id: number, options?: { loadRelations?: boolean }) => {
+    const url = `/clients/${id}`;
+    return options?.loadRelations 
+      ? api.get(url, { params: { loadRelations: true } })
+      : api.get(url);
+  },
   createClient: (data: any) => api.post('/clients', data),
   updateClient: (id: number, data: any) => api.put(`/clients/${id}`, data),
-  deleteClient: (id: number) => api.delete(`/clients/${id}`),
+  deleteClient: (id: number, raison?: string) => api.delete(`/clients/${id}`, { data: { raison_desactivation: raison } }),
+  getCategories: () => api.get('/clients/categories'),
+  getTypesCommerciaux: () => api.get('/clients/types-commerciaux'),
+  // Adresses
+  getAdresses: (idClient: number, type?: string) => api.get(`/clients/${idClient}/adresses`, { params: { type } }),
+  createAdresse: (idClient: number, data: any) => api.post(`/clients/${idClient}/adresses`, data),
+  updateAdresse: (idClient: number, idAdresse: number, data: any) => api.put(`/clients/${idClient}/adresses/${idAdresse}`, data),
+  deleteAdresse: (idClient: number, idAdresse: number) => api.delete(`/clients/${idClient}/adresses/${idAdresse}`),
+  // Contacts
+  getContacts: (idClient: number) => api.get(`/clients/${idClient}/contacts`),
+  createContact: (idClient: number, data: any) => api.post(`/clients/${idClient}/contacts`, data),
+  updateContact: (idClient: number, idContact: number, data: any) => api.put(`/clients/${idClient}/contacts/${idContact}`, data),
+  deleteContact: (idClient: number, idContact: number) => api.delete(`/clients/${idClient}/contacts/${idContact}`),
 };
 
 export const commandesService = {
@@ -165,6 +232,7 @@ export const machinesService = {
   getMachine: (id: number) => api.get(`/machines/${id}`),
   createMachine: (data: any) => api.post('/machines', data),
   updateMachine: (id: number, data: any) => api.put(`/machines/${id}`, data),
+  deleteMachine: (id: number) => api.delete(`/machines/${id}`),
   getTypesMachines: () => api.get('/machines/types'),
   getMachinePlanning: (id: number, params?: any) => api.get(`/machines/${id}/planning`, { params }),
 };
@@ -192,6 +260,11 @@ export const soustraitantsService = {
 
 export const dashboardService = {
   getKPIs: () => api.get('/dashboard/kpis'),
+  getKpisAdmin: () => api.get('/dashboard/kpis-admin'),
+  getKpisProduction: () => api.get('/dashboard/kpis-production'),
+  getActiviteRecente: (limit = 10) => api.get(`/dashboard/activite-recente?limit=${limit}`),
+  getVentesParMois: () => api.get('/dashboard/ventes-par-mois'),
+  getTopClients: (limit = 10) => api.get(`/dashboard/top-clients?limit=${limit}`),
   getProductionStats: (params?: any) => api.get('/dashboard/production', { params }),
   getCommandesStats: (params?: any) => api.get('/dashboard/commandes', { params }),
   getAlertes: () => api.get('/dashboard/alertes'),
@@ -213,7 +286,11 @@ export const utilisateursService = {
   updateUtilisateur: (id: number, data: any) => api.put(`/utilisateurs/${id}`, data),
   deleteUtilisateur: (id: number) => api.delete(`/utilisateurs/${id}`),
   getRoles: () => api.get('/utilisateurs/roles'),
+  getCommerciaux: () => api.get('/utilisateurs/commerciaux'),
   getDashboards: () => api.get('/utilisateurs/dashboards'),
+  getEquipe: () => api.get('/utilisateurs/equipe'),
+  creerUtilisateurEquipe: (idOperateur: number, data: { email: string; password: string; dashboards: string[] }) => 
+    api.post(`/utilisateurs/equipe/${idOperateur}/creer-utilisateur`, data),
 };
 
 export const auditService = {
@@ -230,6 +307,7 @@ export const matieresPremieresService = {
   getMatierePremiere: (id: number) => api.get(`/matieres-premieres/${id}`),
   createMatierePremiere: (data: any) => api.post('/matieres-premieres', data),
   updateMatierePremiere: (id: number, data: any) => api.put(`/matieres-premieres/${id}`, data),
+  deleteMatierePremiere: (id: number) => api.delete(`/matieres-premieres/${id}`),
   getTypesMP: () => api.get('/matieres-premieres/types'),
 };
 
@@ -252,8 +330,11 @@ export const parametresCatalogueService = {
   getDimensions: () => api.get('/parametres-catalogue/dimensions'),
   getFinitions: () => api.get('/parametres-catalogue/finitions'),
   getTissages: () => api.get('/parametres-catalogue/tissages'),
+  getTypesProduits: () => api.get('/parametres-catalogue/types-produits'),
   getCouleurs: () => api.get('/parametres-catalogue/couleurs'),
+  getNombreCouleurs: () => api.get('/parametres-catalogue/nombre-couleurs'),
   getModeles: () => api.get('/parametres-catalogue/modeles'),
+  getTypesPersonnalisation: () => api.get('/parametres-catalogue/types-personnalisation'),
   createParametre: (type: string, data: any) => api.post(`/parametres-catalogue/${type}`, data),
   updateParametre: (type: string, id: number, data: any) => api.put(`/parametres-catalogue/${type}/${id}`, data),
 };
@@ -312,6 +393,11 @@ export const messagesService = {
 };
 
 export const maintenanceService = {
+  getMaintenances: (params?: any) => api.get('/maintenance', { params }),
+  getMaintenance: (id: number) => api.get(`/maintenance/${id}`),
+  createMaintenance: (data: any) => api.post('/maintenance', data),
+  updateMaintenance: (id: number, data: any) => api.put(`/maintenance/${id}`, data),
+  deleteMaintenance: (id: number) => api.delete(`/maintenance/${id}`),
   getInterventions: (params?: any) => api.get('/maintenance/interventions', { params }),
   createIntervention: (data: any) => api.post('/maintenance/interventions', data),
   getAlertes: (params?: any) => api.get('/maintenance/alertes', { params }),
@@ -330,7 +416,11 @@ export const planificationGanttService = {
 
 export const qualiteAvanceService = {
   getControles: (params?: any) => api.get('/qualite-avance/controles', { params }),
+  getControle: (id: number) => api.get(`/qualite-avance/controles/${id}`),
   createControle: (data: any) => api.post('/qualite-avance/controles', data),
+  updateControle: (id: number, data: any) => api.put(`/qualite-avance/controles/${id}`, data),
+  validerControle: (id: number, data?: any) => api.post(`/qualite-avance/controles/${id}/valider`, data),
+  refuserControle: (id: number, data?: any) => api.post(`/qualite-avance/controles/${id}/refuser`, data),
   getNonConformites: (params?: any) => api.get('/qualite-avance/non-conformites', { params }),
   getStatistiques: (params?: any) => api.get('/qualite-avance/statistiques', { params }),
   getDiagrammes: (params?: any) => api.get('/qualite-avance/diagrammes', { params }),
@@ -344,8 +434,8 @@ export const coutsService = {
 };
 
 export const multisocieteService = {
-  getSocietes: () => api.get('/multisociete/societes'),
-  createSociete: (data: any) => api.post('/multisociete/societes', data),
+  getSocietes: () => api.get('/multisociete'),
+  createSociete: (data: any) => api.post('/multisociete', data),
   getEtablissements: (params?: any) => api.get('/multisociete/etablissements', { params }),
   getTransferts: (params?: any) => api.get('/multisociete/transferts', { params }),
   createTransfert: (data: any) => api.post('/multisociete/transferts', data),
@@ -361,9 +451,9 @@ export const communicationService = {
 };
 
 export const ecommerceService = {
-  getBoutiques: () => api.get('/ecommerce/boutiques'),
-  getProduitsBoutique: (params?: any) => api.get('/ecommerce/produits', { params }),
-  getCommandesEcommerce: (params?: any) => api.get('/ecommerce/commandes', { params }),
+  getBoutiques: () => api.get('/ecommerce'),
+  getProduitsBoutique: (params?: any) => api.get('/ecommerce/products', { params }),
+  getCommandesEcommerce: (params?: any) => api.get('/ecommerce/orders', { params }),
   getRecommandationsIA: (id_produit: number, params?: any) => api.get(`/ecommerce/recommandations/${id_produit}`, { params }),
   genererRecommandationsIA: (data: any) => api.post('/ecommerce/generer-recommandations', data),
 };
@@ -414,4 +504,549 @@ export const articlesGeneresService = {
   uploadPhotoArticle: (id: number, formData: FormData) => api.post(`/articles-generes/${id}/upload-photo`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
+};
+
+export const excelImportService = {
+  preview: (file: File, type: string) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('type', type);
+    return api.post('/excel-import/preview', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  upload: (file: File, type: string, mapping: Record<string, string>) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('mapping', JSON.stringify({ type, mapping }));
+    return api.post('/excel-import/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  getTemplates: () => api.get('/excel-import/templates'),
+};
+
+// Services de gestion avancée - Intégration native dans votre ERP
+export const articlesService = {
+  getArticles: (params?: any) => api.get('/articles', { params }),
+  getArticle: (id: number) => api.get(`/articles/${id}`),
+  createArticle: (data: any) => api.post('/articles', data),
+  updateArticle: (id: number, data: any) => api.put(`/articles/${id}`, data),
+  deleteArticle: (id: number) => api.delete(`/articles/${id}`),
+  getTypesArticles: () => api.get('/articles/types'),
+};
+
+// ===== SERVICES ERP STANDARDS (Odoo-inspired) =====
+
+// Product Templates Service - Corrigé pour utiliser /product/templates
+export const productTemplatesService = {
+  getTemplates: (params?: any) => api.get('/product/templates', { params }),
+  getTemplate: (id: number, options?: { loadRelations?: boolean }) => {
+    const url = `/product/templates/${id}`;
+    return options?.loadRelations 
+      ? api.get(url, { params: { loadRelations: true } })
+      : api.get(url);
+  },
+  createTemplate: (data: any) => api.post('/product/templates', data),
+  updateTemplate: (id: number, data: any) => api.put(`/product/templates/${id}`, data),
+  deleteTemplate: (id: number) => api.delete(`/product/templates/${id}`),
+  getProductStock: (id: number) => api.get(`/product/templates/${id}/stock`),
+  getProductMovements: (id: number) => api.get(`/product/templates/${id}/movements`),
+  uploadImage: (id: number, file: File) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    return api.post(`/product/templates/${id}/image`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  deleteImage: (id: number, imageId?: number) => api.delete(`/product/templates/${id}/image/${imageId || 1}`),
+  getImages: (id: number) => api.get(`/product/templates/${id}/images`),
+};
+
+// Products Service - Alias pour compatibilité
+export const productsService = {
+  getProducts: (params?: any) => api.get('/product/templates', { params }),
+  getProduct: (id: number, options?: { loadRelations?: boolean }) => {
+    const url = `/product/templates/${id}`;
+    return options?.loadRelations 
+      ? api.get(url, { params: { loadRelations: true } })
+      : api.get(url);
+  },
+  createProduct: (data: any) => api.post('/product/templates', data),
+  updateProduct: (id: number, data: any) => api.put(`/product/templates/${id}`, data),
+  deleteProduct: (id: number) => api.delete(`/product/templates/${id}`),
+  // Relations
+  getProductCategories: () => api.get('/product/categories'),
+  getProductStock: (id: number) => api.get(`/product/templates/${id}/stock`),
+  getProductMovements: (id: number) => api.get(`/product/templates/${id}/movements`),
+  uploadImage: (id: number, file: File) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    return api.post(`/product/templates/${id}/image`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  deleteImage: (id: number, imageId?: number) => api.delete(`/product/templates/${id}/image/${imageId || 1}`),
+  getImages: (id: number) => api.get(`/product/templates/${id}/images`),
+};
+
+export const saleOrdersService = {
+  getOrders: (params?: any) => api.get('/sale/orders', { params }),
+  getOrder: (id: number, options?: { loadRelations?: boolean }) => {
+    const url = `/sale/orders/${id}`;
+    return options?.loadRelations 
+      ? api.get(url, { params: { loadRelations: true } })
+      : api.get(url);
+  },
+  createOrder: (data: any) => api.post('/sale/orders', data),
+  updateOrder: (id: number, data: any) => api.put(`/sale/orders/${id}`, data),
+  deleteOrder: (id: number) => api.delete(`/sale/orders/${id}`),
+  confirmOrder: (id: number) => api.post(`/sale/orders/${id}/confirm`),
+  cancelOrder: (id: number) => api.post(`/sale/orders/${id}/cancel`),
+  // Relations
+  getOrderLines: (orderId: number) => api.get(`/sale/orders/${orderId}/lines`),
+  createOrderLine: (orderId: number, data: any) => api.post(`/sale/orders/${orderId}/lines`, data),
+  updateOrderLine: (orderId: number, lineId: number, data: any) => 
+    api.put(`/sale/orders/${orderId}/lines/${lineId}`, data),
+  deleteOrderLine: (orderId: number, lineId: number) => 
+    api.delete(`/sale/orders/${orderId}/lines/${lineId}`),
+};
+
+export const stockPickingsService = {
+  getPickings: (params?: any) => api.get('/stock/pickings', { params }),
+  getPicking: (id: number, options?: { loadRelations?: boolean }) => {
+    const url = `/stock/pickings/${id}`;
+    return options?.loadRelations 
+      ? api.get(url, { params: { loadRelations: true } })
+      : api.get(url);
+  },
+  createPicking: (data: any) => api.post('/stock/pickings', data),
+  updatePicking: (id: number, data: any) => api.put(`/stock/pickings/${id}`, data),
+  deletePicking: (id: number) => api.delete(`/stock/pickings/${id}`),
+  validatePicking: (id: number) => api.post(`/stock/pickings/${id}/validate`),
+  // Relations
+  getPickingMoves: (pickingId: number) => api.get(`/stock/pickings/${pickingId}/moves`),
+};
+
+export const productionsService = {
+  getProductions: (params?: any) => api.get('/mrp/productions', { params }),
+  getProduction: (id: number, options?: { loadRelations?: boolean }) => {
+    const url = `/mrp/productions/${id}`;
+    return options?.loadRelations 
+      ? api.get(url, { params: { loadRelations: true } })
+      : api.get(url);
+  },
+  createProduction: (data: any) => api.post('/mrp/productions', data),
+  updateProduction: (id: number, data: any) => api.put(`/mrp/productions/${id}`, data),
+  deleteProduction: (id: number) => api.delete(`/mrp/productions/${id}`),
+  startProduction: (id: number) => api.post(`/mrp/productions/${id}/start`),
+  finishProduction: (id: number) => api.post(`/mrp/productions/${id}/done`),
+  confirmProduction: (id: number) => api.post(`/mrp/productions/${id}/confirm`),
+  // Relations
+  getProductionMoves: (productionId: number) => api.get(`/mrp/productions/${productionId}/moves`),
+};
+
+export const accountMovesService = {
+  getMoves: (params?: any) => api.get('/account/moves', { params }),
+  getMove: (id: number, options?: { loadRelations?: boolean }) => {
+    const url = `/account/moves/${id}`;
+    return options?.loadRelations 
+      ? api.get(url, { params: { loadRelations: true } })
+      : api.get(url);
+  },
+  createMove: (data: any) => api.post('/account/moves', data),
+  updateMove: (id: number, data: any) => api.put(`/account/moves/${id}`, data),
+  deleteAccountMove: (id: number) => api.delete(`/account/moves/${id}`),
+  postMove: (id: number) => api.post(`/account/moves/${id}/post`),
+  // Relations
+  getMoveLines: (moveId: number) => api.get(`/account/moves/${moveId}/lines`),
+};
+
+export const purchaseOrdersService = {
+  getOrders: (params?: any) => api.get('/purchase/orders', { params }),
+  getOrder: (id: number, options?: { loadRelations?: boolean }) => {
+    const url = `/purchase/orders/${id}`;
+    return options?.loadRelations 
+      ? api.get(url, { params: { loadRelations: true } })
+      : api.get(url);
+  },
+  createOrder: (data: any) => api.post('/purchase/orders', data),
+  updateOrder: (id: number, data: any) => api.put(`/purchase/orders/${id}`, data),
+  deleteOrder: (id: number) => api.delete(`/purchase/orders/${id}`),
+  confirmOrder: (id: number) => api.post(`/purchase/orders/${id}/confirm`),
+  // Relations
+  getOrderLines: (orderId: number) => api.get(`/purchase/orders/${orderId}/lines`),
+};
+
+// Services CRM
+export const crmLeadsService = {
+  getLeads: (params?: any) => api.get('/crm/leads', { params }),
+  getLead: (id: number, options?: { loadRelations?: boolean }) => {
+    const url = `/crm/leads/${id}`;
+    return options?.loadRelations 
+      ? api.get(url, { params: { loadRelations: true } })
+      : api.get(url);
+  },
+  createLead: (data: any) => api.post('/crm/leads', data),
+  updateLead: (id: number, data: any) => api.put(`/crm/leads/${id}`, data),
+  deleteLead: (id: number) => api.delete(`/crm/leads/${id}`),
+  convertToOpportunity: (id: number, data?: any) => api.post(`/crm/leads/${id}/convert`, data),
+};
+
+export const crmOpportunitiesService = {
+  getOpportunities: (params?: any) => api.get('/crm/opportunities', { params }),
+  getOpportunity: (id: number) => api.get(`/crm/opportunities/${id}`),
+  createOpportunity: (data: any) => api.post('/crm/opportunities', data),
+  updateOpportunity: (id: number, data: any) => api.put(`/crm/opportunities/${id}`, data),
+  qualifyOpportunity: (id: number) => api.post(`/crm/opportunities/${id}/qualify`),
+  winOpportunity: (id: number) => api.post(`/crm/opportunities/${id}/win`),
+  loseOpportunity: (id: number, reason: string) => api.post(`/crm/opportunities/${id}/lose`, { reason }),
+};
+
+export const crmStagesService = {
+  getStages: (params?: any) => api.get('/crm/stages', { params }),
+  getStage: (id: number) => api.get(`/crm/stages/${id}`),
+  createStage: (data: any) => api.post('/crm/stages', data),
+};
+
+export const crmActivitiesService = {
+  getActivities: (params?: any) => api.get('/crm/activities', { params }),
+  createActivity: (data: any) => api.post('/crm/activities', data),
+  markDone: (id: number) => api.post(`/crm/activities/${id}/done`),
+};
+
+export const hrEmployeesService = {
+  getEmployees: (params?: any) => api.get('/hr/employees', { params }),
+  getEmployee: (id: number, options?: { loadRelations?: boolean }) => {
+    const url = `/hr/employees/${id}`;
+    return options?.loadRelations 
+      ? api.get(url, { params: { loadRelations: true } })
+      : api.get(url);
+  },
+  createEmployee: (data: any) => api.post('/hr/employees', data),
+  updateEmployee: (id: number, data: any) => api.put(`/hr/employees/${id}`, data),
+  deleteEmployee: (id: number) => api.delete(`/hr/employees/${id}`),
+};
+
+export const hrRecruitmentService = {
+  getApplicants: (params?: any) => api.get('/hr/recruitments', { params }),
+  getApplicant: (id: number) => api.get(`/hr/recruitments/${id}`),
+  createApplicant: (data: any) => api.post('/hr/recruitments', data),
+  updateApplicant: (id: number, data: any) => api.put(`/hr/recruitments/${id}`, data),
+  deleteApplicant: (id: number) => api.delete(`/hr/recruitments/${id}`),
+  hireApplicant: (id: number) => api.post(`/hr/recruitments/${id}/hire`),
+  refuseApplicant: (id: number) => api.post(`/hr/recruitments/${id}/refuse`),
+  getStages: (params?: any) => api.get('/hr/recruitments/stages', { params }),
+};
+
+export const hrPayslipsService = {
+  getPayslips: (params?: any) => api.get('/hr/payslips', { params }),
+  getPayslip: (id: number) => api.get(`/hr/payslips/${id}`),
+  createPayslip: (data: any) => api.post('/hr/payslips', data),
+  updatePayslip: (id: number, data: any) => api.put(`/hr/payslips/${id}`, data),
+  deletePayslip: (id: number) => api.delete(`/hr/payslips/${id}`),
+  computePayslip: (id: number) => api.post(`/hr/payslips/${id}/compute`),
+  validatePayslip: (id: number) => api.post(`/hr/payslips/${id}/validate`),
+};
+
+export const projectsService = {
+  getProjects: (params?: any) => api.get('/project/projects', { params }),
+  getProject: (id: number, options?: { loadRelations?: boolean }) => {
+    const url = `/project/projects/${id}`;
+    return options?.loadRelations 
+      ? api.get(url, { params: { loadRelations: true } })
+      : api.get(url);
+  },
+  createProject: (data: any) => api.post('/project/projects', data),
+  updateProject: (id: number, data: any) => api.put(`/project/projects/${id}`, data),
+  deleteProject: (id: number) => api.delete(`/project/projects/${id}`),
+};
+
+export const inventoryService = {
+  getInventories: (params?: any) => api.get('/inventory/adjustments', { params }),
+  getInventory: (id: number) => api.get(`/inventory/adjustments/${id}`),
+  createInventory: (data: any) => api.post('/inventory/adjustments', data),
+  updateInventory: (id: number, data: any) => api.put(`/inventory/adjustments/${id}`, data),
+  deleteInventory: (id: number) => api.delete(`/inventory/adjustments/${id}`),
+};
+
+export const qualityChecksService = {
+  getChecks: (params?: any) => api.get('/quality/checks', { params }),
+  getCheck: (id: number) => api.get(`/quality/checks/${id}`),
+  createCheck: (data: any) => api.post('/quality/checks', data),
+  updateCheck: (id: number, data: any) => api.put(`/quality/checks/${id}`, data),
+  deleteCheck: (id: number) => api.delete(`/quality/checks/${id}`),
+};
+
+export const qualityPointsService = {
+  getPoints: (params?: any) => api.get('/quality/points', { params }),
+  getPoint: (id: number) => api.get(`/quality/points/${id}`),
+  createPoint: (data: any) => api.post('/quality/points', data),
+  updatePoint: (id: number, data: any) => api.put(`/quality/points/${id}`, data),
+  deletePoint: (id: number) => api.delete(`/quality/points/${id}`),
+};
+
+export const qualityAlertsService = {
+  getAlerts: (params?: any) => api.get('/quality/alerts', { params }),
+  getAlert: (id: number) => api.get(`/quality/alerts/${id}`),
+  createAlert: (data: any) => api.post('/quality/alerts', data),
+  updateAlert: (id: number, data: any) => api.put(`/quality/alerts/${id}`, data),
+  deleteAlert: (id: number) => api.delete(`/quality/alerts/${id}`),
+};
+
+export const emailService = {
+  sendEmail: (data: any) => api.post('/email/send', data),
+  sendTaskNotification: (data: any) => api.post('/email/task-notification', data),
+  sendOrderConfirmation: (data: any) => api.post('/email/order-confirmation', data),
+};
+
+export const whatsappService = {
+  sendMessage: (phoneNumber: string, message: string, options?: any) =>
+    api.post('/whatsapp/send', { phoneNumber, message, options }),
+  sendTemplate: (data: any) => api.post('/whatsapp/template', data),
+  sendOrderConfirmation: (data: any) => api.post('/whatsapp/order-confirmation', data),
+  sendTaskNotification: (data: any) => api.post('/whatsapp/task-notification', data),
+  getDashboardContact: (dashboardName: string) =>
+    api.get(`/whatsapp/dashboard/${dashboardName}/contact`),
+  sendFromDashboard: (dashboardName: string, phoneNumber: string, message: string, options?: any) =>
+    api.post(`/whatsapp/dashboard/${dashboardName}/send`, { phoneNumber, message, options }),
+};
+
+export const ecommerceOdooService = {
+  getWebsites: () => api.get('/ecommerce'),
+  getWebsite: (id: number) => api.get(`/ecommerce/${id}`),
+  createWebsite: (data: any) => api.post('/ecommerce', data),
+  updateWebsite: (id: number, data: any) => api.put(`/ecommerce/${id}`, data),
+  deleteWebsite: (id: number) => api.delete(`/ecommerce/${id}`),
+  getProducts: () => api.get('/ecommerce/products'),
+  getOrders: () => api.get('/ecommerce/orders'),
+};
+
+export const settingsService = {
+  getSettings: (module: string) => api.get(`/settings/${module}`),
+  updateSettings: (module: string, data: any) => api.put(`/settings/${module}`, data),
+};
+
+export const productCategoryService = {
+  getCategories: (params?: any) => api.get('/product/categories', { params }),
+  getCategoryById: (id: number) => api.get(`/product/categories/${id}`),
+  getCategoryTree: (params?: any) => api.get('/product/categories/tree', { params }),
+  createCategory: (data: any) => api.post('/product/categories', data),
+  updateCategory: (id: number, data: any) => api.put(`/product/categories/${id}`, data),
+  deleteCategory: (id: number) => api.delete(`/product/categories/${id}`),
+};
+
+export const payrollTunisiaService = {
+  computePayslip: (data: any) => api.post('/payroll-tunisia/compute', data),
+  getSalaryRules: (params?: any) => api.get('/payroll-tunisia/salary-rules', { params }),
+  getSalaryStructures: (params?: any) => api.get('/payroll-tunisia/structures', { params }),
+  createSalaryStructure: (data: any) => api.post('/payroll-tunisia/structures', data),
+  getCNSSRates: () => api.get('/payroll-tunisia/cnss-rates'),
+  getIRPPBracket: () => api.get('/payroll-tunisia/irpp-bracket'),
+};
+
+export const accountingTunisiaService = {
+  getTaxes: (params?: any) => api.get('/accounting-tunisia/taxes', { params }),
+  getTaxById: (id: number) => api.get(`/accounting-tunisia/taxes/${id}`),
+  getFiscalPositions: (params?: any) => api.get('/accounting-tunisia/fiscal-positions', { params }),
+  getTaxReports: (params?: any) => api.get('/accounting-tunisia/tax-reports', { params }),
+  generateTaxReport: (data: any) => api.post('/accounting-tunisia/tax-reports/generate', data),
+  validateTaxReport: (id: number) => api.post(`/accounting-tunisia/tax-reports/${id}/validate`),
+  getChartOfAccounts: (params?: any) => api.get('/accounting-tunisia/chart-of-accounts', { params }),
+  initChartOfAccounts: (data: any) => api.post('/accounting-tunisia/chart-of-accounts/init', data),
+};
+
+export const warehouseService = {
+  getWarehouses: (params?: any) => api.get('/warehouse', { params }),
+  createWarehouse: (data: any) => api.post('/warehouse', data),
+  getLocations: (params?: any) => api.get('/warehouse/locations', { params }),
+  getLocationsTree: (params?: any) => api.get('/warehouse/locations/tree', { params }),
+  createLocation: (data: any) => api.post('/warehouse/locations', data),
+  getQuants: (params?: any) => api.get('/warehouse/quants', { params }),
+  getProductStock: (id: number, params?: any) => api.get(`/warehouse/products/${id}/stock`, { params }),
+  getMoves: (params?: any) => api.get('/warehouse/moves', { params }),
+  getPickingTypes: (params?: any) => api.get('/warehouse/picking-types', { params }),
+  createPickingType: (data: any) => api.post('/warehouse/picking-types', data),
+};
+
+export const bomService = {
+  getBOMs: (params?: any) => api.get('/mrp/boms', { params }),
+  getBOM: (id: number) => api.get(`/mrp/boms/${id}`),
+  createBOM: (data: any) => api.post('/mrp/boms', data),
+  updateBOM: (id: number, data: any) => api.put(`/mrp/boms/${id}`, data),
+  deleteBOM: (id: number) => api.delete(`/mrp/boms/${id}`),
+  getBOMHierarchy: (id: number) => api.get(`/mrp/boms/${id}/hierarchy`),
+  calculateBOMCost: (id: number) => api.get(`/mrp/boms/${id}/cost`),
+};
+
+// Services supplémentaires pour modules ERP
+export const pricelistsService = {
+  getPricelists: (params?: any) => api.get('/product/pricelists', { params }),
+  getPricelist: (id: number, options?: { loadRelations?: boolean }) => {
+    const url = `/product/pricelists/${id}`;
+    return options?.loadRelations 
+      ? api.get(url, { params: { loadRelations: true } })
+      : api.get(url);
+  },
+  createPricelist: (data: any) => api.post('/product/pricelists', data),
+  updatePricelist: (id: number, data: any) => api.put(`/product/pricelists/${id}`, data),
+  deletePricelist: (id: number) => api.delete(`/product/pricelists/${id}`),
+  getPricelistItems: (pricelistId: number) => api.get(`/product/pricelists/${pricelistId}/items`),
+  createPricelistItem: (pricelistId: number, data: any) => api.post(`/product/pricelists/${pricelistId}/items`, data),
+  updatePricelistItem: (pricelistId: number, itemId: number, data: any) => 
+    api.put(`/product/pricelists/${pricelistId}/items/${itemId}`, data),
+  deletePricelistItem: (pricelistId: number, itemId: number) => 
+    api.delete(`/product/pricelists/${pricelistId}/items/${itemId}`),
+};
+
+export const companiesService = {
+  getCompanies: (params?: any) => api.get('/companies', { params }),
+  getCompany: (id: number, options?: { loadRelations?: boolean }) => {
+    const url = `/companies/${id}`;
+    return options?.loadRelations 
+      ? api.get(url, { params: { loadRelations: true } })
+      : api.get(url);
+  },
+  createCompany: (data: any) => api.post('/companies', data),
+  updateCompany: (id: number, data: any) => api.put(`/companies/${id}`, data),
+  deleteCompany: (id: number) => api.delete(`/companies/${id}`),
+};
+
+export const partnersService = {
+  getPartners: (params?: any) => api.get('/partners', { params }),
+  getPartner: (id: number, options?: { loadRelations?: boolean }) => {
+    const url = `/partners/${id}`;
+    return options?.loadRelations 
+      ? api.get(url, { params: { loadRelations: true } })
+      : api.get(url);
+  },
+  createPartner: (data: any) => api.post('/partners', data),
+  updatePartner: (id: number, data: any) => api.put(`/partners/${id}`, data),
+  deletePartner: (id: number) => api.delete(`/partners/${id}`),
+};
+
+export const usersService = {
+  getUsers: (params?: any) => api.get('/users', { params }),
+  getUser: (id: number, options?: { loadRelations?: boolean }) => {
+    const url = `/users/${id}`;
+    return options?.loadRelations 
+      ? api.get(url, { params: { loadRelations: true } })
+      : api.get(url);
+  },
+  createUser: (data: any) => api.post('/users', data),
+  updateUser: (id: number, data: any) => api.put(`/users/${id}`, data),
+  deleteUser: (id: number) => api.delete(`/users/${id}`),
+};
+
+export const purchaseRequestsService = {
+  getRequests: (params?: any) => api.get('/purchase-requests', { params }),
+  getRequest: (id: number, options?: { loadRelations?: boolean }) => {
+    const url = `/purchase-requests/${id}`;
+    return options?.loadRelations 
+      ? api.get(url, { params: { loadRelations: true } })
+      : api.get(url);
+  },
+  createRequest: (data: any) => api.post('/purchase-requests', data),
+  updateRequest: (id: number, data: any) => api.put(`/purchase-requests/${id}`, data),
+  deleteRequest: (id: number) => api.delete(`/purchase-requests/${id}`),
+  validateRequest: (id: number) => api.post(`/purchase-requests/${id}/validate`),
+  rejectRequest: (id: number, reason?: string) => api.post(`/purchase-requests/${id}/reject`, { reason }),
+  getRequestLines: (requestId: number) => api.get(`/purchase-requests/${requestId}/lignes`),
+  createRequestLine: (requestId: number, data: any) => api.post(`/purchase-requests/${requestId}/lignes`, data),
+  updateRequestLine: (requestId: number, lineId: number, data: any) => 
+    api.put(`/purchase-requests/${requestId}/lignes/${lineId}`, data),
+  deleteRequestLine: (requestId: number, lineId: number) => 
+    api.delete(`/purchase-requests/${requestId}/lignes/${lineId}`),
+};
+
+export const purchaseReceptionsService = {
+  getReceptions: (params?: any) => api.get('/purchase/receptions', { params }),
+  getReception: (id: number, options?: { loadRelations?: boolean }) => {
+    const url = `/purchase/receptions/${id}`;
+    return options?.loadRelations 
+      ? api.get(url, { params: { loadRelations: true } })
+      : api.get(url);
+  },
+  createReception: (data: any) => api.post('/purchase/receptions', data),
+  createFromOrder: (orderId: number, data?: any) => api.post('/purchase/receptions/from-order', { id_commande: orderId, ...data }),
+  updateReception: (id: number, data: any) => api.put(`/purchase/receptions/${id}`, data),
+  deleteReception: (id: number) => api.delete(`/purchase/receptions/${id}`),
+  validateReception: (id: number) => api.post(`/purchase/receptions/${id}/validate`),
+};
+
+export const bankReconciliationService = {
+  getReconciliations: (params?: any) => api.get('/account/reconciliations', { params }),
+  getReconciliation: (id: number, options?: { loadRelations?: boolean }) => {
+    const url = `/account/reconciliations/${id}`;
+    return options?.loadRelations 
+      ? api.get(url, { params: { loadRelations: true } })
+      : api.get(url);
+  },
+  createReconciliation: (data: any) => api.post('/account/reconciliations', data),
+  updateReconciliation: (id: number, data: any) => api.put(`/account/reconciliations/${id}`, data),
+  deleteReconciliation: (id: number) => api.delete(`/account/reconciliations/${id}`),
+  validateReconciliation: (id: number) => api.post(`/account/reconciliations/${id}/validate`),
+  autoMatch: (id: number) => api.post(`/account/reconciliations/${id}/auto-match`),
+  getUnmatchedLines: (id: number) => api.get(`/account/reconciliations/${id}/unmatched-lines`),
+  matchLines: (id: number, lineId: number, matchedLineId: number) => 
+    api.post(`/account/reconciliations/${id}/match`, { lineId, matchedLineId }),
+};
+
+export const crmCampaignsService = {
+  getCampaigns: (params?: any) => api.get('/crm/campaigns', { params }),
+  getCampaign: (id: number, options?: { loadRelations?: boolean }) => {
+    const url = `/crm/campaigns/${id}`;
+    return options?.loadRelations 
+      ? api.get(url, { params: { loadRelations: true } })
+      : api.get(url);
+  },
+  createCampaign: (data: any) => api.post('/crm/campaigns', data),
+  updateCampaign: (id: number, data: any) => api.put(`/crm/campaigns/${id}`, data),
+  deleteCampaign: (id: number) => api.delete(`/crm/campaigns/${id}`),
+  startCampaign: (id: number) => api.post(`/crm/campaigns/${id}/start`),
+  pauseCampaign: (id: number) => api.post(`/crm/campaigns/${id}/pause`),
+  stopCampaign: (id: number) => api.post(`/crm/campaigns/${id}/stop`),
+  getCampaignStats: (id: number) => api.get(`/crm/campaigns/${id}/stats`),
+};
+
+export const posService = {
+  getCaisses: (params?: any) => api.get('/pos/caisses', { params }),
+  getCaisse: (id: number) => api.get(`/pos/caisses/${id}`),
+  openSession: (data: any) => api.post('/pos/sessions/ouvrir', data),
+  closeSession: (sessionId: number, data?: any) => api.post(`/pos/sessions/${sessionId}/fermer`, data),
+  getSession: (caisseId: number) => api.get(`/pos/caisses/${caisseId}`),
+  createSale: (data: any) => api.post('/pos/ventes', data),
+  getSales: (params?: any) => api.get('/pos/ventes', { params }),
+  getSale: (id: number) => api.get(`/pos/ventes/${id}`),
+};
+
+export const ecommerceProductsService = {
+  getProducts: (params?: any) => api.get('/ecommerce/products', { params }),
+  getProduct: (id: number) => api.get(`/ecommerce/products/${id}`),
+  createProduct: (data: any) => api.post('/ecommerce/products', data),
+  updateProduct: (id: number, data: any) => api.put(`/ecommerce/products/${id}`, data),
+  deleteProduct: (id: number) => api.delete(`/ecommerce/products/${id}`),
+  publishProduct: (id: number) => api.put(`/ecommerce/products/${id}`, { website_published: true }),
+  unpublishProduct: (id: number) => api.put(`/ecommerce/products/${id}`, { website_published: false }),
+};
+
+export const ecommerceOrdersService = {
+  getOrders: (params?: any) => api.get('/ecommerce/orders', { params }),
+  getOrder: (id: number) => api.get(`/ecommerce/orders/${id}`),
+  updateOrder: (id: number, data: any) => api.put(`/ecommerce/orders/${id}`, data),
+  confirmOrder: (id: number) => api.post(`/ecommerce/orders/${id}/confirm`),
+  cancelOrder: (id: number) => api.post(`/ecommerce/orders/${id}/cancel`),
+};
+
+export const ecommerceSettingsService = {
+  getSettings: () => api.get('/ecommerce/settingss'),
+  updateSettings: (data: any) => api.put('/ecommerce/settingss', data),
+};
+
+export const multisocieteCompaniesService = {
+  getCompanies: (params?: any) => api.get('/multisociete/companies', { params }),
+  getCompany: (id: number) => api.get(`/multisociete/companies/${id}`),
+  createCompany: (data: any) => api.post('/multisociete/companies', data),
+  updateCompany: (id: number, data: any) => api.put(`/multisociete/companies/${id}`, data),
+  deleteCompany: (id: number) => api.delete(`/multisociete/companies/${id}`),
 };

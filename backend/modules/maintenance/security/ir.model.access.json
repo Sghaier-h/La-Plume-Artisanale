@@ -1,0 +1,10 @@
+{
+  "id": "access_maintenance",
+  "name": "Maintenance Access",
+  "model_id": "maintenance.maintenance",
+  "group_id": "base.group_user",
+  "perm_read": true,
+  "perm_write": true,
+  "perm_create": true,
+  "perm_unlink": true
+}

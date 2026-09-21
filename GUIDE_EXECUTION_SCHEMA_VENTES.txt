@@ -1,0 +1,61 @@
+============================================================================
+GUIDE RAPIDE - EXECUTION DU SCHEMA SQL MODULE VENTES
+============================================================================
+
+METHODE RECOMMANDEE SUR WINDOWS: pgAdmin
+-----------------------------------------
+
+1. Ouvrir pgAdmin
+   - Lancez pgAdmin sur votre machine
+
+2. Se connecter a la base de donnees
+   - Creer une connexion vers OVH Cloud DB si necessaire
+   - Host: sh131616-002.eu.clouddb.ovh.net
+   - Port: 35392
+   - Database: ERP_La_Plume
+   - User: Aviateur
+   - Password: (depuis backend/.env)
+
+3. Ouvrir Query Tool
+   - Clic droit sur la base de donnees "ERP_La_Plume"
+   - Selectionnez "Query Tool" (ou appuyez sur F5)
+
+4. Charger le fichier SQL
+   - Cliquez sur "Open File" (Ctrl+O) ou File > Open
+   - Naviguez vers: backend/database/schema_ventes.sql
+   - OU copiez-collez le contenu du fichier dans l'editeur
+
+5. Executer le script
+   - Cliquez sur "Execute" (F5) ou le bouton Execute
+   - Verifiez les messages de succes dans l'onglet Messages
+
+VERIFICATION APRES EXECUTION
+-----------------------------
+
+Executez cette requete SQL dans pgAdmin pour verifier les tables:
+
+SELECT table_name 
+FROM information_schema.tables 
+WHERE table_schema = 'public' 
+  AND (table_name LIKE '%devis%' 
+   OR table_name LIKE '%livraison%'
+   OR table_name LIKE '%facture%'
+   OR table_name LIKE '%avoir%'
+   OR table_name LIKE '%retour%')
+ORDER BY table_name;
+
+Tables attendues:
+- devis, lignes_devis
+- bons_livraison, lignes_bl
+- factures, lignes_facture
+- avoirs, lignes_avoir
+- bons_retour, lignes_retour
+
+FICHIER SQL A EXECUTER
+-----------------------
+Chemin: backend/database/schema_ventes.sql
+
+Pour plus de details, consultez:
+docs/database/EXECUTER_SCHEMA_VENTES.md
+
+============================================================================

@@ -1,0 +1,675 @@
+{
+  "total": 55,
+  "byCategory": {
+    "TABLE_OR_COLUMN_NOT_EXIST": [
+      {
+        "module": "users",
+        "status": 500,
+        "category": "TABLE_OR_COLUMN_NOT_EXIST",
+        "error": "column \"created_at\" does not exist"
+      },
+      {
+        "module": "companies",
+        "status": 500,
+        "category": "TABLE_OR_COLUMN_NOT_EXIST",
+        "error": "relation \"societes\" does not exist"
+      },
+      {
+        "module": "partners",
+        "status": 500,
+        "category": "TABLE_OR_COLUMN_NOT_EXIST",
+        "error": "column \"created_at\" does not exist"
+      },
+      {
+        "module": "utilisateurs",
+        "status": 500,
+        "category": "TABLE_OR_COLUMN_NOT_EXIST",
+        "error": "column \"created_at\" does not exist"
+      },
+      {
+        "module": "commercial",
+        "status": 500,
+        "category": "TABLE_OR_COLUMN_NOT_EXIST",
+        "error": "relation \"commercial\" does not exist"
+      },
+      {
+        "module": "account/move_lines",
+        "status": 500,
+        "category": "TABLE_OR_COLUMN_NOT_EXIST",
+        "error": "relation \"account_move_lines\" does not exist"
+      },
+      {
+        "module": "account/taxs",
+        "status": 500,
+        "category": "TABLE_OR_COLUMN_NOT_EXIST",
+        "error": "relation \"account_taxs\" does not exist"
+      },
+      {
+        "module": "account/accounts",
+        "status": 500,
+        "category": "TABLE_OR_COLUMN_NOT_EXIST",
+        "error": "relation \"account_accounts\" does not exist"
+      },
+      {
+        "module": "account/journals",
+        "status": 500,
+        "category": "TABLE_OR_COLUMN_NOT_EXIST",
+        "error": "relation \"account_journals\" does not exist"
+      },
+      {
+        "module": "account/reconciliations",
+        "status": 500,
+        "category": "TABLE_OR_COLUMN_NOT_EXIST",
+        "error": "relation \"account_reconciliations\" does not exist"
+      },
+      {
+        "module": "hr/departments",
+        "status": 500,
+        "category": "TABLE_OR_COLUMN_NOT_EXIST",
+        "error": "relation \"hr_departments\" does not exist"
+      },
+      {
+        "module": "hr/leaves",
+        "status": 500,
+        "category": "TABLE_OR_COLUMN_NOT_EXIST",
+        "error": "relation \"hr_leaves\" does not exist"
+      },
+      {
+        "module": "hr/expenses",
+        "status": 500,
+        "category": "TABLE_OR_COLUMN_NOT_EXIST",
+        "error": "relation \"hr_expenses\" does not exist"
+      },
+      {
+        "module": "product/variants",
+        "status": 500,
+        "category": "TABLE_OR_COLUMN_NOT_EXIST",
+        "error": "relation \"product_variants\" does not exist"
+      },
+      {
+        "module": "product/categories",
+        "status": 500,
+        "category": "TABLE_OR_COLUMN_NOT_EXIST",
+        "error": "relation \"product_categorys\" does not exist"
+      },
+      {
+        "module": "product/uom",
+        "status": 500,
+        "category": "TABLE_OR_COLUMN_NOT_EXIST",
+        "error": "relation \"uoms\" does not exist"
+      },
+      {
+        "module": "sale/order_lines",
+        "status": 500,
+        "category": "TABLE_OR_COLUMN_NOT_EXIST",
+        "error": "relation \"sale_order_lines\" does not exist"
+      },
+      {
+        "module": "purchase/order_lines",
+        "status": 500,
+        "category": "TABLE_OR_COLUMN_NOT_EXIST",
+        "error": "relation \"purchase_order_lines\" does not exist"
+      },
+      {
+        "module": "purchase/receptions",
+        "status": 500,
+        "category": "TABLE_OR_COLUMN_NOT_EXIST",
+        "error": "relation \"receptions_fournisseurs\" does not exist"
+      },
+      {
+        "module": "crm/campaigns",
+        "status": 500,
+        "category": "TABLE_OR_COLUMN_NOT_EXIST",
+        "error": "relation \"crm_campaigns\" does not exist"
+      },
+      {
+        "module": "project/tasks",
+        "status": 500,
+        "category": "TABLE_OR_COLUMN_NOT_EXIST",
+        "error": "relation \"project_tasks\" does not exist"
+      },
+      {
+        "module": "inventory/adjustments",
+        "status": 500,
+        "category": "TABLE_OR_COLUMN_NOT_EXIST",
+        "error": "relation \"inventory\" does not exist"
+      },
+      {
+        "module": "mrp/boms",
+        "status": 500,
+        "category": "TABLE_OR_COLUMN_NOT_EXIST",
+        "error": "{\"error\":\"relation \\\"articles\\\" does not exist\"}"
+      },
+      {
+        "module": "mrp/work_centers",
+        "status": 500,
+        "category": "TABLE_OR_COLUMN_NOT_EXIST",
+        "error": "relation \"mrp_work_centers\" does not exist"
+      },
+      {
+        "module": "mrp/work_orders",
+        "status": 500,
+        "category": "TABLE_OR_COLUMN_NOT_EXIST",
+        "error": "relation \"mrp_work_orders\" does not exist"
+      },
+      {
+        "module": "mrp/routings",
+        "status": 500,
+        "category": "TABLE_OR_COLUMN_NOT_EXIST",
+        "error": "relation \"mrp_routings\" does not exist"
+      },
+      {
+        "module": "quality/points",
+        "status": 500,
+        "category": "TABLE_OR_COLUMN_NOT_EXIST",
+        "error": "relation \"quality_points\" does not exist"
+      },
+      {
+        "module": "quality/alerts",
+        "status": 500,
+        "category": "TABLE_OR_COLUMN_NOT_EXIST",
+        "error": "relation \"quality_alerts\" does not exist"
+      }
+    ],
+    "UNKNOWN": [
+      {
+        "module": "articles",
+        "status": 500,
+        "category": "UNKNOWN",
+        "error": "Erreur serveur"
+      },
+      {
+        "module": "articles-catalogue",
+        "status": 500,
+        "category": "UNKNOWN",
+        "error": "Erreur serveur"
+      },
+      {
+        "module": "soustraitants",
+        "status": 500,
+        "category": "UNKNOWN",
+        "error": "Erreur serveur"
+      },
+      {
+        "module": "tracabilite-lots",
+        "status": 500,
+        "category": "UNKNOWN",
+        "error": "Erreur serveur"
+      },
+      {
+        "module": "suivi-fabrication",
+        "status": 500,
+        "category": "UNKNOWN",
+        "error": "Erreur serveur"
+      },
+      {
+        "module": "modeles",
+        "status": 500,
+        "category": "UNKNOWN",
+        "error": "Erreur serveur"
+      },
+      {
+        "module": "taches",
+        "status": 500,
+        "category": "UNKNOWN",
+        "error": "Erreur serveur"
+      },
+      {
+        "module": "notifications",
+        "status": 500,
+        "category": "UNKNOWN",
+        "error": "Erreur serveur"
+      },
+      {
+        "module": "messages",
+        "status": 500,
+        "category": "UNKNOWN",
+        "error": "Erreur serveur"
+      },
+      {
+        "module": "purchase-requests",
+        "status": 500,
+        "category": "UNKNOWN",
+        "error": "Erreur serveur"
+      },
+      {
+        "module": "ecommerce/products",
+        "status": 500,
+        "category": "UNKNOWN",
+        "error": "invalid input syntax for type integer: \"products\""
+      },
+      {
+        "module": "ecommerce/orders",
+        "status": 500,
+        "category": "UNKNOWN",
+        "error": "invalid input syntax for type integer: \"orders\""
+      },
+      {
+        "module": "pos/caisses",
+        "status": 500,
+        "category": "UNKNOWN",
+        "error": "Erreur serveur"
+      },
+      {
+        "module": "pos/sessions",
+        "status": 500,
+        "category": "UNKNOWN",
+        "error": "invalid input syntax for type integer: \"sessions\""
+      },
+      {
+        "module": "pos/ventes",
+        "status": 500,
+        "category": "UNKNOWN",
+        "error": "invalid input syntax for type integer: \"ventes\""
+      },
+      {
+        "module": "multisociete/companies",
+        "status": 500,
+        "category": "UNKNOWN",
+        "error": "invalid input syntax for type integer: \"companies\""
+      }
+    ],
+    "SQL_SYNTAX_ERROR": [
+      {
+        "module": "commandes",
+        "status": 500,
+        "category": "SQL_SYNTAX_ERROR",
+        "error": "syntax error at or near \"ORDER\""
+      },
+      {
+        "module": "product/pricelists",
+        "status": 500,
+        "category": "SQL_SYNTAX_ERROR",
+        "error": "syntax error at or near \"null\""
+      }
+    ],
+    "MODEL_NOT_FOUND": [
+      {
+        "module": "account/moves",
+        "status": 500,
+        "category": "MODEL_NOT_FOUND",
+        "error": "Model account.move not found. Make sure it's registered."
+      },
+      {
+        "module": "hr/employees",
+        "status": 500,
+        "category": "MODEL_NOT_FOUND",
+        "error": "Model hr.employee not found. Make sure it's registered."
+      },
+      {
+        "module": "product/templates",
+        "status": 500,
+        "category": "MODEL_NOT_FOUND",
+        "error": "Model product.template not found. Make sure it's registered."
+      },
+      {
+        "module": "sale/orders",
+        "status": 500,
+        "category": "MODEL_NOT_FOUND",
+        "error": "Model sale.order not found. Make sure it's registered."
+      },
+      {
+        "module": "purchase/orders",
+        "status": 500,
+        "category": "MODEL_NOT_FOUND",
+        "error": "Model purchase.order not found. Make sure it's registered."
+      },
+      {
+        "module": "stock/pickings",
+        "status": 500,
+        "category": "MODEL_NOT_FOUND",
+        "error": "Model stock.picking not found. Make sure it's registered."
+      },
+      {
+        "module": "crm/leads",
+        "status": 500,
+        "category": "MODEL_NOT_FOUND",
+        "error": "Model crm.lead not found. Make sure it's registered."
+      },
+      {
+        "module": "project/projects",
+        "status": 500,
+        "category": "MODEL_NOT_FOUND",
+        "error": "Model project.project not found. Make sure it's registered."
+      },
+      {
+        "module": "mrp/productions",
+        "status": 500,
+        "category": "MODEL_NOT_FOUND",
+        "error": "Model mrp.production not found. Make sure it's registered."
+      }
+    ]
+  },
+  "allErrors": [
+    {
+      "module": "users",
+      "status": 500,
+      "category": "TABLE_OR_COLUMN_NOT_EXIST",
+      "error": "column \"created_at\" does not exist"
+    },
+    {
+      "module": "companies",
+      "status": 500,
+      "category": "TABLE_OR_COLUMN_NOT_EXIST",
+      "error": "relation \"societes\" does not exist"
+    },
+    {
+      "module": "partners",
+      "status": 500,
+      "category": "TABLE_OR_COLUMN_NOT_EXIST",
+      "error": "column \"created_at\" does not exist"
+    },
+    {
+      "module": "articles",
+      "status": 500,
+      "category": "UNKNOWN",
+      "error": "Erreur serveur"
+    },
+    {
+      "module": "articles-catalogue",
+      "status": 500,
+      "category": "UNKNOWN",
+      "error": "Erreur serveur"
+    },
+    {
+      "module": "soustraitants",
+      "status": 500,
+      "category": "UNKNOWN",
+      "error": "Erreur serveur"
+    },
+    {
+      "module": "commandes",
+      "status": 500,
+      "category": "SQL_SYNTAX_ERROR",
+      "error": "syntax error at or near \"ORDER\""
+    },
+    {
+      "module": "tracabilite-lots",
+      "status": 500,
+      "category": "UNKNOWN",
+      "error": "Erreur serveur"
+    },
+    {
+      "module": "suivi-fabrication",
+      "status": 500,
+      "category": "UNKNOWN",
+      "error": "Erreur serveur"
+    },
+    {
+      "module": "modeles",
+      "status": 500,
+      "category": "UNKNOWN",
+      "error": "Erreur serveur"
+    },
+    {
+      "module": "utilisateurs",
+      "status": 500,
+      "category": "TABLE_OR_COLUMN_NOT_EXIST",
+      "error": "column \"created_at\" does not exist"
+    },
+    {
+      "module": "taches",
+      "status": 500,
+      "category": "UNKNOWN",
+      "error": "Erreur serveur"
+    },
+    {
+      "module": "notifications",
+      "status": 500,
+      "category": "UNKNOWN",
+      "error": "Erreur serveur"
+    },
+    {
+      "module": "messages",
+      "status": 500,
+      "category": "UNKNOWN",
+      "error": "Erreur serveur"
+    },
+    {
+      "module": "commercial",
+      "status": 500,
+      "category": "TABLE_OR_COLUMN_NOT_EXIST",
+      "error": "relation \"commercial\" does not exist"
+    },
+    {
+      "module": "purchase-requests",
+      "status": 500,
+      "category": "UNKNOWN",
+      "error": "Erreur serveur"
+    },
+    {
+      "module": "account/moves",
+      "status": 500,
+      "category": "MODEL_NOT_FOUND",
+      "error": "Model account.move not found. Make sure it's registered."
+    },
+    {
+      "module": "account/move_lines",
+      "status": 500,
+      "category": "TABLE_OR_COLUMN_NOT_EXIST",
+      "error": "relation \"account_move_lines\" does not exist"
+    },
+    {
+      "module": "account/taxs",
+      "status": 500,
+      "category": "TABLE_OR_COLUMN_NOT_EXIST",
+      "error": "relation \"account_taxs\" does not exist"
+    },
+    {
+      "module": "account/accounts",
+      "status": 500,
+      "category": "TABLE_OR_COLUMN_NOT_EXIST",
+      "error": "relation \"account_accounts\" does not exist"
+    },
+    {
+      "module": "account/journals",
+      "status": 500,
+      "category": "TABLE_OR_COLUMN_NOT_EXIST",
+      "error": "relation \"account_journals\" does not exist"
+    },
+    {
+      "module": "account/reconciliations",
+      "status": 500,
+      "category": "TABLE_OR_COLUMN_NOT_EXIST",
+      "error": "relation \"account_reconciliations\" does not exist"
+    },
+    {
+      "module": "hr/employees",
+      "status": 500,
+      "category": "MODEL_NOT_FOUND",
+      "error": "Model hr.employee not found. Make sure it's registered."
+    },
+    {
+      "module": "hr/departments",
+      "status": 500,
+      "category": "TABLE_OR_COLUMN_NOT_EXIST",
+      "error": "relation \"hr_departments\" does not exist"
+    },
+    {
+      "module": "hr/leaves",
+      "status": 500,
+      "category": "TABLE_OR_COLUMN_NOT_EXIST",
+      "error": "relation \"hr_leaves\" does not exist"
+    },
+    {
+      "module": "hr/expenses",
+      "status": 500,
+      "category": "TABLE_OR_COLUMN_NOT_EXIST",
+      "error": "relation \"hr_expenses\" does not exist"
+    },
+    {
+      "module": "product/templates",
+      "status": 500,
+      "category": "MODEL_NOT_FOUND",
+      "error": "Model product.template not found. Make sure it's registered."
+    },
+    {
+      "module": "product/variants",
+      "status": 500,
+      "category": "TABLE_OR_COLUMN_NOT_EXIST",
+      "error": "relation \"product_variants\" does not exist"
+    },
+    {
+      "module": "product/categories",
+      "status": 500,
+      "category": "TABLE_OR_COLUMN_NOT_EXIST",
+      "error": "relation \"product_categorys\" does not exist"
+    },
+    {
+      "module": "product/uom",
+      "status": 500,
+      "category": "TABLE_OR_COLUMN_NOT_EXIST",
+      "error": "relation \"uoms\" does not exist"
+    },
+    {
+      "module": "product/pricelists",
+      "status": 500,
+      "category": "SQL_SYNTAX_ERROR",
+      "error": "syntax error at or near \"null\""
+    },
+    {
+      "module": "sale/orders",
+      "status": 500,
+      "category": "MODEL_NOT_FOUND",
+      "error": "Model sale.order not found. Make sure it's registered."
+    },
+    {
+      "module": "sale/order_lines",
+      "status": 500,
+      "category": "TABLE_OR_COLUMN_NOT_EXIST",
+      "error": "relation \"sale_order_lines\" does not exist"
+    },
+    {
+      "module": "purchase/orders",
+      "status": 500,
+      "category": "MODEL_NOT_FOUND",
+      "error": "Model purchase.order not found. Make sure it's registered."
+    },
+    {
+      "module": "purchase/order_lines",
+      "status": 500,
+      "category": "TABLE_OR_COLUMN_NOT_EXIST",
+      "error": "relation \"purchase_order_lines\" does not exist"
+    },
+    {
+      "module": "purchase/receptions",
+      "status": 500,
+      "category": "TABLE_OR_COLUMN_NOT_EXIST",
+      "error": "relation \"receptions_fournisseurs\" does not exist"
+    },
+    {
+      "module": "stock/pickings",
+      "status": 500,
+      "category": "MODEL_NOT_FOUND",
+      "error": "Model stock.picking not found. Make sure it's registered."
+    },
+    {
+      "module": "crm/leads",
+      "status": 500,
+      "category": "MODEL_NOT_FOUND",
+      "error": "Model crm.lead not found. Make sure it's registered."
+    },
+    {
+      "module": "crm/campaigns",
+      "status": 500,
+      "category": "TABLE_OR_COLUMN_NOT_EXIST",
+      "error": "relation \"crm_campaigns\" does not exist"
+    },
+    {
+      "module": "project/projects",
+      "status": 500,
+      "category": "MODEL_NOT_FOUND",
+      "error": "Model project.project not found. Make sure it's registered."
+    },
+    {
+      "module": "project/tasks",
+      "status": 500,
+      "category": "TABLE_OR_COLUMN_NOT_EXIST",
+      "error": "relation \"project_tasks\" does not exist"
+    },
+    {
+      "module": "inventory/adjustments",
+      "status": 500,
+      "category": "TABLE_OR_COLUMN_NOT_EXIST",
+      "error": "relation \"inventory\" does not exist"
+    },
+    {
+      "module": "mrp/productions",
+      "status": 500,
+      "category": "MODEL_NOT_FOUND",
+      "error": "Model mrp.production not found. Make sure it's registered."
+    },
+    {
+      "module": "mrp/boms",
+      "status": 500,
+      "category": "TABLE_OR_COLUMN_NOT_EXIST",
+      "error": "{\"error\":\"relation \\\"articles\\\" does not exist\"}"
+    },
+    {
+      "module": "mrp/work_centers",
+      "status": 500,
+      "category": "TABLE_OR_COLUMN_NOT_EXIST",
+      "error": "relation \"mrp_work_centers\" does not exist"
+    },
+    {
+      "module": "mrp/work_orders",
+      "status": 500,
+      "category": "TABLE_OR_COLUMN_NOT_EXIST",
+      "error": "relation \"mrp_work_orders\" does not exist"
+    },
+    {
+      "module": "mrp/routings",
+      "status": 500,
+      "category": "TABLE_OR_COLUMN_NOT_EXIST",
+      "error": "relation \"mrp_routings\" does not exist"
+    },
+    {
+      "module": "quality/points",
+      "status": 500,
+      "category": "TABLE_OR_COLUMN_NOT_EXIST",
+      "error": "relation \"quality_points\" does not exist"
+    },
+    {
+      "module": "quality/alerts",
+      "status": 500,
+      "category": "TABLE_OR_COLUMN_NOT_EXIST",
+      "error": "relation \"quality_alerts\" does not exist"
+    },
+    {
+      "module": "ecommerce/products",
+      "status": 500,
+      "category": "UNKNOWN",
+      "error": "invalid input syntax for type integer: \"products\""
+    },
+    {
+      "module": "ecommerce/orders",
+      "status": 500,
+      "category": "UNKNOWN",
+      "error": "invalid input syntax for type integer: \"orders\""
+    },
+    {
+      "module": "pos/caisses",
+      "status": 500,
+      "category": "UNKNOWN",
+      "error": "Erreur serveur"
+    },
+    {
+      "module": "pos/sessions",
+      "status": 500,
+      "category": "UNKNOWN",
+      "error": "invalid input syntax for type integer: \"sessions\""
+    },
+    {
+      "module": "pos/ventes",
+      "status": 500,
+      "category": "UNKNOWN",
+      "error": "invalid input syntax for type integer: \"ventes\""
+    },
+    {
+      "module": "multisociete/companies",
+      "status": 500,
+      "category": "UNKNOWN",
+      "error": "invalid input syntax for type integer: \"companies\""
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ofService, articlesService, machinesService, commandesService, suiviFabricationService, stockService, qualiteAvanceeService } from '../services/api';
 import { FileText, Plus, Edit, Trash2, Search, Eye, X, Play, Square, CheckCircle, Settings, Package, Calendar, AlertCircle, TrendingUp, Clock, User } from 'lucide-react';
 
@@ -13,6 +14,7 @@ interface LigneOF {
 }
 
 const OF: React.FC = () => {
+  const navigate = useNavigate();
   const [ofs, setOfs] = useState<any[]>([]);
   const [articles, setArticles] = useState<any[]>([]);
   const [machines, setMachines] = useState<any[]>([]);
@@ -149,14 +151,21 @@ const OF: React.FC = () => {
         if (of) {
           // Créer automatiquement un mouvement de stock (entrée produits finis)
           try {
-            await stockService.createMouvement?.({
-              id_article: of.id_article,
-              type_mouvement: 'ENTREE_PRODUCTION',
-              quantite: quantiteProduite,
-              date_mouvement: new Date().toISOString().split('T')[0],
-              reference: `OF-${of.numero_of}`,
-              observations: `Production terminée - OF ${of.numero_of}`
-            }) || console.warn('API stock.createMouvement non disponible');
+            // Créer un mouvement de stock (si l'API est disponible)
+            if (stockService.createTransfert) {
+              try {
+                await stockService.createTransfert({
+                  id_article: of.id_article,
+                  type_mouvement: 'ENTREE_PRODUCTION',
+                  quantite: quantiteProduite,
+                  date_mouvement: new Date().toISOString().split('T')[0],
+                  reference: `OF-${of.numero_of}`,
+                  observations: `Production terminée - OF ${of.numero_of}`
+                });
+              } catch (stockError: any) {
+                console.warn('Impossible de créer le mouvement de stock automatiquement:', stockError);
+              }
+            }
           } catch (stockError: any) {
             console.warn('Impossible de créer le mouvement de stock automatiquement:', stockError);
             // Ne pas bloquer la finalisation si le mouvement stock échoue
@@ -164,14 +173,15 @@ const OF: React.FC = () => {
           
           // Créer automatiquement un contrôle qualité
           try {
-            await qualiteAvanceeService.createNonConformite?.({
+            // Utiliser createNonConformite pour créer un contrôle qualité
+            await qualiteAvanceeService.createNonConformite({
               id_of: id,
               id_article: of.id_article,
               type_controle: 'CONTROLE_FINAL',
               date_controle: new Date().toISOString().split('T')[0],
               statut: 'EN_ATTENTE',
               observations: `Contrôle qualité automatique - OF ${of.numero_of} terminé avec ${quantiteProduite} unités`
-            }) || console.warn('API qualiteAvanceeService.createNonConformite non disponible pour contrôles');
+            });
           } catch (qualiteError: any) {
             console.warn('Impossible de créer le contrôle qualité automatiquement:', qualiteError);
             // Ne pas bloquer la finalisation si le contrôle qualité échoue
@@ -202,14 +212,30 @@ const OF: React.FC = () => {
     }
   };
 
+  const handleEdit = (of: any) => {
+    setEditingOF(of);
+    setFormData({
+      id_commande: of.id_commande || '',
+      id_article: of.id_article || '',
+      quantite_a_produire: of.quantite_a_produire || '',
+      date_debut_prevue: of.date_debut_prevue ? of.date_debut_prevue.split('T')[0] : '',
+      date_fin_prevue: of.date_fin_prevue ? of.date_fin_prevue.split('T')[0] : '',
+      priorite: of.priorite || 'normale',
+      id_machine: of.id_machine || '',
+      observations: of.observations || '',
+      lignes_operations: of.lignes_operations || []
+    });
+    setShowForm(true);
+  };
+
   const handleDelete = async (id: number) => {
-    if (window.confirm('Supprimer cet ordre de fabrication ?')) {
+    if (window.confirm('Annuler cet ordre de fabrication ?')) {
       try {
-        await ofService.deleteOF?.(id) || ofService.updateOF(id, { statut: 'annule' });
+        await ofService.updateOF(id, { statut: 'annule' });
         loadData();
-        alert('OF supprimé avec succès');
+        alert('OF annulé avec succès');
       } catch (error: any) {
-        alert(error.response?.data?.error?.message || 'Erreur lors de la suppression');
+        alert(error.response?.data?.error?.message || 'Erreur lors de l\'annulation');
       }
     }
   };
@@ -562,25 +588,21 @@ const OF: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex gap-2">
                         <button 
-                          onClick={async () => {
-                            try {
-                              const result = await ofService.getOF(of.id_of);
-                              if (result.data?.data) {
-                                setSelectedOF(result.data.data);
-                              }
-                            } catch (error: any) {
-                              console.error('Erreur chargement OF:', error);
-                              setSelectedOF(of);
-                            }
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (of.id_of) navigate(`/of/${of.id_of}`);
                           }}
-                          className="text-blue-600 hover:text-blue-700"
-                          title="Consulter"
+                          className="text-green-600 hover:text-green-700"
+                          title="Voir les détails"
                         >
                           <Eye className="w-4 h-4" />
                         </button>
                         {of.statut === 'planifie' && (
                           <button 
-                            onClick={() => handleDemarrer(of.id_of)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDemarrer(of.id_of);
+                            }}
                             className="text-green-600 hover:text-green-700"
                             title="Démarrer"
                           >
@@ -589,7 +611,8 @@ const OF: React.FC = () => {
                         )}
                         {of.statut === 'en_cours' && (
                           <button 
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               const qte = prompt(`Quantité produite ? (Max: ${of.quantite_a_produire})`);
                               if (qte) handleTerminer(of.id_of, qte);
                             }}
@@ -600,17 +623,21 @@ const OF: React.FC = () => {
                           </button>
                         )}
                         <button 
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             handleEdit(of);
                           }}
-                          className="text-gray-600 hover:text-gray-700"
+                          className="text-blue-600 hover:text-blue-700"
                           title="Modifier"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
                         {of.statut === 'planifie' && (
                           <button 
-                            onClick={() => handleDelete(of.id_of)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(of.id_of);
+                            }}
                             className="text-red-600 hover:text-red-700"
                             title="Supprimer"
                           >

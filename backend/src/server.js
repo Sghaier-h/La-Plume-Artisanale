@@ -2,61 +2,15 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
+import jwt from 'jsonwebtoken';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { fileURLToPath } from 'url';
-
-// Routes
-import authRoutes from './routes/auth.routes.js';
-import articlesRoutes from './routes/articles.routes.js';
-import clientsRoutes from './routes/clients.routes.js';
-import commandesRoutes from './routes/commandes.routes.js';
-import devisRoutes from './routes/devis.routes.js';
-import bonsLivraisonRoutes from './routes/bons-livraison.routes.js';
-import facturesRoutes from './routes/factures.routes.js';
-import avoirsRoutes from './routes/avoirs.routes.js';
-import bonsRetourRoutes from './routes/bons-retour.routes.js';
-import machinesRoutes from './routes/machines.routes.js';
-import ofRoutes from './routes/of.routes.js';
-import soustraitantsRoutes from './routes/soustraitants.routes.js';
-import dashboardRoutes from './routes/dashboard.routes.js';
-import productionRoutes from './routes/production.routes.js';
-import stockRoutes from './routes/stock.routes.js';
-import planningRoutes from './routes/planning.routes.js';
-import qualityRoutes from './routes/quality.routes.js';
-import mobileRoutes from './routes/mobile.routes.js';
-import parametrageRoutes from './routes/parametrage.routes.js';
-import matieresPremieresRoutes from './routes/matieres-premieres.routes.js';
-import suiviFabricationRoutes from './routes/suivi-fabrication.routes.js';
-import fournisseursRoutes from './routes/fournisseurs.routes.js';
-import parametresCatalogueRoutes from './routes/parametres-catalogue.routes.js';
-import articlesCatalogueRoutes from './routes/articles-catalogue.routes.js';
-import selecteursMachinesRoutes from './routes/selecteurs-machines.routes.js';
-import planningDragDropRoutes from './routes/planning-dragdrop.routes.js';
-import stockMultiEntrepotsRoutes from './routes/stock-multi-entrepots.routes.js';
-import tracabiliteLotsRoutes from './routes/tracabilite-lots.routes.js';
-import qualiteAvanceeRoutes from './routes/qualite-avancee.routes.js';
-import documentsRoutes from './routes/documents.routes.js';
-import tachesRoutes from './routes/taches.routes.js';
-import notificationsRoutes from './routes/notifications.routes.js';
-import messagesRoutes from './routes/messages.routes.js';
-import produitsRoutes from './routes/produits.routes.js';
-import maintenanceRoutes from './routes/maintenance.routes.js';
-import planificationGanttRoutes from './routes/planification-gantt.routes.js';
-import qualiteAvanceRoutes from './routes/qualite-avance.routes.js';
-import coutsRoutes from './routes/couts.routes.js';
-import multisocieteRoutes from './routes/multisociete.routes.js';
-import communicationRoutes from './routes/communication.routes.js';
-import ecommerceRoutes from './routes/ecommerce.routes.js';
-import webhooksRoutes from './routes/webhooks.routes.js';
-import migrationRoutes from './routes/migration.routes.js';
-import databaseRoutes from './routes/database.routes.js';
-import pointageRoutes from './routes/pointage.routes.js';
-import utilisateursRoutes from './routes/utilisateurs.routes.js';
-import auditRoutes from './routes/audit.routes.js';
-import { auditMiddleware } from './middleware/audit.middleware.js';
+import { logger } from './utils/logger.js';
+import { errorHandler } from './utils/error.helper.js';
+import { pool } from './utils/db.js';
 
 dotenv.config();
 
@@ -76,10 +30,9 @@ const io = new Server(httpServer, {
 });
 
 // Trust proxy (nécessaire derrière Nginx)
-// Utiliser 1 au lieu de true pour la sécurité avec express-rate-limit
 app.set('trust proxy', 1);
 
-// Middleware
+// ── Middleware de sécurité ──────────────────────────────────────────────
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
@@ -91,9 +44,9 @@ app.use(cors({
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Active-Company-Id']
 }));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // Servir les fichiers uploads
@@ -101,188 +54,269 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Rate limiting
+// ── Rate limiting ──────────────────────────────────────────────────────
+const isDevelopment = process.env.NODE_ENV !== 'production';
+
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limite chaque IP à 100 requêtes par windowMs
+  windowMs: 15 * 60 * 1000,
+  max: isDevelopment ? 1000 : 100,
+  message: {
+    success: false,
+    error: { message: 'Trop de requêtes. Veuillez patienter quelques instants.' }
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: isDevelopment ? 50 : 10,
+  message: {
+    success: false,
+    error: { message: 'Trop de tentatives de connexion. Patientez 15 minutes.' }
+  },
+  skipSuccessfulRequests: true,
+});
+
+app.use('/api/auth/', authLimiter);
 app.use('/api/', limiter);
 
-// Middleware d'audit - doit être après l'authentification
-// Il sera appliqué automatiquement aux routes qui modifient des données
+// ── Swagger (optionnel) ────────────────────────────────────────────────
+(async function initSwagger() {
+  try {
+    const swaggerUi = (await import('swagger-ui-express')).default;
+    const YAML = (await import('yamljs')).default;
+    const fs = await import('fs');
+    const swaggerPath = path.join(__dirname, 'docs', 'swagger.yaml');
 
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/articles', articlesRoutes);
-app.use('/api/clients', clientsRoutes);
-app.use('/api/commandes', commandesRoutes);
-app.use('/api/devis', devisRoutes);
-app.use('/api/bons-livraison', bonsLivraisonRoutes);
-app.use('/api/factures', facturesRoutes);
-app.use('/api/avoirs', avoirsRoutes);
-app.use('/api/bons-retour', bonsRetourRoutes);
-app.use('/api/machines', machinesRoutes);
-app.use('/api/of', ofRoutes);
-app.use('/api/soustraitants', soustraitantsRoutes);
-app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/production', productionRoutes);
-app.use('/api/stock', stockRoutes);
-app.use('/api/planning', planningRoutes);
-app.use('/api/quality', qualityRoutes);
-app.use('/api/parametrage', parametrageRoutes);
-app.use('/api/matieres-premieres', matieresPremieresRoutes);
-app.use('/api/suivi-fabrication', suiviFabricationRoutes);
-app.use('/api/fournisseurs', fournisseursRoutes);
-app.use('/api/parametres-catalogue', parametresCatalogueRoutes);
-app.use('/api/articles-catalogue', articlesCatalogueRoutes);
-app.use('/api/selecteurs', selecteursMachinesRoutes);
-app.use('/api/planning-dragdrop', planningDragDropRoutes);
-app.use('/api/stock-multi-entrepots', stockMultiEntrepotsRoutes);
-app.use('/api/tracabilite-lots', tracabiliteLotsRoutes);
-app.use('/api/qualite-avancee', qualiteAvanceeRoutes);
-app.use('/api/documents', documentsRoutes);
-app.use('/api/taches', tachesRoutes);
-app.use('/api/notifications', notificationsRoutes);
-app.use('/api/messages', messagesRoutes);
-app.use('/api/produits', produitsRoutes);
-app.use('/api/maintenance', maintenanceRoutes);
-app.use('/api/planification-gantt', planificationGanttRoutes);
-app.use('/api/qualite-avance', qualiteAvanceRoutes);
-app.use('/api/couts', coutsRoutes);
-app.use('/api/multisociete', multisocieteRoutes);
-app.use('/api/communication', communicationRoutes);
-app.use('/api/ecommerce', ecommerceRoutes);
-app.use('/api/webhooks', webhooksRoutes);
-app.use('/api/migration', migrationRoutes);
-app.use('/api/database', databaseRoutes);
-app.use('/api/pointage', pointageRoutes);
-app.use('/api/audit', auditRoutes);
+    if (!fs.existsSync(swaggerPath)) {
+      logger.warn('Fichier swagger.yaml non trouvé — documentation Swagger désactivée');
+      return;
+    }
 
-// Routes Mobile (SaaS)
-app.use('/api/v1/mobile', mobileRoutes);
+    const swaggerDocument = YAML.load(swaggerPath);
+    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
+      customCss: '.swagger-ui .topbar { display: none }',
+      customSiteTitle: 'API ERP La Plume Artisanale'
+    }));
+    logger.info('Documentation Swagger disponible sur /api-docs');
+  } catch (error) {
+    if (error.code !== 'ERR_MODULE_NOT_FOUND' && error.code !== 'ENOENT') {
+      logger.warn('Swagger non configuré', { message: error.message });
+    }
+  }
+})();
 
-// Route racine - Ne jamais rediriger (Nginx sert le frontend en production)
-// Cette route ne devrait jamais être appelée en production car Nginx intercepte /
+// ── Chargement des modules (seule source de routes API) ────────────────
+import moduleManager from './core/ModuleManager.js';
+import { securityManager } from './core/SecurityManager.js';
+
+(async function loadModules() {
+  try {
+    logger.info('Chargement des modules...');
+
+    const loadedModules = await moduleManager.loadAllModules();
+    logger.info(`${loadedModules.length} modules chargés`, { modules: loadedModules });
+
+    // Sécurité
+    try {
+      await securityManager.loadSecurity(moduleManager);
+      logger.info('Sécurité des modules chargée');
+    } catch (error) {
+      logger.warn('Erreur chargement sécurité', { message: error.message });
+    }
+
+    // Collecter et trier les routes
+    const routesToRegister = [];
+
+    for (const moduleName of loadedModules) {
+      const module = moduleManager.getModule(moduleName);
+      if (!module?.manifest?.routes) continue;
+
+      for (const routePath of module.manifest.routes) {
+        try {
+          const routeModule = await import(`../modules/${moduleName}/${routePath}`);
+          if (!routeModule.default) continue;
+
+          // Déterminer le chemin API
+          const routeFileName = routePath.split('/').pop()?.replace('.routes.js', '').replace('.js', '') || '';
+          let apiPath;
+
+          // Priorité : manifest.apiPaths > convention de nommage
+          if (module.manifest.apiPaths && module.manifest.apiPaths[routePath]) {
+            apiPath = module.manifest.apiPaths[routePath];
+          } else {
+            if (routeFileName.includes('_')) {
+              const parts = routeFileName.split('_');
+              const modulePart = parts[0];
+              const resourcePart = parts.slice(1).join('_');
+              const plural = resourcePart.endsWith('e') ? resourcePart + 's' :
+                            resourcePart.endsWith('y') ? resourcePart.slice(0, -1) + 'ies' :
+                            resourcePart + 's';
+              apiPath = `/api/${modulePart}/${plural}`;
+            } else if (routeFileName === moduleName) {
+              apiPath = `/api/${moduleName}`;
+            } else if (moduleName === 'base' && routeFileName) {
+              apiPath = `/api/${routeFileName}`;
+            } else if (routeFileName) {
+              apiPath = `/api/${moduleName}/${routeFileName}`;
+            } else {
+              apiPath = `/api/${moduleName}`;
+            }
+          }
+
+          routesToRegister.push({
+            path: apiPath,
+            router: routeModule.default,
+            hasParams: routeFileName === moduleName,
+            pathDepth: apiPath.split('/').filter(s => s && s !== 'api').length,
+          });
+        } catch (error) {
+          logger.warn(`Erreur chargement route ${moduleName}/${routePath}`, { message: error.message });
+        }
+      }
+    }
+
+    // Trier : routes spécifiques (longues, sans params) avant routes génériques
+    routesToRegister.sort((a, b) => {
+      if (a.hasParams !== b.hasParams) return a.hasParams ? 1 : -1;
+      return b.pathDepth - a.pathDepth;
+    });
+
+    for (const route of routesToRegister) {
+      app.use(route.path, route.router);
+      logger.info(`Route: ${route.path}`);
+    }
+
+  } catch (error) {
+    logger.error('Erreur chargement des modules', { error: error.message, stack: error.stack });
+  }
+})();
+
+// ── Routes utilitaires ─────────────────────────────────────────────────
+
 app.get('/', (req, res) => {
-  // Toujours retourner du JSON (pas de redirection pour éviter les boucles)
   res.json({
     message: 'API ERP La Plume Artisanale',
     version: '1.0.0',
     status: 'OK',
     info: '/api/info',
-    note: 'Le frontend est servi par Nginx. Utilisez /api/info pour plus d\'informations.',
     timestamp: new Date().toISOString()
   });
 });
 
-// Route d'information API (accessible depuis les paramètres)
 app.get('/api/info', (req, res) => {
   res.json({
     message: 'API ERP La Plume Artisanale',
     version: '1.0.0',
     status: 'OK',
     timestamp: new Date().toISOString(),
-    endpoints: {
-      health: '/health',
-      auth: '/api/auth',
-      articles: '/api/articles',
-      articlesCatalogue: '/api/articles-catalogue',
-      clients: '/api/clients',
-      fournisseurs: '/api/fournisseurs',
-      commandes: '/api/commandes',
-      machines: '/api/machines',
-      of: '/api/of',
-      planning: '/api/planning-dragdrop',
-      suiviFabrication: '/api/suivi-fabrication',
-      soustraitants: '/api/soustraitants',
-      dashboard: '/api/dashboard',
-      production: '/api/production',
-      stock: '/api/stock',
-      stockMultiEntrepots: '/api/stock-multi-entrepots',
-      matieresPremieres: '/api/matieres-premieres',
-      parametrage: '/api/parametrage',
-      parametresCatalogue: '/api/parametres-catalogue',
-      selecteurs: '/api/selecteurs',
-      tracabiliteLots: '/api/tracabilite-lots',
-      qualiteAvancee: '/api/qualite-avancee',
-      documents: '/api/documents',
-      planningOld: '/api/planning',
-      quality: '/api/quality',
-      mobile: '/api/v1/mobile',
-      webhooks: '/api/webhooks/timemoto',
-      info: '/api/info'
-    },
+    environment: process.env.NODE_ENV || 'development',
     baseUrl: process.env.API_URL || 'https://fabrication.laplume-artisanale.tn',
-    environment: process.env.NODE_ENV || 'development'
+    modules: Array.from(moduleManager.loadedModules || [])
   });
 });
 
-// Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+app.get('/health', async (req, res) => {
+  let dbStatus = 'unknown';
+  try {
+    const result = await pool.query('SELECT 1');
+    dbStatus = result ? 'connected' : 'error';
+  } catch {
+    dbStatus = 'disconnected';
+  }
+  res.json({
+    status: 'OK',
+    database: dbStatus,
+    timestamp: new Date().toISOString()
+  });
 });
 
-// Health check API (accessible via /api/health)
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// Socket.IO pour temps réel avec authentification
+// ── Socket.IO avec vérification JWT ────────────────────────────────────
 io.use((socket, next) => {
   const token = socket.handshake.auth.token;
   if (!token) {
     return next(new Error('Token manquant'));
   }
-  // TODO: Vérifier JWT token
-  // Pour l'instant, on accepte tous les tokens en mode dev
-  socket.user = { id: '1', poste_travail: 'RESPONSABLE_FABRICATION' };
-  next();
+
+  try {
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      logger.error('JWT_SECRET non défini dans .env — Socket.IO non sécurisé');
+      return next(new Error('Configuration serveur invalide'));
+    }
+
+    const decoded = jwt.verify(token, secret);
+    socket.user = {
+      id: decoded.userId || decoded.id,
+      role: decoded.role,
+      poste_travail: decoded.poste_travail
+    };
+    next();
+  } catch (err) {
+    logger.warn('Token Socket.IO invalide', { error: err.message });
+    return next(new Error('Token invalide'));
+  }
 });
 
 io.on('connection', (socket) => {
   const userId = socket.user?.id;
   const poste = socket.user?.poste_travail;
-  
-  console.log('Client connecté:', socket.id, 'User:', userId, 'Poste:', poste);
+
+  logger.info('Client WebSocket connecté', { socketId: socket.id, userId, poste });
 
   // Rejoindre les canaux
-  if (userId) {
-    socket.join(`user-${userId}`);
-  }
-  if (poste) {
-    socket.join(`poste-${poste}`);
-  }
-  if (socket.user?.machine_assignee) {
-    socket.join(`machine-${socket.user.machine_assignee}`);
-  }
+  if (userId) socket.join(`user-${userId}`);
+  if (poste) socket.join(`poste-${poste}`);
 
   socket.on('disconnect', () => {
-    console.log('Client déconnecté:', socket.id);
+    logger.info('Client WebSocket déconnecté', { socketId: socket.id });
   });
 
-  // Écouter les événements de production
+  // Événements production
   socket.on('production:update', (data) => {
     io.emit('production:updated', data);
   });
 
-  // Écouter les changements de statut de tâche
   socket.on('tache-statut-change', (data) => {
     io.emit('tache-mise-a-jour', data);
   });
 
-  // Accusé de réception notification
   socket.on('accuse-reception', (notificationId) => {
-    // Marquer notification comme lue
-    console.log('Notification lue:', notificationId);
+    logger.info('Notification lue', { notificationId, userId });
   });
 });
 
+// ── Middleware d'erreur global (doit être le dernier) ──────────────────
+app.use(errorHandler);
+
+// ── Démarrage du serveur ───────────────────────────────────────────────
 const PORT = process.env.PORT || 5000;
 
+httpServer.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    logger.error(`Le port ${PORT} est déjà utilisé`, {
+      solutions: [
+        'Exécutez: .\\LIBERER_PORT_5000.ps1',
+        `Ou changez le port: PORT=5001 npm start`
+      ]
+    });
+    process.exit(1);
+  } else {
+    throw err;
+  }
+});
+
 httpServer.listen(PORT, () => {
-  console.log(`🚀 Serveur démarré sur le port ${PORT}`);
-  console.log(`📡 Socket.IO actif`);
+  logger.info(`Serveur démarré sur le port ${PORT}`);
+  logger.info('Socket.IO actif');
+  if (isDevelopment) {
+    logger.info(`Documentation API: http://localhost:${PORT}/api-docs`);
+  }
 });
 
 export { io };
-

@@ -332,6 +332,54 @@ const QualiteAvance: React.FC = () => {
                 </div>
 
                 <div className="border-t pt-4 flex gap-2 justify-end">
+                  {selectedControle.statut === 'EN_ATTENTE' && (
+                    <>
+                      <button
+                        onClick={async () => {
+                          if (window.confirm('Valider ce contrôle qualité ?')) {
+                            try {
+                              await qualiteAvanceService.validerControle(selectedControle.id_controle, {
+                                resultat_global: 'CONFORME',
+                                date_validation: new Date().toISOString().split('T')[0]
+                              });
+                              alert('Contrôle validé avec succès');
+                              setSelectedControle(null);
+                              loadData();
+                            } catch (error: any) {
+                              alert(error.response?.data?.error?.message || 'Erreur lors de la validation');
+                            }
+                          }
+                        }}
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+                      >
+                        <CheckCircle className="w-4 h-4" />
+                        Valider
+                      </button>
+                      <button
+                        onClick={async () => {
+                          const raison = window.prompt('Raison du refus :');
+                          if (raison && window.confirm('Refuser ce contrôle qualité ?')) {
+                            try {
+                              await qualiteAvanceService.refuserControle(selectedControle.id_controle, {
+                                resultat_global: 'NON_CONFORME',
+                                raison_refus: raison,
+                                date_validation: new Date().toISOString().split('T')[0]
+                              });
+                              alert('Contrôle refusé avec succès');
+                              setSelectedControle(null);
+                              loadData();
+                            } catch (error: any) {
+                              alert(error.response?.data?.error?.message || 'Erreur lors du refus');
+                            }
+                          }
+                        }}
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2"
+                      >
+                        <XCircle className="w-4 h-4" />
+                        Refuser
+                      </button>
+                    </>
+                  )}
                   <button
                     onClick={() => setSelectedControle(null)}
                     className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"

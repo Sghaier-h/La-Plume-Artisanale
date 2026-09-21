@@ -1,0 +1,96 @@
+{
+  "product.template": {
+    "name": "product.template",
+    "model": "product.template",
+    "views": {
+      "form": {
+        "type": "form",
+        "arch": {
+          "string": "Product",
+          "sheet": {
+            "groups": [
+              {
+                "name": "main",
+                "string": "Product Information",
+                "fields": [
+                  {
+                    "name": "name",
+                    "string": "Product Name",
+                    "required": true
+                  },
+                  {
+                    "name": "default_code",
+                    "string": "Internal Reference"
+                  },
+                  {
+                    "name": "categ_id",
+                    "string": "Category",
+                    "type": "many2one",
+                    "comodel": "product.category"
+                  },
+                  {
+                    "name": "type",
+                    "string": "Product Type",
+                    "type": "selection"
+                  }
+                ]
+              },
+              {
+                "name": "pricing",
+                "string": "Pricing",
+                "fields": [
+                  {
+                    "name": "list_price",
+                    "string": "Sales Price",
+                    "type": "monetary"
+                  },
+                  {
+                    "name": "standard_price",
+                    "string": "Cost",
+                    "type": "monetary"
+                  },
+                  {
+                    "name": "margin",
+                    "string": "Margin",
+                    "type": "monetary",
+                    "readonly": true
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "tree": {
+        "type": "tree",
+        "arch": {
+          "string": "Products",
+          "fields": [
+            {
+              "name": "default_code",
+              "string": "Reference"
+            },
+            {
+              "name": "name",
+              "string": "Product Name"
+            },
+            {
+              "name": "categ_id",
+              "string": "Category"
+            },
+            {
+              "name": "list_price",
+              "string": "Price",
+              "type": "monetary"
+            },
+            {
+              "name": "active",
+              "string": "Active",
+              "type": "boolean"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

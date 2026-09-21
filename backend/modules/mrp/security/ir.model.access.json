@@ -1,0 +1,24 @@
+{
+  "mrp.production": [
+    {
+      "id": "access_mrp_production_user",
+      "name": "mrp.production.user",
+      "group": "base.group_user",
+      "perm_read": true,
+      "perm_write": true,
+      "perm_create": true,
+      "perm_unlink": false
+    }
+  ],
+  "mrp.bom": [
+    {
+      "id": "access_mrp_bom_user",
+      "name": "mrp.bom.user",
+      "group": "base.group_user",
+      "perm_read": true,
+      "perm_write": false,
+      "perm_create": false,
+      "perm_unlink": false
+    }
+  ]
+}

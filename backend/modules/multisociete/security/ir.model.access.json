@@ -1,0 +1,10 @@
+{
+  "id": "access_multisociete",
+  "name": "Multisociete Access",
+  "model_id": "multisociete.multisociete",
+  "group_id": "base.group_user",
+  "perm_read": true,
+  "perm_write": true,
+  "perm_create": true,
+  "perm_unlink": true
+}

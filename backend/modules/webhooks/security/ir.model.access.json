@@ -1,0 +1,10 @@
+{
+  "id": "access_webhooks",
+  "name": "Webhooks Access",
+  "model_id": "webhooks.webhooks",
+  "group_id": "base.group_user",
+  "perm_read": true,
+  "perm_write": true,
+  "perm_create": true,
+  "perm_unlink": true
+}

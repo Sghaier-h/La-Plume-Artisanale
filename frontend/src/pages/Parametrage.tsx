@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { parametrageService, utilisateursService } from '../services/api';
+import React, { useState, useEffect, useCallback } from 'react';
+import { parametrageService, utilisateursService, excelImportService } from '../services/api';
 import api from '../services/api';
 import { 
   Save, Building2, Settings, Tag, Code, ShoppingCart, Package, 
   Factory, CheckCircle, Calendar, FileText, TrendingUp, AlertTriangle,
-  BarChart3, Wrench, Boxes, ClipboardCheck, Users, UserPlus, Edit, Trash2, Lock, Shield
+  BarChart3, Wrench, Boxes, ClipboardCheck, Users, UserPlus, Edit, Trash2, Lock, Shield,
+  Upload, Download, FileSpreadsheet
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-type TabType = 'societe' | 'systeme' | 'utilisateurs' | 'vente' | 'production' | 'stock' | 'qualite' | 'planification' | 'attributs' | 'api';
+type TabType = 'societe' | 'systeme' | 'utilisateurs' | 'vente' | 'production' | 'stock' | 'qualite' | 'planification' | 'attributs' | 'api' | 'import-export';
 
 const Parametrage: React.FC = () => {
   const navigate = useNavigate();
@@ -35,11 +36,7 @@ const Parametrage: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  useEffect(() => {
-    loadData();
-  }, [activeTab]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       if (activeTab === 'societe') {
@@ -144,7 +141,11 @@ const Parametrage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleSaveSociete = async () => {
     try {
@@ -319,6 +320,17 @@ const Parametrage: React.FC = () => {
             >
               <Code className="w-4 h-4" />
               API
+            </button>
+            <button
+              onClick={() => setActiveTab('import-export')}
+              className={`px-4 py-2 font-medium flex items-center gap-2 rounded-t-lg ${
+                activeTab === 'import-export'
+                  ? 'text-blue-600 border-b-2 border-blue-600 bg-white'
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              Import/Export
             </button>
           </div>
 
@@ -1319,8 +1331,419 @@ const Parametrage: React.FC = () => {
               )}
             </div>
           )}
+
+          {/* Contenu Import/Export */}
+          {activeTab === 'import-export' && (
+            <ImportExportSection />
+          )}
         </div>
       </div>
+    </div>
+  );
+};
+
+// Composant Import/Export
+const ImportExportSection: React.FC = () => {
+  const [selectedType, setSelectedType] = useState<string>('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [showMapping, setShowMapping] = useState(false);
+  const [previewData, setPreviewData] = useState<any>(null);
+  const [mapping, setMapping] = useState<Record<string, string>>({});
+  const [uploading, setUploading] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
+  const [exporting, setExporting] = useState<string | null>(null);
+  const [result, setResult] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const importTypes = [
+    { value: 'commandes', label: 'Commandes', description: 'Import des commandes clients', icon: '📋' },
+    { value: 'bom', label: 'Nomenclatures (BOM)', description: 'Import des nomenclatures produits', icon: '🔧' },
+    { value: 'soustraitants', label: 'Sous-traitants', description: 'Import des sous-traitants', icon: '👥' },
+    { value: 'matieres_premieres', label: 'Matières Premières', description: 'Import des matières premières', icon: '📦' },
+    { value: 'qualite', label: 'Qualité et Rendement', description: 'Import des données qualité', icon: '✅' },
+    { value: 'parametrages', label: 'Paramétrages', description: 'Import des paramétrages', icon: '⚙️' },
+    { value: 'donnees_collecte', label: 'Données Collecte', description: 'Import des données collectées', icon: '📊' },
+  ];
+
+  const exportTypes = [
+    { value: 'commandes', label: 'Commandes', icon: '📋' },
+    { value: 'devis', label: 'Devis', icon: '📝' },
+    { value: 'factures', label: 'Factures', icon: '💰' },
+    { value: 'clients', label: 'Clients', icon: '👤' },
+    { value: 'articles', label: 'Articles', icon: '📦' },
+    { value: 'of', label: 'Ordres de Fabrication', icon: '🏭' },
+    { value: 'stock', label: 'Stock', icon: '📊' },
+    { value: 'fournisseurs', label: 'Fournisseurs', icon: '🏢' },
+  ];
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+        setSelectedFile(file);
+        setError(null);
+      } else {
+        setError('Seuls les fichiers Excel (.xlsx, .xls) sont acceptés');
+        setSelectedFile(null);
+      }
+    }
+  };
+
+  const handlePreview = async () => {
+    if (!selectedFile || !selectedType) {
+      setError('Veuillez sélectionner un type d\'import et un fichier');
+      return;
+    }
+
+    setPreviewing(true);
+    setError(null);
+    setResult(null);
+
+    try {
+      const response = await excelImportService.preview(selectedFile, selectedType);
+      setPreviewData(response.data.data);
+      
+      // Initialiser le mapping par défaut (mapping intelligent basé sur les noms)
+      const defaultMapping: Record<string, string> = {};
+      response.data.data.headers.forEach((header: string) => {
+        // Essayer de trouver une correspondance automatique
+        const availableFields = response.data.data.availableFields || [];
+        const match = availableFields.find((field: any) => 
+          header.toLowerCase().includes(field.key) || 
+          field.key.includes(header.toLowerCase().substring(0, 3))
+        );
+        if (match) {
+          defaultMapping[header] = match.key;
+        }
+      });
+      
+      // Si ID Commande est présent, le mapper pour utiliser le numéro de ligne
+      if (response.data.data.headers.includes('ID Commande')) {
+        defaultMapping['ID Commande'] = '__LINE_INDEX__'; // Spécial : numéro de ligne
+      }
+      
+      setMapping(defaultMapping);
+      setShowMapping(true);
+    } catch (error: any) {
+      setError(error.response?.data?.error?.message || 'Erreur lors de la prévisualisation');
+      console.error('Erreur prévisualisation:', error);
+    } finally {
+      setPreviewing(false);
+    }
+  };
+
+  const handleImport = async () => {
+    if (!selectedFile || !selectedType || !previewData) {
+      setError('Veuillez d\'abord prévisualiser le fichier');
+      return;
+    }
+
+    // Vérifier que les champs requis sont mappés
+    const requiredFields = (previewData.availableFields || []).filter((f: any) => f.required);
+    const mappedFields = Object.values(mapping);
+    const missingRequired = requiredFields.filter((f: any) => !mappedFields.includes(f.key));
+    
+    if (missingRequired.length > 0) {
+      setError(`Champs requis non mappés: ${missingRequired.map((f: any) => f.label).join(', ')}`);
+      return;
+    }
+
+    setUploading(true);
+    setError(null);
+    setResult(null);
+
+    try {
+      const response = await excelImportService.upload(selectedFile, selectedType, mapping);
+      setResult(response.data);
+      setShowMapping(false);
+      setPreviewData(null);
+      setMapping({});
+      setSelectedFile(null);
+      const fileInput = document.getElementById('file-input') as HTMLInputElement;
+      if (fileInput) fileInput.value = '';
+    } catch (error: any) {
+      setError(error.response?.data?.error?.message || 'Erreur lors de l\'import');
+      console.error('Erreur import:', error);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleExport = async (type: string) => {
+    setExporting(type);
+    setError(null);
+    setResult(null);
+
+    try {
+      const response = await api.get(`/excel-import/export/${type}`, {
+        responseType: 'blob'
+      });
+      
+      // Créer un lien de téléchargement
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `export_${type}_${new Date().toISOString().split('T')[0]}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      setResult({ message: `Export ${type} réussi` });
+    } catch (error: any) {
+      setError(error.response?.data?.error?.message || `Erreur lors de l'export ${type}`);
+      console.error('Erreur export:', error);
+    } finally {
+      setExporting(null);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Section Import */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <Upload className="h-6 w-6 text-blue-600" />
+          <h2 className="text-xl font-bold text-gray-800">Import de données Excel</h2>
+        </div>
+
+        {/* Sélection du type d'import */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            Type d'import *
+          </label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {importTypes.map((type) => (
+              <button
+                key={type.value}
+                onClick={() => setSelectedType(type.value)}
+                className={`p-4 border-2 rounded-lg text-left transition-all ${
+                  selectedType === type.value
+                    ? 'border-blue-600 bg-blue-50'
+                    : 'border-gray-200 hover:border-blue-300'
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">{type.icon}</span>
+                  <div className="flex-1">
+                    <div className="font-semibold text-gray-800">{type.label}</div>
+                    <div className="text-sm text-gray-600 mt-1">{type.description}</div>
+                  </div>
+                  {selectedType === type.value && (
+                    <CheckCircle className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Sélection du fichier */}
+        {selectedType && (
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Fichier Excel *
+            </label>
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+              <input
+                id="file-input"
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              <label
+                htmlFor="file-input"
+                className="cursor-pointer flex flex-col items-center"
+              >
+                <Upload className="h-12 w-12 text-gray-400 mb-3" />
+                <span className="text-sm font-medium text-gray-700">
+                  {selectedFile ? selectedFile.name : 'Cliquez pour sélectionner un fichier Excel'}
+                </span>
+                <span className="text-xs text-gray-500 mt-1">
+                  Formats acceptés: .xlsx, .xls (max 10MB)
+                </span>
+              </label>
+            </div>
+          </div>
+        )}
+
+        {/* Bouton de prévisualisation */}
+        {selectedType && selectedFile && !showMapping && (
+          <div className="flex justify-end">
+            <button
+              onClick={handlePreview}
+              disabled={previewing}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {previewing ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Analyse en cours...</span>
+                </>
+              ) : (
+                <>
+                  <FileText className="h-4 w-4" />
+                  <span>Prévisualiser et mapper les colonnes</span>
+                </>
+              )}
+            </button>
+          </div>
+        )}
+
+        {/* Page de Mapping */}
+        {showMapping && previewData && (
+          <div className="mt-6 border-t pt-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">
+              Mapping des colonnes Excel vers les champs de la base de données
+            </h3>
+            
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800">
+                <strong>Feuille:</strong> {previewData.sheetName} | 
+                <strong> Total lignes:</strong> {previewData.totalRows} | 
+                <strong> Colonnes détectées:</strong> {previewData.headers.length}
+              </p>
+            </div>
+
+            <div className="overflow-x-auto mb-4">
+              <table className="min-w-full bg-white border border-gray-200 rounded-lg">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Colonne Excel</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Exemple</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Mapper vers</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {previewData.headers.map((header: string) => {
+                    const exampleValue = previewData.sampleRows[0]?.[header] || '(vide)';
+                    const isLineIndex = mapping[header] === '__LINE_INDEX__';
+                    
+                    return (
+                      <tr key={header} className={isLineIndex ? 'bg-yellow-50' : ''}>
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                          {header}
+                          {header === 'ID Commande' && (
+                            <span className="ml-2 text-xs text-blue-600">(Numéro de ligne)</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600 max-w-xs truncate" title={String(exampleValue)}>
+                          {String(exampleValue).substring(0, 50)}
+                          {String(exampleValue).length > 50 ? '...' : ''}
+                        </td>
+                        <td className="px-4 py-3">
+                          <select
+                            value={mapping[header] || ''}
+                            onChange={(e) => setMapping({ ...mapping, [header]: e.target.value })}
+                            className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          >
+                            <option value="">-- Ignorer cette colonne --</option>
+                            {header === 'ID Commande' && (
+                              <option value="__LINE_INDEX__">[Numéro de ligne] - Générer automatiquement</option>
+                            )}
+                            {(previewData.availableFields || []).map((field: any) => (
+                              <option key={field.key} value={field.key}>
+                                {field.label} {field.required && '*'}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex justify-between items-center">
+              <button
+                onClick={() => {
+                  setShowMapping(false);
+                  setPreviewData(null);
+                  setMapping({});
+                }}
+                className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Retour
+              </button>
+              <button
+                onClick={handleImport}
+                disabled={uploading}
+                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {uploading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>Import en cours...</span>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4" />
+                    <span>Importer avec ce mapping</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Section Export */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <Download className="h-6 w-6 text-green-600" />
+          <h2 className="text-xl font-bold text-gray-800">Export de données Excel</h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {exportTypes.map((type) => (
+            <button
+              key={type.value}
+              onClick={() => handleExport(type.value)}
+              disabled={exporting === type.value}
+              className="p-4 border-2 border-gray-200 rounded-lg hover:border-green-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <div className="flex flex-col items-center gap-2">
+                <span className="text-3xl">{type.icon}</span>
+                <span className="font-semibold text-gray-800">{type.label}</span>
+                {exporting === type.value && (
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-green-600"></div>
+                )}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Messages d'erreur */}
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+          <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0" />
+          <div className="text-sm text-red-700">{error}</div>
+        </div>
+      )}
+
+      {/* Résultat */}
+      {result && (
+        <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+          <div className="flex items-start gap-2">
+            <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
+            <div className="flex-1">
+              <div className="font-semibold text-green-900 mb-2">{result.message}</div>
+              {result.data && (
+                <div className="text-sm text-green-700 space-y-1">
+                  <div>Total lignes: {result.data.total}</div>
+                  <div>Enregistrements insérés: {result.data.inserted}</div>
+                  {result.data.updated > 0 && (
+                    <div>Enregistrements mis à jour: {result.data.updated}</div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

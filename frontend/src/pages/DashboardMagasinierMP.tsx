@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Package, TrendingDown, AlertTriangle, CheckCircle, Clock, Search, Filter, Printer, Camera, ArrowRightLeft, Scan, Box, FileText, Download, Plus, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react';
+import WhatsAppWidget from '../components/WhatsAppWidget';
+import DashboardLayout from '../components/DashboardLayout';
 
 interface Selecteur {
   sel: string;
@@ -30,6 +33,7 @@ interface Preparation {
 }
 
 const DashboardMagasinierMP = () => {
+  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('machines');
   const [searchTerm, setSearchTerm] = useState('');
   const [showEtiquetteModal, setShowEtiquetteModal] = useState(false);
@@ -190,14 +194,6 @@ const DashboardMagasinierMP = () => {
       aRetourner: true
     }
   ]);
-
-  const sections = [
-    { id: 'machines', label: 'Vue Machines', icon: Box },
-    { id: 'preparation', label: 'Liste OF', icon: Package },
-    { id: 'stock', label: 'Stock MP', icon: Box },
-    { id: 'transferts', label: 'Transferts', icon: ArrowRightLeft },
-    { id: 'retours', label: 'Retours & Consommations', icon: TrendingDown }
-  ];
 
   const handleUpdateQuantite = (numSousOF: string, selecteur: string, quantite: string, qrMP: string) => {
     setPreparationsEnCours(prev => prev.map(prep => {
@@ -988,56 +984,13 @@ const DashboardMagasinierMP = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 ml-64">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Tableau de Bord Magasinier Matière Première
-              </h1>
-              <p className="text-sm text-gray-600 mt-1">
-                {new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} - {new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-              </p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center">
-                <Scan className="w-4 h-4 mr-2" />
-                Scanner QR
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Navigation */}
-      <div className="bg-white border-b sticky top-0 z-10 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex space-x-1 overflow-x-auto">
-            {sections.map((section) => {
-              const Icon = section.icon;
-              return (
-                <button
-                  key={section.id}
-                  onClick={() => setActiveSection(section.id)}
-                  className={`flex items-center space-x-2 px-4 py-3 border-b-2 transition-colors whitespace-nowrap ${
-                    activeSection === section.id
-                      ? 'border-blue-600 text-blue-600 bg-blue-50'
-                      : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span className="text-sm font-medium">{section.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 py-6">
+    <DashboardLayout
+      title="Tableau de Bord Magasinier MP"
+      subtitle={new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) + ' - ' + new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+      activeSection={activeSection}
+      onSectionChange={setActiveSection}
+    >
+      <div className="space-y-6">
         {activeSection === 'machines' && renderMachines()}
         {activeSection === 'preparation' && renderPreparation()}
         {activeSection === 'stock' && renderStock()}
@@ -1093,7 +1046,13 @@ const DashboardMagasinierMP = () => {
           </div>
         </div>
       )}
-    </div>
+      
+      {/* Widget WhatsApp pour ce dashboard */}
+      <WhatsAppWidget 
+        dashboardName="Magasinier MP"
+        position="bottom-right"
+      />
+    </DashboardLayout>
   );
 };
 

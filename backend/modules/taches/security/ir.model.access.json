@@ -1,0 +1,10 @@
+{
+  "id": "access_taches",
+  "name": "Taches Access",
+  "model_id": "taches.taches",
+  "group_id": "base.group_user",
+  "perm_read": true,
+  "perm_write": true,
+  "perm_create": true,
+  "perm_unlink": true
+}

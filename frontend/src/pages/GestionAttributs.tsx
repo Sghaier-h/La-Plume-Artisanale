@@ -18,6 +18,7 @@ const GestionAttributs: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingAttribut, setEditingAttribut] = useState<Attribut | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [checkingCode, setCheckingCode] = useState(false);
   
   const [formData, setFormData] = useState<Attribut>({
     code_attribut: '',
@@ -101,8 +102,46 @@ const GestionAttributs: React.FC = () => {
     setFormData({ ...formData, valeurs_possibles: newValeurs });
   };
 
+  // Vérifier l'unicité du code_attribut
+  const verifierCodeAttribut = async (code: string): Promise<boolean> => {
+    if (!code || code.trim() === '') return true; // Code vide, pas de vérification
+    
+    // Si on est en mode édition et que le code n'a pas changé, pas de vérification
+    if (editingAttribut && editingAttribut.code_attribut === code) return true;
+    
+    try {
+      setCheckingCode(true);
+      const attributsRes = await produitsService.getAttributs();
+      const attributsExistants = attributsRes.data?.data || attributsRes.data || [];
+      const existe = attributsExistants.some((a: Attribut) => 
+        a.code_attribut?.toLowerCase() === code.toLowerCase() && 
+        a.id_attribut !== editingAttribut?.id_attribut
+      );
+      return !existe;
+    } catch (error) {
+      console.error('Erreur vérification code attribut:', error);
+      return true; // En cas d'erreur, on laisse passer
+    } finally {
+      setCheckingCode(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validation : Code attribut obligatoire
+    if (!formData.code_attribut || formData.code_attribut.trim() === '') {
+      setMessage({ type: 'error', text: 'Le code attribut est obligatoire' });
+      return;
+    }
+    
+    // Vérifier l'unicité du code_attribut
+    const codeUnique = await verifierCodeAttribut(formData.code_attribut);
+    if (!codeUnique) {
+      setMessage({ type: 'error', text: 'Ce code attribut existe déjà. Le code doit être unique.' });
+      return;
+    }
+    
     try {
       if (editingAttribut?.id_attribut) {
         // TODO: Implémenter updateAttribut dans l'API
@@ -188,14 +227,34 @@ const GestionAttributs: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-1">Code Attribut *</label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.code_attribut}
-                      onChange={(e) => setFormData({ ...formData, code_attribut: e.target.value })}
-                      className="w-full px-4 py-2 border rounded"
-                      placeholder="Ex: DIM, TISS, COUL"
-                    />
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        required
+                        value={formData.code_attribut}
+                        onChange={async (e) => {
+                          const code = e.target.value;
+                          setFormData({ ...formData, code_attribut: code });
+                          
+                          // Vérifier l'unicité du code
+                          if (code && !editingAttribut) {
+                            const isUnique = await verifierCodeAttribut(code);
+                            if (!isUnique) {
+                              setMessage({ type: 'error', text: 'Ce code attribut existe déjà. Le code doit être unique.' });
+                              setFormData(prev => ({ ...prev, code_attribut: '' }));
+                            } else {
+                              setMessage(null);
+                            }
+                          }
+                        }}
+                        className="flex-1 px-4 py-2 border rounded"
+                        placeholder="Ex: DIM, TISS, COUL"
+                      />
+                      {checkingCode && (
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">Le code doit être unique</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1">Libellé *</label>

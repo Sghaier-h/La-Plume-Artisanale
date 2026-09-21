@@ -1,0 +1,10 @@
+{
+  "id": "access_payroll-tunisia",
+  "name": "PayrollTunisia Access",
+  "model_id": "payroll-tunisia.payroll",
+  "group_id": "base.group_user",
+  "perm_read": true,
+  "perm_write": true,
+  "perm_create": true,
+  "perm_unlink": true
+}

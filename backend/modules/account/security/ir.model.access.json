@@ -1,0 +1,22 @@
+{
+  "account.move": [
+    {
+      "id": "access_account_move_user",
+      "name": "account.move.user",
+      "group": "base.group_user",
+      "perm_read": true,
+      "perm_write": false,
+      "perm_create": false,
+      "perm_unlink": false
+    },
+    {
+      "id": "access_account_move_accountant",
+      "name": "account.move.accountant",
+      "group": "account.group_account_user",
+      "perm_read": true,
+      "perm_write": true,
+      "perm_create": true,
+      "perm_unlink": false
+    }
+  ]
+}

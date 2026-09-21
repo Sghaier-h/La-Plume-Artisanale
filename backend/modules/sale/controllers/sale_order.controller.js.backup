@@ -1,0 +1,410 @@
+/**
+ * SaleOrder Controller - Contrôleur pour les commandes de vente
+ */
+
+import { pool } from '../../../src/utils/db.js';
+import { registry } from '../../../src/core/Environment.js';
+import { sendSuccess, sendError } from '../../../src/utils/error.helper.js';
+import { getPaginationParams, buildPaginationResponse } from '../../../src/utils/pagination.helper.js';
+import { loadOne2Many } from '../../../src/core/Relations.js';
+import { getTableName, getIdField, mapField } from '../../../src/core/TableMapping.js';
+
+/**
+ * GET /api/sale/orders - Liste les commandes de vente
+ */
+export const getSaleOrders = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const env = registry.createEnvironment(userId);
+    const SaleOrder = env.model('sale.order');
+
+    const { page, limit, search, state, partner_id } = req.query;
+    const { offset, pageSize } = getPaginationParams(page, limit);
+
+    // Construire le domaine
+    const domain = [];
+    if (search) {
+      domain.push('|', ['name', 'like', search], ['partner_id.name', 'like', search]);
+    }
+    if (state) {
+      domain.push(['state', '=', state]);
+    }
+    if (partner_id) {
+      domain.push(['partner_id', '=', partner_id]);
+    }
+
+    const loadRelations = req.query.loadRelations === 'true';
+    
+    // Rechercher avec relations
+    const orders = await SaleOrder.search(domain, {
+      limit: pageSize,
+      offset,
+      order: 'date_order desc, id desc',
+      loadRelations: loadRelations ? {
+        many2one: true,
+        one2many: ['order_line'],
+        many2oneFields: ['partner_id']
+      } : undefined
+    });
+
+    // Compter le total
+    const total = await SaleOrder.search(domain).then(r => r.length);
+
+    return sendSuccess(res, {
+      data: orders,
+      pagination: buildPaginationResponse(page, pageSize, total)
+    });
+  } catch (error) {
+    return sendError(res, error.message, 500);
+  }
+};
+
+/**
+ * GET /api/sale/orders/:id - Obtient une commande
+ */
+export const getSaleOrder = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const env = registry.createEnvironment(userId);
+    const SaleOrder = env.model('sale.order');
+
+    const loadRelations = req.query.loadRelations === 'true';
+    
+    const orders = await SaleOrder.read([req.params.id], {
+      loadRelations: loadRelations ? {
+        many2one: true,
+        one2many: ['order_line', 'picking_ids', 'invoice_ids'],
+        many2oneFields: ['partner_id', 'user_id', 'currency_id']
+      } : undefined
+    });
+    
+    if (!orders || orders.length === 0) {
+      return sendError(res, 'Order not found', 404);
+    }
+
+    return sendSuccess(res, { data: orders[0] });
+  } catch (error) {
+    return sendError(res, error.message, 500);
+  }
+};
+
+/**
+ * POST /api/sale/orders - Crée une commande
+ */
+export const createSaleOrder = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const env = registry.createEnvironment(userId);
+    const SaleOrder = env.model('sale.order');
+
+    const orderData = { ...req.body };
+    const orderLines = orderData.order_lines || orderData.order_line || [];
+    delete orderData.order_lines;
+    delete orderData.order_line;
+
+    // Créer la commande
+    const order = await SaleOrder.create(orderData);
+
+    // Créer les lignes de commande si fournies
+    if (orderLines.length > 0 && order.id) {
+      const lineTable = getTableName('sale.order.line');
+      const orderIdField = getIdField('sale.order');
+      const lineIdField = getIdField('sale.order.line');
+      
+      for (const line of orderLines) {
+        const insertQuery = `
+          INSERT INTO ${lineTable} (
+            ${orderIdField}, product_id, quantity, price_unit, price_subtotal,
+            created_at, updated_at
+          ) VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+          RETURNING *
+        `;
+        
+        await pool.query(insertQuery, [
+          order.id,
+          line.product_id || line.product_id?.[0],
+          line.quantity || line.product_uom_qty || 1,
+          line.price_unit || 0,
+          (line.price_unit || 0) * (line.quantity || line.product_uom_qty || 1)
+        ]);
+      }
+    }
+
+    // Recharger avec relations
+    const fullOrder = await SaleOrder.read([order.id], {
+      loadRelations: {
+        many2one: true,
+        one2many: ['order_line'],
+        many2oneFields: ['partner_id']
+      }
+    });
+
+    return sendSuccess(res, { data: fullOrder[0] }, 201);
+  } catch (error) {
+    return sendError(res, error.message, 500);
+  }
+};
+
+/**
+ * PUT /api/sale/orders/:id - Modifie une commande
+ */
+export const updateSaleOrder = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const env = registry.createEnvironment(userId);
+    const SaleOrder = env.model('sale.order');
+
+    const orderData = { ...req.body };
+    const orderLines = orderData.order_lines || orderData.order_line;
+    delete orderData.order_lines;
+    delete orderData.order_line;
+
+    // Mettre à jour la commande
+    await SaleOrder.write([req.params.id], orderData);
+
+    // Mettre à jour les lignes si fournies
+    if (orderLines !== undefined && Array.isArray(orderLines)) {
+      const lineTable = getTableName('sale.order.line');
+      const orderIdField = getIdField('sale.order');
+      const lineIdField = getIdField('sale.order.line');
+      
+      // Supprimer les anciennes lignes
+      await pool.query(`DELETE FROM ${lineTable} WHERE ${orderIdField} = $1`, [req.params.id]);
+      
+      // Créer les nouvelles lignes
+      for (const line of orderLines) {
+        if (line.id && line._delete) continue; // Ignorer les lignes supprimées
+        
+        const insertQuery = `
+          INSERT INTO ${lineTable} (
+            ${orderIdField}, product_id, quantity, price_unit, price_subtotal,
+            created_at, updated_at
+          ) VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+          RETURNING *
+        `;
+        
+        await pool.query(insertQuery, [
+          req.params.id,
+          line.product_id || line.product_id?.[0],
+          line.quantity || line.product_uom_qty || 1,
+          line.price_unit || 0,
+          (line.price_unit || 0) * (line.quantity || line.product_uom_qty || 1)
+        ]);
+      }
+    }
+
+    // Recharger avec relations
+    const order = await SaleOrder.read([req.params.id], {
+      loadRelations: {
+        many2one: true,
+        one2many: ['order_line'],
+        many2oneFields: ['partner_id']
+      }
+    });
+
+    return sendSuccess(res, { data: order[0] });
+  } catch (error) {
+    return sendError(res, error.message, 500);
+  }
+};
+
+/**
+ * DELETE /api/sale/orders/:id - Supprime une commande
+ */
+export const deleteSaleOrder = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const env = registry.createEnvironment(userId);
+    const SaleOrder = env.model('sale.order');
+
+    // Supprimer les lignes de commande d'abord
+    const lineTable = getTableName('sale.order.line');
+    const orderIdField = getIdField('sale.order');
+    await pool.query(`DELETE FROM ${lineTable} WHERE ${orderIdField} = $1`, [req.params.id]);
+
+    // Supprimer la commande
+    await SaleOrder.unlink([req.params.id]);
+
+    return sendSuccess(res, { message: 'Order deleted' });
+  } catch (error) {
+    return sendError(res, error.message, 500);
+  }
+};
+
+/**
+ * POST /api/sale/orders/:id/confirm - Confirme une commande
+ */
+export const confirmSaleOrder = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const env = registry.createEnvironment(userId);
+    const SaleOrder = env.model('sale.order');
+
+    await SaleOrder.action_confirm([req.params.id]);
+    const order = await SaleOrder.read([req.params.id], {
+      loadRelations: {
+        many2one: true,
+        one2many: ['order_line'],
+        many2oneFields: ['partner_id']
+      }
+    });
+
+    return sendSuccess(res, { data: order[0] });
+  } catch (error) {
+    return sendError(res, error.message, 500);
+  }
+};
+
+/**
+ * POST /api/sale/orders/:id/cancel - Annule une commande
+ */
+export const cancelSaleOrder = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const env = registry.createEnvironment(userId);
+    const SaleOrder = env.model('sale.order');
+
+    await SaleOrder.action_cancel([req.params.id]);
+    const order = await SaleOrder.read([req.params.id], {
+      loadRelations: {
+        many2one: true,
+        one2many: ['order_line'],
+        many2oneFields: ['partner_id']
+      }
+    });
+
+    return sendSuccess(res, { data: order[0] });
+  } catch (error) {
+    return sendError(res, error.message, 500);
+  }
+};
+
+/**
+ * GET /api/sale/orders/:id/lines - Obtient les lignes d'une commande
+ */
+export const getSaleOrderLines = async (req, res) => {
+  try {
+    const lineTable = getTableName('sale.order.line');
+    const orderIdField = getIdField('sale.order');
+    const lineIdField = getIdField('sale.order.line');
+    const orderTable = getTableName('sale.order');
+    const orderIdFieldInLine = mapField('sale.order.line', 'order_id');
+    
+    const query = `
+      SELECT 
+        l.*,
+        a.nom_article as product_name,
+        a.reference as product_code
+      FROM ${lineTable} l
+      LEFT JOIN articles a ON l.product_id = a.id_article
+      WHERE l.${orderIdFieldInLine} = $1
+      ORDER BY l.${lineIdField} ASC
+    `;
+    
+    const result = await pool.query(query, [req.params.id]);
+    
+    return sendSuccess(res, { data: result.rows });
+  } catch (error) {
+    return sendError(res, error.message, 500);
+  }
+};
+
+/**
+ * POST /api/sale/orders/:id/lines - Crée une ligne de commande
+ */
+export const createSaleOrderLine = async (req, res) => {
+  try {
+    const lineTable = getTableName('sale.order.line');
+    const orderIdFieldInLine = mapField('sale.order.line', 'order_id');
+    
+    const insertQuery = `
+      INSERT INTO ${lineTable} (
+        ${orderIdFieldInLine}, product_id, quantity, price_unit, price_subtotal,
+        created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+      RETURNING *
+    `;
+    
+    const priceSubtotal = (req.body.price_unit || 0) * (req.body.quantity || 1);
+    const result = await pool.query(insertQuery, [
+      req.params.id,
+      req.body.product_id || req.body.product_id?.[0],
+      req.body.quantity || 1,
+      req.body.price_unit || 0,
+      priceSubtotal
+    ]);
+    
+    return sendSuccess(res, { data: result.rows[0] }, 201);
+  } catch (error) {
+    return sendError(res, error.message, 500);
+  }
+};
+
+/**
+ * PUT /api/sale/orders/:id/lines/:lineId - Modifie une ligne de commande
+ */
+export const updateSaleOrderLine = async (req, res) => {
+  try {
+    const lineTable = getTableName('sale.order.line');
+    const lineIdField = getIdField('sale.order.line');
+    const orderIdFieldInLine = mapField('sale.order.line', 'order_id');
+    
+    const priceSubtotal = (req.body.price_unit || 0) * (req.body.quantity || 1);
+    
+    const updateQuery = `
+      UPDATE ${lineTable}
+      SET 
+        product_id = $1,
+        quantity = $2,
+        price_unit = $3,
+        price_subtotal = $4,
+        updated_at = NOW()
+      WHERE ${lineIdField} = $5 AND ${orderIdFieldInLine} = $6
+      RETURNING *
+    `;
+    
+    const result = await pool.query(updateQuery, [
+      req.body.product_id || req.body.product_id?.[0],
+      req.body.quantity || 1,
+      req.body.price_unit || 0,
+      priceSubtotal,
+      req.params.lineId,
+      req.params.id
+    ]);
+    
+    if (result.rows.length === 0) {
+      return sendError(res, 'Order line not found', 404);
+    }
+    
+    return sendSuccess(res, { data: result.rows[0] });
+  } catch (error) {
+    return sendError(res, error.message, 500);
+  }
+};
+
+/**
+ * DELETE /api/sale/orders/:id/lines/:lineId - Supprime une ligne de commande
+ */
+export const deleteSaleOrderLine = async (req, res) => {
+  try {
+    const lineTable = getTableName('sale.order.line');
+    const lineIdField = getIdField('sale.order.line');
+    const orderIdFieldInLine = mapField('sale.order.line', 'order_id');
+    
+    const deleteQuery = `
+      DELETE FROM ${lineTable}
+      WHERE ${lineIdField} = $1 AND ${orderIdFieldInLine} = $2
+      RETURNING *
+    `;
+    
+    const result = await pool.query(deleteQuery, [req.params.lineId, req.params.id]);
+    
+    if (result.rows.length === 0) {
+      return sendError(res, 'Order line not found', 404);
+    }
+    
+    return sendSuccess(res, { message: 'Order line deleted' });
+  } catch (error) {
+    return sendError(res, error.message, 500);
+  }
+};

@@ -1,0 +1,57 @@
+{
+  "clients": [
+    {
+      "group": "base.group_user",
+      "perm_read": true,
+      "perm_write": false,
+      "perm_create": false,
+      "perm_unlink": false
+    },
+    {
+      "group": "sales.group_sale_salesman",
+      "perm_read": true,
+      "perm_write": true,
+      "perm_create": true,
+      "perm_unlink": false
+    },
+    {
+      "group": "sales.group_sale_manager",
+      "perm_read": true,
+      "perm_write": true,
+      "perm_create": true,
+      "perm_unlink": true
+    }
+  ],
+  "adresses_client": [
+    {
+      "group": "base.group_user",
+      "perm_read": true,
+      "perm_write": false,
+      "perm_create": false,
+      "perm_unlink": false
+    },
+    {
+      "group": "sales.group_sale_salesman",
+      "perm_read": true,
+      "perm_write": true,
+      "perm_create": true,
+      "perm_unlink": true
+    }
+  ],
+  "contacts_client": [
+    {
+      "group": "base.group_user",
+      "perm_read": true,
+      "perm_write": false,
+      "perm_create": false,
+      "perm_unlink": false
+    },
+    {
+      "group": "sales.group_sale_salesman",
+      "perm_read": true,
+      "perm_write": true,
+      "perm_create": true,
+      "perm_unlink": true
+    }
+  ]
+}

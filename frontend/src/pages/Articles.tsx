@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Package, Plus, Edit, Trash2, Search, RefreshCw, Upload, Image as ImageIcon, Eye, CheckSquare, XSquare, Save, FileText, Settings, Tag, X, Warehouse, TrendingUp, History, List, Grid, BarChart3 } from 'lucide-react';
-import { produitsService } from '../services/api';
+import { Package, Plus, Edit, Trash2, Search, RefreshCw, Upload, Image as ImageIcon, Eye, CheckSquare, XSquare, Save, FileText, Settings, Tag, X, Warehouse, TrendingUp, History, List, Grid, BarChart3, ArrowLeft } from 'lucide-react';
+import { produitsService, articlesService, parametresCatalogueService, modelesService } from '../services/api';
 import { genererRefCommerciale, genererRefFabrication } from '../utils/references';
 import api from '../services/api';
 
@@ -58,9 +58,14 @@ interface Article {
   nombre_couleur: string;
   code_nombre_couleur: string;
   type_tissage: string;
+  id_tissage?: number;
+  code_type_tissage?: string;
   dimensions: string;
   code_dimensions: string;
+  id_dimension?: number;
   type_finition: string;
+  code_type_finition?: string;
+  id_finition?: number;
   code_selecteur_01?: string;
   code_selecteur_02?: string;
   code_selecteur_03?: string;
@@ -68,9 +73,16 @@ interface Article {
   code_selecteur_05?: string;
   code_selecteur_06?: string;
   couleur_article?: string;
+  code_couleur_article?: string;
   designation_article?: string; // Désignation de l'article (générée automatiquement)
   designation_auto?: boolean; // Indique si la désignation est générée automatiquement
   description_article?: string;
+  description_auto?: boolean; // Indique si la description est générée automatiquement
+  couleur_auto?: boolean; // Indique si la couleur est générée automatiquement
+  prix_revient?: number;
+  prix_vente?: number;
+  qte_minimal_stock?: number;
+  vente_ecommerce?: boolean;
   total_commander: number;
   total_envoyer: number;
   total_a_fabriquer: number;
@@ -90,6 +102,11 @@ const Articles: React.FC = () => {
   const [articles, setArticles] = useState<Article[]>([]);
   const [modeles, setModeles] = useState<Modele[]>([]);
   const [attributs, setAttributs] = useState<Attribut[]>([]);
+  const [typesTissages, setTypesTissages] = useState<any[]>([]);
+  const [dimensions, setDimensions] = useState<any[]>([]);
+  const [finitions, setFinitions] = useState<any[]>([]);
+  const [couleurs, setCouleurs] = useState<any[]>([]);
+  const [nombreCouleurs, setNombreCouleurs] = useState<any[]>([]);
   const [selectedArticleForStock, setSelectedArticleForStock] = useState<Article | null>(null);
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [showStockDetail, setShowStockDetail] = useState(false);
@@ -103,6 +120,7 @@ const Articles: React.FC = () => {
   const [photoPreview, setPhotoPreview] = useState<string>('');
   // Plus besoin d'onglet paramètres - c'est au niveau de la catégorie maintenant
   const [affichageMode, setAffichageMode] = useState<'ligne' | 'catalogue'>('ligne'); // Simple toggle ligne/catalogue
+  const [selectedModeleCatalogue, setSelectedModeleCatalogue] = useState<string | null>(null); // Modèle sélectionné dans le mode catalogue
 
   const [formData, setFormData] = useState<Article>({
     ref_commercial: '',
@@ -114,9 +132,14 @@ const Articles: React.FC = () => {
     nombre_couleur: '',
     code_nombre_couleur: '',
     type_tissage: '',
+    id_tissage: undefined,
+    code_type_tissage: '',
     dimensions: '',
     code_dimensions: '',
+    id_dimension: undefined,
     type_finition: '',
+    code_type_finition: '',
+    id_finition: undefined,
     code_selecteur_01: '',
     code_selecteur_02: '',
     code_selecteur_03: '',
@@ -124,9 +147,16 @@ const Articles: React.FC = () => {
     code_selecteur_05: '',
     code_selecteur_06: '',
     couleur_article: '',
+    code_couleur_article: '',
     designation_article: '',
     designation_auto: true,
     description_article: '',
+    description_auto: true, // Génération automatique de la description
+    couleur_auto: true, // Génération automatique de la couleur article
+    prix_revient: 0,
+    prix_vente: 0,
+    qte_minimal_stock: 0,
+    vente_ecommerce: false,
     total_commander: 0,
     total_envoyer: 0,
     total_a_fabriquer: 0,
@@ -222,7 +252,23 @@ const Articles: React.FC = () => {
       ];
       setModeles(mockModeles);
 
-      // Charger les attributs
+      // Charger les couleurs depuis l'API
+      try {
+        const couleursRes = await parametresCatalogueService.getCouleurs();
+        setCouleurs(couleursRes.data?.data || couleursRes.data || []);
+      } catch (error) {
+        console.error('Erreur chargement couleurs:', error);
+      }
+
+      // Charger les nombre de couleurs depuis l'API
+      try {
+        const nbCouleursRes = await parametresCatalogueService.getNombreCouleurs();
+        setNombreCouleurs(nbCouleursRes.data?.data || nbCouleursRes.data || []);
+      } catch (error) {
+        console.error('Erreur chargement nombre de couleurs:', error);
+      }
+
+      // Charger les attributs (pour compatibilité)
       try {
         const attributsRes = await produitsService.getAttributs();
         setAttributs(attributsRes.data.data || []);
@@ -236,23 +282,51 @@ const Articles: React.FC = () => {
     }
   };
 
-  const handleModeleChange = (modeleId: number) => {
+  const handleModeleChange = async (modeleId: number) => {
     const modele = modeles.find(m => m.id_modele === modeleId);
     if (modele) {
-      setSelectedModele(modele);
-      setFormData({
-        ...formData,
-        id_modele: modele.id_modele, // Important : sauvegarder l'ID du modèle pour récupérer les prix
-        produit: modele.produit,
-        modele: modele.designation,
-        code_modele: modele.code_modele,
-        code_dimensions: Array.isArray(modele.code_dimensions) ? modele.code_dimensions[0] : modele.code_dimensions,
-        type_tissage: modele.type_tissage,
-        nombre_couleur: Array.isArray(modele.nombre_couleur) ? modele.nombre_couleur[0] : modele.nombre_couleur,
-        code_nombre_couleur: Array.isArray(modele.code_nombre_couleur) ? modele.code_nombre_couleur[0] : modele.code_nombre_couleur,
-        type_finition: modele.type_finition
-      });
-      genererReferences();
+      // Charger les détails complets du modèle depuis l'API
+      try {
+        const modeleRes = await modelesService.getModele(modeleId);
+        const modeleComplet = modeleRes.data?.data || modeleRes.data || modele;
+        setSelectedModele(modeleComplet);
+        
+        setFormData({
+          ...formData,
+          id_modele: modeleComplet.id || modele.id_modele,
+          modele: modeleComplet.libelle || modeleComplet.designation || modele.designation,
+          code_modele: modeleComplet.code_modele || modele.code_modele,
+          produit: modeleComplet.produit || modele.produit,
+          // Réinitialiser les autres champs pour forcer la sélection
+          code_dimensions: '',
+          id_dimension: undefined,
+          dimensions: '',
+          id_tissage: undefined,
+          code_type_tissage: '',
+          type_tissage: '',
+          id_finition: undefined,
+          code_type_finition: '',
+          type_finition: '',
+          code_nombre_couleur: '',
+          nombre_couleur: '',
+          code_selecteur_01: '',
+          code_selecteur_02: '',
+          code_selecteur_03: '',
+          code_selecteur_04: '',
+          code_selecteur_05: '',
+          code_selecteur_06: ''
+        });
+      } catch (error) {
+        console.error('Erreur chargement modèle:', error);
+        setSelectedModele(modele);
+        setFormData({
+          ...formData,
+          id_modele: modele.id_modele,
+          modele: modele.designation,
+          code_modele: modele.code_modele,
+          produit: modele.produit
+        });
+      }
     }
   };
 
@@ -307,13 +381,63 @@ const Articles: React.FC = () => {
     return parts.filter(p => p.trim() !== '').join(' + ');
   };
 
+  // Générer la couleur article (concatenation des couleurs composées)
+  const genererCouleurArticle = (): string => {
+    const selecteurs = [
+      formData.code_selecteur_01,
+      formData.code_selecteur_02,
+      formData.code_selecteur_03,
+      formData.code_selecteur_04,
+      formData.code_selecteur_05,
+      formData.code_selecteur_06
+    ].filter(s => s && s.trim() !== '');
+
+    if (selecteurs.length === 0) return '';
+
+    const couleurAttribut = attributs.find(a => 
+      a.code_attribut.toLowerCase().includes('coul') || 
+      a.libelle.toLowerCase().includes('couleur')
+    );
+
+    const couleurs = selecteurs.map(code => {
+      const couleurValeur = couleurAttribut?.valeurs_possibles?.find(v => v.code === code);
+      return couleurValeur?.libelle || code;
+    });
+
+    return couleurs.join(' ');
+  };
+
+  // Fonction pour obtenir les couleurs possibles depuis les attributs
+  const getCouleursPossibles = () => {
+    const couleurAttribut = attributs.find(a => 
+      a.code_attribut.toLowerCase().includes('coul') || 
+      a.libelle.toLowerCase().includes('couleur')
+    );
+    return couleurAttribut?.valeurs_possibles || [];
+  };
+
+  // Générer la description article : Description du modèle + " Couleur " + Couleur Article
+  const genererDescriptionArticle = (): string => {
+    const descriptionModele = selectedModele?.designation || formData.modele || '';
+    const couleurArticle = genererCouleurArticle();
+    
+    if (!descriptionModele) return '';
+    
+    if (couleurArticle) {
+      return `${descriptionModele} Couleur ${couleurArticle}`;
+    }
+    return descriptionModele;
+  };
+
   const genererReferences = () => {
-    if (!selectedModele) return;
+    if (!selectedModele || !formData.code_modele || !formData.code_dimensions || !formData.code_nombre_couleur) {
+      return;
+    }
 
     const articleData = {
-      code_modele: formData.code_modele || selectedModele.code_modele,
-      code_dimensions: formData.code_dimensions || selectedModele.code_dimensions,
-      code_nombre_couleur: formData.code_nombre_couleur || selectedModele.code_nombre_couleur,
+      code_modele: formData.code_modele,
+      code_dimensions: formData.code_dimensions,
+      code_nombre_couleur: formData.code_nombre_couleur,
       code_selecteur_01: formData.code_selecteur_01 || '',
       code_selecteur_02: formData.code_selecteur_02 || '',
       code_selecteur_03: formData.code_selecteur_03 || '',
@@ -324,16 +448,32 @@ const Articles: React.FC = () => {
 
     const refCommerciale = genererRefCommerciale(articleData);
     const refFabrication = genererRefFabrication(articleData);
+    // Code couleur article généré automatiquement à partir des sélecteurs
+    const codeCouleurArticle = [
+      articleData.code_selecteur_01,
+      articleData.code_selecteur_02,
+      articleData.code_selecteur_03,
+      articleData.code_selecteur_04,
+      articleData.code_selecteur_05,
+      articleData.code_selecteur_06
+    ].filter(Boolean).join('');
+    
+    // Générer couleur et description seulement si l'option auto est activée
+    const couleurArticle = formData.couleur_auto !== false ? genererCouleurArticle() : formData.couleur_article;
+    const descriptionArticle = formData.description_auto !== false ? genererDescriptionArticle() : formData.description_article;
 
     setFormData({
       ...formData,
       ref_commercial: refCommerciale,
       ref_fabrication: refFabrication,
+      code_couleur_article: codeCouleurArticle,
+      couleur_article: couleurArticle,
+      description_article: descriptionArticle,
       designation_article: formData.designation_auto ? genererDesignationArticle() : formData.designation_article
     });
   };
 
-  // Mettre à jour la désignation automatiquement quand les éléments changent
+  // Mettre à jour automatiquement quand les éléments changent
   useEffect(() => {
     if (selectedModele && formData.designation_auto) {
       const autoDesignation = genererDesignationArticle();
@@ -341,11 +481,28 @@ const Articles: React.FC = () => {
     }
   }, [formData.modele, formData.dimensions, formData.code_dimensions, formData.code_selecteur_01, formData.code_selecteur_02, formData.code_selecteur_03, formData.code_selecteur_04, formData.code_selecteur_05, formData.code_selecteur_06, selectedModele, attributs]);
 
+  // Générer la couleur article automatiquement si l'option est activée
   useEffect(() => {
-    if (selectedModele) {
+    if (formData.couleur_auto !== false && (formData.code_selecteur_01 || formData.code_selecteur_02 || formData.code_selecteur_03)) {
+      const autoCouleur = genererCouleurArticle();
+      setFormData(prev => ({ ...prev, couleur_article: autoCouleur }));
+    }
+  }, [formData.code_selecteur_01, formData.code_selecteur_02, formData.code_selecteur_03, formData.code_selecteur_04, formData.code_selecteur_05, formData.code_selecteur_06, formData.couleur_auto, couleurs]);
+
+  // Générer la description article automatiquement si l'option est activée
+  useEffect(() => {
+    if (formData.description_auto !== false && selectedModele && formData.couleur_article) {
+      const autoDescription = genererDescriptionArticle();
+      setFormData(prev => ({ ...prev, description_article: autoDescription }));
+    }
+  }, [formData.couleur_article, selectedModele, formData.description_auto]);
+
+  // Générer les références automatiquement
+  useEffect(() => {
+    if (selectedModele && formData.code_modele && formData.code_dimensions && formData.code_nombre_couleur) {
       genererReferences();
     }
-  }, [formData.code_selecteur_01, formData.code_selecteur_02, formData.code_selecteur_03, formData.code_selecteur_04, formData.code_selecteur_05, formData.code_selecteur_06]);
+  }, [formData.code_modele, formData.code_dimensions, formData.code_nombre_couleur, formData.code_selecteur_01, formData.code_selecteur_02, formData.code_selecteur_03, formData.code_selecteur_04, formData.code_selecteur_05, formData.code_selecteur_06, selectedModele]);
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -457,10 +614,7 @@ const Articles: React.FC = () => {
   };
 
   // Récupérer les valeurs possibles pour les couleurs depuis les attributs
-  const getCouleursPossibles = () => {
-    const attributCouleur = attributs.find(a => a.code_attribut === 'COULEUR' || a.libelle.toLowerCase().includes('couleur'));
-    return attributCouleur?.valeurs_possibles || [];
-  };
+  // Les couleurs sont maintenant chargées depuis l'API dans loadData
 
   const filteredArticles = articles.filter(a =>
     a.ref_commercial?.toLowerCase().includes(search.toLowerCase()) ||
@@ -471,8 +625,28 @@ const Articles: React.FC = () => {
     if (filters.modele && a.code_modele !== filters.modele) return false;
     if (filters.actif && a.actif.toString() !== filters.actif) return false;
     if (filters.catalogue && a.dans_catalogue_produit.toString() !== filters.catalogue) return false;
+    // Dans le mode catalogue, filtrer par modèle sélectionné
+    if (affichageMode === 'catalogue' && selectedModeleCatalogue && a.code_modele !== selectedModeleCatalogue) return false;
     return true;
   });
+
+  // Articles du catalogue uniquement
+  const articlesCatalogue = articles.filter(a => a.dans_catalogue_produit === true && a.actif === true);
+
+  // Grouper les articles du catalogue par modèle
+  const modelesCatalogue = Array.from(new Set(articlesCatalogue.map(a => a.code_modele)))
+    .map(codeModele => {
+      const articlesDuModele = articlesCatalogue.filter(a => a.code_modele === codeModele);
+      const premierArticle = articlesDuModele[0];
+      return {
+        code_modele: codeModele,
+        modele: premierArticle?.modele || '',
+        produit: premierArticle?.produit || '',
+        nombre_articles: articlesDuModele.length,
+        photo: premierArticle?.photo_article || null
+      };
+    })
+    .sort((a, b) => a.modele.localeCompare(b.modele));
 
   const modelesUniques = Array.from(new Set(modeles.map(m => m.code_modele)));
 
@@ -617,12 +791,130 @@ const Articles: React.FC = () => {
                 </div>
               </div>
 
-              {/* Section Attributs et Sélecteurs */}
+              {/* Section Attributs Obligatoires */}
               {selectedModele && (
+                <div className="border-b pb-4">
+                  <h3 className="text-lg font-semibold mb-4 text-gray-700">Attributs Obligatoires</h3>
+                  <div className="grid grid-cols-3 gap-4 mb-4">
+                    {/* Type de Tissage */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Type de Tissage *</label>
+                      <select
+                        value={formData.id_tissage || ''}
+                        onChange={(e) => {
+                          const tissageId = e.target.value ? parseInt(e.target.value) : undefined;
+                          const tissage = typesTissages.find(t => t.id === tissageId);
+                          setFormData({ 
+                            ...formData, 
+                            id_tissage: tissageId,
+                            code_type_tissage: tissage?.code || '',
+                            type_tissage: tissage?.libelle || ''
+                          });
+                          genererReferences();
+                        }}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        required
+                      >
+                        <option value="">Sélectionner...</option>
+                        {typesTissages.map(t => (
+                          <option key={t.id} value={t.id}>{t.code} - {t.libelle}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Dimensions */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Dimensions *</label>
+                      <select
+                        value={formData.id_dimension || ''}
+                        onChange={(e) => {
+                          const dimensionId = e.target.value ? parseInt(e.target.value) : undefined;
+                          const dimension = dimensions.find(d => d.id === dimensionId);
+                          setFormData({ 
+                            ...formData, 
+                            id_dimension: dimensionId,
+                            code_dimensions: dimension?.code || '',
+                            dimensions: dimension?.libelle || ''
+                          });
+                          genererReferences();
+                        }}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        required
+                      >
+                        <option value="">Sélectionner...</option>
+                        {dimensions.map(d => (
+                          <option key={d.id} value={d.id}>{d.code} - {d.libelle}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Type de Finition */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Type de Finition *</label>
+                      <select
+                        value={formData.id_finition || ''}
+                        onChange={(e) => {
+                          const finitionId = e.target.value ? parseInt(e.target.value) : undefined;
+                          const finition = finitions.find(f => f.id === finitionId);
+                          setFormData({ 
+                            ...formData, 
+                            id_finition: finitionId,
+                            code_type_finition: finition?.code || '',
+                            type_finition: finition?.libelle || ''
+                          });
+                          genererReferences();
+                        }}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        required
+                      >
+                        <option value="">Sélectionner...</option>
+                        {finitions.map(f => (
+                          <option key={f.id} value={f.id}>{f.code} - {f.libelle}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Nombre de Couleurs */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de Couleurs *</label>
+                    <select
+                      value={formData.code_nombre_couleur || ''}
+                      onChange={(e) => {
+                        const codeNbCouleur = e.target.value;
+                        const nbCouleur = nombreCouleurs.find(nc => nc.code === codeNbCouleur);
+                        setFormData({ 
+                          ...formData, 
+                          code_nombre_couleur: codeNbCouleur,
+                          nombre_couleur: nbCouleur?.libelle || '',
+                          // Réinitialiser les selecteurs
+                          code_selecteur_01: '',
+                          code_selecteur_02: '',
+                          code_selecteur_03: '',
+                          code_selecteur_04: '',
+                          code_selecteur_05: '',
+                          code_selecteur_06: ''
+                        });
+                        genererReferences();
+                      }}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      required
+                    >
+                      <option value="">Sélectionner...</option>
+                      {nombreCouleurs.map(nc => (
+                        <option key={nc.code} value={nc.code}>{nc.code} - {nc.libelle}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {/* Section Sélection des Couleurs (Sélecteurs) */}
+              {selectedModele && formData.code_nombre_couleur && (
                 <div className="border-b pb-4">
                   <h3 className="text-lg font-semibold mb-4 text-gray-700">Sélection des Couleurs (Sélecteurs)</h3>
                   <div className="grid grid-cols-2 gap-4">
-                    {selectedModele.code_nombre_couleur === 'U' && (
+                    {formData.code_nombre_couleur === 'U' && (
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Code Selecteur 01 (Couleur Unique) *</label>
                         <select
@@ -635,13 +927,15 @@ const Articles: React.FC = () => {
                           required
                         >
                           <option value="">Sélectionner...</option>
-                          {getCouleursPossibles().map(c => (
-                            <option key={c.code} value={c.code}>{c.code} - {c.libelle}</option>
+                          {couleurs.map(c => (
+                            <option key={c.code_commercial || c.code} value={c.code_commercial || c.code}>
+                              {c.code_commercial || c.code} - {c.nom || c.libelle}
+                            </option>
                           ))}
                         </select>
                       </div>
                     )}
-                    {selectedModele.code_nombre_couleur === 'B' && (
+                    {formData.code_nombre_couleur === 'B' && (
                       <>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Code Selecteur 01 (Couleur 1) *</label>
@@ -655,8 +949,10 @@ const Articles: React.FC = () => {
                             required
                           >
                             <option value="">Sélectionner...</option>
-                            {getCouleursPossibles().map(c => (
-                              <option key={c.code} value={c.code}>{c.code} - {c.libelle}</option>
+                            {couleurs.map(c => (
+                              <option key={c.code_commercial || c.code} value={c.code_commercial || c.code}>
+                                {c.code_commercial || c.code} - {c.nom || c.libelle}
+                              </option>
                             ))}
                           </select>
                         </div>
@@ -672,19 +968,21 @@ const Articles: React.FC = () => {
                             required
                           >
                             <option value="">Sélectionner...</option>
-                            {getCouleursPossibles().map(c => (
-                              <option key={c.code} value={c.code}>{c.code} - {c.libelle}</option>
+                            {couleurs.map(c => (
+                              <option key={c.code_commercial || c.code} value={c.code_commercial || c.code}>
+                                {c.code_commercial || c.code} - {c.nom || c.libelle}
+                              </option>
                             ))}
                           </select>
                         </div>
                       </>
                     )}
-                    {['T', 'Q', 'C', 'S'].includes(selectedModele.code_nombre_couleur) && (
+                    {['T', 'Q', 'C', 'S'].includes(formData.code_nombre_couleur) && (
                       <>
                         {[1, 2, 3, 4, 5, 6].slice(0, 
-                          selectedModele.code_nombre_couleur === 'T' ? 3 :
-                          selectedModele.code_nombre_couleur === 'Q' ? 4 :
-                          selectedModele.code_nombre_couleur === 'C' ? 5 : 6
+                          formData.code_nombre_couleur === 'T' ? 3 :
+                          formData.code_nombre_couleur === 'Q' ? 4 :
+                          formData.code_nombre_couleur === 'C' ? 5 : 6
                         ).map(num => (
                           <div key={num}>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -750,14 +1048,45 @@ const Articles: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Couleur Article</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-sm font-medium text-gray-700">Couleur Article</label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={formData.couleur_auto !== false}
+                          onChange={(e) => {
+                            const auto = e.target.checked;
+                            setFormData({ 
+                              ...formData, 
+                              couleur_auto: auto,
+                              couleur_article: auto ? genererCouleurArticle() : formData.couleur_article
+                            });
+                            genererReferences();
+                          }}
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                        <span className="text-xs text-gray-600">Génération automatique</span>
+                      </label>
+                    </div>
                     <input
                       type="text"
-                      value={formData.couleur_article}
-                      onChange={(e) => setFormData({ ...formData, couleur_article: e.target.value })}
+                      value={formData.couleur_article || ''}
+                      onChange={(e) => {
+                        setFormData({ 
+                          ...formData, 
+                          couleur_article: e.target.value,
+                          couleur_auto: false
+                        });
+                        genererReferences();
+                      }}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      placeholder="Ex: Ecru Rayé Naturel"
+                      placeholder="Ex: Ecru Rayé Naturel (généré automatiquement si activé)"
                     />
+                    {formData.couleur_auto !== false && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Format automatique : {genererCouleurArticle()}
+                      </p>
+                    )}
                   </div>
                   <div className="col-span-2">
                     <div className="flex items-center justify-between mb-2">
@@ -797,14 +1126,125 @@ const Articles: React.FC = () => {
                     </p>
                   </div>
                   <div className="col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Description Article</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-sm font-medium text-gray-700">Description Article</label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={formData.description_auto !== false}
+                          onChange={(e) => {
+                            const auto = e.target.checked;
+                            setFormData({ 
+                              ...formData, 
+                              description_auto: auto,
+                              description_article: auto ? genererDescriptionArticle() : formData.description_article
+                            });
+                            genererReferences();
+                          }}
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                        <span className="text-xs text-gray-600">Génération automatique</span>
+                      </label>
+                    </div>
                     <textarea
-                      value={formData.description_article}
-                      onChange={(e) => setFormData({ ...formData, description_article: e.target.value })}
+                      value={formData.description_article || ''}
+                      onChange={(e) => {
+                        setFormData({ 
+                          ...formData, 
+                          description_article: e.target.value,
+                          description_auto: false
+                        });
+                        genererReferences();
+                      }}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                       rows={3}
-                      placeholder="Description détaillée de l'article"
+                      placeholder="Description de l'article (générée automatiquement si activé : Description du modèle + ' Couleur ' + Couleur Article)"
                     />
+                    {formData.description_auto !== false && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Format automatique : {genererDescriptionArticle()}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Section Prix et Catégorie */}
+              <div className="border-b pb-4">
+                <h3 className="text-lg font-semibold mb-4 text-gray-700">Prix et Catégorie</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Prix de Revient (HT) *</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={formData.prix_revient || ''}
+                      onChange={(e) => setFormData({ ...formData, prix_revient: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      placeholder="0.00"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Prix de Vente (HT) *</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={formData.prix_vente || ''}
+                      onChange={(e) => setFormData({ ...formData, prix_vente: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      placeholder="0.00"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Catégorie *</label>
+                    <select
+                      value={formData.dans_catalogue_produit ? 'catalogue' : 'hors_catalogue'}
+                      onChange={(e) => {
+                        const dansCatalogue = e.target.value === 'catalogue';
+                        setFormData({ 
+                          ...formData, 
+                          dans_catalogue_produit: dansCatalogue,
+                          qte_minimal_stock: dansCatalogue ? (formData.qte_minimal_stock || 0) : 0
+                        });
+                      }}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      required
+                    >
+                      <option value="catalogue">Catalogue</option>
+                      <option value="hors_catalogue">Hors Catalogue</option>
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Les articles du catalogue seront affichés dans la partie catalogue
+                    </p>
+                  </div>
+                  {formData.dans_catalogue_produit && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Quantité Minimale Stock *</label>
+                      <input
+                        type="number"
+                        value={formData.qte_minimal_stock || 0}
+                        onChange={(e) => setFormData({ ...formData, qte_minimal_stock: parseInt(e.target.value) || 0 })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        min="0"
+                        required
+                      />
+                    </div>
+                  )}
+                  <div className="col-span-2">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.vente_ecommerce || false}
+                        onChange={(e) => setFormData({ ...formData, vente_ecommerce: e.target.checked })}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-sm font-medium text-gray-700">Vente E-commerce</span>
+                    </label>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Cocher si cet article doit être mis en ligne sur le site e-commerce
+                    </p>
                   </div>
                 </div>
               </div>
@@ -825,9 +1265,9 @@ const Articles: React.FC = () => {
                           onChange={(e) => {
                             const newComposition = { ...formData.composition_selecteurs };
                             if (e.target.checked) {
-                              newComposition[formData.code_selecteur_01] = 'required';
+                              newComposition[formData.code_selecteur_01!] = 'required';
                             } else {
-                              delete newComposition[formData.code_selecteur_01];
+                              delete newComposition[formData.code_selecteur_01!];
                             }
                             setFormData({ ...formData, composition_selecteurs: newComposition });
                           }}
@@ -846,9 +1286,9 @@ const Articles: React.FC = () => {
                           onChange={(e) => {
                             const newComposition = { ...formData.composition_selecteurs };
                             if (e.target.checked) {
-                              newComposition[formData.code_selecteur_02] = 'required';
+                              newComposition[formData.code_selecteur_02!] = 'required';
                             } else {
-                              delete newComposition[formData.code_selecteur_02];
+                              delete newComposition[formData.code_selecteur_02!];
                             }
                             setFormData({ ...formData, composition_selecteurs: newComposition });
                           }}
@@ -867,9 +1307,9 @@ const Articles: React.FC = () => {
                           onChange={(e) => {
                             const newComposition = { ...formData.composition_selecteurs };
                             if (e.target.checked) {
-                              newComposition[formData.code_selecteur_03] = 'required';
+                              newComposition[formData.code_selecteur_03!] = 'required';
                             } else {
-                              delete newComposition[formData.code_selecteur_03];
+                              delete newComposition[formData.code_selecteur_03!];
                             }
                             setFormData({ ...formData, composition_selecteurs: newComposition });
                           }}
@@ -1097,45 +1537,41 @@ const Articles: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex gap-2">
                       <button
-                        onClick={async () => {
-                          try {
-                            if (article.id_article) {
-                              const result = await articlesService.getArticle(article.id_article);
-                              if (result.data?.data) {
-                                setSelectedArticle(result.data.data);
-                              }
-                            } else {
-                              setSelectedArticle(article);
-                            }
-                          } catch (error: any) {
-                            console.error('Erreur chargement article:', error);
-                            setSelectedArticle(article);
-                          }
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (article.id_article) navigate(`/articles/${article.id_article}`);
                         }}
-                        className="text-blue-600 hover:text-blue-700"
-                        title="Consulter"
+                        className="text-green-600 hover:text-green-700"
+                        title="Voir les détails"
                       >
                         <Eye className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setSelectedArticleForStock(article);
                           setShowStockDetail(true);
                         }}
-                        className="text-green-600 hover:text-green-700"
+                        className="text-blue-600 hover:text-blue-700"
                         title="Voir Stock"
                       >
                         <Warehouse className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => article.id_article && handleEdit(article)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          article.id_article && handleEdit(article);
+                        }}
                         className="text-gray-600 hover:text-gray-700"
                         title="Modifier"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => article.id_article && handleDelete(article.id_article)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          article.id_article && handleDelete(article.id_article);
+                        }}
                         className="text-red-600 hover:text-red-700"
                         title="Supprimer"
                       >
@@ -1150,9 +1586,149 @@ const Articles: React.FC = () => {
         </div>
         ) : (
           // Mode Catalogue
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredArticles.map((article) => (
-              <div key={article.id_article} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+          selectedModeleCatalogue ? (
+            // Affichage des articles du modèle sélectionné
+            <div>
+              <div className="flex items-center gap-4 mb-6">
+                <button
+                  onClick={() => setSelectedModeleCatalogue(null)}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Retour aux modèles
+                </button>
+                <h2 className="text-2xl font-bold text-gray-800">
+                  Articles du modèle : {modelesCatalogue.find(m => m.code_modele === selectedModeleCatalogue)?.modele}
+                </h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {filteredArticles.filter(a => a.dans_catalogue_produit === true && a.code_modele === selectedModeleCatalogue).map((article) => (
+                  <div 
+                    key={article.id_article} 
+                    className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+                    onClick={() => {
+                      if (article.id_article) navigate(`/articles/${article.id_article}`);
+                    }}
+                  >
+                    <div className="h-48 bg-gray-200 flex items-center justify-center overflow-hidden">
+                      {article.photo_article ? (
+                        <img src={article.photo_article} alt={article.designation_article} className="w-full h-full object-cover" />
+                      ) : (
+                        <ImageIcon className="w-16 h-16 text-gray-400" />
+                      )}
+                    </div>
+                    <div className="p-4">
+                      <h3 className="font-bold text-lg text-gray-800 mb-2">{article.designation_article || article.modele}</h3>
+                      <div className="space-y-1 text-sm text-gray-600 mb-3">
+                        <p><span className="font-medium">Ref Commercial:</span> <span className="font-mono text-xs">{article.ref_commercial}</span></p>
+                        <p><span className="font-medium">Ref Fabrication:</span> <span className="font-mono text-xs">{article.ref_fabrication}</span></p>
+                        <p><span className="font-medium">Couleur:</span> {article.couleur_article || 'N/A'}</p>
+                        <p><span className="font-medium">Dimensions:</span> {article.dimensions || 'N/A'}</p>
+                        {article.prix_vente && (
+                          <p><span className="font-medium">Prix:</span> {article.prix_vente.toFixed(2)} €</p>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between mb-3">
+                        {article.stock_total !== undefined && (
+                          <div className={`px-2 py-1 rounded text-xs font-medium ${
+                            article.stock_total > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          }`}>
+                            Stock: {article.stock_total}
+                          </div>
+                        )}
+                        {article.dans_catalogue_produit && (
+                          <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">Catalogue</span>
+                        )}
+                      </div>
+                      <div className="flex gap-2 pt-3 border-t" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => {
+                            if (article.id_article) navigate(`/articles/${article.id_article}`);
+                          }}
+                          className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
+                        >
+                          <Eye className="w-4 h-4" />
+                          Voir
+                        </button>
+                        <button
+                          onClick={() => handleEdit(article)}
+                          className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                        >
+                          <Edit className="w-4 h-4" />
+                          Modifier
+                        </button>
+                        {article.id_article && (
+                          <button
+                            onClick={() => handleDelete(article.id_article!)}
+                            className="px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : modelesCatalogue.length > 0 ? (
+            // Affichage des modèles du catalogue
+            <div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-6">Modèles du Catalogue</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {modelesCatalogue.map((modele) => (
+                  <div 
+                    key={modele.code_modele} 
+                    className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+                    onClick={() => setSelectedModeleCatalogue(modele.code_modele)}
+                  >
+                    <div className="h-48 bg-gray-200 flex items-center justify-center overflow-hidden">
+                      {modele.photo ? (
+                        <img src={modele.photo} alt={modele.modele} className="w-full h-full object-cover" />
+                      ) : (
+                        <ImageIcon className="w-16 h-16 text-gray-400" />
+                      )}
+                    </div>
+                    <div className="p-4">
+                      <h3 className="font-bold text-lg text-gray-800 mb-2">{modele.modele}</h3>
+                      <div className="space-y-1 text-sm text-gray-600 mb-3">
+                        <p><span className="font-medium">Code:</span> <span className="font-mono text-xs">{modele.code_modele}</span></p>
+                        <p><span className="font-medium">Produit:</span> {modele.produit}</p>
+                        <p><span className="font-medium">Nombre d'articles:</span> {modele.nombre_articles}</p>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedModeleCatalogue(modele.code_modele);
+                        }}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                      >
+                        <Eye className="w-4 h-4" />
+                        Voir les articles ({modele.nombre_articles})
+                      </button>
+                    </div>
+                  </div>
+                  ))}
+                </div>
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-gray-500">Aucun modèle avec des articles dans le catalogue.</p>
+            </div>
+          )
+        )}
+          
+          {/* Ancien affichage des articles - gardé pour référence mais non utilisé */}
+          {false && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredArticles.map((article) => (
+              <div 
+                key={article.id_article} 
+                className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+                onClick={() => {
+                  if (article.id_article) navigate(`/articles/${article.id_article}`);
+                }}
+              >
                 <div className="h-48 bg-gray-200 flex items-center justify-center overflow-hidden">
                   {article.photo_article ? (
                     <img src={article.photo_article} alt={article.designation_article} className="w-full h-full object-cover" />
@@ -1201,34 +1777,22 @@ const Articles: React.FC = () => {
                       <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">Catalogue</span>
                     )}
                   </div>
-                  <div className="flex gap-2 pt-3 border-t">
+                  <div className="flex gap-2 pt-3 border-t" onClick={(e) => e.stopPropagation()}>
                     <button
-                      onClick={async () => {
-                        try {
-                          if (article.id_article) {
-                            const result = await articlesService.getArticle(article.id_article);
-                            if (result.data?.data) {
-                              setSelectedArticle(result.data.data);
-                            }
-                          } else {
-                            setSelectedArticle(article);
-                          }
-                        } catch (error: any) {
-                          console.error('Erreur chargement article:', error);
-                          setSelectedArticle(article);
-                        }
+                      onClick={() => {
+                        if (article.id_article) navigate(`/articles/${article.id_article}`);
                       }}
-                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
                     >
                       <Eye className="w-4 h-4" />
-                      Consulter
+                      Voir
                     </button>
                     <button
                       onClick={() => handleEdit(article)}
-                      className="px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
-                      title="Modifier"
+                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
                     >
                       <Edit className="w-4 h-4" />
+                      Modifier
                     </button>
                     {article.id_article && (
                       <button

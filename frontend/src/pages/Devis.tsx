@@ -828,10 +828,16 @@ const Devis: React.FC = () => {
                       onClick={async () => {
                         if (window.confirm('Transformer ce devis en commande ?')) {
                           try {
-                            await devisService.transformerEnCommande(selectedDevis.id_devis);
-                            alert('Devis transformé en commande avec succès');
+                            const result = await devisService.transformerEnCommande(selectedDevis.id_devis);
+                            const commandeId = result.data?.data?.id_commande || result.data?.id_commande;
+                            const message = commandeId 
+                              ? `Devis transformé en commande avec succès !\nID Commande: ${commandeId}`
+                              : 'Devis transformé en commande avec succès !';
+                            alert(message);
                             setSelectedDevis(null);
                             loadData();
+                            // Optionnel : rediriger vers la commande créée
+                            // if (commandeId) navigate(`/commandes?highlight=${commandeId}`);
                           } catch (error: any) {
                             console.error('Erreur transformation:', error);
                             alert(error.response?.data?.error?.message || 'Erreur lors de la transformation');

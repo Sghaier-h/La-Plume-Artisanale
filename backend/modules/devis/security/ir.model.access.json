@@ -1,0 +1,10 @@
+{
+  "id": "access_devis",
+  "name": "Devis Access",
+  "model_id": "devis.devis",
+  "group_id": "base.group_user",
+  "perm_read": true,
+  "perm_write": true,
+  "perm_create": true,
+  "perm_unlink": true
+}

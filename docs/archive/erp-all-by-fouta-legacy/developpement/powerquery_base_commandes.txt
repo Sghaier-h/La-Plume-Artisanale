@@ -1,0 +1,656 @@
+let
+    // ========== CHARGEMENT DES SOURCES ==========
+    Source2025 = Excel.Workbook(Web.Contents("https://pmgtex.sharepoint.com/sites/LAPLUMEARTISANALEFABRICATION/Documents%20partages/Commande/Commandes%202025-2026.xlsx"), null, true),
+    Source2024 = Excel.Workbook(Web.Contents("https://pmgtex.sharepoint.com/sites/LAPLUMEARTISANALEFABRICATION/Documents%20partages/Commande/Commandes%202024-2025.xlsx"), null, true),
+    SourceCollecte = Excel.Workbook(Web.Contents("https://pmgtex.sharepoint.com/sites/LAPLUMEARTISANALE/Documents%20partages/Saisie/Donn%C3%A9e%20collecte.xlsx"), null, true),
+    SourceBOM = Excel.Workbook(Web.Contents("https://pmgtex.sharepoint.com/sites/LAPLUMEARTISANALEFABRICATION/Documents%20partages/Planning%20et%20gestion%20de%20Fabrication/Param%C3%A9trages.xlsx"), null, true),
+    
+    // ========== EXTRAIRE LES TABLES BRUTES ==========
+    Commande2025_Raw = Source2025{[Item="commande",Kind="Table"]}[Data],
+    Catalogue_Raw = Source2025{[Item="Catalogue",Kind="Table"]}[Data],
+    Commande2024_Raw = Source2024{[Item="commande2024_2025",Kind="Table"]}[Data],
+    BaseArticle_Raw = Source2025{[Item="basearticle",Kind="Table"]}[Data],
+    
+    // ========== SUPPRIMER LA COLONNE "Détails Personnalisation" ==========
+    Commande2025_Clean = Table.RemoveColumns(Commande2025_Raw, {"Détails Personnalisation"}, MissingField.Ignore),
+    Commande2024_Clean = Table.RemoveColumns(Commande2024_Raw, {"Détails Personnalisation"}, MissingField.Ignore),
+    Catalogue_Clean = Table.RemoveColumns(Catalogue_Raw, {"Détails Personnalisation"}, MissingField.Ignore),
+    
+    // ========== AJOUTER SOURCE À CHAQUE TABLE ==========
+    #"Ajout Source 2025" = Table.AddColumn(Commande2025_Clean, "Source", each "Commandes 2025-2026", type text),
+    #"Ajout Source 2024" = Table.AddColumn(Commande2024_Clean, "Source", each "Commandes 2024-2025", type text),
+    #"Ajout Source Cat" = Table.AddColumn(Catalogue_Clean, "Source", each "Catalogue", type text),
+    
+    // ========== COMBINER LES 3 TABLES ==========
+    #"Tables Combinées" = Table.Combine({#"Ajout Source 2025", #"Ajout Source 2024", #"Ajout Source Cat"}),
+    
+    // ========== CONVERTIR EN TEXT ==========
+    #"Type modifié" = Table.TransformColumnTypes(#"Tables Combinées",{
+        {"Code Dimensions", type text},
+        {"Modèle", type text},
+        {"Type de Tissage", type text},
+        {"Type de Finition", type text},
+        {"Ref Commercial", type text},
+        {"Ordre de Fabrication", type text},
+        {"ID Commande", type text},
+        {"Etat", type text}
+    }),
+    
+    // ========== REMPLACER LES VIDES PAR "En cours" ==========
+    #"Remplacer Etat Vide" = Table.ReplaceValue(#"Type modifié", null, "En cours", Replacer.ReplaceValue, {"Etat"}),
+    
+    // ========== FILTRER POUR EXCLURE "Solder" ET "Annuler" ==========
+    #"Filtrer Etat" = Table.SelectRows(#"Remplacer Etat Vide", each [Etat] <> "Solder" and [Etat] <> "Annuler"),
+    
+    // ========== EXTRAIRE CODE NOMBRE DE COULEUR ==========
+    #"Extraire Code Couleur" = Table.AddColumn(#"Filtrer Etat", "Code Nombre de couleur", 
+        each 
+            let
+                Ref = [Ref Commercial],
+                PartieSansPrefixe = Text.AfterDelimiter(Ref, "-", 0),
+                PremierChar = Text.Start(PartieSansPrefixe, 1),
+                CodeCouleur = if PremierChar >= "A" and PremierChar <= "Z" then PremierChar else "U"
+            in
+                CodeCouleur,
+        type text
+    ),
+    
+    // ========== PRÉPARER BASE ARTICLE ==========
+    #"BaseArticle Distinct" = Table.Distinct(BaseArticle_Raw, {"Ref Commercial"}),
+    
+    #"Type BaseArticle" = Table.TransformColumnTypes(#"BaseArticle Distinct",{
+        {"Ref Fabrication", type text},
+        {"Modèle", type text},
+        {"Code Dimensions", type text},
+        {"Type de Tissage", type text},
+        {"Ref Commercial", type text},
+        {"Code Selecteur 01", type text},
+        {"Code Selecteur 02", type text},
+        {"Code Selecteur 03", type text},
+        {"Code Selecteur 04", type text},
+        {"Code Selecteur 05", type text},
+        {"Code Selecteur 06", type text},
+        {"Code Selecteur 07", type text},
+        {"Code Selecteur 08", type text}
+    }),
+    
+    // ========== FUSION AVEC BASE ARTICLE ==========
+    #"Fusion BaseArticle" = Table.NestedJoin(
+        #"Extraire Code Couleur",
+        {"Ref Commercial"},
+        #"Type BaseArticle",
+        {"Ref Commercial"},
+        "BaseArticle",
+        JoinKind.LeftOuter
+    ),
+    
+    #"Développé BaseArticle" = Table.ExpandTableColumn(#"Fusion BaseArticle", "BaseArticle", 
+        {"Ref Fabrication", "Code Selecteur 01", "Code Selecteur 02", "Code Selecteur 03", "Code Selecteur 04", 
+         "Code Selecteur 05", "Code Selecteur 06", "Code Selecteur 07", "Code Selecteur 08"}, 
+        {"Ref Fabrication", "Code S01", "Code S02", "Code S03", "Code S04", "Code S05", "Code S06", "Code S07", "Code S08"}
+    ),
+    
+    // ========== CRÉATION COLONNE "DIMENSIONS" ==========
+    #"Ajout Dimensions" = Table.AddColumn(#"Développé BaseArticle", "Dimensions", 
+        each 
+            if [Code Dimensions] = null then null
+            else if Text.Length([Code Dimensions]) = 4 then
+                let
+                    Dim1 = Number.ToText(Number.From(Text.Start([Code Dimensions], 2)) * 10),
+                    Dim2 = Number.ToText(Number.From(Text.End([Code Dimensions], 2)) * 10)
+                in
+                    Dim1 & "/" & Dim2 & " CM"
+            else
+                [Code Dimensions],
+        type text
+    ),
+    
+    // ========== CORRIGER REF FABRICATION ==========
+    #"Corriger Ref Fab" = 
+        let
+            AjoutTemp = Table.AddColumn(#"Ajout Dimensions", "Ref Fab Corrigée", 
+                each if [Ref Fabrication] = null then [Ref Commercial] else [Ref Fabrication], type text
+            ),
+            Supprimer = Table.RemoveColumns(AjoutTemp, {"Ref Fabrication"}),
+            Renommer = Table.RenameColumns(Supprimer, {{"Ref Fab Corrigée", "Ref Fabrication"}})
+        in
+            Renommer,
+    
+    // ========== REMPLACER NULL TYPE FINITION ==========
+    #"Remplacer Null Type Finition" = Table.ReplaceValue(#"Corriger Ref Fab", null, "Non Indiqué", Replacer.ReplaceValue, {"Type de Finition"}),
+    
+    // ========== CHARGER BOM ==========
+    BOM_Master_Raw = SourceBOM{[Item="Paramétrage_master",Kind="Table"]}[Data],
+    BOM_Composants_Raw = SourceBOM{[Item="Paramétrage_composant",Kind="Table"]}[Data],
+    
+    BOM_Master = Table.TransformColumnTypes(BOM_Master_Raw,{
+        {"Code paramétrage", type text},
+        {"Produit", type text},
+        {"Modèle", type text},
+        {"Code Modèle", type text},
+        {"Code Dimensions", type text},
+        {"Type de Finition", type text},
+        {"Code Type De Finition", type text},
+        {"Type de Fabrication", type text},
+        {"Nombre de couleur", type text},
+        {"Code Nombre de couleur", type text}
+    }),
+    
+    BOM_Composants = Table.TransformColumnTypes(BOM_Composants_Raw,{
+        {"Code paramétrage Parent", type text},
+        {"Type De Fabrication", type text},
+        {"ID Composant", type text},
+        {"Qté par Unité", type number},
+        {"Description", type text},
+        {"Dimensions", type text},
+        {"Code Dimensions", type text},
+        {"Type de Finition", type text},
+        {"Code Type De Finition", type text},
+        {"LARGEUR TISSAGE", Int64.Type},
+        {"LONGEUR TISSAGE", Int64.Type},
+        {"Nombre de couleur", type text},
+        {"Code Nombre de couleur", type text},
+        {"Qualite", type text},
+        {"Code Qualite", type text},
+        {"DUITE PAR CM", type number},
+        {"Nombre de Duite Total", Int64.Type},
+        {"Consommation Selecteur 01", type number},
+        {"Consommation Selecteur 02", type number},
+        {"Consommation Selecteur 03", type number},
+        {"Consommation Selecteur 04", type number},
+        {"Consommation Selecteur 05", type number},
+        {"Consommation Selecteur 06", type number},
+        {"Consommation Selecteur 07", type number},
+        {"Consommation Selecteur 08", type number}
+    }),
+    
+    // ========== ENRICHIR BOM ==========
+    #"BOM Enrichi" = Table.NestedJoin(BOM_Composants, {"Code paramétrage Parent"}, BOM_Master, {"Code paramétrage"}, "Master", JoinKind.LeftOuter),
+    
+    #"BOM Développé" = Table.ExpandTableColumn(#"BOM Enrichi", "Master", {
+        "Modèle", "Code Dimensions", "Type de Finition", "Code Type De Finition", "Nombre de couleur", "Code Nombre de couleur"
+    }, {
+        "Modèle BOM", "Code Dimensions BOM", "Type Finition BOM", "Code Type Finition BOM", "Nb Couleur BOM", "Code Couleur BOM"
+    }),
+    
+    // ========== FUSION COMMANDES BOM ==========
+    #"Fusion BOM" = Table.NestedJoin(
+        #"Remplacer Null Type Finition",
+        {"Modèle", "Code Dimensions", "Type de Finition", "Code Nombre de couleur"},
+        #"BOM Développé",
+        {"Modèle BOM", "Code Dimensions BOM", "Type Finition BOM", "Code Couleur BOM"},
+        "BOM",
+        JoinKind.LeftOuter
+    ),
+    
+    #"Développer BOM" = Table.ExpandTableColumn(#"Fusion BOM", "BOM", {
+        "Code paramétrage Parent", "Type De Fabrication", "ID Composant", "Qté par Unité", "Description", "Dimensions",
+        "Nb Couleur BOM", "LARGEUR TISSAGE", "LONGEUR TISSAGE", "DUITE PAR CM", "Nombre de Duite Total",
+        "Consommation Selecteur 01", "Consommation Selecteur 02", "Consommation Selecteur 03", "Consommation Selecteur 04",
+        "Consommation Selecteur 05", "Consommation Selecteur 06", "Consommation Selecteur 07", "Consommation Selecteur 08"
+    }, {
+        "Code Paramétrage Parent", "Type De Fabrication BOM", "ID Composant", "Qté par Unité", "Description Composant",
+        "Dimensions Composant", "Nombre de couleur BOM", "Largeur Tissu", "Longueur Tissu", "Duite par CM", "Nb Duites BOM",
+        "Conso S01", "Conso S02", "Conso S03", "Conso S04", "Conso S05", "Conso S06", "Conso S07", "Conso S08"
+    }),
+    
+    #"Qté par Unité Défaut" = Table.ReplaceValue(#"Développer BOM", null, 1, Replacer.ReplaceValue, {"Qté par Unité"}),
+    #"Filtrer Lignes Valides" = Table.SelectRows(#"Qté par Unité Défaut", each [Code Paramétrage Parent] <> null),
+    
+    // ========== CRÉER NUM OF ==========
+    ColonnesAvantGroupe = Table.ColumnNames(#"Filtrer Lignes Valides"),
+    
+    #"Ajout Index Groupe" = Table.Group(#"Filtrer Lignes Valides", {"ID Commande"}, {
+        {"Données", each 
+            let
+                Trie = Table.Sort(_, {{"ID Composant", Order.Ascending}}),
+                AvecIndex = Table.AddIndexColumn(Trie, "Index Composant", 1, 1)
+            in
+                AvecIndex
+        }
+    }),
+    
+    ColonnesADevelopper = List.RemoveItems(ColonnesAvantGroupe, {"ID Commande"}),
+    
+    #"Développer avec Index" = Table.ExpandTableColumn(#"Ajout Index Groupe", "Données", ColonnesADevelopper & {"Index Composant"}),
+    
+    #"Num OF" = Table.AddColumn(#"Développer avec Index", "Num OF", 
+        each if [Type De Fabrication BOM] = "Composer" then [ID Commande] & "/" & Number.ToText([Index Composant]) else [ID Commande],
+        type text
+    ),
+    
+    // ========== CALCULS ==========
+    #"Qté Composant Totale" = Table.AddColumn(#"Num OF", "Qté Composant à Fabriquer", each [A Fabriquer] * [Qté par Unité], type number),
+    
+    #"Métrage Chaîne" = Table.AddColumn(#"Qté Composant Totale", "Métrage Fil Chaîne (m)", 
+        each if [Longueur Tissu] <> null then [Longueur Tissu] * [Qté Composant à Fabriquer] / 100 else null, type number
+    ),
+    
+    #"Nb Duites Total Production" = Table.AddColumn(#"Métrage Chaîne", "Nb Duites Total Production", 
+        each 
+            if [Duite par CM] <> null and [Longueur Tissu] <> null then
+                [Duite par CM] * [Longueur Tissu] * [Qté Composant à Fabriquer]
+            else if [Nb Duites BOM] <> null then
+                [Nb Duites BOM] * [Qté Composant à Fabriquer]
+            else
+                null, 
+        type number
+    ),
+    
+    #"Besoin S01" = Table.AddColumn(#"Nb Duites Total Production", "Besoin S01 (kg)", each [Qté Composant à Fabriquer] * [Conso S01], type number),
+    #"Besoin S02" = Table.AddColumn(#"Besoin S01", "Besoin S02 (kg)", each [Qté Composant à Fabriquer] * [Conso S02], type number),
+    #"Besoin S03" = Table.AddColumn(#"Besoin S02", "Besoin S03 (kg)", each [Qté Composant à Fabriquer] * [Conso S03], type number),
+    #"Besoin S04" = Table.AddColumn(#"Besoin S03", "Besoin S04 (kg)", each [Qté Composant à Fabriquer] * [Conso S04], type number),
+    #"Besoin S05" = Table.AddColumn(#"Besoin S04", "Besoin S05 (kg)", each [Qté Composant à Fabriquer] * [Conso S05], type number),
+    #"Besoin S06" = Table.AddColumn(#"Besoin S05", "Besoin S06 (kg)", each [Qté Composant à Fabriquer] * [Conso S06], type number),
+    #"Besoin S07" = Table.AddColumn(#"Besoin S06", "Besoin S07 (kg)", each [Qté Composant à Fabriquer] * [Conso S07], type number),
+    #"Besoin S08" = Table.AddColumn(#"Besoin S07", "Besoin S08 (kg)", each [Qté Composant à Fabriquer] * [Conso S08], type number),
+    
+    // ========== MOUVEMENT MP ==========
+    MouvementMP_Raw = SourceCollecte{[Item="mouvementmp",Kind="Table"]}[Data],
+    
+    MouvementMP_Type = Table.TransformColumnTypes(MouvementMP_Raw, {
+        {"Num OF", type text}, {"QR MP", type text}, {"Type D'opération", type text}, {"Destination", type text},
+        {"Code Couleur", type text}, {"Couleur", type text}, {"Num de Lot", type text}, {"Poids", type number}
+    }),
+    
+    MouvementMP_Prep = Table.SelectRows(MouvementMP_Type, 
+        each [#"Type D'opération"] = "Préparation Fabrication" and [Destination] = "Fabrication" and [Num OF] <> null
+    ),
+    
+    MouvementMP_Groupe = Table.Group(MouvementMP_Prep, {"Num OF", "Code Couleur"}, {
+        {"QR MP Utilisé", each List.First([QR MP]), type text},
+        {"Num de Lot", each List.First([Num de Lot]), type text},
+        {"Couleur", each List.First([Couleur]), type text},
+        {"Poids Total", each List.Sum([Poids]), type number}
+    }),
+    
+    // ========== FUSION MP S01-S08 ==========
+    #"Fusion MP S01" = Table.NestedJoin(#"Besoin S08", {"Num OF", "Code S01"}, MouvementMP_Groupe, {"Num OF", "Code Couleur"}, "MP_S01", JoinKind.LeftOuter),
+    #"Développer MP S01" = Table.ExpandTableColumn(#"Fusion MP S01", "MP_S01", 
+        {"QR MP Utilisé", "Num de Lot", "Couleur", "Poids Total"}, {"QR MP Réel S01", "Lot Réel S01", "Couleur Réel S01", "Poids Consommé S01"}
+    ),
+    
+    #"Fusion MP S02" = Table.NestedJoin(#"Développer MP S01", {"Num OF", "Code S02"}, MouvementMP_Groupe, {"Num OF", "Code Couleur"}, "MP_S02", JoinKind.LeftOuter),
+    #"Développer MP S02" = Table.ExpandTableColumn(#"Fusion MP S02", "MP_S02", 
+        {"QR MP Utilisé", "Num de Lot", "Couleur", "Poids Total"}, {"QR MP Réel S02", "Lot Réel S02", "Couleur Réel S02", "Poids Consommé S02"}
+    ),
+    
+    #"Fusion MP S03" = Table.NestedJoin(#"Développer MP S02", {"Num OF", "Code S03"}, MouvementMP_Groupe, {"Num OF", "Code Couleur"}, "MP_S03", JoinKind.LeftOuter),
+    #"Développer MP S03" = Table.ExpandTableColumn(#"Fusion MP S03", "MP_S03", 
+        {"QR MP Utilisé", "Num de Lot", "Couleur", "Poids Total"}, {"QR MP Réel S03", "Lot Réel S03", "Couleur Réel S03", "Poids Consommé S03"}
+    ),
+    
+    #"Fusion MP S04" = Table.NestedJoin(#"Développer MP S03", {"Num OF", "Code S04"}, MouvementMP_Groupe, {"Num OF", "Code Couleur"}, "MP_S04", JoinKind.LeftOuter),
+    #"Développer MP S04" = Table.ExpandTableColumn(#"Fusion MP S04", "MP_S04", 
+        {"QR MP Utilisé", "Num de Lot", "Couleur", "Poids Total"}, {"QR MP Réel S04", "Lot Réel S04", "Couleur Réel S04", "Poids Consommé S04"}
+    ),
+    
+    #"Fusion MP S05" = Table.NestedJoin(#"Développer MP S04", {"Num OF", "Code S05"}, MouvementMP_Groupe, {"Num OF", "Code Couleur"}, "MP_S05", JoinKind.LeftOuter),
+    #"Développer MP S05" = Table.ExpandTableColumn(#"Fusion MP S05", "MP_S05", 
+        {"QR MP Utilisé", "Num de Lot", "Couleur", "Poids Total"}, {"QR MP Réel S05", "Lot Réel S05", "Couleur Réel S05", "Poids Consommé S05"}
+    ),
+    
+    #"Fusion MP S06" = Table.NestedJoin(#"Développer MP S05", {"Num OF", "Code S06"}, MouvementMP_Groupe, {"Num OF", "Code Couleur"}, "MP_S06", JoinKind.LeftOuter),
+    #"Développer MP S06" = Table.ExpandTableColumn(#"Fusion MP S06", "MP_S06", 
+        {"QR MP Utilisé", "Num de Lot", "Couleur", "Poids Total"}, {"QR MP Réel S06", "Lot Réel S06", "Couleur Réel S06", "Poids Consommé S06"}
+    ),
+    
+    #"Fusion MP S07" = Table.NestedJoin(#"Développer MP S06", {"Num OF", "Code S07"}, MouvementMP_Groupe, {"Num OF", "Code Couleur"}, "MP_S07", JoinKind.LeftOuter),
+    #"Développer MP S07" = Table.ExpandTableColumn(#"Fusion MP S07", "MP_S07", 
+        {"QR MP Utilisé", "Num de Lot", "Couleur", "Poids Total"}, {"QR MP Réel S07", "Lot Réel S07", "Couleur Réel S07", "Poids Consommé S07"}
+    ),
+    
+    #"Fusion MP S08" = Table.NestedJoin(#"Développer MP S07", {"Num OF", "Code S08"}, MouvementMP_Groupe, {"Num OF", "Code Couleur"}, "MP_S08", JoinKind.LeftOuter),
+    #"Développer MP S08" = Table.ExpandTableColumn(#"Fusion MP S08", "MP_S08", 
+        {"QR MP Utilisé", "Num de Lot", "Couleur", "Poids Total"}, {"QR MP Réel S08", "Lot Réel S08", "Couleur Réel S08", "Poids Consommé S08"}
+    ),
+    
+    // ========== COUPE ==========
+    Coupe_Sheet = SourceCollecte{[Item="Coupe",Kind="Sheet"]}[Data],
+    #"En-têtes promus Coupe" = Table.PromoteHeaders(Coupe_Sheet, [PromoteAllScalars=true]),
+    #"Type modifié Coupe" = Table.TransformColumnTypes(#"En-têtes promus Coupe",{
+        {"Num OF", type text}, {"Personne", type text}, {"Date", type datetime}, {"QTE", Int64.Type}, 
+        {"QTE DEUXIEME", Int64.Type}, {"DEUXIEME APPROUVEE", Int64.Type}, {"OURLET", Int64.Type}, {"Type D'opération", type text}
+    }),
+    
+    #"Filtrer Type Coupe" = Table.SelectRows(#"Type modifié Coupe", each [#"Type D'opération"] = "Coupe"),
+    
+    #"Lignes groupées Coupe" = Table.Group(#"Filtrer Type Coupe", {"Num OF"}, {
+        {"QTE Deuxieme Fab", each List.Sum([QTE DEUXIEME]), type number}, 
+        {"Ourlet", each List.Sum([OURLET]), type number}, 
+        {"QTE Fabriquer Coupe", each List.Sum([QTE]) - List.Sum([QTE DEUXIEME]) + List.Sum([DEUXIEME APPROUVEE]), type number},
+        {"Derniere Date Coupe", each List.Max([Date]), type nullable datetime},
+        {"Derniere Personne", each let Trie = Table.Sort(_, {{"Date", Order.Descending}}) in Trie{0}[Personne], type nullable text}
+    }),
+    
+    #"Ajouter Etat Coupe" = Table.AddColumn(#"Lignes groupées Coupe", "Etat Coupe", each
+        let
+            NumOF_Actuel = [Num OF], DerniereDate = [Derniere Date Coupe], DernierePersonne = [Derniere Personne],
+            AutreOF_Apres = Table.SelectRows(#"Filtrer Type Coupe", 
+                (ligne) => ligne[Personne] = DernierePersonne and ligne[Date] > DerniereDate and ligne[Num OF] <> NumOF_Actuel
+            )
+        in
+            if Table.RowCount(AutreOF_Apres) > 0 then "Terminé" else "En cours"
+    , type text),
+    
+    // ========== QUALITÉ ==========
+    qualite_Table = SourceCollecte{[Item="qualite",Kind="Table"]}[Data],
+    #"Type modifié Qualite" = Table.TransformColumnTypes(qualite_Table,{
+        {"Num OF", type text}, {"DEUXIEME EXTERNE", Int64.Type}, {"DEUXIEME APPROUVEE", Int64.Type}, {"OURLET", Int64.Type}
+    }),
+    #"Suppr photo Qualite" = Table.RemoveColumns(#"Type modifié Qualite", {"PHOTO"}, MissingField.Ignore),
+    #"Regroupement Qualite" = Table.Group(#"Suppr photo Qualite", {"Num OF"}, {
+        {"Deu Externe", each List.Sum([DEUXIEME EXTERNE]), type number}, 
+        {"Deu Ext Approuvee", each List.Sum([DEUXIEME APPROUVEE]), type number}, 
+        {"Ourlet Ext", each List.Sum([OURLET]), type number}
+    }),
+    #"QTE DEUXIEME EXT FINAL" = Table.AddColumn(#"Regroupement Qualite", "Qte Deu Ext", each [Deu Externe] - [Deu Ext Approuvee] + [Ourlet Ext], type number),
+    #"Colonnes supprimées Qualite" = Table.RemoveColumns(#"QTE DEUXIEME EXT FINAL", {"Deu Externe", "Deu Ext Approuvee", "Ourlet Ext"}),
+    
+    // ========== TISSAGE ==========
+    Tissage_Sheet = SourceCollecte{[Item="Tissage",Kind="Sheet"]}[Data],
+    #"En-têtes promus Tissage" = Table.PromoteHeaders(Tissage_Sheet, [PromoteAllScalars=true]),
+    #"Type modifié Tissage" = Table.TransformColumnTypes(#"En-têtes promus Tissage",{
+        {"Num OF", type text}, {"Type D'opération", type text}, {"Date", type datetime}
+    }),
+    
+    #"Lignes triées Tissage" = Table.Sort(#"Type modifié Tissage",{{"Date", Order.Descending}}),
+    
+    #"Dernier Etat Tissage" = Table.Group(#"Lignes triées Tissage", {"Num OF"}, {
+        {"Dernier Etat", each List.First([#"Type D'opération"]), type nullable text},
+        {"Num Machine", each let MachineCol = try _[Machine] otherwise null in if MachineCol <> null then List.First(MachineCol) else null, type nullable text}
+    }),
+    
+    // ========== FUSIONS FINALES ==========
+    #"Fusion Coupe" = Table.NestedJoin(#"Développer MP S08", {"Num OF"}, #"Ajouter Etat Coupe", {"Num OF"}, "Coupe", JoinKind.LeftOuter),
+    #"Développé Coupe" = Table.ExpandTableColumn(#"Fusion Coupe", "Coupe", 
+        {"QTE Deuxieme Fab", "Ourlet", "QTE Fabriquer Coupe", "Derniere Date Coupe", "Etat Coupe"}
+    ),
+    
+    #"Fusion Qualite" = Table.NestedJoin(#"Développé Coupe", {"Num OF"}, #"Colonnes supprimées Qualite", {"Num OF"}, "Qualite", JoinKind.LeftOuter),
+    #"Développé Qualite" = Table.ExpandTableColumn(#"Fusion Qualite", "Qualite", {"Qte Deu Ext"}),
+    
+    #"Fusion Tissage" = Table.NestedJoin(#"Développé Qualite", {"Num OF"}, #"Dernier Etat Tissage", {"Num OF"}, "Tissage", JoinKind.LeftOuter),
+    #"Développé Tissage" = Table.ExpandTableColumn(#"Fusion Tissage", "Tissage", 
+        {"Dernier Etat", "Num Machine"}, 
+        {"Dernier Etat Tissage", "Num Machine"}
+    ),
+    
+    // ========== REMPLACEMENTS NULL ==========
+    #"Remplacer Null QTE 1" = Table.ReplaceValue(#"Développé Tissage", null, 0, Replacer.ReplaceValue, {"QTE Deuxieme Fab"}),
+    #"Remplacer Null QTE 2" = Table.ReplaceValue(#"Remplacer Null QTE 1", null, 0, Replacer.ReplaceValue, {"Ourlet"}),
+    #"Remplacer Null QTE 3" = Table.ReplaceValue(#"Remplacer Null QTE 2", null, 0, Replacer.ReplaceValue, {"QTE Fabriquer Coupe"}),
+    #"Remplacer Null QTE 4" = Table.ReplaceValue(#"Remplacer Null QTE 3", null, 0, Replacer.ReplaceValue, {"Qte Deu Ext"}),
+    #"Remplacer Null Etat Coupe" = Table.ReplaceValue(#"Remplacer Null QTE 4", null, "Non Démarré", Replacer.ReplaceValue, {"Etat Coupe"}),
+    
+    // ========== RESTE A FABRIQUER ==========
+    #"Reste A Fabriquer" = Table.AddColumn(#"Remplacer Null Etat Coupe", "Reste A Fabriquer", 
+        each 
+            let
+                AFabInitial = if [A Fabriquer] = null then 0 else [A Fabriquer],
+                QteFabCoupe = if [QTE Fabriquer Coupe] = null then 0 else [QTE Fabriquer Coupe]
+            in
+                AFabInitial - QteFabCoupe,
+        Int64.Type
+    ),
+    
+    // ========== ETAT TISSAGE ==========
+    #"Etat Tissage" = Table.AddColumn(#"Reste A Fabriquer", "Etat Tissage", 
+        each 
+            if [Dernier Etat Tissage] = "Terminée" and [Reste A Fabriquer] > 0 then "Terminé Qte Manquante"
+            else if [Dernier Etat Tissage] = null then "Non Démarré"
+            else [Dernier Etat Tissage],
+        type text
+    ),
+    
+    // ========== ETAT PRÉPARATION MP ==========
+    #"Etat Préparation MP" = Table.AddColumn(#"Etat Tissage", "Etat Préparation MP", 
+        each 
+            let
+                TotalBesoin = 
+                    (if [#"Besoin S01 (kg)"] = null then 0 else [#"Besoin S01 (kg)"]) +
+                    (if [#"Besoin S02 (kg)"] = null then 0 else [#"Besoin S02 (kg)"]) +
+                    (if [#"Besoin S03 (kg)"] = null then 0 else [#"Besoin S03 (kg)"]) +
+                    (if [#"Besoin S04 (kg)"] = null then 0 else [#"Besoin S04 (kg)"]) +
+                    (if [#"Besoin S05 (kg)"] = null then 0 else [#"Besoin S05 (kg)"]) +
+                    (if [#"Besoin S06 (kg)"] = null then 0 else [#"Besoin S06 (kg)"]) +
+                    (if [#"Besoin S07 (kg)"] = null then 0 else [#"Besoin S07 (kg)"]) +
+                    (if [#"Besoin S08 (kg)"] = null then 0 else [#"Besoin S08 (kg)"]),
+                
+                TotalConsomme = 
+                    (if [Poids Consommé S01] = null then 0 else [Poids Consommé S01]) +
+                    (if [Poids Consommé S02] = null then 0 else [Poids Consommé S02]) +
+                    (if [Poids Consommé S03] = null then 0 else [Poids Consommé S03]) +
+                    (if [Poids Consommé S04] = null then 0 else [Poids Consommé S04]) +
+                    (if [Poids Consommé S05] = null then 0 else [Poids Consommé S05]) +
+                    (if [Poids Consommé S06] = null then 0 else [Poids Consommé S06]) +
+                    (if [Poids Consommé S07] = null then 0 else [Poids Consommé S07]) +
+                    (if [Poids Consommé S08] = null then 0 else [Poids Consommé S08])
+            in
+                if TotalBesoin = 0 then "Pas de Besoin"
+                else if TotalConsomme = 0 then "Non Préparé"
+                else if TotalConsomme >= TotalBesoin then "Préparé"
+                else "Préparé Partiel",
+        type text
+    ),
+    
+    // ========== RENOMMER ==========
+    #"Renommé" = Table.RenameColumns(#"Etat Préparation MP",{
+        {"Reserve", "Qté Réservé"},
+        {"Qte commandé", "Qté Commandé"},
+        {"Type De Fabrication BOM", "Type de Fabrication"},
+        {"Nombre de couleur BOM", "Nombre de couleur"}
+    }),
+    
+    // ========== AJOUTER COLONNE VIDE TEMPS DE PRODUCTION ==========
+    #"Ajout Temps Production Vide" = Table.AddColumn(#"Renommé", "Temps de production", each null, type number),
+    
+    // ========== COLONNES FINALES ==========
+    #"Colonnes Finales Ordonnées" = Table.SelectColumns(#"Ajout Temps Production Vide",{
+        "Source", "Etat", "ID Commande", "Num OF", "Ordre de Fabrication", "Num Commande", "Num Client",
+        "Ref Commercial", "Ref Fabrication", "Modèle", "Dimensions", "Type de Finition", "Nombre de couleur",
+        "Type de Fabrication", "ID Composant", "Description Composant", "Dimensions Composant", "Personnalisation",
+        "Qté Commandé", "Qté Réservé", "Qté Composant à Fabriquer", "QTE Fabriquer Coupe", "QTE Deuxieme Fab",
+        "Ourlet", "Qte Deu Ext", "Reste A Fabriquer", "Num Machine", "Temps de production", "Etat Préparation MP", 
+        "Etat Tissage", "Etat Coupe", "Largeur Tissu", "Longueur Tissu", "Métrage Fil Chaîne (m)", "Duite par CM",
+        "Nb Duites Total Production", "Code S01", "QR MP Réel S01", "Besoin S01 (kg)", "Poids Consommé S01",
+        "Code S02", "QR MP Réel S02", "Besoin S02 (kg)", "Poids Consommé S02", "Code S03", "QR MP Réel S03",
+        "Besoin S03 (kg)", "Poids Consommé S03", "Code S04", "QR MP Réel S04", "Besoin S04 (kg)", "Poids Consommé S04",
+        "Code S05", "QR MP Réel S05", "Besoin S05 (kg)", "Poids Consommé S05", "Code S06", "QR MP Réel S06",
+        "Besoin S06 (kg)", "Poids Consommé S06", "Code S07", "QR MP Réel S07", "Besoin S07 (kg)", "Poids Consommé S07",
+        "Code S08", "QR MP Réel S08", "Besoin S08 (kg)", "Poids Consommé S08"
+    }),
+
+    // ========== RÉCUPÉRATION DONNÉES MANUELLES ==========
+    TableExistante = try Excel.CurrentWorkbook(){[Name="Base_Commandes"]}[Content] otherwise null,
+
+    DonneesExistantes = 
+        if TableExistante = null then null
+        else 
+            let
+                TypeKey = Table.TransformColumnTypes(TableExistante, {{"Num OF", type text}}),
+                ColonnesARecuperer = Table.SelectColumns(TypeKey, 
+                    {"Num OF", "Num Machine",
+                     "QR MP Réel S01", "QR MP Réel S02", "QR MP Réel S03", "QR MP Réel S04",
+                     "QR MP Réel S05", "QR MP Réel S06", "QR MP Réel S07", "QR MP Réel S08"},
+                    MissingField.Ignore
+                ),
+                Renommer = Table.RenameColumns(ColonnesARecuperer, {
+                    {"Num Machine", "Num Machine Ancien"},
+                    {"QR MP Réel S01", "QR MP Réel S01 Ancien"}, {"QR MP Réel S02", "QR MP Réel S02 Ancien"},
+                    {"QR MP Réel S03", "QR MP Réel S03 Ancien"}, {"QR MP Réel S04", "QR MP Réel S04 Ancien"},
+                    {"QR MP Réel S05", "QR MP Réel S05 Ancien"}, {"QR MP Réel S06", "QR MP Réel S06 Ancien"},
+                    {"QR MP Réel S07", "QR MP Réel S07 Ancien"}, {"QR MP Réel S08", "QR MP Réel S08 Ancien"}
+                })
+            in
+                Renommer,
+
+    FusionExistant = if DonneesExistantes = null then #"Colonnes Finales Ordonnées"
+        else Table.NestedJoin(#"Colonnes Finales Ordonnées", {"Num OF"}, DonneesExistantes, {"Num OF"}, "Ancien", JoinKind.LeftOuter),
+
+    DevelopperAncien = if DonneesExistantes = null then FusionExistant
+        else Table.ExpandTableColumn(FusionExistant, "Ancien", 
+                {"Num Machine Ancien",
+                 "QR MP Réel S01 Ancien", "QR MP Réel S02 Ancien", "QR MP Réel S03 Ancien", "QR MP Réel S04 Ancien",
+                 "QR MP Réel S05 Ancien", "QR MP Réel S06 Ancien", "QR MP Réel S07 Ancien", "QR MP Réel S08 Ancien"}
+            ),
+
+    AppliquerPriorite = if DonneesExistantes = null then DevelopperAncien
+        else
+            let
+                PrioriserManuel = (nouvelleValeur, ancienneValeur) =>
+                    if ancienneValeur <> null and ancienneValeur <> "" then ancienneValeur
+                    else if nouvelleValeur <> null and nouvelleValeur <> "" then nouvelleValeur
+                    else null,
+                
+                PrioriserSource = (nouvelleValeur, ancienneValeur) =>
+                    if nouvelleValeur <> null and nouvelleValeur <> "" then nouvelleValeur
+                    else if ancienneValeur <> null and ancienneValeur <> "" then ancienneValeur
+                    else null,
+                
+                ColNumMachine = Table.AddColumn(DevelopperAncien, "Num Machine Final", 
+                    each PrioriserManuel([Num Machine], [Num Machine Ancien]), type text),
+                
+                ColTemps = Table.AddColumn(ColNumMachine, "Temps de production Manuel", 
+                    each PrioriserManuel([Temps de production], [Temps de production Ancien]), type number),
+                
+                ColS01 = Table.AddColumn(ColTemps, "QR MP Réel S01 Final", 
+                    each PrioriserSource([#"QR MP Réel S01"], [QR MP Réel S01 Ancien]), type text),
+                ColS02 = Table.AddColumn(ColS01, "QR MP Réel S02 Final", 
+                    each PrioriserSource([#"QR MP Réel S02"], [QR MP Réel S02 Ancien]), type text),
+                ColS03 = Table.AddColumn(ColS02, "QR MP Réel S03 Final", 
+                    each PrioriserSource([#"QR MP Réel S03"], [QR MP Réel S03 Ancien]), type text),
+                ColS04 = Table.AddColumn(ColS03, "QR MP Réel S04 Final", 
+                    each PrioriserSource([#"QR MP Réel S04"], [QR MP Réel S04 Ancien]), type text),
+                ColS05 = Table.AddColumn(ColS04, "QR MP Réel S05 Final", 
+                    each PrioriserSource([#"QR MP Réel S05"], [QR MP Réel S05 Ancien]), type text),
+                ColS06 = Table.AddColumn(ColS05, "QR MP Réel S06 Final", 
+                    each PrioriserSource([#"QR MP Réel S06"], [QR MP Réel S06 Ancien]), type text),
+                ColS07 = Table.AddColumn(ColS06, "QR MP Réel S07 Final", 
+                    each PrioriserSource([#"QR MP Réel S07"], [QR MP Réel S07 Ancien]), type text),
+                ColS08 = Table.AddColumn(ColS07, "QR MP Réel S08 Final", 
+                    each PrioriserSource([#"QR MP Réel S08"], [QR MP Réel S08 Ancien]), type text),
+                
+                SupprimerTemp = Table.RemoveColumns(ColS08, {
+                    "Num Machine", "Num Machine Ancien", "Temps de production",
+                    "QR MP Réel S01", "QR MP Réel S02", "QR MP Réel S03", "QR MP Réel S04",
+                    "QR MP Réel S05", "QR MP Réel S06", "QR MP Réel S07", "QR MP Réel S08",
+                    "QR MP Réel S01 Ancien", "QR MP Réel S02 Ancien", "QR MP Réel S03 Ancien", "QR MP Réel S04 Ancien",
+                    "QR MP Réel S05 Ancien", "QR MP Réel S06 Ancien", "QR MP Réel S07 Ancien", "QR MP Réel S08 Ancien"
+                }),
+                
+                RenommerFinal = Table.RenameColumns(SupprimerTemp, {
+                    {"Num Machine Final", "Num Machine"},
+                    {"QR MP Réel S01 Final", "QR MP Réel S01"}, {"QR MP Réel S02 Final", "QR MP Réel S02"},
+                    {"QR MP Réel S03 Final", "QR MP Réel S03"}, {"QR MP Réel S04 Final", "QR MP Réel S04"},
+                    {"QR MP Réel S05 Final", "QR MP Réel S05"}, {"QR MP Réel S06 Final", "QR MP Réel S06"},
+                    {"QR MP Réel S07 Final", "QR MP Réel S07"}, {"QR MP Réel S08 Final", "QR MP Réel S08"}
+                })
+            in
+                RenommerFinal,
+
+    // ========== RECALCUL TEMPS ET COMPTEUR ==========
+    SourceEquipement2 = Excel.Workbook(Web.Contents("https://pmgtex.sharepoint.com/sites/LAPLUMEARTISANALEFABRICATION/Documents%20partages/Planning%20et%20gestion%20de%20Fabrication/BOM%202025-2026.xlsx"), null, true),
+    Equipement_Raw2 = SourceEquipement2{[Item="Equipement",Kind="Table"]}[Data],
+    Equipement_Type2 = Table.TransformColumnTypes(Equipement_Raw2, {
+        {"Num Machine", type text}, {"Vitesse ( duite par minute)", type number},
+        {"Compteur", type number}, {"Unite compteur", type text}
+    }),
+    Equipement_Select2 = Table.SelectColumns(Equipement_Type2, 
+        {"Num Machine", "Vitesse ( duite par minute)", "Compteur", "Unite compteur"}
+    ),
+    Equipement_Rename2 = Table.RenameColumns(Equipement_Select2, {
+        {"Vitesse ( duite par minute)", "Vitesse Machine Recalc"},
+        {"Compteur", "Facteur Compteur Recalc"},
+        {"Unite compteur", "Unite Compteur Recalc"}
+    }),
+
+    #"Fusion Equipement Final" = Table.NestedJoin(AppliquerPriorite, {"Num Machine"}, Equipement_Rename2, 
+        {"Num Machine"}, "EquipementFinal", JoinKind.LeftOuter
+    ),
+
+    #"Développer Equipement Final" = Table.ExpandTableColumn(#"Fusion Equipement Final", "EquipementFinal", 
+        {"Vitesse Machine Recalc", "Facteur Compteur Recalc", "Unite Compteur Recalc"}
+    ),
+
+    #"Temps Recalc Minutes" = Table.AddColumn(#"Développer Equipement Final", "Temps Production Recalc (min)", 
+        each 
+            let
+                // Recalculer les duites basé sur Reste A Fabriquer
+                DuitesReste = if [Duite par CM] <> null and [Longueur Tissu] <> null then
+                    [Duite par CM] * [Longueur Tissu] * [Reste A Fabriquer]
+                else if [Nb Duites BOM] <> null then
+                    [Nb Duites BOM] * [Reste A Fabriquer]
+                else
+                    null,
+                
+                // Calculer le temps
+                TempsMinutes = if DuitesReste <> null and [Vitesse Machine Recalc] <> null and [Vitesse Machine Recalc] > 0 then
+                    DuitesReste / [Vitesse Machine Recalc]
+                else
+                    null
+            in
+                if TempsMinutes <> null and TempsMinutes < 0 then 0 else TempsMinutes,
+        type number
+    ),
+
+    #"Temps Recalc Heures" = Table.AddColumn(#"Temps Recalc Minutes", "Temps Production Recalc (h)", 
+        each 
+            let
+                TempsHeures = if [#"Temps Production Recalc (min)"] <> null 
+                             then Number.Round([#"Temps Production Recalc (min)"] / 60, 2) 
+                             else null
+            in
+                if TempsHeures <> null and TempsHeures < 0 then 0 else TempsHeures,
+        type number
+    ),
+
+    #"Temps Final" = Table.AddColumn(#"Temps Recalc Heures", "Temps de production", 
+        each [#"Temps Production Recalc (h)"],
+        type number
+    ),
+
+    #"Compteur Final" = Table.AddColumn(#"Temps Final", "Compteur à Afficher", 
+        each 
+            let
+                Compteur = if [Facteur Compteur Recalc] = null then null
+                else if [Unite Compteur Recalc] = "Rapport" then
+                    // Si unité = Rapport : Reste à fabriquer × Compteur
+                    if [Reste A Fabriquer] <> null then [Reste A Fabriquer] * [Facteur Compteur Recalc] else null
+                else
+                    // Sinon (Mètre) : Métrage basé sur Reste × Compteur
+                    if [Longueur Tissu] <> null and [Reste A Fabriquer] <> null then
+                        ([Longueur Tissu] * [Reste A Fabriquer] / 100) * [Facteur Compteur Recalc]
+                    else
+                        null
+            in
+                if Compteur <> null and Compteur < 0 then 0 else Compteur,
+        type number
+    ),
+
+    #"Nettoyer Final" = Table.RemoveColumns(#"Compteur Final", {
+        "Temps Production Recalc (min)", "Temps Production Recalc (h)",
+        "Vitesse Machine Recalc", "Facteur Compteur Recalc", "Unite Compteur Recalc"
+    }, MissingField.Ignore),
+
+    ResultatFinal = Table.SelectColumns(#"Nettoyer Final",{
+        "Source", "Etat", "ID Commande", "Num OF", "Ordre de Fabrication", "Num Commande", "Num Client",
+        "Ref Commercial", "Ref Fabrication", "Modèle", "Dimensions", "Type de Finition", "Nombre de couleur",
+        "Type de Fabrication", "ID Composant", "Description Composant", "Dimensions Composant", "Personnalisation",
+        "Qté Commandé", "Qté Réservé", "Qté Composant à Fabriquer", "QTE Fabriquer Coupe", "QTE Deuxieme Fab",
+        "Ourlet", "Qte Deu Ext", "Reste A Fabriquer", "Num Machine", "Temps de production", "Compteur à Afficher",
+        "Etat Préparation MP", "Etat Tissage", "Etat Coupe", "Largeur Tissu", "Longueur Tissu",
+        "Métrage Fil Chaîne (m)", "Duite par CM", "Nb Duites Total Production",
+        "Code S01", "QR MP Réel S01", "Besoin S01 (kg)", "Poids Consommé S01",
+        "Code S02", "QR MP Réel S02", "Besoin S02 (kg)", "Poids Consommé S02",
+        "Code S03", "QR MP Réel S03", "Besoin S03 (kg)", "Poids Consommé S03",
+        "Code S04", "QR MP Réel S04", "Besoin S04 (kg)", "Poids Consommé S04",
+        "Code S05", "QR MP Réel S05", "Besoin S05 (kg)", "Poids Consommé S05",
+        "Code S06", "QR MP Réel S06", "Besoin S06 (kg)", "Poids Consommé S06",
+        "Code S07", "QR MP Réel S07", "Besoin S07 (kg)", "Poids Consommé S07",
+        "Code S08", "QR MP Réel S08", "Besoin S08 (kg)", "Poids Consommé S08"
+    })
+
+in
+    ResultatFinal

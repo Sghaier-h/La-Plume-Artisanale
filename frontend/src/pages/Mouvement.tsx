@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowRightLeft, Plus, Search, Edit, List, Grid, Package, ArrowRight } from 'lucide-react';
+import { ArrowRightLeft, Plus, Search, Edit, List, Grid, Package, ArrowRight, Trash2, X } from 'lucide-react';
+import { stockService } from '../services/api';
 
 interface Mouvement {
   id_mouvement?: number;
@@ -48,8 +49,12 @@ const Mouvement: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      // TODO: Remplacer par l'API réelle
-      const mockMouvements: Mouvement[] = [
+      const response = await stockService.getMouvements({ search });
+      if (response.data?.success) {
+        setMouvements(response.data.data || []);
+      } else {
+        // Fallback sur données mockées si l'API ne retourne pas success
+        const mockMouvements: Mouvement[] = [
         {
           id_mouvement: 1,
           numero_mouvement: 'MOV-2024-001',
@@ -128,8 +133,10 @@ const Mouvement: React.FC = () => {
         }
       ];
       setMouvements(mockMouvements);
+      }
     } catch (error) {
       console.error('Erreur chargement mouvements:', error);
+      setMouvements([]);
     } finally {
       setLoading(false);
     }
@@ -137,19 +144,37 @@ const Mouvement: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.quantite || formData.quantite <= 0) {
+      alert('La quantité doit être supérieure à 0');
+      return;
+    }
     try {
-      // TODO: Appel API
-      if (editingMouvement) {
-        setMouvements(mouvements.map(mov => mov.id_mouvement === editingMouvement.id_mouvement ? formData : mov));
+      if (editingMouvement && editingMouvement.id_mouvement) {
+        await stockService.updateMouvement(editingMouvement.id_mouvement, formData);
+        alert('Mouvement modifié avec succès');
       } else {
-        const newMouvement = { ...formData, id_mouvement: Date.now() };
-        setMouvements([...mouvements, newMouvement]);
+        await stockService.createMouvement(formData);
+        alert('Mouvement créé avec succès');
       }
       setShowForm(false);
       setEditingMouvement(null);
       resetForm();
-    } catch (error) {
+      loadData();
+    } catch (error: any) {
       console.error('Erreur sauvegarde:', error);
+      alert(error.response?.data?.error?.message || 'Erreur lors de la sauvegarde');
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (window.confirm('Supprimer ce mouvement ?')) {
+      try {
+        await stockService.deleteMouvement(id);
+        alert('Mouvement supprimé avec succès');
+        loadData();
+      } catch (error: any) {
+        alert(error.response?.data?.error?.message || 'Erreur lors de la suppression');
+      }
     }
   };
 

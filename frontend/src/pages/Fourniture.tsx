@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingBag, Plus, Search, Edit, List, Grid } from 'lucide-react';
+import { ShoppingBag, Plus, Search, Edit, List, Grid, Trash2 } from 'lucide-react';
+import { fournitureService } from '../services/api';
 
 interface Fourniture {
   id_fourniture?: number;
@@ -27,8 +28,13 @@ const Fourniture: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      // TODO: Remplacer par l'API réelle avec filtre type = 'FOURNITURE'
-      const mockFournitures: Fourniture[] = [
+      const response = await fournitureService.getFournitures({ search });
+      if (response.data?.success || response.data?.data) {
+        const fournituresData = response.data.data?.fournitures || response.data.data || [];
+        setFournitures(fournituresData);
+      } else {
+        // Fallback sur données mockées si l'API ne retourne pas success
+        const mockFournitures: Fourniture[] = [
         {
           id_fourniture: 1,
           code_fourniture: 'FOU-001',
@@ -75,8 +81,10 @@ const Fourniture: React.FC = () => {
         }
       ];
       setFournitures(mockFournitures);
+      }
     } catch (error) {
       console.error('Erreur chargement fournitures:', error);
+      setFournitures([]);
     } finally {
       setLoading(false);
     }

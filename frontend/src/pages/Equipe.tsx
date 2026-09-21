@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { UserCircle, Plus, Edit, Trash2, Search, LayoutDashboard, X, Clock, DollarSign, TrendingUp, Calendar, CheckCircle, AlertTriangle } from 'lucide-react';
-import api from '../services/api';
+import { UserCircle, Plus, Edit, Trash2, Search, LayoutDashboard, X, Clock, DollarSign, TrendingUp, Calendar, CheckCircle, AlertTriangle, Lock } from 'lucide-react';
+import api, { utilisateursService } from '../services/api';
 
 interface MembreEquipe {
   id: number;
@@ -59,6 +59,13 @@ const Equipe: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [selectedMembre, setSelectedMembre] = useState<MembreEquipe | null>(null);
   const [showDashboardModal, setShowDashboardModal] = useState(false);
+  const [dashboardFormData, setDashboardFormData] = useState({
+    email: '',
+    password: '',
+    confirmPassword: '',
+    dashboards: [] as string[]
+  });
+  const [savingDashboard, setSavingDashboard] = useState(false);
   const [filterUtiliseSysteme, setFilterUtiliseSysteme] = useState<string>('tous');
   const [formData, setFormData] = useState({
     nom: '',
@@ -101,7 +108,30 @@ const Equipe: React.FC = () => {
 
   const loadMembres = async () => {
     try {
-      // Pour l'instant, données mockées - à remplacer par l'API réelle
+      setLoading(true);
+      const response = await utilisateursService.getEquipe();
+      if (response.data.success) {
+        const membresData = response.data.data.membres.map((m: any) => ({
+          id: m.id,
+          nom: m.nom,
+          prenom: m.prenom,
+          fonction: m.fonction,
+          email: m.email,
+          telephone: m.telephone,
+          actif: m.actif,
+          utiliseSysteme: m.utiliseSysteme,
+          dashboardsAttribues: m.dashboardsAttribues || [],
+          // Données par défaut pour les champs non disponibles via l'API
+          horaireBrut: 0,
+          categorie: '',
+          echelon: '',
+          salaireBrut: 0
+        }));
+        setMembres(membresData);
+      }
+    } catch (error) {
+      console.error('Erreur chargement équipe:', error);
+      // Fallback sur données mockées en cas d'erreur
       const mockMembres: MembreEquipe[] = [
         { 
           id: 1, 
@@ -243,8 +273,6 @@ const Equipe: React.FC = () => {
         }
       ];
       setMembres(mockMembres);
-    } catch (error) {
-      console.error('Erreur chargement équipe:', error);
     } finally {
       setLoading(false);
     }
@@ -591,12 +619,18 @@ const Equipe: React.FC = () => {
                 <button
                   onClick={() => {
                     setSelectedMembre(membre);
+                    setDashboardFormData({
+                      email: membre.email || '',
+                      password: '',
+                      confirmPassword: '',
+                      dashboards: membre.dashboardsAttribues || []
+                    });
                     setShowDashboardModal(true);
                   }}
                   className="w-full flex items-center justify-center gap-2 bg-purple-50 text-purple-600 px-3 py-2 rounded-lg hover:bg-purple-100 transition-colors"
                 >
                   <LayoutDashboard className="w-4 h-4" />
-                  Attribuer Dashboards
+                  {membre.utiliseSysteme ? 'Modifier Accès' : 'Créer Accès'}
                 </button>
                 {membre.dashboardsAttribues && membre.dashboardsAttribues.length > 0 && (
                   <div className="mt-2 pt-2 border-t">
@@ -830,11 +864,76 @@ const Equipe: React.FC = () => {
             </div>
             <div className="p-6">
               <p className="text-sm text-gray-600 mb-4">
-                Sélectionnez les dashboards à attribuer à {selectedMembre.prenom} {selectedMembre.nom}
+                Configurez l'accès système pour {selectedMembre.prenom} {selectedMembre.nom}
               </p>
+              
+              {/* Formulaire Email et Mot de passe */}
+              <div className="space-y-4 mb-6 p-4 bg-gray-50 rounded-lg">
+                <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                  <Lock className="w-5 h-5" />
+                  Identifiants de connexion
+                </h4>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email <span className="text-red-600">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={dashboardFormData.email}
+                    onChange={(e) => setDashboardFormData({ ...dashboardFormData, email: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="email@laplume-artisanale.tn"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Mot de passe <span className="text-red-600">*</span>
+                  </label>
+                  <input
+                    type="password"
+                    value={dashboardFormData.password}
+                    onChange={(e) => setDashboardFormData({ ...dashboardFormData, password: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder={selectedMembre.utiliseSysteme ? "Laisser vide pour ne pas modifier" : "Mot de passe"}
+                    required={!selectedMembre.utiliseSysteme}
+                  />
+                  {selectedMembre.utiliseSysteme && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Laisser vide si vous ne souhaitez pas modifier le mot de passe
+                    </p>
+                  )}
+                </div>
+                
+                {!selectedMembre.utiliseSysteme && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Confirmer le mot de passe <span className="text-red-600">*</span>
+                    </label>
+                    <input
+                      type="password"
+                      value={dashboardFormData.confirmPassword}
+                      onChange={(e) => setDashboardFormData({ ...dashboardFormData, confirmPassword: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      placeholder="Confirmer le mot de passe"
+                      required
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Sélection des dashboards */}
+              <div className="mb-4">
+                <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                  <LayoutDashboard className="w-5 h-5" />
+                  Dashboards à attribuer
+                </h4>
+              </div>
               <div className="space-y-2">
                 {dashboardsDisponibles.map(dashboard => {
-                  const isSelected = selectedMembre.dashboardsAttribues?.includes(dashboard.id) || false;
+                  const isSelected = dashboardFormData.dashboards.includes(dashboard.id);
                   return (
                     <label
                       key={dashboard.id}
@@ -844,16 +943,15 @@ const Equipe: React.FC = () => {
                         type="checkbox"
                         checked={isSelected}
                         onChange={(e) => {
-                          const current = selectedMembre.dashboardsAttribues || [];
                           if (e.target.checked) {
-                            setSelectedMembre({
-                              ...selectedMembre,
-                              dashboardsAttribues: [...current, dashboard.id]
+                            setDashboardFormData({
+                              ...dashboardFormData,
+                              dashboards: [...dashboardFormData.dashboards, dashboard.id]
                             });
                           } else {
-                            setSelectedMembre({
-                              ...selectedMembre,
-                              dashboardsAttribues: current.filter(id => id !== dashboard.id)
+                            setDashboardFormData({
+                              ...dashboardFormData,
+                              dashboards: dashboardFormData.dashboards.filter(id => id !== dashboard.id)
                             });
                           }
                         }}
@@ -879,18 +977,53 @@ const Equipe: React.FC = () => {
                 Annuler
               </button>
               <button
-                onClick={() => {
-                  // Sauvegarder les attributions
-                  setMembres(prev => prev.map(m => 
-                    m.id === selectedMembre.id ? selectedMembre : m
-                  ));
-                  // TODO: Appel API pour sauvegarder
-                  setShowDashboardModal(false);
-                  setSelectedMembre(null);
+                onClick={async () => {
+                  // Validation
+                  if (!dashboardFormData.email) {
+                    alert('Veuillez saisir un email');
+                    return;
+                  }
+                  
+                  if (!selectedMembre.utiliseSysteme && !dashboardFormData.password) {
+                    alert('Veuillez saisir un mot de passe');
+                    return;
+                  }
+                  
+                  if (!selectedMembre.utiliseSysteme && dashboardFormData.password !== dashboardFormData.confirmPassword) {
+                    alert('Les mots de passe ne correspondent pas');
+                    return;
+                  }
+                  
+                  if (dashboardFormData.dashboards.length === 0) {
+                    alert('Veuillez sélectionner au moins un dashboard');
+                    return;
+                  }
+                  
+                  try {
+                    setSavingDashboard(true);
+                    await utilisateursService.creerUtilisateurEquipe(selectedMembre.id, {
+                      email: dashboardFormData.email,
+                      password: dashboardFormData.password || 'temp_password_will_be_updated',
+                      dashboards: dashboardFormData.dashboards
+                    });
+                    
+                    // Recharger les membres
+                    await loadMembres();
+                    
+                    setShowDashboardModal(false);
+                    setSelectedMembre(null);
+                    setDashboardFormData({ email: '', password: '', confirmPassword: '', dashboards: [] });
+                  } catch (error: any) {
+                    console.error('Erreur sauvegarde:', error);
+                    alert(error.response?.data?.error?.message || 'Erreur lors de la sauvegarde');
+                  } finally {
+                    setSavingDashboard(false);
+                  }
                 }}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                disabled={savingDashboard}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
-                Sauvegarder
+                {savingDashboard ? 'Enregistrement...' : 'Sauvegarder'}
               </button>
             </div>
           </div>

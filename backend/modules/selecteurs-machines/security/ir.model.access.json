@@ -1,0 +1,10 @@
+{
+  "id": "access_selecteurs-machines",
+  "name": "SelecteursMachines Access",
+  "model_id": "selecteurs-machines.selecteurs",
+  "group_id": "base.group_user",
+  "perm_read": true,
+  "perm_write": true,
+  "perm_create": true,
+  "perm_unlink": true
+}

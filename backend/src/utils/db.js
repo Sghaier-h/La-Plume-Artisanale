@@ -15,6 +15,12 @@ const poolConfig = {
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 10000, // Augmenté à 10 secondes
+  // Configuration SSL pour OVH Cloud (si host contient clouddb.ovh.net)
+  ...(process.env.DB_HOST && process.env.DB_HOST.includes('clouddb.ovh.net') ? {
+    ssl: {
+      rejectUnauthorized: false // OVH Cloud nécessite SSL
+    }
+  } : {})
 };
 
 // Mode mock activé - ne pas créer le pool si on n'a pas besoin de DB

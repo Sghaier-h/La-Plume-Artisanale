@@ -1,0 +1,1461 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { 
+  LayoutDashboard, Package, Calendar, Users, Cog, Bell, 
+  Menu, X, AlertCircle, CheckCircle, Clock, TrendingUp,
+  Scissors, Factory, ClipboardList, Truck, BarChart3, Upload,
+  Box, Boxes, Package2, ShoppingBag, UserCheck, ChevronDown, ChevronRight,
+  Activity, Zap, AlertTriangle, Download, Image, FileText, History,
+  Eye, Plus, Camera, CalendarCheck, Database, ArrowRight, ArrowLeft,
+  Smartphone, Tablet, Monitor, Send, RefreshCw, TrendingDown, DollarSign,
+  MapPin, CheckSquare, XCircle, Filter, SortAsc, Target
+} from 'lucide-react';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ComposedChart } from 'recharts';
+
+export default function FoutaManagementApp() {
+  // États de base
+  const [currentView, setCurrentView] = useState('dashboard');
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [companyLogo, setCompanyLogo] = useState(null);
+  const [showLogoUpload, setShowLogoUpload] = useState(false);
+  const [stockMenuOpen, setStockMenuOpen] = useState(false);
+  const [productionMenuOpen, setProductionMenuOpen] = useState(false);
+  const [showDocumentModal, setShowDocumentModal] = useState(false);
+  const [selectedMachine, setSelectedMachine] = useState(null);
+  
+  // Nouveaux états pour les 6 fonctionnalités
+  const [isMobile, setIsMobile] = useState(false);
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [showImageUploadModal, setShowImageUploadModal] = useState(false);
+  const [selectedArticle, setSelectedArticle] = useState(null);
+  const [articleImages, setArticleImages] = useState({});
+  const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState(false);
+  
+  // Données réelles
+  const [realData] = useState({
+    totalCommandes: 11333,
+    ordresFabrication: 5624,
+    totalMachines: 18,
+    machinesActives: 14,
+    soustraitants: 42,
+    poidsMP: 90298.11,
+    operationsTissage: 230,
+    articles: 1255,
+    modeles: 135
+  });
+
+  const [notifications, setNotifications] = useState([
+    { id: 1, type: 'alert', message: 'Machine M2301 - Ensouple à 320m', time: '2min' },
+    { id: 2, type: 'alert', message: 'Machine M2305 - Ensouple à 350m', time: '15min' },
+    { id: 3, type: 'info', message: 'Ordissage M2308 terminé', time: '1h' },
+    { id: 4, type: 'alert', message: 'Stock MP Blanc NM05 faible (381kg)', time: '2h' }
+  ]);
+  
+  // Données machines
+  const [machinesReelles] = useState([
+    { machine: 'M2301', type: 'HTVS4/S', nbFils: 966, restant: 320, status: 'alert', prod: 145, operateur: 'Majdi', operations: 18 },
+    { machine: 'M2302', type: 'HTVS6/S', nbFils: 966, restant: 1750, status: 'ok', prod: 152, operateur: 'Zied', operations: 30 },
+    { machine: 'M2303', type: 'HTVS4/S', nbFils: 1450, restant: 2100, status: 'ok', prod: 138, operateur: 'Majdi', operations: 8 },
+    { machine: 'M2304', type: 'GTN6/SD', nbFils: 1820, restant: 920, status: 'ok', prod: 160, operateur: 'Badie', operations: 12 },
+    { machine: 'M2305', type: 'HTV8/S', nbFils: 2140, restant: 350, status: 'alert', prod: 148, operateur: 'Dimatex', operations: 15 },
+    { machine: 'M2306', type: 'HTV8/S', nbFils: 966, restant: 1200, status: 'ok', prod: 155, operateur: 'Majdi', operations: 22 },
+    { machine: 'M2307', type: 'HTV4/SD', nbFils: 1450, restant: 480, status: 'warning', prod: 142, operateur: 'Zied', operations: 19 },
+    { machine: 'M2308', type: 'GTN6/SD', nbFils: 1820, restant: 2500, status: 'ok', prod: 168, operateur: 'Badie', operations: 44 }
+  ]);
+
+  const [consoData] = useState([
+    { date: '11/10', theorique: 2150, reel: 2245, ecart: 95 },
+    { date: '12/10', theorique: 2180, reel: 2198, ecart: 18 },
+    { date: '13/10', theorique: 2200, reel: 2156, ecart: -44 },
+    { date: '14/10', theorique: 2160, reel: 2280, ecart: 120 },
+    { date: '15/10', theorique: 2190, reel: 2245, ecart: 55 },
+    { date: '16/10', theorique: 2170, reel: 2210, ecart: 40 },
+    { date: '17/10', theorique: 2200, reel: 2268, ecart: 68 }
+  ]);
+
+  const [productionStats] = useState([
+    { name: 'Actives', value: 14, color: '#10b981' },
+    { name: 'En Alerte', value: 2, color: '#f59e0b' },
+    { name: 'Arrêtées', value: 4, color: '#ef4444' }
+  ]);
+
+  const [stockMP] = useState([
+    { couleur: 'BLANC', code: 'C01', nm: 'NM05-01.00', stock: 381.5, statut: 'Critique' },
+    { couleur: 'ECRU', code: 'C02', nm: 'NM05-02.00', stock: 1123.5, statut: 'Bon' },
+    { couleur: 'BLEU', code: 'C12', nm: 'NM05-12.00', stock: 567.2, statut: 'Moyen' },
+    { couleur: 'VERT', code: 'C15', nm: 'NM05-15.00', stock: 892.4, statut: 'Bon' }
+  ]);
+
+  const [modelesProd] = useState([
+    { modele: 'UNI SURPIQUE', quantite: 2847, pourcentage: 28 },
+    { modele: 'ARTHUR', quantite: 1523, pourcentage: 15 },
+    { modele: 'IBIZA', quantite: 1345, pourcentage: 13 },
+    { modele: 'MARINIERE', quantite: 982, pourcentage: 10 },
+    { modele: 'BERBER', quantite: 876, pourcentage: 9 },
+    { modele: 'Autres', quantite: 2551, pourcentage: 25 }
+  ]);
+
+  // Données pour transferts entre entrepôts
+  const [entrepots] = useState([
+    { id: 'E1', nom: 'Entrepôt Usine', type: 'Usine', capacite: 5000, utilise: 3421, adresse: 'Zone Industrielle' },
+    { id: 'E2', nom: 'Entrepôt MP Central', type: 'Matière Première', capacite: 10000, utilise: 7234, adresse: 'Rue de l\'Industrie' },
+    { id: 'E3', nom: 'Entrepôt PF', type: 'Produits Finis', capacite: 8000, utilise: 4567, adresse: 'Zone Logistique' }
+  ]);
+
+  const [transferts, setTransferts] = useState([
+    { id: 'TRF-001', de: 'E2', vers: 'E1', article: 'BLANC C01', quantite: 250, statut: 'En cours', date: '17/10/2025' },
+    { id: 'TRF-002', de: 'E1', vers: 'E3', article: 'IBIZA 1020', quantite: 150, statut: 'Validé', date: '16/10/2025' }
+  ]);
+
+  // Données articles avec images
+  const [articles] = useState([
+    { 
+      id: 'ART001', 
+      ref: 'IB1020-B20-01', 
+      modele: 'IBIZA', 
+      dimensions: '1020',
+      prix: 9.75,
+      stock: 245,
+      description: 'Fouta IBIZA tissage plat 100x200cm, finition frange'
+    },
+    { 
+      id: 'ART002', 
+      ref: 'AR2426-T15-32', 
+      modele: 'ARTHUR', 
+      dimensions: '2426',
+      prix: 12.50,
+      stock: 180,
+      description: 'Fouta ARTHUR jacquard 240x260cm'
+    },
+    { 
+      id: 'ART003', 
+      ref: 'NDL1020-B99-01', 
+      modele: 'ND LILI', 
+      dimensions: '1020',
+      prix: 11.25,
+      stock: 320,
+      description: 'Fouta ND LILI motif moderne 100x200cm'
+    }
+  ]);
+
+  // Données Gantt
+  const [ganttTasks] = useState([
+    { id: 'OF-001', machine: 'M2301', debut: '2025-10-17', fin: '2025-10-20', progression: 45, priorite: 'Haute' },
+    { id: 'OF-002', machine: 'M2302', debut: '2025-10-18', fin: '2025-10-22', progression: 20, priorite: 'Normale' },
+    { id: 'OF-003', machine: 'M2303', debut: '2025-10-19', fin: '2025-10-23', progression: 0, priorite: 'Urgente' },
+    { id: 'OF-004', machine: 'M2304', debut: '2025-10-17', fin: '2025-10-21', progression: 65, priorite: 'Normale' },
+    { id: 'OF-005', machine: 'M2305', debut: '2025-10-20', fin: '2025-10-24', progression: 0, priorite: 'Basse' }
+  ]);
+
+  // Données rapports avancés
+  const [rapportData] = useState({
+    performanceHebdo: [
+      { jour: 'Lun', objectif: 2200, realise: 2350, ecart: 150 },
+      { jour: 'Mar', objectif: 2200, realise: 2180, ecart: -20 },
+      { jour: 'Mer', objectif: 2200, realise: 2420, ecart: 220 },
+      { jour: 'Jeu', objectif: 2200, realise: 2100, ecart: -100 },
+      { jour: 'Ven', objectif: 2200, realise: 2380, ecart: 180 },
+      { jour: 'Sam', objectif: 1800, realise: 1950, ecart: 150 },
+      { jour: 'Dim', objectif: 0, realise: 0, ecart: 0 }
+    ],
+    coûtsProduction: [
+      { categorie: 'Matière Première', montant: 45230, pourcentage: 52 },
+      { categorie: 'Main d\'œuvre', montant: 28450, pourcentage: 33 },
+      { categorie: 'Sous-traitance', montant: 8920, pourcentage: 10 },
+      { categorie: 'Énergie', montant: 4300, pourcentage: 5 }
+    ],
+    kpiMachines: [
+      { machine: 'M2301', disponibilite: 95, performance: 88, qualite: 92, trs: 78 },
+      { machine: 'M2302', disponibilite: 92, performance: 91, qualite: 94, trs: 79 },
+      { machine: 'M2303', disponibilite: 88, performance: 85, qualite: 90, trs: 67 },
+      { machine: 'M2304', disponibilite: 97, performance: 93, qualite: 96, trs: 86 }
+    ]
+  });
+
+  const [theme, setTheme] = useState({
+    primaryColor: '#2563eb',
+    secondaryColor: '#10b981',
+    accentColor: '#f59e0b',
+    darkMode: false,
+    companyName: 'FOUTA Manufacturing',
+    borderRadius: 'medium',
+    fontSize: 'medium',
+  });
+
+  // Fonctions
+  const handleLogoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCompanyLogo(reader.result);
+        setShowLogoUpload(false);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Détection mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Upload images articles
+  const handleImageUpload = (e, articleId) => {
+    const files = Array.from(e.target.files);
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setArticleImages(prev => ({
+          ...prev,
+          [articleId]: [...(prev[articleId] || []), reader.result]
+        }));
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Créer transfert
+  const createTransfert = (data) => {
+    const newTransfert = {
+      id: `TRF-${String(transferts.length + 1).padStart(3, '0')}`,
+      ...data,
+      statut: 'En attente',
+      date: new Date().toLocaleDateString('fr-FR')
+    };
+    setTransferts([...transferts, newTransfert]);
+    showPushNotification('Nouveau transfert créé', `Transfert ${newTransfert.id} en attente de validation`);
+  };
+
+  // Notifications push
+  const showPushNotification = useCallback((title, message) => {
+    if (!pushNotificationsEnabled) return;
+    
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(title, {
+        body: message,
+        icon: '/icon-192.png',
+        badge: '/badge-72.png',
+        tag: 'fouta-notification',
+        requireInteraction: false
+      });
+    }
+    
+    const newNotif = {
+      id: Date.now(),
+      type: 'info',
+      message: `${title}: ${message}`,
+      time: 'maintenant'
+    };
+    setNotifications(prev => [newNotif, ...prev.slice(0, 19)]);
+  }, [pushNotificationsEnabled]);
+
+  const enablePushNotifications = async () => {
+    if ('Notification' in window) {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        setPushNotificationsEnabled(true);
+        showPushNotification('Notifications activées', 'Vous recevrez maintenant les alertes en temps réel');
+      }
+    }
+  };
+
+  const updateTheme = (key, value) => {
+    setTheme(prev => ({ ...prev, [key]: value }));
+  };
+
+  const exportToExcel = () => {
+    const header = ['Machine', 'Type', 'Nb Fils', 'Métrage Restant', 'Status', 'Opérateur', 'Opérations', 'Date'];
+    const rows = machinesReelles.map(m => [
+      m.machine, m.type, m.nbFils, m.restant, m.status, m.operateur, m.operations, '17/10/2025'
+    ]);
+    const csv = [header, ...rows].map(row => row.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `rapport_production_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+  };
+
+  // Simulation notifications
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const alertMachines = machinesReelles.filter(m => m.status === 'alert' || m.status === 'warning');
+      if (alertMachines.length > 0 && Math.random() > 0.7) {
+        const machine = alertMachines[Math.floor(Math.random() * alertMachines.length)];
+        const newNotif = {
+          id: Date.now(),
+          type: 'alert',
+          message: `Machine ${machine.machine} - Alerte ensouple à ${machine.restant}m`,
+          time: 'maintenant'
+        };
+        setNotifications(prev => [newNotif, ...prev.slice(0, 9)]);
+      }
+    }, 45000);
+    return () => clearInterval(interval);
+  }, [machinesReelles]);
+
+  const machinesAlertes = machinesReelles.filter(m => m.status === 'alert').length;
+  const machinesWarning = machinesReelles.filter(m => m.status === 'warning').length;
+  const productionMoyenne = Math.floor(machinesReelles.reduce((acc, m) => acc + m.prod, 0) / machinesReelles.length);
+  const tauxUtilisation = ((realData.machinesActives / realData.totalMachines) * 100).toFixed(1);
+
+  const menuItems = [
+    { id: 'dashboard', label: 'Tableau de Bord', icon: LayoutDashboard, badge: null },
+    { id: 'gantt', label: 'Diagramme Gantt', icon: CalendarCheck, badge: null },
+    { id: 'planning', label: 'Planification', icon: Calendar, badge: '23' },
+    { id: 'orders', label: 'Commandes', icon: Package, badge: realData.ordresFabrication.toString() },
+    { id: 'products', label: 'Produits', icon: Box, badge: null },
+    { 
+      id: 'production', 
+      label: 'Production', 
+      icon: Factory, 
+      badge: null,
+      hasSubmenu: true,
+      submenu: [
+        { id: 'production-suivi', label: 'Suivi Production', icon: Activity },
+        { id: 'production-of', label: 'Ordres de Fabrication', icon: ClipboardList },
+        { id: 'production-ensouples', label: 'Suivi Ensouples', icon: Zap }
+      ]
+    },
+    { 
+      id: 'stock', 
+      label: 'Stock', 
+      icon: ClipboardList, 
+      badge: null,
+      hasSubmenu: true,
+      submenu: [
+        { id: 'stock-pf', label: 'Produit Fini', icon: Package2 },
+        { id: 'stock-sf', label: 'Semi-Fini', icon: Boxes },
+        { id: 'stock-mp', label: 'Matière Première', icon: ShoppingBag },
+        { id: 'stock-fourniture', label: 'Fourniture', icon: Package }
+      ]
+    },
+    { id: 'transferts', label: 'Transferts', icon: ArrowRight, badge: transferts.filter(t => t.statut === 'En attente').length.toString() },
+    { id: 'subcontractors', label: 'Sous-Traitants', icon: UserCheck, badge: realData.soustraitants.toString() },
+    { id: 'shipping', label: 'Expédition', icon: Truck, badge: null },
+    { id: 'rapports', label: 'Rapports Avancés', icon: BarChart3, badge: null },
+    { id: 'users', label: 'Utilisateurs', icon: Users, badge: null },
+    { id: 'settings', label: 'Paramètres', icon: Cog, badge: null },
+  ];
+
+  return (
+    <div className="min-h-screen bg-gray-100">
+      {/* Sidebar - Responsive */}
+      <aside className={`fixed left-0 top-0 h-full bg-white shadow-lg transition-all duration-300 z-20 ${
+        isMobile ? (sidebarOpen ? 'w-full' : 'w-0') : (sidebarOpen ? 'w-64' : 'w-20')
+      } ${isMobile && !sidebarOpen ? 'hidden' : ''}`}>
+        <div className="p-4 overflow-y-auto h-full">
+          <div className="flex items-center gap-2 mb-8">
+            {companyLogo ? (
+              <img src={companyLogo} alt="Logo" className="h-8 w-auto" />
+            ) : (
+              <Scissors className="w-8 h-8" style={{ color: theme.primaryColor }} />
+            )}
+            {sidebarOpen && (
+              <span className="font-bold text-gray-800">{theme.companyName}</span>
+            )}
+          </div>
+
+          {/* Indicateur plateforme */}
+          {sidebarOpen && (
+            <div className="mb-4 p-2 bg-blue-50 rounded-lg flex items-center gap-2 text-sm">
+              {isMobile ? (
+                <><Smartphone className="w-4 h-4 text-blue-600" /><span className="text-blue-600">Version Mobile</span></>
+              ) : window.innerWidth < 1024 ? (
+                <><Tablet className="w-4 h-4 text-blue-600" /><span className="text-blue-600">Version Tablette</span></>
+              ) : (
+                <><Monitor className="w-4 h-4 text-blue-600" /><span className="text-blue-600">Version Desktop</span></>
+              )}
+            </div>
+          )}
+
+          <nav className="mt-8 space-y-1">
+            {menuItems.map((item) => {
+              const isActive = currentView === item.id || 
+                (item.id === 'stock' && currentView.startsWith('stock-')) ||
+                (item.id === 'production' && currentView.startsWith('production-'));
+              
+              const isStockOpen = item.id === 'stock' && stockMenuOpen;
+              const isProdOpen = item.id === 'production' && productionMenuOpen;
+              
+              return (
+                <div key={item.id}>
+                  <button
+                    onClick={() => {
+                      if (item.hasSubmenu) {
+                        if (item.id === 'stock') {
+                          setStockMenuOpen(!stockMenuOpen);
+                        } else if (item.id === 'production') {
+                          setProductionMenuOpen(!productionMenuOpen);
+                        }
+                      } else {
+                        setCurrentView(item.id);
+                        if (isMobile) setSidebarOpen(false);
+                      }
+                    }}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                      isActive ? 'text-white shadow-lg' : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                    style={isActive ? { backgroundColor: theme.primaryColor } : {}}
+                  >
+                    <item.icon className="w-5 h-5" />
+                    {sidebarOpen && <span className="font-medium">{item.label}</span>}
+                    {item.badge && sidebarOpen && (
+                      <span 
+                        className="ml-auto px-2 py-1 text-xs rounded-full text-white"
+                        style={{ 
+                          backgroundColor: isActive ? 'rgba(255,255,255,0.2)' : theme.accentColor
+                        }}
+                      >
+                        {item.badge}
+                      </span>
+                    )}
+                    {item.hasSubmenu && sidebarOpen && (
+                      <span className="ml-auto">
+                        {(isStockOpen || isProdOpen) 
+                          ? <ChevronDown className="w-4 h-4" /> 
+                          : <ChevronRight className="w-4 h-4" />}
+                      </span>
+                    )}
+                  </button>
+                  
+                  {item.hasSubmenu && sidebarOpen && (isStockOpen || isProdOpen) && (
+                    <div className="ml-4 mt-1 space-y-1">
+                      {item.submenu.map((subitem) => (
+                        <button
+                          key={subitem.id}
+                          onClick={() => {
+                            setCurrentView(subitem.id);
+                            if (isMobile) setSidebarOpen(false);
+                          }}
+                          className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-colors text-sm ${
+                            currentView === subitem.id
+                              ? 'text-white shadow' 
+                              : 'text-gray-600 hover:bg-gray-100'
+                          }`}
+                          style={currentView === subitem.id ? { backgroundColor: theme.secondaryColor } : {}}
+                        >
+                          <subitem.icon className="w-4 h-4" />
+                          <span>{subitem.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </nav>
+        </div>
+      </aside>
+
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b border-gray-200 fixed top-0 right-0 left-0 z-10" 
+              style={{ marginLeft: isMobile ? 0 : (sidebarOpen ? '256px' : '80px') }}>
+        <div className="px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 hover:bg-gray-100 rounded-lg">
+              {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+            <div 
+              className="flex items-center gap-2 cursor-pointer group"
+              onClick={() => setShowLogoUpload(true)}
+              title="Cliquer pour changer le logo"
+            >
+              {companyLogo ? (
+                <img src={companyLogo} alt="Logo" className="h-10 w-auto object-contain" />
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Scissors className="w-6 h-6" style={{ color: theme.primaryColor }} />
+                  {!isMobile && <span className="text-xl font-bold text-gray-800">{theme.companyName}</span>}
+                </div>
+              )}
+              <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                <Upload className="w-4 h-4 text-gray-400" />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={enablePushNotifications}
+              className={`p-2 rounded-lg ${pushNotificationsEnabled ? 'bg-green-100 text-green-700' : 'hover:bg-gray-100'}`}
+              title={pushNotificationsEnabled ? 'Notifications activées' : 'Activer les notifications'}
+            >
+              {pushNotificationsEnabled ? <CheckCircle className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
+            </button>
+            
+            <button 
+              onClick={() => setShowNotifications(!showNotifications)}
+              className="relative p-2 hover:bg-gray-100 rounded-lg"
+            >
+              <Bell className="w-5 h-5" />
+              {notifications.length > 0 && (
+                <span 
+                  className="absolute top-1 right-1 w-5 h-5 rounded-full text-white text-xs flex items-center justify-center font-bold"
+                  style={{ backgroundColor: theme.accentColor }}
+                >
+                  {notifications.length}
+                </span>
+              )}
+            </button>
+            
+            {showNotifications && (
+              <div className="absolute right-4 top-16 w-96 bg-white rounded-lg shadow-2xl border border-gray-200 z-50">
+                <div className="p-4 border-b border-gray-200">
+                  <h3 className="font-semibold text-gray-800">Notifications</h3>
+                </div>
+                <div className="max-h-96 overflow-y-auto">
+                  {notifications.map(notif => (
+                    <div 
+                      key={notif.id}
+                      className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${
+                        notif.type === 'alert' ? 'bg-orange-50' : ''
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        {notif.type === 'alert' ? (
+                          <AlertTriangle className="w-5 h-5 text-orange-600 mt-1" />
+                        ) : (
+                          <CheckCircle className="w-5 h-5 text-green-600 mt-1" />
+                        )}
+                        <div className="flex-1">
+                          <p className="text-sm text-gray-800">{notif.message}</p>
+                          <p className="text-xs text-gray-500 mt-1">{notif.time}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium"
+                   style={{ backgroundColor: theme.primaryColor }}>
+                AD
+              </div>
+              {!isMobile && <span className="text-sm font-medium text-gray-700">Admin</span>}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="transition-all duration-300 pt-16 p-4 md:p-6" style={{ marginLeft: isMobile ? 0 : (sidebarOpen ? '256px' : '80px') }}>
+        
+        {/* DASHBOARD PRINCIPAL */}
+        {currentView === 'dashboard' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-800">📊 Tableau de Bord</h1>
+              <div className="flex items-center gap-2 px-3 md:px-4 py-2 bg-green-100 rounded-lg">
+                <Database className="w-4 md:w-5 h-4 md:h-5 text-green-700" />
+                <span className="text-xs md:text-sm font-medium text-green-800">Données synchronisées</span>
+              </div>
+            </div>
+
+            {/* KPIs */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
+              <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-4 md:p-5 text-white">
+                <Package className="w-6 md:w-8 h-6 md:h-8 mb-2 opacity-80" />
+                <p className="text-xs md:text-sm opacity-90">Commandes</p>
+                <p className="text-2xl md:text-3xl font-bold mt-1">{realData.totalCommandes.toLocaleString()}</p>
+              </div>
+              
+              <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-4 md:p-5 text-white">
+                <Factory className="w-6 md:w-8 h-6 md:h-8 mb-2 opacity-80" />
+                <p className="text-xs md:text-sm opacity-90">OFs</p>
+                <p className="text-2xl md:text-3xl font-bold mt-1">{realData.ordresFabrication.toLocaleString()}</p>
+              </div>
+
+              <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-4 md:p-5 text-white">
+                <Activity className="w-6 md:w-8 h-6 md:h-8 mb-2 opacity-80" />
+                <p className="text-xs md:text-sm opacity-90">Machines</p>
+                <p className="text-2xl md:text-3xl font-bold mt-1">{realData.machinesActives}/{realData.totalMachines}</p>
+              </div>
+
+              <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg p-4 md:p-5 text-white">
+                <AlertTriangle className="w-6 md:w-8 h-6 md:h-8 mb-2 opacity-80" />
+                <p className="text-xs md:text-sm opacity-90">Alertes</p>
+                <p className="text-2xl md:text-3xl font-bold mt-1">{machinesAlertes + machinesWarning}</p>
+              </div>
+
+              <div className="bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl shadow-lg p-4 md:p-5 text-white">
+                <UserCheck className="w-6 md:w-8 h-6 md:h-8 mb-2 opacity-80" />
+                <p className="text-xs md:text-sm opacity-90">Sous-Traitants</p>
+                <p className="text-2xl md:text-3xl font-bold mt-1">{realData.soustraitants}</p>
+              </div>
+            </div>
+
+            {/* Graphiques */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+              <div className="bg-white rounded-xl shadow-lg p-4 md:p-6">
+                <h2 className="text-base md:text-lg font-semibold text-gray-800 mb-4">Production 7 jours</h2>
+                <ResponsiveContainer width="100%" height={250}>
+                  <AreaChart data={consoData}>
+                    <defs>
+                      <linearGradient id="colorTheo" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                      </linearGradient>
+                      <linearGradient id="colorReel" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Area type="monotone" dataKey="theorique" stroke="#3b82f6" fillOpacity={1} fill="url(#colorTheo)" name="Théorique" />
+                    <Area type="monotone" dataKey="reel" stroke="#10b981" fillOpacity={1} fill="url(#colorReel)" name="Réel" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="bg-white rounded-xl shadow-lg p-4 md:p-6">
+                <h2 className="text-base md:text-lg font-semibold text-gray-800 mb-4">Top Modèles</h2>
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={modelesProd}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="modele" angle={-45} textAnchor="end" height={80} />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="quantite" fill="#10b981" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* État Machines */}
+            <div className="bg-white rounded-xl shadow-lg p-4 md:p-6">
+              <h2 className="text-base md:text-lg font-semibold text-gray-800 mb-4">État Machines</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+                {machinesReelles.slice(0, 8).map((machine, idx) => (
+                  <div 
+                    key={idx}
+                    className={`p-3 md:p-4 rounded-lg border-l-4 ${
+                      machine.status === 'alert' ? 'bg-red-50 border-red-500' :
+                      machine.status === 'warning' ? 'bg-orange-50 border-orange-500' :
+                      'bg-green-50 border-green-500'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-bold text-gray-900">{machine.machine}</h3>
+                      <span className={`w-3 h-3 rounded-full ${
+                        machine.status === 'alert' ? 'bg-red-500 animate-pulse' :
+                        machine.status === 'warning' ? 'bg-orange-500' :
+                        'bg-green-500'
+                      }`} />
+                    </div>
+                    <p className="text-xs text-gray-600 mb-1">{machine.type}</p>
+                    <p className="text-sm text-gray-700">Restant: <span className="font-bold">{machine.restant}m</span></p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODULE GANTT */}
+        {currentView === 'gantt' && (
+          <div className="space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <h1 className="text-2xl font-bold text-gray-800">📅 Planification Gantt</h1>
+              <button 
+                onClick={exportToExcel}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2"
+              >
+                <Download className="w-5 h-5" />
+                Export
+              </button>
+            </div>
+
+            {/* Légende */}
+            <div className="bg-white rounded-lg shadow p-4 flex flex-wrap gap-4">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-red-500 rounded"></div>
+                <span className="text-sm">Urgente</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-orange-500 rounded"></div>
+                <span className="text-sm">Haute</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-blue-500 rounded"></div>
+                <span className="text-sm">Normale</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-gray-400 rounded"></div>
+                <span className="text-sm">Basse</span>
+              </div>
+            </div>
+
+            {/* Diagramme */}
+            <div className="bg-white rounded-lg shadow p-4 md:p-6 overflow-x-auto">
+              <div className="min-w-[800px]">
+                <div className="grid grid-cols-7 gap-2 mb-4">
+                  {['17/10', '18/10', '19/10', '20/10', '21/10', '22/10', '23/10'].map(date => (
+                    <div key={date} className="text-center text-sm font-semibold text-gray-700 border-b-2 pb-2">
+                      {date}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="space-y-3">
+                  {ganttTasks.map((task, idx) => {
+                    const debutDate = new Date(task.debut);
+                    const finDate = new Date(task.fin);
+                    const baseDate = new Date('2025-10-17');
+                    
+                    const debutJour = Math.floor((debutDate - baseDate) / (1000 * 60 * 60 * 24));
+                    const duree = Math.ceil((finDate - debutDate) / (1000 * 60 * 60 * 24)) + 1;
+                    
+                    const prioriteColor = 
+                      task.priorite === 'Urgente' ? 'bg-red-500' :
+                      task.priorite === 'Haute' ? 'bg-orange-500' :
+                      task.priorite === 'Normale' ? 'bg-blue-500' : 'bg-gray-400';
+
+                    return (
+                      <div key={idx} className="relative">
+                        <div className="flex items-center gap-3 mb-1">
+                          <span className="text-sm font-medium text-gray-700 w-24">{task.machine}</span>
+                          <span className="text-xs text-gray-500">{task.id}</span>
+                        </div>
+                        <div className="grid grid-cols-7 gap-2 relative">
+                          <div 
+                            className={`${prioriteColor} rounded-lg p-2 text-white text-xs flex flex-col justify-center shadow-md`}
+                            style={{
+                              gridColumn: `${debutJour + 1} / span ${duree}`,
+                            }}
+                          >
+                            <div className="font-semibold">{task.id}</div>
+                            <div className="text-xs opacity-90">{task.progression}%</div>
+                            <div className="mt-1 bg-white bg-opacity-30 rounded-full h-1.5 overflow-hidden">
+                              <div 
+                                className="bg-white h-full rounded-full transition-all"
+                                style={{ width: `${task.progression}%` }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-white rounded-lg shadow p-4">
+                <p className="text-sm text-gray-600">Total OFs</p>
+                <p className="text-2xl font-bold text-gray-800">{ganttTasks.length}</p>
+              </div>
+              <div className="bg-white rounded-lg shadow p-4">
+                <p className="text-sm text-gray-600">En cours</p>
+                <p className="text-2xl font-bold text-blue-600">{ganttTasks.filter(t => t.progression > 0 && t.progression < 100).length}</p>
+              </div>
+              <div className="bg-white rounded-lg shadow p-4">
+                <p className="text-sm text-gray-600">Urgents</p>
+                <p className="text-2xl font-bold text-red-600">{ganttTasks.filter(t => t.priorite === 'Urgente').length}</p>
+              </div>
+              <div className="bg-white rounded-lg shadow p-4">
+                <p className="text-sm text-gray-600">Progression</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {Math.round(ganttTasks.reduce((acc, t) => acc + t.progression, 0) / ganttTasks.length)}%
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODULE PRODUITS AVEC IMAGES */}
+        {currentView === 'products' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl font-bold text-gray-800">🏷️ Catalogue Produits</h1>
+              <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                <Plus className="w-5 h-5" />
+                <span className="hidden md:inline">Nouveau</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+              {articles.map((article, idx) => (
+                <div key={idx} className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
+                  <div className="relative h-48 bg-gray-100 flex items-center justify-center overflow-hidden">
+                    {articleImages[article.id] && articleImages[article.id].length > 0 ? (
+                      <img 
+                        src={articleImages[article.id][0]} 
+                        alt={article.modele}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="text-center">
+                        <Image className="w-16 h-16 text-gray-300 mx-auto mb-2" />
+                        <p className="text-sm text-gray-400">Aucune image</p>
+                      </div>
+                    )}
+                    
+                    <div className="absolute top-2 right-2">
+                      <span className={`px-2 py-1 text-xs rounded-full text-white ${
+                        article.stock > 200 ? 'bg-green-500' :
+                        article.stock > 100 ? 'bg-orange-500' :
+                        'bg-red-500'
+                      }`}>
+                        {article.stock}
+                      </span>
+                    </div>
+
+                    <label className="absolute bottom-2 right-2 p-2 bg-white rounded-full shadow-lg cursor-pointer hover:bg-gray-50">
+                      <Camera className="w-5 h-5 text-gray-600" />
+                      <input 
+                        type="file" 
+                        multiple 
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => handleImageUpload(e, article.id)}
+                      />
+                    </label>
+                  </div>
+
+                  <div className="p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-bold text-gray-900">{article.modele}</h3>
+                      <span className="text-sm text-gray-500">{article.dimensions}</span>
+                    </div>
+                    
+                    <p className="text-xs text-gray-600 mb-3">{article.ref}</p>
+                    <p className="text-sm text-gray-600 mb-4 line-clamp-2">{article.description}</p>
+                    
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs text-gray-500">Prix</p>
+                        <p className="text-xl font-bold text-blue-600">{article.prix} DT</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => {
+                            setSelectedArticle(article);
+                            setShowImageUploadModal(true);
+                          }}
+                          className="p-2 bg-blue-50 rounded-lg hover:bg-blue-100"
+                        >
+                          <Image className="w-5 h-5 text-blue-600" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {articleImages[article.id] && articleImages[article.id].length > 0 && (
+                      <div className="mt-3 flex gap-2 overflow-x-auto">
+                        {articleImages[article.id].map((img, imgIdx) => (
+                          <img 
+                            key={imgIdx}
+                            src={img}
+                            alt={`${article.modele} ${imgIdx + 1}`}
+                            className="w-12 h-12 object-cover rounded border-2 border-gray-200 hover:border-blue-500 cursor-pointer flex-shrink-0"
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* MODULE TRANSFERTS */}
+        {currentView === 'transferts' && (
+          <div className="space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <h1 className="text-2xl font-bold text-gray-800">🔄 Transferts Entre Entrepôts</h1>
+              <button 
+                onClick={() => setShowTransferModal(true)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2"
+              >
+                <Plus className="w-5 h-5" />
+                Nouveau Transfert
+              </button>
+            </div>
+
+            {/* Entrepôts */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {entrepots.map((entrepot, idx) => {
+                const tauxUtilisation = ((entrepot.utilise / entrepot.capacite) * 100).toFixed(1);
+                return (
+                  <div key={idx} className="bg-white rounded-lg shadow-lg p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-bold text-gray-900">{entrepot.nom}</h3>
+                      <MapPin className="w-5 h-5 text-gray-400" />
+                    </div>
+                    <p className="text-sm text-gray-600 mb-2">{entrepot.type}</p>
+                    <p className="text-xs text-gray-500 mb-4">{entrepot.adresse}</p>
+                    
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Utilisation</span>
+                        <span className="font-semibold">{tauxUtilisation}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                        <div 
+                          className={`h-full rounded-full transition-all ${
+                            tauxUtilisation > 90 ? 'bg-red-500' :
+                            tauxUtilisation > 75 ? 'bg-orange-500' :
+                            'bg-green-500'
+                          }`}
+                          style={{ width: `${tauxUtilisation}%` }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-xs text-gray-500">
+                        <span>{entrepot.utilise} kg</span>
+                        <span>{entrepot.capacite} kg</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Liste transferts */}
+            <div className="bg-white rounded-lg shadow overflow-hidden">
+              <div className="p-6 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-800">Historique des Transferts</h2>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">De</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vers</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Article</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quantité</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {transferts.map((transfert, idx) => (
+                      <tr key={idx} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{transfert.id}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {entrepots.find(e => e.id === transfert.de)?.nom}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {entrepots.find(e => e.id === transfert.vers)?.nom}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{transfert.article}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{transfert.quantite} kg</td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 py-1 text-xs rounded-full ${
+                            transfert.statut === 'Validé' ? 'bg-green-100 text-green-800' :
+                            transfert.statut === 'En cours' ? 'bg-blue-100 text-blue-800' :
+                            'bg-orange-100 text-orange-800'
+                          }`}>
+                            {transfert.statut}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{transfert.date}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODULE RAPPORTS AVANCÉS */}
+        {currentView === 'rapports' && (
+          <div className="space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <h1 className="text-2xl font-bold text-gray-800">📊 Rapports Avancés</h1>
+              <div className="flex gap-2">
+                <button className="flex-1 md:flex-none px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2">
+                  <Download className="w-5 h-5" />
+                  <span className="hidden md:inline">PDF</span>
+                </button>
+                <button className="flex-1 md:flex-none px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center gap-2">
+                  <FileText className="w-5 h-5" />
+                  <span className="hidden md:inline">Excel</span>
+                </button>
+              </div>
+            </div>
+
+            {/* KPIs Financiers */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow-lg p-4 md:p-5 text-white">
+                <DollarSign className="w-6 md:w-8 h-6 md:h-8 mb-2 opacity-80" />
+                <p className="text-xs md:text-sm opacity-90">CA Mensuel</p>
+                <p className="text-2xl md:text-3xl font-bold mt-1">86,900 DT</p>
+                <p className="text-xs opacity-75 mt-2 flex items-center gap-1">
+                  <TrendingUp className="w-3 h-3" /> +12.5%
+                </p>
+              </div>
+              
+              <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg p-4 md:p-5 text-white">
+                <BarChart3 className="w-6 md:w-8 h-6 md:h-8 mb-2 opacity-80" />
+                <p className="text-xs md:text-sm opacity-90">Coût Prod.</p>
+                <p className="text-2xl md:text-3xl font-bold mt-1">86,900 DT</p>
+                <p className="text-xs opacity-75 mt-2 flex items-center gap-1">
+                  <TrendingDown className="w-3 h-3" /> -3.2%
+                </p>
+              </div>
+
+              <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow-lg p-4 md:p-5 text-white">
+                <TrendingUp className="w-6 md:w-8 h-6 md:h-8 mb-2 opacity-80" />
+                <p className="text-xs md:text-sm opacity-90">Marge Brute</p>
+                <p className="text-2xl md:text-3xl font-bold mt-1">23.4%</p>
+              </div>
+
+              <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg shadow-lg p-4 md:p-5 text-white">
+                <Target className="w-6 md:w-8 h-6 md:h-8 mb-2 opacity-80" />
+                <p className="text-xs md:text-sm opacity-90">TRS Moyen</p>
+                <p className="text-2xl md:text-3xl font-bold mt-1">77.5%</p>
+              </div>
+            </div>
+
+            {/* Graphiques */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-white rounded-lg shadow-lg p-4 md:p-6">
+                <h2 className="text-base md:text-lg font-semibold text-gray-800 mb-4">Performance Hebdo</h2>
+                <ResponsiveContainer width="100%" height={280}>
+                  <ComposedChart data={rapportData.performanceHebdo}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="jour" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="objectif" fill="#3b82f6" name="Objectif" />
+                    <Bar dataKey="realise" fill="#10b981" name="Réalisé" />
+                    <Line type="monotone" dataKey="ecart" stroke="#f59e0b" strokeWidth={2} name="Écart" />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="bg-white rounded-lg shadow-lg p-4 md:p-6">
+                <h2 className="text-base md:text-lg font-semibold text-gray-800 mb-4">Coûts Production</h2>
+                <ResponsiveContainer width="100%" height={280}>
+                  <PieChart>
+                    <Pie
+                      data={rapportData.coûtsProduction}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ categorie, pourcentage }) => `${categorie}: ${pourcentage}%`}
+                      outerRadius={90}
+                      fill="#8884d8"
+                      dataKey="montant"
+                    >
+                      {rapportData.coûtsProduction.map((entry, index) => {
+                        const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
+                        return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
+                      })}
+                    </Pie>
+                    <Tooltip formatter={(value) => `${value} DT`} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Radar KPI Machines */}
+            <div className="bg-white rounded-lg shadow-lg p-4 md:p-6">
+              <h2 className="text-base md:text-lg font-semibold text-gray-800 mb-4">KPI Machines (Radar)</h2>
+              <ResponsiveContainer width="100%" height={350}>
+                <RadarChart data={rapportData.kpiMachines}>
+                  <PolarGrid />
+                  <PolarAngleAxis dataKey="machine" />
+                  <PolarRadiusAxis angle={90} domain={[0, 100]} />
+                  <Radar name="Disponibilité" dataKey="disponibilite" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.6} />
+                  <Radar name="Performance" dataKey="performance" stroke="#10b981" fill="#10b981" fillOpacity={0.6} />
+                  <Radar name="Qualité" dataKey="qualite" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.6} />
+                  <Radar name="TRS" dataKey="trs" stroke="#ef4444" fill="#ef4444" fillOpacity={0.6} />
+                  <Legend />
+                  <Tooltip />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
+
+        {/* MODULE PRODUCTION SUIVI */}
+        {currentView === 'production-suivi' && (
+          <div className="space-y-6">
+            <h1 className="text-2xl font-bold text-gray-800">📊 Suivi Production</h1>
+            
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg p-4 text-white">
+                <p className="text-sm opacity-90">Machines Actives</p>
+                <p className="text-3xl font-bold mt-1">{realData.machinesActives}</p>
+              </div>
+              <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg shadow-lg p-4 text-white">
+                <p className="text-sm opacity-90">Alertes</p>
+                <p className="text-3xl font-bold mt-1">{machinesAlertes}</p>
+              </div>
+              <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow-lg p-4 text-white">
+                <p className="text-sm opacity-90">Prod. Moy.</p>
+                <p className="text-3xl font-bold mt-1">{productionMoyenne} m</p>
+              </div>
+              <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow-lg p-4 text-white">
+                <p className="text-sm opacity-90">Utilisation</p>
+                <p className="text-3xl font-bold mt-1">{tauxUtilisation}%</p>
+              </div>
+              <div className="bg-gradient-to-br from-pink-500 to-pink-600 rounded-lg shadow-lg p-4 text-white">
+                <p className="text-sm opacity-90">Opérations</p>
+                <p className="text-3xl font-bold mt-1">{realData.operationsTissage}</p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-lg p-6">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">Vue Machines</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {machinesReelles.map((machine, idx) => (
+                  <div 
+                    key={idx}
+                    className={`p-4 rounded-lg border-2 ${
+                      machine.status === 'alert' ? 'bg-red-50 border-red-300' :
+                      machine.status === 'warning' ? 'bg-orange-50 border-orange-300' :
+                      'bg-green-50 border-green-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-bold text-gray-900">{machine.machine}</h3>
+                      <button className="p-2 hover:bg-white rounded-lg">
+                        <Eye className="w-4 h-4 text-gray-600" />
+                      </button>
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Type:</span>
+                        <span className="font-semibold">{machine.type}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Restant:</span>
+                        <span className={`font-bold ${
+                          machine.status === 'alert' ? 'text-red-600' :
+                          machine.status === 'warning' ? 'text-orange-600' :
+                          'text-green-600'
+                        }`}>
+                          {machine.restant} m
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Opérateur:</span>
+                        <span className="font-semibold">{machine.operateur}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODULE STOCK MP */}
+        {currentView === 'stock-mp' && (
+          <div className="space-y-6">
+            <h1 className="text-2xl font-bold text-gray-800">📦 Stock Matière Première</h1>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-white rounded-lg shadow p-4">
+                <p className="text-sm text-gray-600">Poids Total</p>
+                <p className="text-2xl font-bold text-gray-800 mt-1">{realData.poidsMP.toLocaleString()} kg</p>
+              </div>
+              <div className="bg-white rounded-lg shadow p-4">
+                <p className="text-sm text-gray-600">Références</p>
+                <p className="text-2xl font-bold text-gray-800 mt-1">{stockMP.length}</p>
+              </div>
+              <div className="bg-white rounded-lg shadow p-4">
+                <p className="text-sm text-gray-600">Critique</p>
+                <p className="text-2xl font-bold text-red-600 mt-1">1</p>
+              </div>
+              <div className="bg-white rounded-lg shadow p-4">
+                <p className="text-sm text-gray-600">Mouvements</p>
+                <p className="text-2xl font-bold text-gray-800 mt-1">557</p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">Stocks par Couleur</h2>
+              <div className="space-y-3">
+                {stockMP.map((item, idx) => (
+                  <div key={idx} className={`flex items-center justify-between p-4 rounded-lg ${
+                    item.statut === 'Critique' ? 'bg-red-50 border-2 border-red-300' :
+                    item.statut === 'Moyen' ? 'bg-orange-50 border border-orange-200' :
+                    'bg-green-50 border border-green-200'
+                  }`}>
+                    <div>
+                      <p className="font-semibold text-gray-900">{item.couleur} ({item.code})</p>
+                      <p className="text-sm text-gray-600">{item.nm}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className={`text-2xl font-bold ${
+                        item.statut === 'Critique' ? 'text-red-600' :
+                        item.statut === 'Moyen' ? 'text-orange-600' :
+                        'text-green-600'
+                      }`}>
+                        {item.stock} kg
+                      </p>
+                      <p className="text-xs text-gray-500">{item.statut}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* PARAMÈTRES */}
+        {currentView === 'settings' && (
+          <div className="space-y-6">
+            <h1 className="text-2xl font-bold text-gray-800">⚙️ Paramètres</h1>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-white rounded-lg shadow p-6">
+                <h2 className="text-lg font-semibold text-gray-800 mb-4">🎨 Couleurs</h2>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Principale</label>
+                    <input
+                      type="color"
+                      value={theme.primaryColor}
+                      onChange={(e) => updateTheme('primaryColor', e.target.value)}
+                      className="w-full h-10 rounded cursor-pointer"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Secondaire</label>
+                    <input
+                      type="color"
+                      value={theme.secondaryColor}
+                      onChange={(e) => updateTheme('secondaryColor', e.target.value)}
+                      className="w-full h-10 rounded cursor-pointer"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg shadow p-6">
+                <h2 className="text-lg font-semibold text-gray-800 mb-4">🏢 Entreprise</h2>
+                <input
+                  type="text"
+                  value={theme.companyName}
+                  onChange={(e) => updateTheme('companyName', e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Autres modules */}
+        {!['dashboard', 'gantt', 'products', 'transferts', 'rapports', 'production-suivi', 'stock-mp', 'settings'].includes(currentView) && (
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800 mb-6">
+              {menuItems.find(item => item.id === currentView)?.label || 'Module'}
+            </h1>
+            <div className="bg-white rounded-lg shadow p-6">
+              <p className="text-gray-600">Module en développement...</p>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* Modal Logo */}
+      {showLogoUpload && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">Changer le logo</h3>
+              <button onClick={() => setShowLogoUpload(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-500 transition-colors">
+              <Upload className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+              <label className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer">
+                <Upload className="w-4 h-4" />
+                Parcourir
+                <input type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
+              </label>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Transfert */}
+      {showTransferModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-2xl max-w-2xl w-full">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h3 className="text-xl font-semibold text-gray-800">Nouveau Transfert</h3>
+              <button onClick={() => setShowTransferModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="p-6">
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                createTransfert({
+                  de: formData.get('de'),
+                  vers: formData.get('vers'),
+                  article: formData.get('article'),
+                  quantite: formData.get('quantite')
+                });
+                setShowTransferModal(false);
+              }}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Source</label>
+                    <select name="de" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                      {entrepots.map(e => (
+                        <option key={e.id} value={e.id}>{e.nom}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Destination</label>
+                    <select name="vers" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                      {entrepots.map(e => (
+                        <option key={e.id} value={e.id}>{e.nom}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Article</label>
+                    <input 
+                      type="text" 
+                      name="article"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      placeholder="Ex: BLANC C01"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Quantité (kg)</label>
+                    <input 
+                      type="number" 
+                      name="quantite"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      placeholder="250"
+                    />
+                  </div>
+
+                  <div className="flex gap-3 pt-4">
+                    <button 
+                      type="submit"
+                      className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2"
+                    >
+                      <Send className="w-5 h-5" />
+                      Créer
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => setShowTransferModal(false)}
+                      className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                    >
+                      Annuler
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Galerie Images */}
+      {showImageUploadModal && selectedArticle && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h3 className="text-xl font-semibold text-gray-800">
+                Galerie - {selectedArticle.modele}
+              </h3>
+              <button 
+                onClick={() => {
+                  setShowImageUploadModal(false);
+                  setSelectedArticle(null);
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-100px)]">
+              <div className="mb-6">
+                <label className="block border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-500 cursor-pointer transition-colors">
+                  <Camera className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-sm text-gray-600 mb-2">Glisser-déposer ou cliquer</p>
+                  <p className="text-xs text-gray-400">JPG, PNG (max 5MB)</p>
+                  <input 
+                    type="file" 
+                    multiple 
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleImageUpload(e, selectedArticle.id)}
+                  />
+                </label>
+              </div>
+
+              {articleImages[selectedArticle.id] && articleImages[selectedArticle.id].length > 0 && (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {articleImages[selectedArticle.id].map((img, idx) => (
+                    <div key={idx} className="relative group">
+                      <img 
+                        src={img}
+                        alt={`${selectedArticle.modele} ${idx + 1}`}
+                        className="w-full h-48 object-cover rounded-lg border-2 border-gray-200"
+                      />
+                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all rounded-lg flex items-center justify-center">
+                        <button 
+                          onClick={() => {
+                            setArticleImages(prev => ({
+                              ...prev,
+                              [selectedArticle.id]: prev[selectedArticle.id].filter((_, i) => i !== idx)
+                            }));
+                          }}
+                          className="opacity-0 group-hover:opacity-100 p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-opacity"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+                      {idx === 0 && (
+                        <span className="absolute top-2 left-2 px-2 py-1 bg-blue-500 text-white text-xs rounded-full">
+                          Principale
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {(!articleImages[selectedArticle.id] || articleImages[selectedArticle.id].length === 0) && (
+                <div className="text-center py-12 text-gray-400">
+                  <Image className="w-16 h-16 mx-auto mb-3" />
+                  <p>Aucune image</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

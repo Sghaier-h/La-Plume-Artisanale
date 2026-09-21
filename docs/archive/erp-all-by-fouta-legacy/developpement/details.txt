@@ -1,0 +1,1921 @@
+la ref commercial = =SI([@[Code Nombre de couleur]]="U";[@[Code Modèle]]&[@Dimensions]&"-"&DROITE([@[Code Selecteur 01]];NBCAR([@[Code Selecteur 01]])-1);SI([@[Code Nombre de couleur]]="B";[@[Code Modèle]]&[@Dimensions]&"-"&[@[Code Nombre de couleur]]&DROITE([@[Code Selecteur 01]];NBCAR([@[Code Selecteur 01]])-1)&"-"&DROITE([@[Code Selecteur 02]];NBCAR([@[Code Selecteur 02]])-1);[@[Code Modèle]]&[@Dimensions]&"-"&[@[Code Nombre de couleur]]&DROITE([@[Code Selecteur 01]];NBCAR([@[Code Selecteur 01]])-1)&"-"&DROITE([@[Code Selecteur 02]];NBCAR([@[Code Selecteur 02]])-1)&"-"&DROITE([@[Code Selecteur 03]];NBCAR([@[Code Selecteur 03]])-1)))
+
+Reference fabrication =SI([@[Code Nombre de couleur]]="U"; [@[Code Modèle]]&[@Dimensions]&"-"&DROITE([@[Code Selecteur 01]];NBCAR([@[Code Selecteur 01]])-1); SI([@[Code Nombre de couleur]]="B"; [@[Code Modèle]]&[@Dimensions]&"-B-"& DROITE([@[Code Selecteur 01]];NBCAR([@[Code Selecteur 01]])-1)&"-"& DROITE([@[Code Selecteur 02]];NBCAR([@[Code Selecteur 02]])-1); SI([@[Code Nombre de couleur]]="T"; [@[Code Modèle]]&[@Dimensions]&"-T-"& DROITE([@[Code Selecteur 01]];NBCAR([@[Code Selecteur 01]])-1)&"-"& DROITE([@[Code Selecteur 02]];NBCAR([@[Code Selecteur 02]])-1)&"-"& DROITE([@[Code Selecteur 03]];NBCAR([@[Code Selecteur 03]])-1); SI([@[Code Nombre de couleur]]="Q"; [@[Code Modèle]]&[@Dimensions]&"-Q-"& DROITE([@[Code Selecteur 01]];NBCAR([@[Code Selecteur 01]])-1)&"-"& DROITE([@[Code Selecteur 02]];NBCAR([@[Code Selecteur 02]])-1)&"-"& DROITE([@[Code Selecteur 03]];NBCAR([@[Code Selecteur 03]])-1)&"-"& DROITE([@[Code Selecteur 04]];NBCAR([@[Code Selecteur 04]])-1); SI([@[Code Nombre de couleur]]="C"; [@[Code Modèle]]&[@Dimensions]&"-C-"& DROITE([@[Code Selecteur 01]];NBCAR([@[Code Selecteur 01]])-1)&"-"& DROITE([@[Code Selecteur 02]];NBCAR([@[Code Selecteur 02]])-1)&"-"& DROITE([@[Code Selecteur 03]];NBCAR([@[Code Selecteur 03]])-1)&"-"& DROITE([@[Code Selecteur 04]];NBCAR([@[Code Selecteur 04]])-1)&"-"& DROITE([@[Code Selecteur 05]];NBCAR([@[Code Selecteur 05]])-1); SI([@[Code Nombre de couleur]]="S"; [@[Code Modèle]]&[@Dimensions]&"-S-"& DROITE([@[Code Selecteur 01]];NBCAR([@[Code Selecteur 01]])-1)&"-"& DROITE([@[Code Selecteur 02]];NBCAR([@[Code Selecteur 02]])-1)&"-"& DROITE([@[Code Selecteur 03]];NBCAR([@[Code Selecteur 03]])-1)&"-"& DROITE([@[Code Selecteur 04]];NBCAR([@[Code Selecteur 04]])-1)&"-"& DROITE([@[Code Selecteur 05]];NBCAR([@[Code Selecteur 05]])-1)&"-"& DROITE([@[Code Selecteur 06]];NBCAR([@[Code Selecteur 06]])-1); [@[Code Modèle]]&[@Dimensions]&"-"&[@[Code Nombre de couleur]]&"-"& DROITE([@[Code Selecteur 01]];NBCAR([@[Code Selecteur 01]])-1) ))))))
+
+Table Catalogue 
+le stock fabriquer est le stock fabrique pour le catalogue + le surplus de fabrication des commandes clients si ça correspond au meme ref commercial
+reserve est la quantité reserver pour les commandes clients
+la partie Boom est modifiable pour améliorer les mesure et calcul , la planification de fabrication je dois avoir les planning en attente d'atribution de machine dans un tableau de bord que je glisse et je met dans une case de machine avec l'ordre et je dois attribuer les code couleur de fil manuellement pour chaque of , pour les sous de produit composer il faut me laisse l'écriture pour changer et écrire une note sur le sous produit , Pour la matière première on a plusieurs entrepôt et la partie entrepôt usine, s'il y a de matière qui manque a l'usine et qu'on doit l'apporter d'un entrepôt à l'usine , le magasinier demande un transfert entrepôt et sur validation et un fichier PDF imprimable sort avec les détails nécessaire dans la partie stock matière première , les état de fabrication et lier par Tisseur , Mécanicien et Magasinier matière premier s'il a alimenter la machine ou non , le magasinier il a un tableau de bord de préparation et de tache a faire( les planning a préparer avec le code de matière première de fabrication et indique l'état de préparation et si il a alimenter la machine ou non avec état fini ou encours ) quand le magasinier alimente la machine l'état se transforme machine alimenter attente départ et le planning se transfert vers le tisseur dans son tableau de bord en attente pour le départ dans une machine on peut avoir plusieurs planning 1 en cours de fabrication et les autres en attente . dans l'interface de planning de fabrication je peux déplacer les planning selon les priorité ou ça change chez le tisseur et le mécanicien aussi et le coupeur et si je change le planning dans une autre machine ça change de partout et le magasinier est informer pour déplacer la matière première et ça se met dans son tableau de bord de tache a faire et le tisseur est informer , et quand il y a un planning urgent il s'affiche dans tous les poste de travail même le mécanicien , la magasinier matière première quand il prépare la matière il peut imprimer une étiquette qui indique le QR code fabrication avec la matière préparer et le code couleur fabrication avec le nom de couleur , Le tisseur aussi il demande une impression d'étiquette des le début de son poste et à la fin de fabrication ou arrêt fabrication et à la fin de son poste ou c'est indique le QR fabrication et l'état de de l'OF pour calculer le rendement , le coupeur reçois les rouleau de tissus et identifier les OF avec les étiquette et commence la coupe et il a un tableau de bord de son poste de travail il indique la quantité fabriquer la quantité deuxième , la quantité déchet et la quantité ourlet , la quantité ourlet est inclus dans la quantité fabriquer qui est la quantité du premier choix , le coupeur imprime les étiquette de suivis , le numéro de suivis correspond au numéro OF concaténer par - et incrémenter chaque étiquette et pour identifier 5 pièce sauf pour les jeté jacquard ( ou on peut faire de tel sorte le coupeur la quantité de pièce manuellement qui dépend de volume et poids des pièces ) dans cette étiquette il y a les information nécessaire pour le produit commande et dimensions et quantité présente dans ce num de suivis par exemple si le coupeur il a couper 23 pièce avec quantité de 5 on lui génère 4 étiquette les 3 autre reste en attente puisque la fabrication n'est pas fini quand la fabrication fini par exemple hier il a couper 23 on lui générer 4 étiquette et aujourd'hui 20 avec fabrication fini on lui génère 4 étiquette de 5 et 1 étiquette 3 de 3 pièce , à la fin de fabrication ou le tisseur l'indique et ça lui imprime une étiquette spécial pour le coupeur remarque cela et s'il a couper une quantité total moi de celle a fabriquer il peut lancer une demande de fabrication du reste ou le tisseur il le reçois et indique que c'est confirmer ou il ne peut pas le faire a cause de manque matière première ou autre , si le coupeur confirme que c'est bon qte fabriquer ok le magasinier matière première reçois une demande de retourner le reste matière de ce planning dans son tableau de bord et on lui imprime une étiquette pour identifier les deuxième choix , s'il y a de rebut on cherche s'il y a une commande qui va venir avec meme article a fabriquer ou non et on change les donnée partour ou doit chercher la correspondance au Ref article du catalogue et on doit faire les étiquette suivis du quantité suivis avec le num suivis de celle du catalogue incrémenter toujours de la dernière num de suivis eu s'il n'existe pas on créer une autre référence qui est hors catalogue , s'il y a une erreur couleur le coupeur met en deuxième choix et met deuxième approuve en mettant les couleurs nécessaire et faire la procédure de recherche pour les attribuer ou creer automatiquement aussi pour erreur modèle , ou erreur dimensions . pour le mouvement sous traitant on le suis avec les num de suivis avec le magasinier sous traitant ou il a les info de produit a faire sortir il scan les étiquette et indique le sous traitant dans son tableau de bord il a une analyse de quantité sortis quantité retour et reste a retourner il a une partis de saisis d'un nouveau sous traitant aussi , tous les tableau de bord ont la possibilité de prendre des photo pour identifier quelque chose . Pour chaque commande on doit mettre la fourniture nécessaire et a préparer aussi qu'on doit la fourniture au poste nécessaire de couture étiquette ou emballage après le retour sous traitant ou avec c'est à toi de voir comment inclure cela le magasinier produit fini il reçoi les commande a préparer dans son tableau et l'état et il scan le num de suivis de l'étiquette qui va mettre en colis pour une commande et d'imprimer l'étiquette colis , la liste des palette c'est a mettre aussi dans le tableau de bord ou le magaisnier scan les etiquette colis et indique quel palette et lors de l'envoie il met le num de facture export avec les num palette
+┌─────────────────────────────────────────────────────┐
+│   PLANIFICATION FABRICATION - Drag & Drop           │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│  📋 EN ATTENTE (25 OF)                              │
+│  ┌──────────────────────────────────┐              │
+│  │ OF244984 - ND LILI 1020 (70pc)  │◄─── Glisser   │
+│  │ Client: CL00296 | Date: 20/12   │              │
+│  └──────────────────────────────────┘              │
+│  │ OF244985 - IBIZA 2426 (50pc)    │              │
+│  └──────────────────────────────────┘              │
+│                                                     │
+├─────────────────────────────────────────────────────┤
+│  🏭 MACHINES                                        │
+│  ┌─────────────┬─────────────┬─────────────┐      │
+│  │  M2301      │  M2302      │  M2303      │      │
+│  ├─────────────┼─────────────┼─────────────┤      │
+│  │ 1.OF244980  │ 1.OF244982  │ 1.OF244983  │ ◄─En cours
+│  │   (En cours)│   (En cours)│   (En cours)│      │
+│  ├─────────────┼─────────────┼─────────────┤      │
+│  │ 2.OF244981  │ 2.[Déposer  │ 2.OF244990  │ ◄─Attente
+│  │   (Attente) │    ici]     │   (Attente) │      │
+│  ├─────────────┼─────────────┼─────────────┤      │
+│  │ 3.[Déposer  │             │             │      │
+│  │    ici]     │             │             │      │
+│  └─────────────┴─────────────┴─────────────┘      │
+└─────────────────────────────────────────────────────┘
+```
+
+### **Attribution MANUELLE codes couleur :**
+```
+Après dépôt dans machine:
+
+┌─────────────────────────────────────────────────────┐
+│ OF244984 - ND LILI 1020                             │
+│ Machine: M2302 | Position: 2 (Attente)              │
+├─────────────────────────────────────────────────────┤
+│ Attribution Couleurs Fils:                          │
+│                                                     │
+│ Couleur 1: [Sélecteur ▼] → C20 (Rouge)             │
+│ Couleur 2: [Sélecteur ▼] → C01 (Blanc)             │
+│                                                     │
+│ ✓ Confirmer attribution                            │
+└─────────────────────────────────────────────────────┘
+```
+
+### **Produits composés - Notes éditables :**
+```
+┌─────────────────────────────────────────────────────┐
+│ OF244984 - Composition: 2 parties                   │
+├─────────────────────────────────────────────────────┤
+│ SOUS-OF 1: OF244984-A                              │
+│ Note: [Partie principale 160x150, tisser serré]    │
+│       [Machine M2301 recommandée]                   │
+│                                                     │
+│ SOUS-OF 2: OF244984-B                              │
+│ Note: [Partie bordure 160x10, attention couleur]   │
+│       [Assembler après avec A]                      │
+└─────────────────────────────────────────────────────┘
+```
+
+---
+
+## 3️⃣ **GESTION MULTI-ENTREPÔTS MP**
+
+### **Transfert inter-entrepôts :**
+```
+Magasinier MP détecte manque:
+
+┌─────────────────────────────────────────────────────┐
+│ ⚠️ MANQUE MATIÈRE PREMIÈRE                          │
+├─────────────────────────────────────────────────────┤
+│ OF244984 nécessite:                                │
+│ - C20 (Rouge): 24 kg (Stock usine: 5 kg) ❌        │
+│ - C01 (Blanc): 11 kg (Stock usine: 15 kg) ✓       │
+│                                                     │
+│ Demander transfert C20:                            │
+│ Entrepôt source: [E2 ▼] (Stock: 380 kg)           │
+│ Quantité: [20] kg                                  │
+│                                                     │
+│ [Demander Transfert] → Validation responsable      │
+└─────────────────────────────────────────────────────┘
+
+Après validation:
+
+┌─────────────────────────────────────────────────────┐
+│ 📄 BON DE TRANSFERT #TRF-2025-0234                  │
+├─────────────────────────────────────────────────────┤
+│ Date: 15/12/2025 10:30                             │
+│ De: Entrepôt E2                                    │
+│ Vers: Usine                                        │
+│                                                     │
+│ Matière: C20 - Rouge (NM05-20.00)                  │
+│ Lot: S2024                                         │
+│ Quantité: 20.00 kg                                 │
+│                                                     │
+│ Pour OF: OF244984                                  │
+│ Machine: M2302                                     │
+│                                                     │
+│ Signature départ: ___________                      │
+│ Signature arrivée: ___________                     │
+│                                                     │
+│ [QR CODE TRF-2025-0234]                            │
+└─────────────────────────────────────────────────────┘
+
+[Imprimer PDF] [Envoyer Email]
+```
+
+---
+
+## 4️⃣ **TABLEAU DE BORD MAGASINIER MP**
+```
+┌─────────────────────────────────────────────────────┐
+│ 📦 TABLEAU DE BORD - Magasinier MP                  │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│ 📋 TÂCHES À FAIRE (8)                               │
+│ ┌─────────────────────────────────────────────┐   │
+│ │ OF244984 - M2302 - ND LILI 1020             │   │
+│ │ MP: C20 (24kg), C01 (11kg)                  │   │
+│ │ État: ⏳ En préparation                      │   │
+│ │ Alimenté: ❌ Non                             │   │
+│ │ [Préparer] [Alimenter Machine] [Étiquette]  │   │
+│ └─────────────────────────────────────────────┘   │
+│                                                     │
+│ │ OF244985 - M2301 - IBIZA 2426               │   │
+│ │ MP: C15 (45kg), C32 (20kg)                  │   │
+│ │ État: ✅ Préparé                             │   │
+│ │ Alimenté: ✅ Machine alimentée - Attente départ│   │
+│ │ [Voir détails]                              │   │
+│ └─────────────────────────────────────────────┘   │
+│                                                     │
+│ ⚠️ TRANSFERTS DEMANDÉS (2)                          │
+│ │ TRF-2025-0234 - C20 (20kg) E2→Usine         │   │
+│ │ [Valider] [Refuser] [Imprimer PDF]          │   │
+│ └─────────────────────────────────────────────┘   │
+│                                                     │
+│ 🔄 RETOURS MP À FAIRE (3)                           │
+│ │ OF244980 - Retour C15 (estimé 5kg)          │   │
+│ │ [Scanner retour] [Imprimer étiquette]       │   │
+│ └─────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────┘
+```
+
+### **Workflow états :**
+```
+1. OF attribué machine → Apparaît "À préparer"
+2. Magasinier prépare MP → État "En préparation"
+3. Magasinier alimente machine → État "Machine alimentée - Attente départ"
+4. Planning se transfère au tisseur → Apparaît dans son tableau
+```
+
+---
+
+## 5️⃣ **SYNCHRONISATION GLOBALE - Déplacement Planning**
+
+### **Scénario :**
+```
+Planificateur déplace OF244984:
+De: Machine M2302 (Position 2)
+Vers: Machine M2301 (Position 3)
+
+SYNCHRONISATION AUTOMATIQUE:
+
+✅ Magasinier MP:
+   → Nouvelle tâche: "Déplacer MP OF244984 vers M2301"
+   → Ancienne tâche M2302 annulée
+
+✅ Tisseur Machine M2302:
+   → OF244984 retiré de sa file d'attente
+
+✅ Tisseur Machine M2301:
+   → OF244984 ajouté position 3
+
+✅ Mécanicien:
+   → Planning M2301 mis à jour
+
+✅ Coupeur:
+   → Date prévisionnelle OF244984 recalculée
+
+✅ Notifications:
+   → Magasinier: "Déplacer MP OF244984 → M2301"
+   → Tisseur M2301: "Nouveau planning position 3"
+```
+
+---
+
+## 6️⃣ **PLANNINGS URGENTS - Affichage Global**
+```
+┌─────────────────────────────────────────────────────┐
+│ 🚨 URGENT - OF244999 - IBIZA 1020                   │
+│ Client: CL00884 | Livraison: DEMAIN 18/12          │
+│ Machine: M2303 | Priorité: 1                       │
+└─────────────────────────────────────────────────────┘
+
+Apparaît en ROUGE dans:
+- Tableau de bord Magasinier MP
+- Tableau de bord Tisseur (toutes machines)
+- Tableau de bord Mécanicien
+- Tableau de bord Coupeur
+- Tableau de bord Magasinier ST
+- Tableau de bord Magasinier PF
+```
+
+---
+
+## 7️⃣ **ÉTIQUETTES MULTIPLES**
+
+### **A. Étiquette Magasinier MP (Préparation) :**
+```
+┌─────────────────────────────────────┐
+│   🧵 MATIÈRE PRÉPARÉE               │
+├─────────────────────────────────────┤
+│ QR: OF244984_CL00296_...            │
+│ [QR CODE]                           │
+├─────────────────────────────────────┤
+│ Machine: M2302                      │
+│                                     │
+│ Matières:                           │
+│ • C20 - ROUGE: 24.0 kg             │
+│   Code fab: NM05-20.00 | Lot: S2024│
+│                                     │
+│ • C01 - BLANC: 11.0 kg             │
+│   Code fab: NM05-01.00 | Lot: S2023│
+│                                     │
+│ Préparé par: Ahmed | 15/12 08:00   │
+└─────────────────────────────────────┘
+```
+
+### **B. Étiquettes Tisseur (4 types) :**
+
+**1. Début de poste :**
+```
+┌─────────────────────────────────────┐
+│ 👷 DÉBUT POSTE                      │
+│ Tisseur: Zied | M2302               │
+│ Date: 15/12/2025 05:00             │
+│ Équipe: 1                           │
+└─────────────────────────────────────┘
+```
+
+**2. Fin fabrication / Arrêt :**
+```
+┌─────────────────────────────────────┐
+│ ⏸️ ARRÊT FABRICATION                 │
+│ OF244984 | M2302 | Zied             │
+│ Arrêt: 15/12 09:30                  │
+│ Motif: Arrêt Mécanique              │
+│ Durée écoulée: 4h15min              │
+│ [QR CODE]                           │
+└─────────────────────────────────────┘
+```
+
+**3. Fin fabrication (pour coupeur) :**
+```
+┌─────────────────────────────────────┐
+│   ✅ FABRICATION TERMINÉE            │
+│   ⚠️ FIN PRODUCTION                  │
+├─────────────────────────────────────┤
+│ QR: OF244984_CL00296_...            │
+│ [QR CODE GRAND FORMAT]              │
+├─────────────────────────────────────┤
+│ Machine: M2302                      │
+│ Tisseur: Zied                       │
+│ Début: 15/12 05:15                  │
+│ Fin: 15/12 14:30                    │
+│ Durée: 9h15 (arrêts inclus)         │
+│                                     │
+│ Modèle: ND LILI 1020               │
+│ Qté: 70 pièces                     │
+│                                     │
+│ → COUPE ET CONTRÔLE                │
+└─────────────────────────────────────┘
+```
+
+**4. Fin de poste (rendement) :**
+```
+┌─────────────────────────────────────┐
+│ 🏁 FIN POSTE                         │
+│ Tisseur: Zied | M2302               │
+│ 15/12/2025 13:00                    │
+│                                     │
+│ OF en cours: OF244984               │
+│ État: 65% complété                  │
+│                                     │
+│ Rendement poste: 87%                │
+│ (7h productif / 8h poste)           │
+└─────────────────────────────────────┘
+```
+
+---
+
+## 8️⃣ **COUPEUR - Génération Intelligente Étiquettes**
+
+### **Interface saisie :**
+```
+┌─────────────────────────────────────────────────────┐
+│ ✂️ COUPE ET CONTRÔLE                                 │
+├─────────────────────────────────────────────────────┤
+│ QR Fabrication: OF244984_CL00296_...                │
+│ Tisseur: Zied | Machine: M2302 | Date: 15/12        │
+│                                                     │
+│ Qté à fabriquer: 70 pièces                          │
+│ Déjà coupé: 0 pièces                                │
+│ Reste: 70 pièces                                    │
+│                                                     │
+│ ──────────────────────────────────────────────────  │
+│                                                     │
+│ AUJOURD'HUI:                                        │
+│ Qté 1er choix: [__23__] pièces ✅                   │
+│ Qté Deuxième: [___2__] pièces ⚠️                    │
+│ Qté Déchet: [___1__] pièces ❌                      │
+│                                                     │
+│ Qté Ourlet: [___5__] pièces 🧵                      │
+│ (inclus dans 1er choix)                            │
+│                                                     │
+│ ──────────────────────────────────────────────────  │
+│                                                     │
+│ Type pièce: ○ Standard (5pc/étiquette)              │
+│             ● Manuel: [__5__] pièces/étiquette      │
+│                                                     │
+│ ✅ Fabrication terminée: ☐ Oui                      │
+│                                                     │
+│ ──────────────────────────────────────────────────  │
+│                                                     │
+│ GÉNÉRATION:                                         │
+│ → 4 étiquettes de 5 pièces (20 pc)                 │
+│ → 1 étiquette en attente (3 pc)                    │
+│                                                     │
+│ [Valider et Imprimer]                              │
+Base Modèle ajout:
+- Poids net par pièce: 0.350 kg
+- Permet calcul automatique poids total colis/palette
+```
+
+---
+
+### ✅ **2. ATTRIBUTION COULEURS - AVANT machine (avec contrôle stock)**
+```
+┌─────────────────────────────────────────────────────┐
+│ OF244984 - ND LILI 1020 - 70 pièces                │
+├─────────────────────────────────────────────────────┤
+│ ⚠️ ÉTAPE 1: Attribution Couleurs (OBLIGATOIRE)      │
+│                                                     │
+│ Couleur 1: [Sélecteur ▼]                           │
+│   Options disponibles (en stock usine):            │
+│   ✅ C20 - ROUGE (Stock: 45 kg)                     │
+│   ✅ C15 - BLEU (Stock: 38 kg)                      │
+│   ✅ C32 - VERT (Stock: 22 kg)                      │
+│   ❌ C45 - JAUNE (Stock: 0 kg) - Indisponible       │
+│                                                     │
+│ Couleur 2: [Sélecteur ▼]                           │
+│   ✅ C01 - BLANC (Stock: 85 kg)                     │
+│                                                     │
+│ Consommation nécessaire:                           │
+│ • C20: 24.0 kg (Disponible: 45 kg) ✅               │
+│ • C01: 11.0 kg (Disponible: 85 kg) ✅               │
+│                                                     │
+│ [Valider Attribution] → Passe à étape 2            │
+└─────────────────────────────────────────────────────┘
+
+ÉTAPE 2: Attribution Machine (seulement si couleurs OK)
+┌─────────────────────────────────────────────────────┐
+│ OF244984 - Couleurs: C20, C01 ✅                    │
+│                                                     │
+│ Glisser vers machine:                              │
+│ [Machine M2301] [Machine M2302] [Machine M2303]    │
+└─────────────────────────────────────────────────────┘
+
+SI stock insuffisant:
+┌─────────────────────────────────────────────────────┐
+│ ❌ STOCK INSUFFISANT                                 │
+│                                                     │
+│ C20 - ROUGE: Besoin 24kg | Stock: 5kg | Manque: 19kg│
+│                                                     │
+│ Actions:                                            │
+│ ☐ Demander transfert entrepôt                       │
+│ ☐ Forcer fabrication (MP incomplète) ⚠️            │
+│ ☐ Reporter planning                                │
+└─────────────────────────────────────────────────────┘
+```
+
+### **Forcer fabrication :**
+```
+☑️ Forcer fabrication avec MP incomplète
+
+Raison: [Commande urgente client prioritaire_____]
+
+⚠️ Attention:
+- Tisseur devra s'arrêter à mi-parcours
+- Complément MP nécessaire: 19kg C20
+- Production estimée partielle: ~45 pièces
+
+[Confirmer forçage] [Annuler]
+```
+
+---
+
+### ✅ **3. RETOUR MP - Simplifié sans scan ni étiquette**
+```
+Magasinier MP - Tableau de bord:
+
+┌─────────────────────────────────────────────────────┐
+│ 🔄 RETOURS MP AUTOMATIQUES (3)                      │
+│ ┌─────────────────────────────────────────────┐   │
+│ │ OF244984 - M2302 - Terminé                  │   │
+│ │ C20 (Rouge): Estimé ~3.5 kg                 │   │
+│ │ C01 (Blanc): Estimé ~1.2 kg                 │   │
+│ │                                             │   │
+│ │ Destination:                                │   │
+│ │ ○ Stock usine (réutilisation)              │   │
+│ │ ● Fin de cône (bobinage)                   │   │
+│ │                                             │   │
+│ │ Poids réel C20: [__3.2__] kg                │   │
+│ │ Poids réel C01: [__1.0__] kg                │   │
+│ │                                             │   │
+│ │ [Valider Retour] → Pas d'étiquette          │   │
+│ └─────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────┘
+
+→ Mise à jour stock automatique
+→ Pas d'impression étiquette
+→ Traçabilité dans historique mouvements
+```
+
+---
+
+### ✅ **4. PRIX SOUS-TRAITANTS par Modèle + Dimensions + Poste**
+```
+┌─────────────────────────────────────────────────────┐
+│ 💰 TARIFS SOUS-TRAITANTS                            │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│ Sous-traitant: Abed Gannoun                         │
+│ Service: Frange                                     │
+│                                                     │
+│ ┌─────────────┬────────────┬──────────────────┐   │
+│ │ Modèle      │ Dimensions │ Prix/pièce       │   │
+│ ├─────────────┼────────────┼──────────────────┤   │
+│ │ IBIZA       │ 1020       │ 0.450 د.ت        │   │
+│ │ IBIZA       │ 1626       │ 0.650 د.ت        │   │
+│ │ IBIZA       │ 2426       │ 0.850 د.ت        │   │
+│ │ ARTHUR      │ 1020       │ 0.400 د.ت        │   │
+│ │ ARTHUR      │ 2426       │ 0.750 د.ت        │   │
+│ │ ND LILI     │ 1020       │ 0.500 د.ت        │   │
+│ │ ...         │            │                  │   │
+│ └─────────────┴────────────┴──────────────────┘   │
+│                                                     │
+│ [Ajouter tarif] [Modifier] [Historique prix]       │
+│                                                     │
+│ Calcul auto pour OF244984:                         │
+│ ND LILI 1020 × 70pc × 0.500 د.ت = 35.00 د.ت       │
+└─────────────────────────────────────────────────────┘
+```
+
+---
+
+### ✅ **5. DEMANDE D'ACHAT - Tous postes**
+```
+Disponible dans TOUS les tableaux de bord:
+
+┌─────────────────────────────────────────────────────┐
+│ 🛒 DEMANDE D'ACHAT                                   │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│ Demandeur: Zied (Tisseur)                          │
+│ Poste: Tissage - Machine M2302                     │
+│ Date: 16/12/2025 10:30                             │
+│                                                     │
+│ Type: ○ Matière première                           │
+│       ○ Fourniture                                 │
+│       ● Pièce détachée machine                     │
+│       ○ Consommable                                │
+│       ○ Autre                                      │
+│                                                     │
+│ Description:                                        │
+│ [Courroie machine M2302 usée, besoin remplacement] │
+│ [urgent pour continuer production]                  │
+│                                                     │
+│ Quantité: [__1__]                                  │
+│ Priorité: ● Urgent ○ Normal ○ Peut attendre        │
+│                                                     │
+│ 📷 Photo (optionnel):                               │
+│ [Prendre photo] [Parcourir]                        │
+│                                                     │
+│ [Envoyer demande]                                  │
+│                                                     │
+│ → Notification responsable achats                   │
+│ → Suivi dans tableau de bord demandes               │
+└─────────────────────────────────────────────────────┘
+```
+
+---
+
+### ✅ **6. ARCHITECTURE APPLICATIONS**
+
+## **SYSTÈME MULTI-PLATEFORME**
+
+### **A. APPLICATIONS MOBILES (Android/iOS) - PWA Installable**
+```
+📱 7 Applications Métier:
+
+1. APP TISSEUR
+   - Connexion sécurisée
+   - Tableau de bord personnel
+   - Scan QR Code
+   - États fabrication
+   - Demandes interventions
+   - Demandes achats
+   - Impression étiquettes (Bluetooth)
+   
+2. APP COUPEUR
+   - Scan étiquettes tisseur
+   - Saisie quantités + photos défauts
+   - Génération étiquettes suivis
+   - Demandes achats
+
+3. APP MÉCANICIEN
+   - Alertes pannes
+   - Interventions machines
+   - Historique maintenance
+   - Demandes pièces
+
+4. APP MAGASINIER MP
+   - Préparation MP
+   - Alimentation machines
+   - Transferts entrepôts
+   - Retours MP
+   - Demandes achats
+
+5. APP MAGASINIER SOUS-TRAITANT
+   - Sorties/Retours lots
+   - Suivi ST
+   - Gestion nouveaux ST
+   - Demandes achats
+
+6. APP MAGASINIER PRODUIT FINI
+   - Mouvements inter-entrepôts
+   - Colisage
+   - Palettisation
+   - Inventaires
+   - Demandes achats
+
+7. APP CONTRÔLE QUALITÉ
+   - Validation lots
+   - Saisie défauts
+   - Photos
+   - Approbations
+
+Caractéristiques techniques:
+- PWA (Progressive Web App) installable
+- Fonctionne hors ligne (sync auto)
+- Scan QR Code (caméra)
+- Impression Bluetooth (étiquettes)
+- Photos/Vidéos
+- Notifications push
+- Responsive (smartphone/tablette)
+```
+
+### **B. APPLICATION DESKTOP WINDOWS - Gestion**
+```
+🖥️ APPLICATION WINDOWS (Electron ou .NET)
+
+MODULES:
+
+1. GESTION
+   - Commandes clients
+   - Catalogue produits
+   - Clients
+   - Fournisseurs
+   - Sous-traitants
+
+2. PLANIFICATION (Principal)
+   - Planning drag & drop
+   - Attribution machines
+   - Attribution couleurs
+   - Gestion urgences
+   - Calculs capacité
+
+3. PRODUCTION
+   - Suivi OF en temps réel
+   - Tableaux de bord machines
+   - Alertes
+   - Rendements
+
+4. STOCKS
+   - MP (multi-entrepôts)
+   - Produits finis
+   - Fournitures
+   - Transferts
+   - Inventaires
+
+5. SOUS-TRAITANCE
+   - Tarifs
+   - Suivi sorties/retours
+   - Paiements
+
+6. QUALITÉ
+   - Statistiques défauts
+   - Photos
+   - Actions correctives
+
+7. EXPÉDITIONS
+   - Colisage
+   - Palettisation
+   - Documents export
+
+8. COMPTABILITÉ / REPORTING
+   - Coûts production
+   - Marges
+   - Statistiques
+   - Exports Excel/PDF
+
+9. ADMINISTRATION
+   - Utilisateurs et droits
+   - Paramètres système
+   - BOM (modifiable)
+   - Machines
+   - Personnel
+
+Installation:
+- Setup Windows (.exe)
+- Connexion réseau local + cloud
+- Imprimantes étiquettes (USB/Réseau)
+- Imprimantes documents (PDF)
+- Backup automatique
+```
+
+---
+
+## 🏗️ **ARCHITECTURE TECHNIQUE COMPLÈTE**
+```
+┌─────────────────────────────────────────────────────┐
+│                   ARCHITECTURE                      │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│  🖥️ SERVEUR OVH (VPS)                               │
+│  ├─ Node.js + Express (API REST)                   │
+│  ├─ MySQL (Base de données)                        │
+│  ├─ Socket.IO (Temps réel)                         │
+│  ├─ Redis (Cache)                                  │
+│  └─ Backup quotidien                               │
+│                                                     │
+│  ↕️ HTTPS / WebSocket                               │
+│                                                     │
+│  💻 APP WINDOWS (Gestion)                           │
+│  ├─ Electron / React                               │
+│  ├─ Planification drag & drop                      │
+│  ├─ Tableaux de bord                               │
+│  ├─ Impression documents                           │
+│  └─ Exports Excel/PDF                              │
+│                                                     │
+│  📱 APPS MOBILES (7 métiers)                        │
+│  ├─ PWA (installable)                              │
+│  ├─ React + Material UI                            │
+│  ├─ Scan QR Code (HTML5)                           │
+│  ├─ Photos/Caméra                                  │
+│  ├─ Mode hors ligne                                │
+│  ├─ Notifications push                             │
+│  └─ Impression Bluetooth                           │
+│                                                     │
+│  🖨️ IMPRIMANTES                                      │
+│  ├─ Étiquettes thermiques (Zebra, Brother)        │
+│  ├─ Documents (PDF, Laser)                         │
+│  └─ Connexion USB / Réseau / Bluetooth            │
+└─────────────────────────────────────────────────────┘
+TABLES (45+):
+
+# RÉFÉRENTIELS
+- clients
+- fournisseurs
+- sous_traitants
+- articles
+- bom
+- bom_historique
+- machines
+- machines_config_historique
+- personnel
+- couleurs_fils
+- fournitures
+
+# STOCKS
+- stock_mp_entrepots
+- stock_produits_finis
+- stock_fournitures
+- mouvements_mp
+- mouvements_pf
+- mouvements_fournitures
+- transferts_entrepots
+
+# PRODUCTION
+- commandes
+- ordres_fabrication
+- sous_ordres_fabrication
+- planning_machines
+- evenements_tissage
+- evenements_coupe
+- evenements_qualite
+- num_suivis
+- etiquettes_generees
+
+# SOUS-TRAITANCE
+- sorties_sous_traitants
+- retours_sous_traitants
+- tarifs_sous_traitants
+
+# EXPÉDITION
+- colis
+- palettes
+- factures_export
+
+# GESTION
+- utilisateurs
+- roles_permissions
+- notifications
+- demandes_achats
+- logs_systeme
+- photos_defauts
+
+# SYNCHRONISATION
+- sync_queue (pour mode hors ligne)
+
+
+┌─────────────────────────────────────────────────────┐
+│ ❌ ANNULER PLANNING                                  │
+├─────────────────────────────────────────────────────┤
+│ OF244984 - ND LILI 1020                             │
+│ Client: CL00296 - CM-FT0069                         │
+│ Qté: 70 pièces | Machine: M2302                     │
+│ État actuel: En cours (45% complété)                │
+│                                                     │
+│ ⚠️ IMPACTS DE L'ANNULATION:                         │
+│                                                     │
+│ 📦 Matière première:                                │
+│ • C20: 24kg préparés → Retour stock                │
+│ • C01: 11kg préparés → Retour stock                │
+│                                                     │
+│ 🏭 Production:                                       │
+│ • Tissage en cours: 32 pièces tissées               │
+│ • Coupe: 0 pièces                                   │
+│ → Que faire des 32 pièces ?                        │
+│   ○ Mettre en stock opportunité                    │
+│   ● Continuer coupe et affecter au catalogue       │
+│   ○ Considérer comme déchet                        │
+│                                                     │
+│ 👷 Personnel:                                        │
+│ • Tisseur Zied (4h15 déjà travaillées)             │
+│ → Coût main d'œuvre: 19.84 د.ت à facturer          │
+│                                                     │
+│ 📊 Planning machine:                                 │
+│ • M2302: Libération immédiate                      │
+│ • Plannings en attente remontent automatiquement    │
+│                                                     │
+│ ──────────────────────────────────────────────────  │
+│                                                     │
+│ Raison d'annulation: (OBLIGATOIRE)                 │
+│ [Client a annulé commande_________________]        │
+│                                                     │
+│ ☑️ Notifier:                                         │
+│ ✓ Tisseur (Zied)                                   │
+│ ✓ Magasinier MP                                    │
+│ ✓ Responsable production                           │
+│ ✓ Commercial (Client CL00296)                      │
+│                                                     │
+│ [Annuler définitivement] [Mettre en pause] [Retour]│
+└─────────────────────────────────────────────────────┘
+```
+
+### **Gestion selon l'état :**
+```
+État: En attente (pas encore démarré)
+→ Annulation simple
+→ Libération MP si déjà préparée
+→ Aucun coût MO
+
+État: MP préparé
+→ Retour MP automatique au stock
+→ Notification magasinier
+→ Aucun coût MO
+
+État: En cours
+→ Gestion des pièces partiellement produites
+→ Facturation MO consommée
+→ Décision sur production partielle
+
+État: Terminé (tissé, pas encore coupé)
+→ Décision sur le rouleau complet
+→ Affectation catalogue ou opportunité
+→ Coût MO complet
+
+État: Coupé partiellement
+→ Gestion des lots suivis déjà créés
+→ Réaffectation possible
+
+État: Chez sous-traitant
+→ ⚠️ Demander retour ST d'abord
+→ Puis annulation
+
+État: Colisé/Expédié
+→ ❌ Annulation impossible
+→ Retour marchandise uniquement
+```
+
+---
+
+## 2️⃣ **MODIFICATION DE PLANNING**
+
+### **Interface modification :**
+```
+┌─────────────────────────────────────────────────────┐
+│ ✏️ MODIFIER PLANNING                                 │
+├─────────────────────────────────────────────────────┤
+│ OF244984 - ND LILI 1020                             │
+│ État: En attente | Machine: M2302 Position 2        │
+│                                                     │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                                     │
+│ 🔢 QUANTITÉ                                          │
+│ Actuelle: [__70__] pièces                          │
+│ Nouvelle: [__85__] pièces                          │
+│                                                     │
+│ Impact:                                             │
+│ • MP nécessaire: +3.6kg C20, +1.6kg C01            │
+│ • Temps production: +2h15                           │
+│ • Date fin prévue: 18/12 → 19/12                   │
+│                                                     │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                                     │
+│ 🏭 MACHINE & POSITION                                │
+│ Actuelle: M2302 (Position 2)                       │
+│ Nouvelle: [M2301 ▼] Position: [__1__]              │
+│                                                     │
+│ Impact:                                             │
+│ • Notification magasinier: Déplacer MP             │
+│ • Planning M2302 position 2 libéré                 │
+│ • Planning M2301 position 1 occupé                 │
+│                                                     │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                                     │
+│ 🎨 COULEURS                                          │
+│ Actuelles: C20 (Rouge), C01 (Blanc)                │
+│ Nouvelles: [C15 ▼] Bleu, [C01 ▼] Blanc            │
+│                                                     │
+│ Impact:                                             │
+│ • MP C20 non utilisée → Retour stock               │
+│ • Nouvelle préparation C15                         │
+│ • Référence change: NDL1020-B20-01 → NDL1020-B15-01│
+│                                                     │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                                     │
+│ 📅 DATES                                             │
+│ Date début: [16/12/2025___] (modifiable)           │
+│ Priorité: ○ Normal ● Urgent ○ Très urgent         │
+│                                                     │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                                     │
+│ 📋 BOM                                               │
+│ Actuel: NDL1020(FR)-B [PREMIUM]                    │
+│ Nouveau: [NDL1020(OR)-B ▼] [STANDARD ▼]           │
+│                                                     │
+│ Impact:                                             │
+│ • Finition: Frange → Ourlet                        │
+│ • Consommations recalculées                        │
+│ • Prix de revient modifié                          │
+│                                                     │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                                     │
+│ 💰 RÉSUMÉ FINANCIER                                  │
+│ Avant: 70pc × 9.75 د.ت = 682.50 د.ت                │
+│ Après: 85pc × 8.50 د.ت = 722.50 د.ت                │
+│ Écart: +40.00 د.ت                                   │
+│                                                     │
+│ ──────────────────────────────────────────────────  │
+│                                                     │
+│ Raison modification: (OBLIGATOIRE)                 │
+│ [Client augmente qté + change couleur_______]      │
+│                                                     │
+│ ☑️ Notifier tous les postes impactés                │
+│                                                     │
+│ [Enregistrer modifications] [Aperçu impacts] [Annuler]│
+└─────────────────────────────────────────────────────┘
+```
+
+---
+
+## 3️⃣ **MODIFICATIONS SELON ÉTAT**
+
+### **Matrice de modifications possibles :**
+```
+┌──────────────┬────┬────┬────┬────┬────┬────┬────┐
+│ État / Modif │ Qté│Mach│Coul│Date│BOM │Prio│Ann │
+├──────────────┼────┼────┼────┼────┼────┼────┼────┤
+│ En attente   │ ✅ │ ✅ │ ✅ │ ✅ │ ✅ │ ✅ │ ✅ │
+│ MP préparé   │ ⚠️ │ ⚠️ │ ⚠️ │ ✅ │ ❌ │ ✅ │ ✅ │
+│ En cours     │ ❌ │ ❌ │ ❌ │ ⚠️ │ ❌ │ ✅ │ ⚠️ │
+│ Terminé      │ ❌ │ ❌ │ ❌ │ ✅ │ ❌ │ ✅ │ ⚠️ │
+│ Coupé        │ ❌ │ ❌ │ ❌ │ ✅ │ ❌ │ ✅ │ ⚠️ │
+│ Chez ST      │ ❌ │ ❌ │ ❌ │ ⚠️ │ ❌ │ ✅ │ ⚠️ │
+│ Colisé       │ ❌ │ ❌ │ ❌ │ ❌ │ ❌ │ ❌ │ ❌ │
+└──────────────┴────┴────┴────┴────┴────┴────┴────┘
+
+Légende:
+✅ = Modification libre
+⚠️ = Modification avec validation + impacts
+❌ = Modification impossible
+```
+
+---
+
+## 4️⃣ **HISTORIQUE & TRAÇABILITÉ**
+
+### **Logs complets de toutes actions :**
+```
+┌─────────────────────────────────────────────────────┐
+│ 📜 HISTORIQUE - OF244984                            │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│ 16/12/2025 14:35 - Admin (Planificateur)           │
+│ ✏️ MODIFICATION Quantité                            │
+│ • Avant: 70 pièces                                  │
+│ • Après: 85 pièces                                  │
+│ • Raison: Client augmente commande                  │
+│                                                     │
+│ 16/12/2025 10:20 - Admin (Planificateur)           │
+│ ✏️ MODIFICATION Machine                             │
+│ • Avant: M2302 Position 2                           │
+│ • Après: M2301 Position 1                           │
+│ • Raison: Urgence client, M2301 plus rapide        │
+│                                                     │
+│ 15/12/2025 16:45 - Zied (Tisseur)                  │
+│ ⏸️ PAUSE Production                                  │
+│ • Motif: Arrêt mécanique                            │
+│ • Durée: 45 minutes                                 │
+│                                                     │
+│ 15/12/2025 14:00 - Admin (Planificateur)           │
+│ 🚀 PASSAGE URGENT                                    │
+│ • Priorité: Normal → Urgent                         │
+│ • Raison: Client demande livraison anticipée        │
+│                                                     │
+│ 15/12/2025 08:15 - Ahmed (Magasinier MP)           │
+│ ✅ ALIMENTATION Machine                              │
+│ • M2302 alimentée                                   │
+│ • C20: 24kg, C01: 11kg                             │
+│                                                     │
+│ 14/12/2025 10:00 - Admin (Planificateur)           │
+│ 🎯 ATTRIBUTION Couleurs                             │
+│ • C20 (Rouge), C01 (Blanc)                         │
+│                                                     │
+│ 14/12/2025 09:45 - Admin (Planificateur)           │
+│ 🏭 ATTRIBUTION Machine                               │
+│ • Machine: M2302, Position: 2                      │
+│                                                     │
+│ 14/12/2025 09:30 - Admin (Planificateur)           │
+│ 📝 CRÉATION OF                                       │
+│ • Commande: CM-FT0069                               │
+│ • Client: CL00296                                   │
+│ • Qté: 70 pièces                                    │
+│                                                     │
+│ [Exporter historique PDF]                          │
+└─────────────────────────────────────────────────────┘
+```
+
+---
+
+## 5️⃣ **PERMISSIONS & DROITS**
+
+### **Qui peut faire quoi :**
+```
+┌─────────────────────────────────────────────────────┐
+│ 🔐 MATRICE DES PERMISSIONS                          │
+├──────────────┬────────┬────────┬──────────┬────────┤
+│ Action       │ Admin  │ Planif │ Resp.Prod│Tisseur │
+├──────────────┼────────┼────────┼──────────┼────────┤
+│ Créer OF     │   ✅   │   ✅   │    ❌    │   ❌   │
+│ Modifier OF  │   ✅   │   ✅   │    ⚠️    │   ❌   │
+│ Annuler OF   │   ✅   │   ⚠️   │    ❌    │   ❌   │
+│ Changer prio │   ✅   │   ✅   │    ✅    │   ❌   │
+│ Forcer fab   │   ✅   │   ⚠️   │    ❌    │   ❌   │
+│ Voir coûts   │   ✅   │   ✅   │    ✅    │   ❌   │
+│ Export data  │   ✅   │   ✅   │    ⚠️    │   ❌   │
+└──────────────┴────────┴────────┴──────────┴────────┘
+
+✅ = Autorisation complète
+⚠️ = Autorisation avec validation
+❌ = Interdit
+```
+
+---
+
+## 6️⃣ **MISE EN PAUSE vs ANNULATION**
+```
+┌─────────────────────────────────────────────────────┐
+│ ⏸️ METTRE EN PAUSE                                   │
+├─────────────────────────────────────────────────────┤
+│ OF244984 - ND LILI 1020                             │
+│                                                     │
+│ Différence Pause vs Annulation:                    │
+│                                                     │
+│ PAUSE:                                              │
+│ • OF reste dans le système                          │
+│ • MP reste allouée (optionnel)                     │
+│ • Peut reprendre plus tard                          │
+│ • Historique conservé                               │
+│                                                     │
+│ ANNULATION:                                         │
+│ • OF archivé                                        │
+│ • MP libérée immédiatement                          │
+│ • Pas de reprise possible                           │
+│ • Coûts MO facturés si production démarrée         │
+│                                                     │
+│ Durée pause prévue: [__________] jours             │
+│ Raison: [En attente MP fournisseur_______]         │
+│                                                     │
+│ [Mettre en pause] [Annuler définitivement] [Retour]│
+└─────────────────────────────────────────────────────┘
+```
+
+---
+
+## 7️⃣ **VALIDATION EN CASCADE**
+
+### **Workflow de validation pour modifs critiques :**
+```
+Planificateur modifie quantité OF en cours:
+
+┌─────────────────────────────────────────────────────┐
+│ ⚠️ VALIDATION REQUISE                                │
+├─────────────────────────────────────────────────────┤
+│ OF244984 - Modification quantité (70 → 85)         │
+│ État: En cours (65% complété)                       │
+│                                                     │
+│ VALIDATIONS NÉCESSAIRES:                            │
+│                                                     │
+│ 1. ⏳ Responsable Production                         │
+│    → Vérifier faisabilité technique                │
+│    Statut: En attente                               │
+│                                                     │
+│ 2. ⏳ Magasinier MP                                  │
+│    → Confirmer disponibilité MP supplémentaire     │
+│    Statut: En attente                               │
+│                                                     │
+│ 3. ⏳ Tisseur (Zied)                                 │
+│    → Accepter prolongation temps machine           │
+│    Statut: En attente                               │
+│                                                     │
+│ Circuit de validation:                              │
+│ Planificateur → Resp. Prod → Mag. MP → Tisseur     │
+│                                                     │
+│ ⏱️ Délai validation: 2 heures                        │
+│ Si pas de réponse → Escalade automatique           │
+│                                                     │
+│ [Envoyer demandes] [Annuler modification]          │
+└─────────────────────────────────────────────────────┘
+```
+
+---
+
+## 8️⃣ **SÉCURITÉS & ALERTES**
+```
+┌─────────────────────────────────────────────────────┐
+│ 🛡️ SÉCURITÉS SYSTÈME                                 │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│ 1. Modification quantité > 20%                     │
+│    → Validation responsable obligatoire            │
+│                                                     │
+│ 2. Annulation OF > 50% complété                    │
+│    → Double validation (Planif + Direction)        │
+│                                                     │
+│ 3. Changement couleur si MP préparée               │
+│    → Alerte gaspillage MP                          │
+│    → Demander confirmation explicite               │
+│                                                     │
+│ 4. Modification date livraison < 7 jours           │
+│    → Notification client automatique               │
+│                                                     │
+│ 5. Annulation après colisage                       │
+│    → Blocage système (impossible)                  │
+│                                                     │
+│ 6. Forçage fabrication MP < 80%                    │
+│    → Validation direction + traçabilité            │
+│                                                     │
+│ 7. Modification BOM après début production         │
+│    → Blocage (créer nouveau OF)                    │
+│                                                     │
+│ 8. Toute action impactant coût > 50 د.ت            │
+│    → Log détaillé + notification comptabilité      │
+└─────────────────────────────────────────────────────┘
+```
+
+---
+
+## 9️⃣ **INTERFACE DRAG & DROP - Contrôle Total**
+```
+Clic droit sur planning dans la grille:
+
+┌─────────────────────────────────────┐
+│ OF244984 - ND LILI 1020             │
+├─────────────────────────────────────┤
+│ ✏️ Modifier planning                 │
+│ 🔄 Déplacer vers autre machine      │
+│ ⏸️ Mettre en pause                   │
+│ 🚨 Marquer urgent                    │
+│ 📋 Dupliquer OF                      │
+│ 📊 Voir détails complets            │
+│ 📜 Historique                        │
+│ 💰 Coûts et marges                   │
+│ 📷 Joindre document                  │
+│ ❌ Annuler OF                        │
+└─────────────────────────────────────┘
+
+Glisser-déposer:
+- Entre machines → Confirmation + notif
+- Changer ordre → Mise à jour automatique
+- Vers "Pause" → Suspension temporaire
+- Vers "Corbeille" → Demande annulation
+```
+
+---
+
+## 🔟 **ANNULATION AVEC RÉCUPÉRATION**
+```
+┌─────────────────────────────────────────────────────┐
+│ ♻️ ANNULATION INTELLIGENTE                           │
+├─────────────────────────────────────────────────────┤
+│ OF244984 - ND LILI 1020 - 70 pièces                │
+│ Production partielle: 32 pièces tissées             │
+│                                                     │
+│ OPTIONS DE RÉCUPÉRATION:                            │
+│                                                     │
+│ ○ Option 1: Terminer et affecter au catalogue      │
+│   → Continuer coupe des 32 pièces                  │
+│   → Créer Num Suivis catalogue CA250XXX            │
+│   → Stock showroom                                  │
+│   Coût additionnel: ~80 د.ت                        │
+│                                                     │
+│ ● Option 2: Stock opportunité (hors catalogue)     │
+│   → Terminer coupe                                  │
+│   → Référence: HC-NDL1020-B20-01-001               │
+│   → Vente future opportuniste                       │
+│   Coût additionnel: ~80 د.ت                        │
+│                                                     │
+│ ○ Option 3: Récupération matière                   │
+│   → Défaire le tissage (si possible)               │
+│   → Récupérer fils (~80% du poids)                 │
+│   → Perte: ~60 د.ت                                 │
+│                                                     │
+│ ○ Option 4: Déchet total                           │
+│   → Considérer comme rebut                          │
+│   → Perte complète: ~250 د.ت                       │
+│                                                     │
+│ [Valider choix] [Calculer rentabilité]             │
+┌─────────────────────────────────────────────────────┐
+│ 📥 IMPORT / EXPORT DONNÉES                          │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│ 📊 IMPORTS DISPONIBLES                              │
+│                                                     │
+│ ┌─────────────────────────────────────────────┐   │
+│ │ 📦 COMMANDES & OF                           │   │
+│ │ Format: Excel (.xlsx, .xls) ou CSV          │   │
+│ │ Template: [Télécharger modèle]              │   │
+│ │ [Parcourir fichier] [Importer]              │   │
+│ │                                             │   │
+│ │ Options:                                    │   │
+│ │ ☑️ Créer clients automatiquement si inexistant│   │
+│ │ ☑️ Créer articles automatiquement           │   │
+│ │ ☐ Écraser données existantes (Num OF)      │   │
+│ │ ☑️ Générer QR codes automatiquement         │   │
+│ └─────────────────────────────────────────────┘   │
+│                                                     │
+│ ┌─────────────────────────────────────────────┐   │
+│ │ 🏷️ CATALOGUE / ARTICLES                      │   │
+│ │ [Parcourir] [Importer] [Template]           │   │
+│ │ Champs: Ref, Modèle, Dimensions, Prix...    │   │
+│ │ ☑️ Importer photos (zip joint)              │   │
+│ └─────────────────────────────────────────────┘   │
+│                                                     │
+│ ┌─────────────────────────────────────────────┐   │
+│ │ 👥 CLIENTS                                   │   │
+│ │ [Parcourir] [Importer] [Template]           │   │
+│ └─────────────────────────────────────────────┘   │
+│                                                     │
+│ ┌─────────────────────────────────────────────┐   │
+│ │ 🧵 STOCK MATIÈRE PREMIÈRE                   │   │
+│ │ [Parcourir] [Importer] [Template]           │   │
+│ │ Multi-entrepôts supportés                   │   │
+│ └─────────────────────────────────────────────┘   │
+│                                                     │
+│ ┌─────────────────────────────────────────────┐   │
+│ │ 🏭 MACHINES                                  │   │
+│ │ [Parcourir] [Importer] [Template]           │   │
+│ └─────────────────────────────────────────────┘   │
+│                                                     │
+│ ┌─────────────────────────────────────────────┐   │
+│ │ 👷 PERSONNEL                                 │   │
+│ │ [Parcourir] [Importer] [Template]           │   │
+│ └─────────────────────────────────────────────┘   │
+│                                                     │
+│ ┌─────────────────────────────────────────────┐   │
+│ │ 🏢 SOUS-TRAITANTS                           │   │
+│ │ [Parcourir] [Importer] [Template]           │   │
+│ │ Inclus tarifs par modèle/dimension          │   │
+│ └─────────────────────────────────────────────┘   │
+│                                                     │
+│ ┌─────────────────────────────────────────────┐   │
+│ │ 🔧 BOM (Bill of Materials)                   │   │
+│ │ [Parcourir] [Importer] [Template]           │   │
+│ │ ⚠️ Validation technique automatique          │   │
+│ └─────────────────────────────────────────────┘   │
+│                                                     │
+│ ┌─────────────────────────────────────────────┐   │
+│ │ 🎨 COULEURS FILS                            │   │
+│ │ [Parcourir] [Importer] [Template]           │   │
+│ └─────────────────────────────────────────────┘   │
+│                                                     │
+│ ────────────────────────────────────────────────   │
+│                                                     │
+│ 📤 EXPORTS DISPONIBLES                              │
+│                                                     │
+│ • Toutes les données en Excel/CSV               │   │
+│ • Rapports production                           │   │
+│ • Inventaires                                   │   │
+│ • États financiers                              │   │
+│ • Historiques complets                          │   │
+│                                                     │
+│ [Exporter données sélectionnées]                │   │
+└─────────────────────────────────────────────────────┘
+```
+
+---
+
+## 2️⃣ **PROCESSUS D'IMPORT DÉTAILLÉ**
+
+### **Exemple : Import Commandes depuis Excel actuel**
+```
+┌─────────────────────────────────────────────────────┐
+│ 📥 IMPORT COMMANDES                                  │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│ Fichier sélectionné:                               │
+│ 📄 Commandes 20252026.xlsx                          │
+│ Taille: 2.3 MB | Feuille: "Commandes"              │
+│                                                     │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                                     │
+│ ÉTAPE 1: ANALYSE FICHIER                           │
+│ ✅ 294 lignes détectées                             │
+│ ✅ Colonnes mappées automatiquement                 │
+│                                                     │
+│ ┌─────────────────┬───────────────────────────┐   │
+│ │ Excel           │ Système                   │   │
+│ ├─────────────────┼───────────────────────────┤   │
+│ │ Num OF          │ → num_of                  │   │
+│ │ Num Commande    │ → num_commande            │   │
+│ │ Date d'envoie   │ → date_livraison          │   │
+│ │ Num Client      │ → client_id               │   │
+│ │ Ref Commercial  │ → ref_commercial          │   │
+│ │ Qte commandé    │ → quantite                │   │
+│ │ ...             │                           │   │
+│ └─────────────────┴───────────────────────────┘   │
+│                                                     │
+│ [Modifier mapping] [Continuer]                     │
+│                                                     │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                                     │
+│ ÉTAPE 2: VALIDATION                                │
+│                                                     │
+│ ✅ Lignes valides: 287                              │
+│ ⚠️ Avertissements: 5                                │
+│ ❌ Erreurs bloquantes: 2                            │
+│                                                     │
+│ Détails:                                           │
+│                                                     │
+│ ⚠️ AVERTISSEMENTS (5):                              │
+│ • Ligne 23: Client CL00999 inexistant             │
+│   → Action: Créer automatiquement                  │
+│ • Ligne 45: Article NDL1020-B99-01 inexistant     │
+│   → Action: Créer dans catalogue                   │
+│ • Ligne 67: Date livraison passée (2025-10-15)    │
+│   → Action: Ajuster à aujourd'hui                  │
+│ • Lignes 89,102: Références couleur manquantes    │
+│   → Action: Attribution manuelle requise           │
+│                                                     │
+│ ❌ ERREURS (2):                                      │
+│ • Ligne 156: Quantité invalide (vide)             │
+│   → [Corriger] [Ignorer ligne]                    │
+│ • Ligne 223: Format date incorrect                │
+│   → [Corriger] [Ignorer ligne]                    │
+│                                                     │
+│ [Corriger erreurs] [Ignorer lignes] [Continuer]   │
+│                                                     │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                                     │
+│ ÉTAPE 3: APERÇU AVANT IMPORT                       │
+│                                                     │
+│ Récapitulatif:                                     │
+│ • 287 commandes à importer                         │
+│ • 3 nouveaux clients à créer                       │
+│ • 12 nouveaux articles à créer                     │
+│ • 287 QR codes à générer                           │
+│                                                     │
+│ ☑️ Sauvegarder avant import (recommandé)           │
+│                                                     │
+│ [Lancer import] [Annuler]                          │
+│                                                     │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                                     │
+│ ÉTAPE 4: IMPORT EN COURS                           │
+│                                                     │
+│ ████████████████░░░░░░░░░░ 65% (187/287)           │
+│                                                     │
+│ Importé: 187 | Reste: 100                          │
+│ Temps écoulé: 00:02:34 | Estimé: 00:01:15          │
+│                                                     │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                                     │
+│ ÉTAPE 5: RÉSULTAT                                  │
+│                                                     │
+│ ✅ IMPORT TERMINÉ AVEC SUCCÈS                       │
+│                                                     │
+│ • Commandes importées: 287                         │
+│ • Clients créés: 3                                 │
+│ • Articles créés: 12                               │
+│ • QR codes générés: 287                            │
+│ • Durée: 3min 49sec                                │
+│                                                     │
+│ 📄 Rapport détaillé: [Télécharger PDF]             │
+│ 📊 Voir commandes importées: [Accéder]             │
+│                                                     │
+│ [Fermer]                                           │
+└─────────────────────────────────────────────────────┘
+```
+
+---
+
+## 3️⃣ **CRÉATION MANUELLE - FORMULAIRES COMPLETS**
+
+### **A. Créer un Article/Produit**
+```
+┌─────────────────────────────────────────────────────┐
+│ ➕ CRÉER NOUVEL ARTICLE                              │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│ 📋 INFORMATIONS GÉNÉRALES                           │
+│                                                     │
+│ Modèle: [IBIZA___________] ▼                       │
+│ Code Modèle: [IB] (auto)                           │
+│                                                     │
+│ Dimensions: [1020________] ▼                       │
+│ Produit: [Fouta__________] ▼                       │
+│                                                     │
+│ Type de Tissage: [Tissage Plat_] ▼                │
+│ Code: PL (auto)                                    │
+│                                                     │
+│ Type de Finition: [Frange_______] ▼                │
+│ Code: FR (auto)                                    │
+│                                                     │
+│ Nombre de couleurs: [2 Couleurs___] ▼              │
+│ Code: B (auto)                                     │
+│                                                     │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                                     │
+│ 💰 TARIFICATION                                      │
+│                                                     │
+│ Prix de revient: [__7.50__] د.ت                    │
+│ Prix de vente: [__9.75__] د.ت                      │
+│ Marge: 23.08% (auto)                               │
+│                                                     │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                                     │
+│ ⚖️ POIDS                                             │
+│                                                     │
+│ Poids net unitaire: [__0.350__] kg                │
+│                                                     │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                                     │
+│ 🎨 PHOTOS PRODUIT                                    │
+│                                                     │
+│ ┌─────────┬─────────┬─────────┬─────────┐         │
+│ │ Photo 1 │ Photo 2 │ Photo 3 │ Photo 4 │         │
+│ │ [IMAGE] │ [IMAGE] │ [+Ajou] │ [+Ajou] │         │
+│ │ [×] [↑] │ [×] [↓] │  ter    │  ter    │         │
+│ └─────────┴─────────┴─────────┴─────────┘         │
+│                                                     │
+│ • Formats: JPG, PNG (max 5 MB/photo)               │
+│ • Glisser-déposer ou [Parcourir]                  │
+│ • Photo 1 = Photo principale (catalogue)           │
+│                                                     │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                                     │
+│ 📝 DESCRIPTION                                       │
+│                                                     │
+│ [Fouta IBIZA tissage plat 100x200cm, finition     │
+│  frange, disponible en plusieurs couleurs.        │
+│  Qualité premium, idéal plage et décoration.]     │
+│                                                     │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                                     │
+│ 🔗 LIAISON BOM                                       │
+│                                                     │
+│ BOM associé: [IB1020(FR)-B__________] ▼            │
+│ (Sélectionner configuration fabrication)           │
+│                                                     │
+│ Si inexistant: [Créer nouveau BOM]                │
+│                                                     │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                                     │
+│ 📦 STOCK & CATALOGUE                                │
+│                                                     │
+│ ☑️ Ajouter au catalogue showroom                    │
+│ Stock minimal: [__60__] pièces                     │
+│                                                     │
+│ ☐ Afficher sur site web (si intégration e-com)    │
+│                                                     │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                                     │
+│ Référence générée:                                 │
+│ Commercial: IB1020-B[XX]-[XX] (couleurs à définir) │
+│ Fabrication: IB1020-B-[XX]-[XX]                    │
+│                                                     │
+│ [Créer Article] [Créer & Nouveau] [Annuler]       │
+└─────────────────────────────────────────────────────┘
+```
+
+### **B. Créer un Client**
+```
+┌─────────────────────────────────────────────────────┐
+│ ➕ CRÉER NOUVEAU CLIENT                              │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│ Num Client: [CL01234____] (auto ou manuel)         │
+│                                                     │
+│ 📋 INFORMATIONS                                      │
+│                                                     │
+│ Raison sociale: [_______________________________]  │
+│ Nom commercial: [_______________________________]  │
+│                                                     │
+│ Contact principal: [____________________________]  │
+│ Fonction: [_____________________________________]  │
+│                                                     │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                                     │
+│ 📞 COORDONNÉES                                       │
+│                                                     │
+│ Téléphone: [____________]                          │
+│ Mobile: [____________]                             │
+│ Email: [_________________________________]         │
+│ Site web: [______________________________]         │
+│                                                     │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                                     │
+│ 📍 ADRESSE                                           │
+│                                                     │
+│ Adresse: [____________________________________]    │
+│ Code postal: [_______]                             │
+│ Ville: [_________________]                         │
+│ Pays: [Tunisie__________] ▼                        │
+│                                                     │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                                     │
+│ 💰 CONDITIONS COMMERCIALES                           │
+│                                                     │
+│ Remise: [__0__] %                                  │
+│ Délai paiement: [30] jours                         │
+│ Mode paiement: [Virement______] ▼                  │
+│                                                     │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                                     │
+│ 🏷️ CATÉGORIE                                         │
+│                                                     │
+│ Type: ○ Grossiste ● Détaillant ○ Export           │
+│ Priorité: ○ Standard ● Important ○ VIP             │
+│                                                     │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                                     │
+│ 📷 LOGO CLIENT (optionnel)                          │
+│ [+Ajouter logo] → Affichage sur documents          │
+│                                                     │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                                     │
+│ 📝 NOTES                                             │
+│ [Notes internes sur le client_______________]     │
+│                                                     │
+│ [Créer Client] [Annuler]                           │
+└─────────────────────────────────────────────────────┘
+```
+
+### **C. Créer un BOM**
+```
+┌─────────────────────────────────────────────────────┐
+│ ➕ CRÉER NOUVELLE CONFIGURATION BOM                  │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│ Code paramétrage: [IB1020(FR)-B] (généré)         │
+│                                                     │
+│ 📋 IDENTIFICATION                                    │
+│                                                     │
+│ Modèle: [IBIZA_] ▼  Code: [IB]                    │
+│ Dimensions: [1020] ▼                               │
+│ Type Tissage: [Tissage Plat] ▼  Code: [PL]        │
+│ Type Finition: [Frange] ▼  Code: [FR]             │
+│ Nb Couleurs: [2 Couleurs] ▼  Code: [B]            │
+│ Qualité: [PREMIUM] ▼                               │
+│                                                     │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                                     │
+│ 📏 DIMENSIONS TISSAGE                                │
+│                                                     │
+│ Dimensions produit fini: [100/200 CM]              │
+│ LARGEUR TISSAGE: [__100__] cm                      │
+│ LONGEUR TISSAGE: [__240__] cm                      │
+│                                                     │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                                     │
+│ 🧵 PARAMÈTRES TISSAGE                               │
+│                                                     │
+│ DUITE PAR CM: [__10.8__]                           │
+│ Nombre de Duite Total: [__2592__] (auto)          │
+│                                                     │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                                     │
+│ 🎨 CONSOMMATION MATIÈRE (par pièce)                 │
+│                                                     │
+│ Sélecteur 01 (Couleur principale): [__0.24__] kg  │
+│ Sélecteur 02 (Couleur secondaire): [__0.11__] kg  │
+│ Sélecteur 03: [__0.00__] kg                        │
+│ Sélecteur 04: [__0.00__] kg                        │
+│ Sélecteur 05: [__0.00__] kg                        │
+│ Sélecteur 06: [__0.00__] kg                        │
+│                                                     │
+│ Total matière: 0.35 kg/pièce (auto)                │
+│                                                     │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                                     │
+│ 🔧 FABRICATION                                       │
+│                                                     │
+│ Type: ○ Unique ○ Composer                          │
+│ Nombre de Composition: [__1__]                     │
+│                                                     │
+│ Si Composer > 1:                                   │
+│ [Définir sous-produits]                            │
+│                                                     │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                                     │
+│ 💡 CALCULS AUTOMATIQUES                              │
+│                                                     │
+│ Pour 100 pièces:                                   │
+│ • Matière totale: 35.0 kg                          │
+│ • Longueur tissage: 240 m                          │
+│ • Duites totales: 259 200                          │
+│ • Temps @ 250 duite/min: 17.3h                     │
+│                                                     │
+│ [Créer BOM] [Tester calculs] [Annuler]            │
+└─────────────────────────────────────────────────────┘
+```
+
+---
+
+## 4️⃣ **GESTION PHOTOS PRODUITS**
+
+### **A. Galerie Photos - Vue Catalogue**
+```
+┌─────────────────────────────────────────────────────┐
+│ 🖼️ GALERIE PHOTOS PRODUITS                          │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│ Recherche: [IBIZA___] 🔍  Filtre: [Tous▼]         │
+│                                                     │
+│ ┌──────────┬──────────┬──────────┬──────────┐     │
+│ │ IBIZA    │ ARTHUR   │ ND LILI  │ UNI      │     │
+│ │ 1020     │ 2426     │ 1020     │ SURPIQUE │     │
+│ │          │          │          │          │     │
+│ │ [IMAGE]  │ [IMAGE]  │ [IMAGE]  │ [IMAGE]  │     │
+│ │          │          │          │          │     │
+│ │ 4 photos │ 2 photos │ 6 photos │ 3 photos │     │
+│ │ [Gérer]  │ [Gérer]  │ [Gérer]  │ [Gérer]  │     │
+│ └──────────┴──────────┴──────────┴──────────┘     │
+│                                                     │
+│ ┌──────────┬──────────┬──────────┬──────────┐     │
+│ │ [+ Nouveau produit avec photos]           │     │
+│ └───────────────────────────────────────────┘     │
+│                                                     │
+│ [Import massif photos] [Export catalogue]          │
+└─────────────────────────────────────────────────────┘
+```
+
+### **B. Gestion Photos Détaillée**
+```
+┌─────────────────────────────────────────────────────┐
+│ 📸 GESTION PHOTOS - IBIZA 1020                      │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│ 📷 PHOTOS (6)                                        │
+│                                                     │
+│ ┌─────────────────────────────────────────────┐   │
+│ │ Photo 1 - PRINCIPALE ⭐                      │   │
+│ │ ┌───────────────────────────────────────┐   │   │
+│ │ │                                       │   │   │
+│ │ │        [IMAGE PREVIEW]                │   │   │
+│ │ │        800x600 - 245 KB               │   │   │
+│ │ │                                       │   │   │
+│ │ └───────────────────────────────────────┘   │   │
+│ │ [×Suppr] [↑] [↓] [⚙️Éditer] [👁️Agrandir]    │   │
+│ └─────────────────────────────────────────────┘   │
+│                                                     │
+│ ┌─────────────────────────────────────────────┐   │
+│ │ Photo 2 - Vue détail frange                 │   │
+│ │ [IMAGE MINIATURE]  545 KB                   │   │
+│ │ [×] [↑] [↓] [⚙️] [👁️]                         │   │
+│ └─────────────────────────────────────────────┘   │
+│                                                     │
+│ ┌─────────────────────────────────────────────┐   │
+│ │ Photo 3 - Pliée                             │   │
+│ │ [IMAGE MINIATURE]  398 KB                   │   │
+│ │ [×] [↑] [↓] [⚙️] [👁️]                         │   │
+│ └─────────────────────────────────────────────┘   │
+│                                                     │
+│ ... (3 autres photos)                              │
+│                                                     │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                                     │
+│ ➕ AJOUTER PHOTOS                                    │
+│                                                     │
+│ ┌─────────────────────────────────────────────┐   │
+│ │ Glisser-déposer photos ici                  │   │
+│ │ ou [Parcourir fichiers]                     │   │
+│ │                                             │   │
+│ │ Formats: JPG, PNG, WebP                     │   │
+│ │ Taille max: 5 MB par photo                  │   │
+│ │ Résolution recommandée: 1200x900 px         │   │
+│ └─────────────────────────────────────────────┘   │
+│                                                     │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                                     │
+│ ⚙️ ÉDITION RAPIDE                                   │
+│                                                     │
+│ Photo sélectionnée: Photo 1                        │
+│                                                     │
+│ • Recadrer [✂️]                                     │
+│ • Rotation [↻]                                     │
+│ • Luminosité [☀️]                                   │
+│ • Contraste [◐]                                    │
+│ • Compression [📦] (réduire taille fichier)        │
+│                                                     │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                                     │
+│ 🏷️ UTILISATION PHOTOS                               │
+│                                                     │
+│ ☑️ Catalogue showroom                               │
+│ ☑️ Étiquettes produit (QR + photo)                 │
+│ ☑️ Documents commerciaux                            │
+│ ☐ Site web e-commerce                             │
+│                                                     │
+│ [Enregistrer] [Annuler]                            │
+└─────────────────────────────────────────────────────┘
+```
+
+### **C. Photos sur Étiquettes**
+```
+Option étiquette avec photo:
+
+┌─────────────────────────────────────┐
+│ 📦 LOT SUIVIS OF244984-3            │
+├─────────────────────────────────────┤
+│ [PHOTO PRODUIT]                     │
+│    (miniature)                      │
+├─────────────────────────────────────┤
+│ [QR CODE]                           │
+├─────────────────────────────────────┤
+│ IBIZA 1020 - Lot 3/20               │
+│ 5 pièces | CL00296                  │
+│ → FRANGE (Abed)                     │
+└─────────────────────────────────────┘
+
+Paramétrage:
+☑️ Inclure photo produit sur étiquettes suivis
+☑️ Inclure photo sur étiquettes colisage
+☐ Photo haute résolution (+ lourd)
+● Photo optimisée (recommandé)
+```
+
+---
+
+## 5️⃣ **IMPORT MASSIF PHOTOS**
+```
+┌─────────────────────────────────────────────────────┐
+│ 📥 IMPORT MASSIF PHOTOS PRODUITS                     │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│ MÉTHODE 1: Archive ZIP                             │
+│                                                     │
+│ Structure attendue:                                │
+│ photos_produits.zip                                │
+│ ├─ IB1020-B20-01_01.jpg (photo principale)        │
+│ ├─ IB1020-B20-01_02.jpg (photo 2)                 │
+│ ├─ IB1020-B20-01_03.jpg                           │
+│ ├─ AR2426-T15-32-08_01.jpg                        │
+│ ├─ AR2426-T15-32-08_02.jpg                        │
+│ └─ ...                                             │
+│                                                     │
+│ Format nom fichier:                                │
+│ [RefCommerciale]_[NuméroPhoto].jpg                │
+│                                                     │
+│ [Sélectionner ZIP] [Importer]                      │
+│                                                     │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                                     │
+│ MÉTHODE 2: Dossier réseau                          │
+│                                                     │
+│ Chemin: [\\serveur\photos\produits\______]        │
+│                                                     │
+│ ☑️ Scanner récursivement sous-dossiers             │
+│ ☑️ Associer automatiquement par nom fichier        │
+│                                                     │
+│ [Scanner dossier] [Synchroniser]                   │
+│                                                     │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                                     │
+│ OPTIONS TRAITEMENT                                  │
+│                                                     │
+│ ☑️ Optimiser photos automatiquement                 │
+│    Résolution cible: [1200x900] px                 │
+│    Qualité JPEG: [85%_____] ░░░░░░                │
+│                                                     │
+│ ☑️ Générer miniatures                               │
+│ ☑️ Détecter doublons                                │
+│ ☑️ Renommer selon nomenclature                      │
+│                                                     │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                                     │
+│ RÉSULTAT SCAN                                       │
+│                                                     │
+│ ✅ 487 photos trouvées                              │
+│ ✅ 423 associées automatiquement                    │
+│ ⚠️ 64 non associées (produit inexistant)           │
+│ ❌ 12 format invalide                               │
+│                                                     │
+│ [Voir détails] [Corriger] [Importer validées]     │
+└─────────────────────────────────────────────────────┘
+```
+
+---
+
+## 6️⃣ **TEMPLATES D'IMPORT - Téléchargeables**
+
+### **Fichiers Excel préformatés :**
+```
+📄 TEMPLATES DISPONIBLES:
+
+1. template_commandes.xlsx
+   Colonnes: Num OF, Num Commande, Date livraison, 
+            Num Client, Ref Commercial, Quantité...
+   
+2. template_articles.xlsx
+   Colonnes: Ref, Modèle, Dimensions, Prix revient,
+            Prix vente, Poids net, Description...
+
+3. template_clients.xlsx
+   Colonnes: Num Client, Raison sociale, Contact,
+            Tel, Email, Adresse, Pays...
+
+4. template_stock_mp.xlsx
+   Colonnes: Code couleur, Couleur, Code fabrication,
+            Num lot, Entrepôt, Poids...
+
+5. template_machines.xlsx
+   Colonnes: Num Machine, Type, Laize, Vitesse,
+            Système, État, Parc...
+
+6. template_personnel.xlsx
+   Colonnes: Nom, Fonction, Parc, Équipe,
+            Horaire, Taux horaire...
+
+7. template_bom.xlsx
+   Colonnes: Code paramétrage, Modèle, Dimensions,
+            Largeur, Longueur, Duite/cm...
+
+8. template_sous_traitants.xlsx
+   Colonnes: Nom, Service, Téléphone, Adresse,
+            Tarifs (multiples colonnes)...
+
+[Télécharger tous les templates (ZIP)]
+```
+
+---
+
+## ✅ **RÉCAPITULATIF COMPLET FINAL**
+
+**VOUS AVEZ MAINTENANT :**
+
+### **✅ IMPORTS**
+1. Import Excel/CSV de toutes données
+2. Validation automatique + correction erreurs
+3. Mapping colonnes flexible
+4. Création auto entités manquantes
+5. Templates préformatés téléchargeables
+6. Import massif photos (ZIP ou réseau)
+7. Rapports d'import détaillés
+
+### **✅ CRÉATION MANUELLE**
+1. Formulaires complets tous modules
+2. Validation en temps réel
+3. Calculs automatiques
+4. Suggestions intelligentes
+5. Photos drag & drop
+
+### **✅ PHOTOS**
+1. Galerie photos produits
+2. Multi-photos par produit
+3. Photo principale + secondaires
+4. Édition rapide (recadrage, rotation...)
+5. Optimisation automatique
+6. Photos sur étiquettes (option)
+7. Miniatures auto
+8. Import massif structuré
+
+### **✅ EXPORTS**
+1. Excel/CSV toutes données
+2. PDF documents/rapports
+3. Images (catalogue, étiquettes)
+4. Backup complet base
+
+---
+
+## 🚀 **ARCHITECTURE STOCKAGE PHOTOS**
+```
+Structure serveur:
+
+/storage/
+  /photos/
+    /produits/
+      /originales/        (haute résolution)
+        IB1020-B20-01_01.jpg
+        IB1020-B20-01_02.jpg
+      /optimisees/        (web/app)
+        IB1020-B20-01_01.jpg (1200x900)
+      /miniatures/        (vignettes)
+        IB1020-B20-01_01_thumb.jpg (300x225)
+      /etiquettes/        (pour impression)
+        IB1020-B20-01_01_label.jpg (400x300)
+    
+    /defauts/             (photos contrôle qualité)
+    /clients/             (logos)
+    /documents/           (autres)
+
+Base de données:
+Table: photos_produits
+- id
+- ref_commercial
+- ordre (1=principale, 2,3,4...)
+- filename
+- path_originale
+- path_optimisee
+- path_miniature
+- taille_ko
+- dimensions (largeur x hauteur)
+- date_upload
+- uploaded_by
+Machine M2301 :
+- Nombre de fils de chaîne : 966 fils
+- Métrage ensouple ordissée : 5 000 mètres
+```
+
+### **2️⃣ Consommation Théorique**
+```
+Ordre de Fabrication : 200 pièces IBIZA 1020
+BOM : Longueur tissage = 240 cm/pièce
+
+Consommation théorique = 200 × 240 cm = 48 000 cm = 480 mètres
+```
+
+### **3️⃣ Consommation RÉELLE (après coupe)**
+```
+Résultat coupe :
+- 1er choix : 195 pièces
+- 2ème choix : 3 pièces
+- Déchet : 2 pièces
+- TOTAL coupé : 200 pièces
+
+Consommation réelle = 200 × 240 cm = 480 mètres
+(ou calculée selon compteur machine réel)
+
+Ensouple restant = 5000 m - 480 m = 4 520 mètres
+```
+
+### **4️⃣ Alerte Ordissage**
+```
+⚠️ SI Ensouple restant ≤ 500 mètres
+→ ALORS Lancer ordre d'ordissage chez sous-traitant
+```
+
+### **5️⃣ Calcul Poids MP pour Nouvel Ordissage**
+
+**Données :**
+- Numéro métrique : NM 2/50 (2 kg = 50 km)
+- Nombre de fils chaîne : 966 fils
+- Métrage besoin : 5 000 mètres
+
+**Formule :**
+```
+Poids (kg) = (Métrage × Nb fils × Numérateur NM) / Dénominateur NM
+
+Poids = (5000 m × 966 fils × 2 kg) / 50 km
+Poids = (5000 × 966 × 2) / 50000
+Poids = 9,660,000 / 50,000
+Poids = 193.2 kg de fil à envoyer pour ordissage
+
+
+Questions pour finaliser : 1. Compteur machine : * Le compteur machine indique directement les mètres consommés ? maleureusement certain machine les compteur ne fonctionne pas * Ou faut-il calculer selon les pièces coupées ? oui 2. Ensouple par machine : * Chaque machine a son propre ordissage/ensouple ? oui biensure et son propre parametrage nombre de fil de chaine qui est la longueur de peigne * nombre de fil / cm et ça change si on a changer le parametrage * Ou plusieurs machines partagent la même ensouple ? 3. Sous-traitant ordissage : * C'est un sous-traitant spécifique différent des sous-traitants finition ? oui * Délai typique d'ordissage ? ça depends environ 4 jours 4. Changement d'ensouple : * Quand l'ensouple arrive à 0, on arrête la machine ? pas à 0 mais on laisse 2-3 metre de securite * Ou on peut changer l'ensouple en cours ? oui si on veux changer le parametrage machine ou autre 5. Numéro métrique : * Différent pour chaque couleur de fil ? dans le tableau matiere premiere il ya des different numero metrique le fil est caractériser par son numero metrique couleur et composition pour le fil de chaine c'est à selectionner manuellement parmis les code matiere premiere de fabrication * Ou standard pour tous ? non 6. Tableau de suivi : * Voulez-vous un tableau de bord spécifique pour surveiller les ensouples de toutes les machines ? oui Une fois confirmé, j'intègre ce système complet dans l'application avec : * Suivi ensouple par machine * Alertes automatiques à 500m * Calcul automatique poids MP ordissage * Gestion ordres d'ordissage sous-traitant * Historique consommation réelle vs théorique
+
+* Graphiques d'évolution consommation ? oui * Export Excel des données ensouples ? oui * Notifications push quand alerte ≤ 500m ? oui * Planning prévisionnel des ordissages ? oui * Historique changements ensouple par machine ? oui * Photos/Documents liés aux ordissages ? oui dans la partis production j'aime bien que tu me fait une partis suivis ou j'ai une bonne visuel de suivis de production
+

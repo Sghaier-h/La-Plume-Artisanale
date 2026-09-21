@@ -1,0 +1,134 @@
+/**
+ * Project Controller - Version avec relations
+ */
+
+import { registry } from '../../../src/core/Environment.js';
+import { sendSuccess, sendError } from '../../../src/utils/error.helper.js';
+import { getPaginationParams, buildPaginationResponse } from '../../../src/utils/pagination.helper.js';
+import { loadOne2Many } from '../../../src/core/Relations.js';
+import { getTableName, getIdField } from '../../../src/core/TableMapping.js';
+
+export const getProjects = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const env = registry.createEnvironment(userId);
+    const Project = env.model('project.project');
+
+    const { page, limit, search, state, partner_id } = req.query;
+    const { offset, pageSize } = getPaginationParams(page, limit);
+
+    const domain = [];
+    if (search) {
+      domain.push(['name', 'like', search]);
+    }
+    if (state) {
+      domain.push(['state', '=', state]);
+    }
+    if (partner_id) {
+      domain.push(['partner_id', '=', partner_id]);
+    }
+
+    const loadRelations = req.query.loadRelations === 'true';
+    
+    const projects = await Project.search(domain, {
+      limit: pageSize,
+      offset,
+      order: 'date_start desc',
+      loadRelations: loadRelations ? {
+        many2one: true,
+        one2many: [],
+        many2oneFields: ['partner_id', 'user_id']
+      } : undefined
+    });
+
+    const total = await Project.search(domain).then(r => r.length);
+
+    return sendSuccess(res, {
+      data: projects,
+      pagination: buildPaginationResponse(page, pageSize, total)
+    });
+  } catch (error) {
+    return sendError(res, error.message, 500);
+  }
+};
+
+export const getProject = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const env = registry.createEnvironment(userId);
+    const Project = env.model('project.project');
+
+    const loadRelations = req.query.loadRelations === 'true';
+    
+    const projects = await Project.read([req.params.id], {
+      loadRelations: loadRelations ? {
+        many2one: true,
+        one2many: [],
+        many2oneFields: ['partner_id', 'user_id']
+      } : undefined
+    });
+    
+    if (!projects || projects.length === 0) {
+      return sendError(res, 'Project not found', 404);
+    }
+
+    return sendSuccess(res, { data: projects[0] });
+  } catch (error) {
+    return sendError(res, error.message, 500);
+  }
+};
+
+export const createProject = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const env = registry.createEnvironment(userId);
+    const Project = env.model('project.project');
+
+    const project = await Project.create(req.body);
+    return sendSuccess(res, { data: project }, 201);
+  } catch (error) {
+    return sendError(res, error.message, 500);
+  }
+};
+
+export const updateProject = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const env = registry.createEnvironment(userId);
+    const Project = env.model('project.project');
+
+    await Project.write([req.params.id], req.body);
+    const projects = await Project.read([req.params.id], {
+      loadRelations: {
+        many2one: true,
+        one2many: [],
+        many2oneFields: ['partner_id', 'user_id']
+      }
+    });
+
+    return sendSuccess(res, { data: projects[0] });
+  } catch (error) {
+    return sendError(res, error.message, 500);
+  }
+};
+
+export const deleteProject = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const env = registry.createEnvironment(userId);
+    const Project = env.model('project.project');
+
+    await Project.unlink([req.params.id]);
+    return sendSuccess(res, { message: 'Project deleted' });
+  } catch (error) {
+    return sendError(res, error.message, 500);
+  }
+};
+
+export default {
+  getProjects,
+  getProject,
+  createProject,
+  updateProject,
+  deleteProject
+};

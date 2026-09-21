@@ -1,0 +1,71 @@
+================================================================================
+COMMANDES SQL POUR CONFIGURER POSTGRESQL
+================================================================================
+
+Votre fichier .env est correctement configuré.
+Il faut maintenant créer l'utilisateur et la base de données dans PostgreSQL.
+
+================================================================================
+ÉTAPE 1 : Se connecter à PostgreSQL
+================================================================================
+
+Option A : Via pgAdmin (Interface graphique)
+- Ouvrez pgAdmin
+- Connectez-vous avec l'utilisateur "postgres"
+- Ouvrez "Query Tool"
+
+Option B : Via psql (Ligne de commande)
+psql -U postgres
+
+================================================================================
+ÉTAPE 2 : Exécuter ces commandes SQL
+================================================================================
+
+-- Créer l'utilisateur
+CREATE USER "Aviateur" WITH PASSWORD 'Allbyfouta007';
+
+-- Créer la base de données
+CREATE DATABASE "ERP_La_Plume";
+
+-- Attribuer les permissions
+ALTER DATABASE "ERP_La_Plume" OWNER TO "Aviateur";
+GRANT ALL PRIVILEGES ON DATABASE "ERP_La_Plume" TO "Aviateur";
+
+-- Se connecter à la nouvelle base
+\c "ERP_La_Plume"
+
+-- Permissions sur le schéma
+GRANT ALL ON SCHEMA public TO "Aviateur";
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO "Aviateur";
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO "Aviateur";
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO "Aviateur";
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO "Aviateur";
+
+-- Quitter
+\q
+
+================================================================================
+ÉTAPE 3 : Vérifier la configuration
+================================================================================
+
+node scripts/fixer-postgresql-simple.mjs
+
+Vous devriez voir "✅ Connexion réussie !"
+
+================================================================================
+ÉTAPE 4 : Tester le serveur
+================================================================================
+
+npm start
+
+Puis dans un autre terminal:
+node scripts/test-crud-avec-auth.mjs
+
+================================================================================
+SI VOUS NE CONNAISSEZ PAS LE MOT DE PASSE POSTGRES
+================================================================================
+
+Voir: SOLUTION_RAPIDE_POSTGRESQL.md
+Section: "Méthode 3 : Si vous ne connaissez pas le mot de passe postgres"
+
+================================================================================

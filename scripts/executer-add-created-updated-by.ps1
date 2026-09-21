@@ -69,21 +69,26 @@ Write-Host "🔄 Exécution du script SQL..." -ForegroundColor Yellow
 
 $env:PGPASSWORD = $DB_PASSWORD
 
-$sqlContent = Get-Content $sqlFile -Raw
-$result = $sqlContent | & $psqlPath -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -v ON_ERROR_STOP=1 2>&1
-
-if ($LASTEXITCODE -eq 0) {
+try {
+    $result = & $psqlPath -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -f $sqlFile -v ON_ERROR_STOP=1 2>&1
+    
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host ""
+        Write-Host "✅ Script exécuté avec succès!" -ForegroundColor Green
+        Write-Host ""
+        Write-Host "📋 Les champs created_by et updated_by ont été ajoutés aux tables principales." -ForegroundColor Green
+        Write-Host ""
+    } else {
+        Write-Host ""
+        Write-Host "❌ Erreur lors de l'exécution du script SQL" -ForegroundColor Red
+        Write-Host $result
+        exit 1
+    }
+} catch {
     Write-Host ""
-    Write-Host "✅ Script exécuté avec succès!" -ForegroundColor Green
-    Write-Host ""
-    Write-Host "📋 Les champs created_by et updated_by ont été ajoutés aux tables principales." -ForegroundColor Green
-    Write-Host ""
-} else {
-    Write-Host ""
-    Write-Host "❌ Erreur lors de l'exécution du script SQL" -ForegroundColor Red
-    Write-Host $result
+    Write-Host "❌ Erreur lors de l'exécution du script SQL: $_" -ForegroundColor Red
     exit 1
+} finally {
+    # Nettoyer
+    $env:PGPASSWORD = $null
 }
-
-# Nettoyer
-$env:PGPASSWORD = $null

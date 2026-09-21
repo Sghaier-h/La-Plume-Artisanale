@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layers, Plus, Edit, Trash2, Search, Upload, Image as ImageIcon, DollarSign, Settings, Save, Tag, X, List, Grid, Eye, BarChart3 } from 'lucide-react';
-import { produitsService } from '../services/api';
+import { produitsService, parametresCatalogueService, modelesService } from '../services/api';
 import api from '../services/api';
 
 interface Prix {
@@ -17,9 +17,13 @@ interface Modele {
   designation: string;
   description?: string;
   produit: string;
+  id_type_produit?: number; // ID du type de produit (obligatoire)
+  code_type_produit?: string; // Code du type de produit
+  id_tissage?: number; // ID du type de tissage (obligatoire)
+  code_type_tissage?: string; // Code du type de tissage
   code_dimensions: string[]; // Tableau de dimensions (plusieurs possibles)
   type_tissage: string[]; // Tableau de types de tissage (plusieurs possibles)
-  code_type_tissage: string[]; // Tableau de codes type de tissage (plusieurs possibles)
+  code_type_tissage_array: string[]; // Tableau de codes type de tissage (plusieurs possibles)
   nombre_couleur: string[]; // Tableau de nombres de couleur (plusieurs possibles)
   code_nombre_couleur: string[]; // Tableau de codes nombre de couleur (plusieurs possibles)
   type_finition: string[]; // Tableau de types de finition (plusieurs possibles)
@@ -74,6 +78,8 @@ const Modeles: React.FC = () => {
   const navigate = useNavigate();
   const [modeles, setModeles] = useState<Modele[]>([]);
   const [attributs, setAttributs] = useState<Attribut[]>([]);
+  const [typesProduits, setTypesProduits] = useState<any[]>([]);
+  const [typesTissages, setTypesTissages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingModele, setEditingModele] = useState<Modele | null>(null);
@@ -83,15 +89,20 @@ const Modeles: React.FC = () => {
   const [photoPreview, setPhotoPreview] = useState<string>('');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [affichageMode, setAffichageMode] = useState<'ligne' | 'catalogue'>('ligne'); // Simple toggle ligne/catalogue
+  const [checkingCode, setCheckingCode] = useState(false); // Pour vérifier l'unicité du code
 
   const [formData, setFormData] = useState<Modele>({
     code_modele: '',
     designation: '',
     description: '',
-    produit: 'Fouta',
+    produit: '',
+    id_type_produit: undefined,
+    code_type_produit: '',
+    id_tissage: undefined,
+    code_type_tissage: '',
     code_dimensions: [],
     type_tissage: [],
-    code_type_tissage: [],
+    code_type_tissage_array: [],
     nombre_couleur: [],
     code_nombre_couleur: [],
     type_finition: [],
@@ -127,30 +138,32 @@ const Modeles: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      // TODO: Remplacer par l'API réelle
-      const mockModeles: Modele[] = [
-        {
-          id_modele: 1,
-          code_modele: 'AR',
-          designation: 'ARTHUR',
-          produit: 'Fouta',
-          code_dimensions: ['1020'], // Tableau de dimensions
-          type_tissage: ['Tissage Plat'], // Tableau de types de tissage
-          code_type_tissage: ['PL'], // Tableau de codes type de tissage
-          nombre_couleur: ['2 Couleurs'], // Tableau de nombres de couleur
-          code_nombre_couleur: ['B'], // Tableau de codes nombre de couleur
-          type_finition: ['Frange'], // Tableau de types de finition
-          code_type_finition: ['FR'], // Tableau de codes type de finition
-          composition_fabrication: 1,
-          prix_reviens: 7.5,
-          prix_vente: 9.75,
-          prix_multiple: [], // Tableau de prix multiples
-          actif: true,
-          dans_catalogue_produit: true,
-          description_auto: true
-        }
-      ];
-      setModeles(mockModeles);
+      // Charger les types de produits
+      try {
+        const typesProduitsRes = await parametresCatalogueService.getTypesProduits();
+        setTypesProduits(typesProduitsRes.data?.data || typesProduitsRes.data || []);
+      } catch (error) {
+        console.error('Erreur chargement types produits:', error);
+      }
+
+      // Charger les types de tissages
+      try {
+        const typesTissagesRes = await parametresCatalogueService.getTissages();
+        setTypesTissages(typesTissagesRes.data?.data || typesTissagesRes.data || []);
+      } catch (error) {
+        console.error('Erreur chargement types tissages:', error);
+      }
+
+      // Charger les modèles
+      try {
+        const modelesRes = await modelesService.getModeles();
+        setModeles(modelesRes.data?.data || modelesRes.data || []);
+      } catch (error) {
+        console.error('Erreur chargement modèles:', error);
+        // Fallback sur mock data si l'API n'est pas disponible
+        const mockModeles: Modele[] = [];
+        setModeles(mockModeles);
+      }
 
       // Charger les attributs
       try {
@@ -202,22 +215,27 @@ const Modeles: React.FC = () => {
     }
   };
 
-  // Générer automatiquement la description selon le format: "Produit modèle Désignation finition Type de finition"
+  // Générer automatiquement la description selon le format: "Type de Produit Modèle Nom du Modèle"
   const genererDescription = (): string => {
     const parts: string[] = [];
     
-    if (formData.produit) parts.push(formData.produit);
-    if (formData.designation) {
-      parts.push('modèle');
-      parts.push(formData.designation);
-    }
-    // Prendre le premier type de finition si plusieurs sont sélectionnés
-    if (formData.type_finition && formData.type_finition.length > 0) {
-      parts.push('finition');
-      parts.push(formData.type_finition[0]); // Prendre le premier
+    // Type de Produit
+    if (formData.code_type_produit) {
+      const typeProduit = typesProduits.find(tp => tp.code === formData.code_type_produit);
+      if (typeProduit) {
+        parts.push(typeProduit.libelle);
+      }
     }
     
-    return parts.join(' '); // Ex: "Fouta modèle ARTHUR finition Frange"
+    // "Modèle"
+    parts.push('Modèle');
+    
+    // Nom du Modèle (designation)
+    if (formData.designation) {
+      parts.push(formData.designation);
+    }
+    
+    return parts.join(' '); // Ex: "Fouta Modèle ARTHUR"
   };
 
   // Mettre à jour la description automatiquement
@@ -227,7 +245,7 @@ const Modeles: React.FC = () => {
       setFormData(prev => ({ ...prev, description: autoDescription }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formData.produit, formData.designation, formData.type_finition, formData.description_auto]);
+  }, [formData.code_type_produit, formData.designation, formData.description_auto, typesProduits]);
 
   // Charger la désignation depuis les attributs quand le code est sélectionné
   const handleCodeAttributChange = (code: string, typeAttribut: string) => {
@@ -303,7 +321,31 @@ const Modeles: React.FC = () => {
     }));
   };
 
-  // Ajouter un type de tissage
+  // Vérifier l'unicité du code_modele
+  const verifierCodeModele = async (code: string): Promise<boolean> => {
+    if (!code || code.trim() === '') return true; // Code vide, pas de vérification
+    
+    // Si on est en mode édition et que le code n'a pas changé, pas de vérification
+    if (editingModele && editingModele.code_modele === code) return true;
+    
+    try {
+      setCheckingCode(true);
+      const modelesRes = await modelesService.getModeles({ code_modele: code });
+      const modelesExistants = modelesRes.data?.data || modelesRes.data || [];
+      const existe = modelesExistants.some((m: Modele) => 
+        m.code_modele?.toLowerCase() === code.toLowerCase() && 
+        m.id_modele !== editingModele?.id_modele
+      );
+      return !existe;
+    } catch (error) {
+      console.error('Erreur vérification code modèle:', error);
+      return true; // En cas d'erreur, on laisse passer
+    } finally {
+      setCheckingCode(false);
+    }
+  };
+
+  // Ajouter un type de tissage (pour les attributs multiples, pas le type de tissage principal)
   const handleAddTypeTissage = () => {
     const attributTissage = attributs.find(a => 
       a.code_attribut.toLowerCase().includes('tiss') || 
@@ -315,10 +357,10 @@ const Modeles: React.FC = () => {
         v.code.toLowerCase() === selectedTypeTissageCode.toLowerCase()
       );
 
-      if (valeur && !formData.code_type_tissage.includes(selectedTypeTissageCode)) {
+      if (valeur && !formData.code_type_tissage_array.includes(selectedTypeTissageCode)) {
         setFormData(prev => ({
           ...prev,
-          code_type_tissage: [...prev.code_type_tissage, selectedTypeTissageCode],
+          code_type_tissage_array: [...prev.code_type_tissage_array, selectedTypeTissageCode],
           type_tissage: [...prev.type_tissage, valeur.libelle]
         }));
         setSelectedTypeTissageCode('');
@@ -326,13 +368,13 @@ const Modeles: React.FC = () => {
     }
   };
 
-  // Retirer un type de tissage
+  // Retirer un type de tissage (pour les attributs multiples)
   const handleRemoveTypeTissage = (code: string) => {
     setFormData(prev => ({
       ...prev,
-      code_type_tissage: prev.code_type_tissage.filter(c => c !== code),
+      code_type_tissage_array: prev.code_type_tissage_array.filter(c => c !== code),
       type_tissage: prev.type_tissage.filter((_, index) => 
-        prev.code_type_tissage[index] !== code
+        prev.code_type_tissage_array[index] !== code
       )
     }));
   };
@@ -386,13 +428,34 @@ const Modeles: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validation : au moins une dimension, un type de tissage, un nombre de couleur et un type de finition
-    if (formData.code_dimensions.length === 0) {
-      setMessage({ type: 'error', text: 'Veuillez sélectionner au moins une dimension' });
+    // Validation : Type de Produit obligatoire
+    if (!formData.id_type_produit || !formData.code_type_produit) {
+      setMessage({ type: 'error', text: 'Veuillez sélectionner un Type de Produit' });
       return;
     }
-    if (formData.code_type_tissage.length === 0) {
-      setMessage({ type: 'error', text: 'Veuillez sélectionner au moins un type de tissage' });
+    
+    // Validation : Type de Tissage obligatoire
+    if (!formData.id_tissage || !formData.code_type_tissage) {
+      setMessage({ type: 'error', text: 'Veuillez sélectionner un Type de Tissage' });
+      return;
+    }
+    
+    // Validation : Code Modèle obligatoire
+    if (!formData.code_modele || formData.code_modele.trim() === '') {
+      setMessage({ type: 'error', text: 'Veuillez sélectionner un Code Modèle' });
+      return;
+    }
+    
+    // Vérifier l'unicité du code_modele
+    const codeUnique = await verifierCodeModele(formData.code_modele);
+    if (!codeUnique) {
+      setMessage({ type: 'error', text: 'Ce code modèle existe déjà. Le code doit être unique.' });
+      return;
+    }
+    
+    // Validation : au moins une dimension, un nombre de couleur et un type de finition
+    if (formData.code_dimensions.length === 0) {
+      setMessage({ type: 'error', text: 'Veuillez sélectionner au moins une dimension' });
       return;
     }
     if (formData.code_nombre_couleur.length === 0) {
@@ -410,11 +473,14 @@ const Modeles: React.FC = () => {
       // Convertir les tableaux en JSON pour FormData
       formDataToSend.append('code_modele', formData.code_modele);
       formDataToSend.append('designation', formData.designation);
-      formDataToSend.append('description', formData.description || '');
-      formDataToSend.append('produit', formData.produit);
+      formDataToSend.append('description', formData.description || genererDescription());
+      formDataToSend.append('id_type_produit', formData.id_type_produit?.toString() || '');
+      formDataToSend.append('code_type_produit', formData.code_type_produit || '');
+      formDataToSend.append('id_tissage', formData.id_tissage?.toString() || '');
+      formDataToSend.append('code_type_tissage', formData.code_type_tissage || '');
       formDataToSend.append('code_dimensions', JSON.stringify(formData.code_dimensions));
       formDataToSend.append('type_tissage', JSON.stringify(formData.type_tissage));
-      formDataToSend.append('code_type_tissage', JSON.stringify(formData.code_type_tissage));
+      formDataToSend.append('code_type_tissage_array', JSON.stringify(formData.code_type_tissage_array));
       formDataToSend.append('nombre_couleur', JSON.stringify(formData.nombre_couleur));
       formDataToSend.append('code_nombre_couleur', JSON.stringify(formData.code_nombre_couleur));
       formDataToSend.append('type_finition', JSON.stringify(formData.type_finition));
@@ -434,12 +500,12 @@ const Modeles: React.FC = () => {
         formDataToSend.append('photo', photoFile);
       }
 
-      // TODO: Appel API réel
+      // Appel API réel
       if (editingModele?.id_modele) {
-        // await modelesService.updateModele(editingModele.id_modele, formDataToSend);
+        await modelesService.updateModele(editingModele.id_modele, formDataToSend);
         setMessage({ type: 'success', text: 'Modèle modifié avec succès' });
       } else {
-        // await modelesService.createModele(formDataToSend);
+        await modelesService.createModele(formDataToSend);
         setMessage({ type: 'success', text: 'Modèle créé avec succès' });
       }
 
@@ -470,9 +536,12 @@ const Modeles: React.FC = () => {
       type_tissage: Array.isArray(modele.type_tissage)
         ? modele.type_tissage
         : modele.type_tissage ? [modele.type_tissage as any] : [],
-      code_type_tissage: Array.isArray(modele.code_type_tissage)
-        ? modele.code_type_tissage
-        : modele.code_type_tissage ? [modele.code_type_tissage as any] : [],
+      code_type_tissage_array: Array.isArray(modele.code_type_tissage_array)
+        ? modele.code_type_tissage_array
+        : modele.code_type_tissage_array ? [String(modele.code_type_tissage_array)] : 
+        Array.isArray(modele.code_type_tissage)
+        ? (modele.code_type_tissage as string[])
+        : modele.code_type_tissage ? [String(modele.code_type_tissage)] : [],
       nombre_couleur: Array.isArray(modele.nombre_couleur)
         ? modele.nombre_couleur
         : modele.nombre_couleur ? [modele.nombre_couleur as any] : [],
@@ -510,10 +579,14 @@ const Modeles: React.FC = () => {
       code_modele: '',
       designation: '',
       description: '',
-      produit: 'Fouta',
+      produit: '',
+      id_type_produit: undefined,
+      code_type_produit: '',
+      id_tissage: undefined,
+      code_type_tissage: '',
       code_dimensions: [],
       type_tissage: [],
-      code_type_tissage: [],
+      code_type_tissage_array: [],
       nombre_couleur: [],
       code_nombre_couleur: [],
       type_finition: [],
@@ -660,24 +733,40 @@ const Modeles: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Code Modèle *</label>
-                    <select
-                      value={formData.code_modele}
-                      onChange={(e) => {
-                        const code = e.target.value;
-                        setFormData({ ...formData, code_modele: code });
-                        handleCodeAttributChange(code, 'designation');
-                      }}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      required
-                    >
-                      <option value="">Sélectionner...</option>
-                      {attributs
-                        .find(a => a.code_attribut.toLowerCase().includes('modele'))?.valeurs_possibles
-                        ?.map(v => (
-                          <option key={v.code} value={v.code}>{v.code} - {v.libelle}</option>
-                        ))}
-                    </select>
-                    <p className="text-xs text-gray-500 mt-1">La désignation sera remplie automatiquement</p>
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={formData.code_modele}
+                        onChange={async (e) => {
+                          const code = e.target.value;
+                          setFormData({ ...formData, code_modele: code });
+                          handleCodeAttributChange(code, 'designation');
+                          
+                          // Vérifier l'unicité du code
+                          if (code && !editingModele) {
+                            const isUnique = await verifierCodeModele(code);
+                            if (!isUnique) {
+                              setMessage({ type: 'error', text: 'Ce code modèle existe déjà. Le code doit être unique.' });
+                              setFormData(prev => ({ ...prev, code_modele: '' }));
+                            } else {
+                              setMessage(null);
+                            }
+                          }
+                        }}
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        required
+                      >
+                        <option value="">Sélectionner...</option>
+                        {attributs
+                          .find(a => a.code_attribut.toLowerCase().includes('modele'))?.valeurs_possibles
+                          ?.map(v => (
+                            <option key={v.code} value={v.code}>{v.code} - {v.libelle}</option>
+                          ))}
+                      </select>
+                      {checkingCode && (
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">La désignation sera remplie automatiquement. Le code doit être unique.</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Désignation *</label>
@@ -690,19 +779,58 @@ const Modeles: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Produit *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Type de Produit *</label>
                     <select
-                      value={formData.produit}
-                      onChange={(e) => setFormData({ ...formData, produit: e.target.value })}
+                      value={formData.id_type_produit || ''}
+                      onChange={(e) => {
+                        const id = parseInt(e.target.value);
+                        const typeProduit = typesProduits.find(tp => tp.id === id);
+                        setFormData({ 
+                          ...formData, 
+                          id_type_produit: id || undefined,
+                          code_type_produit: typeProduit?.code || '',
+                          produit: typeProduit?.libelle || ''
+                        });
+                      }}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                       required
                     >
-                      <option value="Fouta">Fouta</option>
-                      <option value="Coussin Sac">Coussin Sac</option>
-                      <option value="Echarpe">Echarpe</option>
-                      <option value="Fouta Enfant">Fouta Enfant</option>
-                      <option value="Fouta Eponge">Fouta Eponge</option>
+                      <option value="">Sélectionner un Type de Produit...</option>
+                      {typesProduits.map(tp => (
+                        <option key={tp.id} value={tp.id}>{tp.code} - {tp.libelle}</option>
+                      ))}
                     </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Type de Tissage *</label>
+                    <select
+                      value={formData.id_tissage || ''}
+                      onChange={(e) => {
+                        const id = parseInt(e.target.value);
+                        const typeTissage = typesTissages.find(tt => tt.id === id);
+                        setFormData({ 
+                          ...formData, 
+                          id_tissage: id || undefined,
+                          code_type_tissage: typeTissage?.code || ''
+                        });
+                      }}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      required
+                    >
+                      <option value="">Sélectionner un Type de Tissage...</option>
+                      {typesTissages.map(tt => (
+                        <option key={tt.id} value={tt.id}>{tt.code} - {tt.libelle}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Produit (ancien champ, à supprimer)</label>
+                    <input
+                      type="text"
+                      value={formData.produit}
+                      readOnly
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100"
+                    />
                   </div>
                   <div className="col-span-2">
                     <div className="flex items-center justify-between mb-2">
@@ -808,14 +936,14 @@ const Modeles: React.FC = () => {
                       <button
                         type="button"
                         onClick={handleAddTypeTissage}
-                        disabled={!selectedTypeTissageCode || formData.code_type_tissage.includes(selectedTypeTissageCode)}
+                        disabled={!selectedTypeTissageCode || (formData.code_type_tissage ?? '').includes(selectedTypeTissageCode)}
                         className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
                       >
                         <Plus className="w-5 h-5" />
                       </button>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {formData.code_type_tissage.map((code, index) => {
+                      {(Array.isArray(formData.code_type_tissage_array) ? formData.code_type_tissage_array : []).map((code, index) => {
                         const attributTissage = attributs.find(a => a.code_attribut.toLowerCase().includes('tiss') || a.libelle.toLowerCase().includes('tissage'));
                         const valeur = attributTissage?.valeurs_possibles?.find(v => v.code === code);
                         return (
@@ -832,7 +960,7 @@ const Modeles: React.FC = () => {
                         );
                       })}
                     </div>
-                    {formData.code_type_tissage.length === 0 && (
+                    {(formData.code_type_tissage ?? '').length === 0 && (
                       <p className="text-xs text-red-500 mt-1">Au moins un type de tissage est requis</p>
                     )}
                   </div>
@@ -1190,13 +1318,29 @@ const Modeles: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex gap-2">
                       <button
-                        onClick={() => handleEdit(modele)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (modele.id_modele) navigate(`/modeles/${modele.id_modele}`);
+                        }}
+                        className="text-green-600 hover:text-green-700"
+                        title="Voir les détails"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEdit(modele);
+                        }}
                         className="text-blue-600 hover:text-blue-700"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => modele.id_modele && handleDelete(modele.id_modele)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          modele.id_modele && handleDelete(modele.id_modele);
+                        }}
                         className="text-red-600 hover:text-red-700"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -1212,7 +1356,13 @@ const Modeles: React.FC = () => {
           // Mode Catalogue
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredModeles.map((modele) => (
-              <div key={modele.id_modele} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+              <div 
+                key={modele.id_modele} 
+                className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+                onClick={() => {
+                  if (modele.id_modele) navigate(`/modeles/${modele.id_modele}`);
+                }}
+              >
                 <div className="h-48 bg-gray-200 flex items-center justify-center overflow-hidden">
                   {modele.photo_modele ? (
                     <img src={modele.photo_modele} alt={modele.designation} className="w-full h-full object-cover" />
@@ -1242,7 +1392,16 @@ const Modeles: React.FC = () => {
                       <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">Catalogue</span>
                     )}
                   </div>
-                  <div className="flex gap-2 pt-3 border-t">
+                  <div className="flex gap-2 pt-3 border-t" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={() => {
+                        if (modele.id_modele) navigate(`/modeles/${modele.id_modele}`);
+                      }}
+                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
+                    >
+                      <Eye className="w-4 h-4" />
+                      Voir
+                    </button>
                     <button
                       onClick={() => handleEdit(modele)}
                       className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
