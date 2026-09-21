@@ -38,5 +38,8 @@ export default {
     'routes/hr_expense.routes.js',
     'routes/hr_recruitment.routes.js',
     'routes/hr_payslip.routes.js'
-  ]
+  ],
+  apiPaths: {
+    'routes/hr_recruitment.routes.js': '/api'
+  }
 };

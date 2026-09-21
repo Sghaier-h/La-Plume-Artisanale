@@ -8,7 +8,7 @@ import Environment from '../../../src/core/Environment.js';
 
 export default (router, pool) => {
   // CRUD pour les bulletins de paie
-  router.get('/hr/payslips', authenticate, async (req, res) => {
+  router.get('/', authenticate, async (req, res) => {
     try {
       const env = new Environment(req.user, pool);
       const payslips = await env['hr.payslip'].search([]);
@@ -19,7 +19,7 @@ export default (router, pool) => {
     }
   });
 
-  router.get('/hr/payslips/:id', authenticate, async (req, res) => {
+  router.get('/:id', authenticate, async (req, res) => {
     try {
       const env = new Environment(req.user, pool);
       const payslip = await env['hr.payslip'].read([parseInt(req.params.id)]);
@@ -30,7 +30,7 @@ export default (router, pool) => {
     }
   });
 
-  router.post('/hr/payslips', authenticate, async (req, res) => {
+  router.post('/', authenticate, async (req, res) => {
     try {
       const env = new Environment(req.user, pool);
       const payslip = await env['hr.payslip'].create(req.body);
@@ -41,7 +41,7 @@ export default (router, pool) => {
     }
   });
 
-  router.put('/hr/payslips/:id', authenticate, async (req, res) => {
+  router.put('/:id', authenticate, async (req, res) => {
     try {
       const env = new Environment(req.user, pool);
       const payslip = await env['hr.payslip'].write([parseInt(req.params.id)], req.body);
@@ -52,7 +52,7 @@ export default (router, pool) => {
     }
   });
 
-  router.delete('/hr/payslips/:id', authenticate, async (req, res) => {
+  router.delete('/:id', authenticate, async (req, res) => {
     try {
       const env = new Environment(req.user, pool);
       await env['hr.payslip'].unlink([parseInt(req.params.id)]);
@@ -64,7 +64,7 @@ export default (router, pool) => {
   });
 
   // Actions spéciales
-  router.post('/hr/payslips/:id/compute', authenticate, async (req, res) => {
+  router.post('/:id/compute', authenticate, async (req, res) => {
     try {
       const env = new Environment(req.user, pool);
       const result = await env['hr.payslip'].action_compute_sheet(env, { id: parseInt(req.params.id) });
@@ -75,7 +75,7 @@ export default (router, pool) => {
     }
   });
 
-  router.post('/hr/payslips/:id/validate', authenticate, async (req, res) => {
+  router.post('/:id/validate', authenticate, async (req, res) => {
     try {
       const env = new Environment(req.user, pool);
       const result = await env['hr.payslip'].action_payslip_done(env, { id: parseInt(req.params.id) });

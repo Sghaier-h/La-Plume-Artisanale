@@ -9,7 +9,7 @@ import { pool } from '../../../src/utils/db.js';
 const router = express.Router();
 
 // GET /api/crm/activities - Liste des activités
-router.get('/crm/activities', authenticate, async (req, res) => {
+router.get('/', authenticate, async (req, res) => {
   try {
     const { opportunity_id, partner_id, user_id, activity_type, done } = req.query;
     
@@ -89,7 +89,7 @@ router.get('/crm/activities', authenticate, async (req, res) => {
 });
 
 // POST /api/crm/activities - Créer une activité
-router.post('/crm/activities', authenticate, async (req, res) => {
+router.post('/', authenticate, async (req, res) => {
   try {
     const {
       name,
@@ -135,7 +135,7 @@ router.post('/crm/activities', authenticate, async (req, res) => {
 });
 
 // POST /api/crm/activities/:id/done - Marquer une activité comme terminée
-router.post('/crm/activities/:id/done', authenticate, async (req, res) => {
+router.post('/:id/done', authenticate, async (req, res) => {
   try {
     const { id } = req.params;
     await pool.query(

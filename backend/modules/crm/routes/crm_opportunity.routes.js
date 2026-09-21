@@ -9,7 +9,7 @@ import { pool } from '../../../src/utils/db.js';
 const router = express.Router();
 
 // GET /api/crm/opportunities - Liste des opportunités
-router.get('/crm/opportunities', authenticate, async (req, res) => {
+router.get('/', authenticate, async (req, res) => {
   try {
     const { stage_id, user_id, partner_id, state, search } = req.query;
     
@@ -90,7 +90,7 @@ router.get('/crm/opportunities', authenticate, async (req, res) => {
 });
 
 // GET /api/crm/opportunities/:id - Détails d'une opportunité
-router.get('/crm/opportunities/:id', authenticate, async (req, res) => {
+router.get('/:id', authenticate, async (req, res) => {
   try {
     const { id } = req.params;
     const result = await pool.query(
@@ -110,7 +110,7 @@ router.get('/crm/opportunities/:id', authenticate, async (req, res) => {
 });
 
 // POST /api/crm/opportunities - Créer une opportunité
-router.post('/crm/opportunities', authenticate, async (req, res) => {
+router.post('/', authenticate, async (req, res) => {
   try {
     const {
       name,
@@ -154,7 +154,7 @@ router.post('/crm/opportunities', authenticate, async (req, res) => {
 });
 
 // PUT /api/crm/opportunities/:id - Mettre à jour une opportunité
-router.put('/crm/opportunities/:id', authenticate, async (req, res) => {
+router.put('/:id', authenticate, async (req, res) => {
   try {
     const { id } = req.params;
     const updates = req.body;
@@ -211,7 +211,7 @@ router.put('/crm/opportunities/:id', authenticate, async (req, res) => {
 });
 
 // POST /api/crm/opportunities/:id/qualify - Qualifier une opportunité
-router.post('/crm/opportunities/:id/qualify', authenticate, async (req, res) => {
+router.post('/:id/qualify', authenticate, async (req, res) => {
   try {
     const { id } = req.params;
     await pool.query(
@@ -228,7 +228,7 @@ router.post('/crm/opportunities/:id/qualify', authenticate, async (req, res) => 
 });
 
 // POST /api/crm/opportunities/:id/win - Gagner une opportunité
-router.post('/crm/opportunities/:id/win', authenticate, async (req, res) => {
+router.post('/:id/win', authenticate, async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -267,7 +267,7 @@ router.post('/crm/opportunities/:id/win', authenticate, async (req, res) => {
 });
 
 // POST /api/crm/opportunities/:id/lose - Perdre une opportunité
-router.post('/crm/opportunities/:id/lose', authenticate, async (req, res) => {
+router.post('/:id/lose', authenticate, async (req, res) => {
   try {
     const { id } = req.params;
     const { reason } = req.body;

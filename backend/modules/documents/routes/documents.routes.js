@@ -1,23 +1,36 @@
 /**
- * Routes Documents - Module modulaire
+ * Routes Documents — GED
  */
 
 import express from 'express';
 import { authenticate } from '../../../src/middleware/auth.middleware.js';
 import {
   getDocuments,
-  getDocumentsById,
-  createDocuments,
-  updateDocuments,
-  deleteDocuments
+  getDocumentById,
+  createDocument,
+  updateDocument,
+  deleteDocument,
+  uploadDocument,
+  downloadDocument,
+  getByEntity,
+  getStatsGlobal,
 } from '../controllers/documents.controller.js';
 
 const router = express.Router();
 
-router.get('/', authenticate, getDocuments);
-router.get('/:id', authenticate, getDocumentsById);
-router.post('/', authenticate, createDocuments);
-router.put('/:id', authenticate, updateDocuments);
-router.delete('/:id', authenticate, deleteDocuments);
+router.use(authenticate);
+
+// Routes spécifiques avant /:id
+router.get('/stats/global', getStatsGlobal);
+router.get('/entity/:type/:id(\\d+)', getByEntity);
+router.post('/upload', uploadDocument);
+router.get('/:id(\\d+)/download', downloadDocument);
+
+// CRUD
+router.get('/', getDocuments);
+router.post('/', createDocument);
+router.get('/:id(\\d+)', getDocumentById);
+router.put('/:id(\\d+)', updateDocument);
+router.delete('/:id(\\d+)', deleteDocument);
 
 export default router;

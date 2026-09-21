@@ -21,6 +21,7 @@ router.use(authenticate);
 
 // Routes spécifiques AVANT /:id
 router.get('/of/:id_of(\\d+)/summary',            getOfSummary);
+router.get('/of/:id_of(\\d+)/avancement',         getOfSummary);
 router.get('/machine/:id_machine(\\d+)/stats',    getMachineStats);
 router.get('/operateur/:id_operateur(\\d+)/day',  getOperateurDay);
 

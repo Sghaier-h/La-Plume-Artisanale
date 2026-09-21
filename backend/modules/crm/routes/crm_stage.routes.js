@@ -9,7 +9,7 @@ import { pool } from '../../../src/utils/db.js';
 const router = express.Router();
 
 // GET /api/crm/stages - Liste des étapes
-router.get('/crm/stages', authenticate, async (req, res) => {
+router.get('/', authenticate, async (req, res) => {
   try {
     const { team_id } = req.query;
     let query = 'SELECT * FROM crm_stage WHERE 1=1';
@@ -31,7 +31,7 @@ router.get('/crm/stages', authenticate, async (req, res) => {
 });
 
 // GET /api/crm/stages/:id
-router.get('/crm/stages/:id', authenticate, async (req, res) => {
+router.get('/:id', authenticate, async (req, res) => {
   try {
     const { id } = req.params;
     const result = await pool.query('SELECT * FROM crm_stage WHERE id = $1', [id]);
@@ -48,7 +48,7 @@ router.get('/crm/stages/:id', authenticate, async (req, res) => {
 });
 
 // POST /api/crm/stages - Créer une étape
-router.post('/crm/stages', authenticate, async (req, res) => {
+router.post('/', authenticate, async (req, res) => {
   try {
     const { name, sequence, probability, team_id, fold, active } = req.body;
 

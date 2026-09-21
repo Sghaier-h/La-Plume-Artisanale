@@ -1,5 +1,5 @@
 /**
- * Routes Pointage - Module modulaire
+ * Routes Pointage
  */
 
 import express from 'express';
@@ -9,15 +9,35 @@ import {
   getPointageById,
   createPointage,
   updatePointage,
-  deletePointage
+  deletePointage,
+  setCheckIn,
+  setCheckOut,
+  quickCheckIn,
+  quickCheckOut,
+  getStatsGlobal,
+  getPointageUserToday,
+  getPointageUserMonth,
 } from '../controllers/pointage.controller.js';
 
 const router = express.Router();
 
-router.get('/', authenticate, getPointage);
-router.get('/:id', authenticate, getPointageById);
-router.post('/', authenticate, createPointage);
-router.put('/:id', authenticate, updatePointage);
-router.delete('/:id', authenticate, deletePointage);
+router.use(authenticate);
+
+// Routes spécifiques AVANT /:id
+router.get('/stats/global', getStatsGlobal);
+router.get('/user/:user_id(\\d+)/today', getPointageUserToday);
+router.get('/user/:user_id(\\d+)/month/:mois', getPointageUserMonth);
+
+router.post('/check-in', quickCheckIn);
+router.post('/check-out', quickCheckOut);
+router.put('/:id(\\d+)/check-in', setCheckIn);
+router.put('/:id(\\d+)/check-out', setCheckOut);
+
+// CRUD standard
+router.get('/', getPointage);
+router.post('/', createPointage);
+router.get('/:id(\\d+)', getPointageById);
+router.put('/:id(\\d+)', updatePointage);
+router.delete('/:id(\\d+)', deletePointage);
 
 export default router;

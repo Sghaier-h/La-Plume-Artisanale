@@ -24,8 +24,12 @@ router.use(authenticate);
 router.get('/stats/global', getTachesStats);
 router.get('/operateur/:id_operateur(\\d+)/day', getTachesOperateurDay);
 router.put('/:id(\\d+)/demarrer', demarrerTache);
+router.post('/:id(\\d+)/demarrer', demarrerTache);
 router.put('/:id(\\d+)/terminer', terminerTache);
+router.post('/:id(\\d+)/terminer', terminerTache);
 router.put('/:id(\\d+)/progression', updateProgression);
+router.post('/:id(\\d+)/pause', updateProgression);
+router.put('/:id(\\d+)/pause', updateProgression);
 
 // CRUD
 router.get('/', getTaches);

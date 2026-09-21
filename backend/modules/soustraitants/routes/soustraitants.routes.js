@@ -1,23 +1,27 @@
 /**
- * Routes Soustraitants - Module modulaire
+ * Routes Sous-traitants — bridge vers `mouvements_sous_traitance`.
  */
 
 import express from 'express';
 import { authenticate } from '../../../src/middleware/auth.middleware.js';
 import {
-  getSoustraitants,
-  getSoustraitantsById,
-  createSoustraitants,
-  updateSoustraitants,
-  deleteSoustraitants
+  getSoustraitants, getSoustraitantById, createSoustraitant, updateSoustraitant,
+  retourSoustraitant, annulerSoustraitant, deleteSoustraitant, getStatsGlobal,
 } from '../controllers/soustraitants.controller.js';
 
 const router = express.Router();
+router.use(authenticate);
 
-router.get('/', authenticate, getSoustraitants);
-router.get('/:id', authenticate, getSoustraitantsById);
-router.post('/', authenticate, createSoustraitants);
-router.put('/:id', authenticate, updateSoustraitants);
-router.delete('/:id', authenticate, deleteSoustraitants);
+router.get('/stats/global',       getStatsGlobal);
+
+router.get('/',                   getSoustraitants);
+router.post('/',                  createSoustraitant);
+router.get('/:id(\\d+)',          getSoustraitantById);
+router.put('/:id(\\d+)',          updateSoustraitant);
+router.delete('/:id(\\d+)',       deleteSoustraitant);
+
+router.put('/:id(\\d+)/retour',   retourSoustraitant);
+router.post('/:id(\\d+)/retour',  retourSoustraitant);
+router.put('/:id(\\d+)/annuler',  annulerSoustraitant);
 
 export default router;

@@ -1,5 +1,5 @@
 /**
- * Routes Commercial - Module modulaire
+ * Routes Commercial
  */
 
 import express from 'express';
@@ -9,15 +9,21 @@ import {
   getCommercialById,
   createCommercial,
   updateCommercial,
-  deleteCommercial
+  deleteCommercial,
+  getStatsGlobal,
+  getPerformance,
 } from '../controllers/commercial.controller.js';
 
 const router = express.Router();
+router.use(authenticate);
 
-router.get('/', authenticate, getCommercial);
-router.get('/:id', authenticate, getCommercialById);
-router.post('/', authenticate, createCommercial);
-router.put('/:id', authenticate, updateCommercial);
-router.delete('/:id', authenticate, deleteCommercial);
+router.get('/stats/global', getStatsGlobal);
+router.get('/:id(\\d+)/performance', getPerformance);
+
+router.get('/', getCommercial);
+router.post('/', createCommercial);
+router.get('/:id(\\d+)', getCommercialById);
+router.put('/:id(\\d+)', updateCommercial);
+router.delete('/:id(\\d+)', deleteCommercial);
 
 export default router;

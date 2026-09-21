@@ -4,6 +4,8 @@
 
 import express from 'express';
 import { authenticate } from '../../../src/middleware/auth.middleware.js';
+import { pool } from '../../../src/utils/db.js';
+import { sendSuccess, handleError } from '../../../src/utils/error.helper.js';
 import {
   getMatieresPremieres,
   getMatierePremiereById,
@@ -20,6 +22,15 @@ const router = express.Router();
 router.use(authenticate);
 
 // Routes spécifiques AVANT /:id
+router.get('/types', async (req, res) => {
+  try {
+    const q = `SELECT DISTINCT id_type_mp AS id FROM matieres_premieres WHERE id_type_mp IS NOT NULL ORDER BY id_type_mp`;
+    const result = await pool.query(q);
+    return sendSuccess(res, result.rows, 'Types MP');
+  } catch (error) {
+    return handleError(res, error, 'getTypesMP');
+  }
+});
 router.get('/stats/global', getMatieresPremieresStats);
 router.get('/alertes/stock', getAlertesStock);
 router.get('/code/:code', getMatiereByCode);
