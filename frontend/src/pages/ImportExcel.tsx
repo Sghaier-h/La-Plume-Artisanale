@@ -30,7 +30,7 @@ const ImportExcel: React.FC = () => {
     try {
       const response = await excelImportService.getTemplates();
       if (response.data?.data?.types) {
-        setTemplates(response.data.data.types);
+        setTemplates(response.data.data.types || []);
       }
     } catch (error: any) {
       console.error('Erreur chargement templates:', error);

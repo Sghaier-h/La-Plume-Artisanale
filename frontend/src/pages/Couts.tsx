@@ -24,7 +24,7 @@ const Couts: React.FC = () => {
   const loadBudgets = async () => {
     try {
       const res = await coutsService.getBudgets();
-      setBudgets(res.data.data.budgets || []);
+      setBudgets(res.data?.data?.budgets || (Array.isArray(res.data?.data) ? res.data.data : []) || []);
     } catch (error) {
       console.error('Erreur chargement budgets:', error);
     }

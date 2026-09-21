@@ -1405,7 +1405,7 @@ const ImportExportSection: React.FC = () => {
       
       // Initialiser le mapping par défaut (mapping intelligent basé sur les noms)
       const defaultMapping: Record<string, string> = {};
-      response.data.data.headers.forEach((header: string) => {
+      (response.data?.data?.headers || []).forEach((header: string) => {
         // Essayer de trouver une correspondance automatique
         const availableFields = response.data.data.availableFields || [];
         const match = availableFields.find((field: any) => 
@@ -1418,7 +1418,7 @@ const ImportExportSection: React.FC = () => {
       });
       
       // Si ID Commande est présent, le mapper pour utiliser le numéro de ligne
-      if (response.data.data.headers.includes('ID Commande')) {
+      if ((response.data?.data?.headers || []).includes('ID Commande')) {
         defaultMapping['ID Commande'] = '__LINE_INDEX__'; // Spécial : numéro de ligne
       }
       

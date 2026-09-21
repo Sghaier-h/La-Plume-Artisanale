@@ -32,7 +32,9 @@ const Soustraitants: React.FC = () => {
   const loadData = async () => {
     try {
       const res = await soustraitantsService.getSoustraitants({ search });
-      setSoustraitants(res.data.data);
+      const raw = res.data?.data;
+      const arr = Array.isArray(raw) ? raw : (raw?.data || raw?.soustraitants || []);
+      setSoustraitants(arr);
     } catch (error) {
       console.error('Erreur chargement sous-traitants:', error);
     } finally {
@@ -43,7 +45,9 @@ const Soustraitants: React.FC = () => {
   const loadAlertes = async () => {
     try {
       const res = await soustraitantsService.getAlertesRetard();
-      setAlertes(res.data.data);
+      const raw = res.data?.data;
+      const arr = Array.isArray(raw) ? raw : (raw?.data || raw?.alertes || []);
+      setAlertes(arr);
     } catch (error) {
       console.error('Erreur chargement alertes:', error);
     }

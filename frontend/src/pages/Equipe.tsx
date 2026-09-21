@@ -111,7 +111,7 @@ const Equipe: React.FC = () => {
       setLoading(true);
       const response = await utilisateursService.getEquipe();
       if (response.data.success) {
-        const membresData = response.data.data.membres.map((m: any) => ({
+        const membresData = (response.data?.data?.membres || []).map((m: any) => ({
           id: m.id,
           nom: m.nom,
           prenom: m.prenom,

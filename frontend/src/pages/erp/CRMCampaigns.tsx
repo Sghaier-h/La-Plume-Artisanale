@@ -227,7 +227,7 @@ const CampaignForm: React.FC<{
   const loadLeads = async () => {
     try {
       const response = await api.get(`/crm/campaigns/${campaign!.id}/leads`);
-      setLeads(response.data.data || []);
+      setLeads(Array.isArray(response.data) ? response.data : (response.data?.data || []));
     } catch (error) {
       console.error('Erreur chargement leads:', error);
     }
@@ -236,7 +236,7 @@ const CampaignForm: React.FC<{
   const loadOpportunities = async () => {
     try {
       const response = await api.get(`/crm/campaigns/${campaign!.id}/opportunities`);
-      setOpportunities(response.data.data || []);
+      setOpportunities(Array.isArray(response.data) ? response.data : (response.data?.data || []));
     } catch (error) {
       console.error('Erreur chargement opportunités:', error);
     }

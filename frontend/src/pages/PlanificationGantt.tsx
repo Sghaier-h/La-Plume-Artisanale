@@ -50,7 +50,7 @@ const PlanificationGantt: React.FC = () => {
     if (!selectedProjet) return;
     try {
       const res = await planificationGanttService.getGanttData({ id_projet: selectedProjet });
-      setGanttData(res.data.data);
+      setGanttData(res.data?.data || {});
     } catch (error) {
       console.error('Erreur chargement Gantt:', error);
     }

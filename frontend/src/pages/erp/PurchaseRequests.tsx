@@ -371,7 +371,7 @@ const PurchaseRequestForm: React.FC<{
   const loadProducts = async () => {
     try {
       const response = await api.get('/product/templates');
-      setProducts(response.data.data || []);
+      setProducts(Array.isArray(response.data) ? response.data : (response.data?.data || []));
     } catch (error) {
       console.error('Erreur chargement produits:', error);
     }
