@@ -30,7 +30,6 @@ const Machines = React.lazy(() => import('./pages/Machines'));
 const OF = React.lazy(() => import('./pages/OF'));
 const Soustraitants = React.lazy(() => import('./pages/Soustraitants'));
 const Parametrage = React.lazy(() => import('./pages/Parametrage'));
-const ParametrageComplet = React.lazy(() => import('./pages/erp/ParametrageComplet'));
 const MatieresPremieres = React.lazy(() => import('./pages/MatieresPremieres'));
 const ArticlesCatalogue = React.lazy(() => import('./pages/ArticlesCatalogue'));
 const Fournisseurs = React.lazy(() => import('./pages/Fournisseurs'));
@@ -86,68 +85,16 @@ const MatierePremiereStock = React.lazy(() => import('./pages/MatierePremiereSto
 const Fourniture = React.lazy(() => import('./pages/Fourniture'));
 const ImportExcel = React.lazy(() => import('./pages/ImportExcel'));
 
-// Pages ERP (organisation dans pages/erp/)
-const SaleOrdersERP = React.lazy(() => import('./pages/erp/SaleOrders'));
-const ProductsERP = React.lazy(() => import('./pages/erp/Products'));
-const StockPickingsERP = React.lazy(() => import('./pages/erp/StockPickings'));
-const ProductionsERP = React.lazy(() => import('./pages/erp/Productions'));
-const AccountMovesERP = React.lazy(() => import('./pages/erp/AccountMoves'));
-const PurchaseOrdersERP = React.lazy(() => import('./pages/erp/PurchaseOrders'));
-const CRMLeadsERP = React.lazy(() => import('./pages/erp/CRMLeads'));
-const OpportunitiesERP = React.lazy(() => import('./pages/erp/Opportunities'));
-const PipelineVente = React.lazy(() => import('./pages/erp/PipelineVente'));
-const ReportsERP = React.lazy(() => import('./pages/erp/Reports'));
-const HREmployeesERP = React.lazy(() => import('./pages/erp/HREmployees'));
-const HRRecruitmentERP = React.lazy(() => import('./pages/erp/HRRecruitment'));
-const HRPayslipsERP = React.lazy(() => import('./pages/erp/HRPayslips'));
-const PayrollTunisia = React.lazy(() => import('./pages/erp/PayrollTunisia'));
-const ProjectsERP = React.lazy(() => import('./pages/erp/Projects'));
-const InventoryERP = React.lazy(() => import('./pages/erp/Inventory'));
-const QualityChecksERP = React.lazy(() => import('./pages/erp/QualityChecks'));
-const SuppliersERP = React.lazy(() => import('./pages/erp/Suppliers'));
-const SoustraitantsERP = React.lazy(() => import('./pages/erp/Soustraitants'));
-const BOMsERP = React.lazy(() => import('./pages/erp/BOMs'));
-const ProductCategoriesERP = React.lazy(() => import('./pages/erp/ProductCategories'));
-const EcommerceERP = React.lazy(() => import('./pages/erp/Ecommerce'));
-const SettingsERP = React.lazy(() => import('./pages/erp/Settings'));
-const AIERP = React.lazy(() => import('./pages/erp/AI'));
-const AISettingsERP = React.lazy(() => import('./pages/erp/AISettings'));
-const SocialAuthERP = React.lazy(() => import('./pages/erp/SocialAuth'));
-const CompaniesERP = React.lazy(() => import('./pages/erp/Companies'));
-const WarehouseManagement = React.lazy(() => import('./pages/erp/WarehouseManagement'));
-const POSERP = React.lazy(() => import('./pages/erp/POS'));
-const PurchaseRequestsERP = React.lazy(() => import('./pages/erp/PurchaseRequests'));
-const PurchaseReceptionsERP = React.lazy(() => import('./pages/erp/PurchaseReceptions'));
-const ChartOfAccountsERP = React.lazy(() => import('./pages/erp/ChartOfAccounts'));
-const CRMCampaignsERP = React.lazy(() => import('./pages/erp/CRMCampaigns'));
-const BankReconciliationERP = React.lazy(() => import('./pages/erp/BankReconciliation'));
-const PartnersERP = React.lazy(() => import('./pages/erp/Partners'));
-const PricelistsERP = React.lazy(() => import('./pages/erp/Pricelists'));
-const AvoirsERP = React.lazy(() => import('./pages/erp/Avoirs'));
-const BonsLivraisonERP = React.lazy(() => import('./pages/erp/BonsLivraison'));
-const BonsRetourERP = React.lazy(() => import('./pages/erp/BonsRetour'));
-const MachinesERP = React.lazy(() => import('./pages/erp/Machines'));
-const MaintenanceERP = React.lazy(() => import('./pages/erp/Maintenance'));
-const MatieresPremieresERP = React.lazy(() => import('./pages/erp/MatieresPremieres'));
-const ModelesERP = React.lazy(() => import('./pages/erp/Modeles'));
-const TachesERP = React.lazy(() => import('./pages/erp/Taches'));
-const UtilisateursERP = React.lazy(() => import('./pages/erp/Utilisateurs'));
-const CommercialDashboard = React.lazy(() => import('./pages/erp/CommercialDashboard'));
-const DevisERP = React.lazy(() => import('./pages/erp/Devis'));
-const FacturesERP = React.lazy(() => import('./pages/erp/Factures'));
-const HomeERP = React.lazy(() => import('./pages/erp/Home'));
-const DashboardsERP = React.lazy(() => import('./pages/erp/Dashboards'));
-
 // Composant pour rediriger vers le premier dashboard de l'utilisateur
 const NavigateToUserDashboard: React.FC = () => {
   const { user } = useAuth();
-  
+
   if (!user) {
     return <Navigate to="/login" replace />;
   }
-  
+
   const userRole = user.role?.toUpperCase() || '';
-  
+
   // Mapping des dashboards par nom
   const dashboardPaths: { [key: string]: string } = {
     'dashboard': '/dashboard-admin',
@@ -161,7 +108,7 @@ const NavigateToUserDashboard: React.FC = () => {
     'magasinier-soustraitants': '/dashboard-magasinier-soustraitants',
     'gpao': '/dashboard-admin',
   };
-  
+
   // Mapping rôle -> dashboard par défaut (si pas de dashboard attribué)
   const roleToDashboard: { [key: string]: string } = {
     'ADMIN': '/dashboard-admin',
@@ -177,12 +124,12 @@ const NavigateToUserDashboard: React.FC = () => {
     'MAGASINIER_SOUSTRAITANTS': '/dashboard-magasinier-soustraitants',
     'GPAO': '/dashboard-admin',
   };
-  
+
   // Si admin, toujours rediriger vers dashboard-admin
   if (userRole === 'ADMIN') {
     return <Navigate to="/dashboard-admin" replace />;
   }
-  
+
   // Si des dashboards sont attribués, utiliser le premier
   const dashboardsAttribues = user.dashboardsAttribues || [];
   if (dashboardsAttribues.length > 0) {
@@ -191,13 +138,13 @@ const NavigateToUserDashboard: React.FC = () => {
       return <Navigate to={firstDashboard} replace />;
     }
   }
-  
+
   // Sinon, utiliser le mapping rôle -> dashboard par défaut
   const defaultDashboard = roleToDashboard[userRole];
   if (defaultDashboard) {
     return <Navigate to={defaultDashboard} replace />;
   }
-  
+
   // Fallback: dashboard admin
   return <Navigate to="/dashboard-admin" replace />;
 };
@@ -282,7 +229,7 @@ const ContentWrapper: React.FC<{ showNav: boolean; children: React.ReactNode }> 
   } catch {
     // Context not available, use defaults
   }
-  
+
   return (
     <div className={showNav ? (state?.ui?.sidebarCollapsed ? 'ml-0' : 'ml-64') : ''}>
       {children}
@@ -305,24 +252,8 @@ const AppContent: React.FC = () => {
           <Route
             path="/"
             element={
-              <PrivateRoute showNav={false}>
-                <HomeERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/erp/home"
-            element={
-              <PrivateRoute showNav={false}>
-                <HomeERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/erp/dashboards"
-            element={
-              <PrivateRoute showNav={false}>
-                <DashboardsERP />
+              <PrivateRoute>
+                <NavigateToUserDashboard />
               </PrivateRoute>
             }
           />
@@ -424,222 +355,6 @@ const AppContent: React.FC = () => {
             }
           />
           <Route
-            path="/sale-orders"
-            element={
-              <PrivateRoute>
-                <SaleOrdersERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/products"
-            element={
-              <PrivateRoute>
-                <ProductsERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/product-categories"
-            element={
-              <PrivateRoute showNav={true}>
-                <ProductCategoriesERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/stock-pickings"
-            element={
-              <PrivateRoute>
-                <StockPickingsERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/productions"
-            element={
-              <PrivateRoute>
-                <ProductionsERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/account-moves"
-            element={
-              <PrivateRoute>
-                <AccountMovesERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/purchase-orders"
-            element={
-              <PrivateRoute>
-                <PurchaseOrdersERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/crm/leads"
-            element={
-              <PrivateRoute>
-                <CRMLeadsERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/pipeline-vente"
-            element={
-              <PrivateRoute>
-                <PipelineVente />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/opportunities"
-            element={
-              <PrivateRoute>
-                <OpportunitiesERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/hr/employees"
-            element={
-              <PrivateRoute>
-                <HREmployeesERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/hr/recruitment"
-            element={
-              <PrivateRoute>
-                <HRRecruitmentERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/hr/payslips"
-            element={
-              <PrivateRoute>
-                <HRPayslipsERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/payroll-tunisia"
-            element={
-              <PrivateRoute>
-                <PayrollTunisia />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/projects"
-            element={
-              <PrivateRoute>
-                <ProjectsERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/inventory"
-            element={
-              <PrivateRoute>
-                <InventoryERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/warehouse-management"
-            element={
-              <PrivateRoute>
-                <WarehouseManagement />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/quality/checks"
-            element={
-              <PrivateRoute>
-                <QualityChecksERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/suppliers"
-            element={
-              <PrivateRoute>
-                <SuppliersERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/soustraitants-odoo"
-            element={
-              <PrivateRoute>
-                <SoustraitantsERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/bom"
-            element={
-              <PrivateRoute>
-                <BOMsERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/ecommerce-odoo"
-            element={
-              <PrivateRoute>
-                <EcommerceERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/settings"
-            element={
-              <PrivateRoute>
-                <SettingsERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/ai"
-            element={
-              <PrivateRoute>
-                <AIERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/ai/settings"
-            element={
-              <PrivateRoute>
-                <AISettingsERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/social-auth"
-            element={
-              <PrivateRoute>
-                <SocialAuthERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/companies"
-            element={
-              <PrivateRoute>
-                <CompaniesERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
             path="/bon-livraison"
             element={
               <PrivateRoute>
@@ -715,176 +430,7 @@ const AppContent: React.FC = () => {
             path="/parametrage"
             element={
               <PrivateRoute>
-                <ParametrageComplet />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/reports"
-            element={
-              <PrivateRoute>
-                <ReportsERP />
-              </PrivateRoute>
-            }
-          />
-          {/* Routes ERP - Modules supplémentaires */}
-          <Route
-            path="/partners"
-            element={
-              <PrivateRoute>
-                <PartnersERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/pricelists"
-            element={
-              <PrivateRoute>
-                <PricelistsERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/avoirs"
-            element={
-              <PrivateRoute>
-                <AvoirsERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/bons-livraison-odoo"
-            element={
-              <PrivateRoute>
-                <BonsLivraisonERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/bons-retour-odoo"
-            element={
-              <PrivateRoute>
-                <BonsRetourERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/machines-odoo"
-            element={
-              <PrivateRoute>
-                <MachinesERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/maintenance-odoo"
-            element={
-              <PrivateRoute>
-                <MaintenanceERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/matieres-premieres-odoo"
-            element={
-              <PrivateRoute>
-                <MatieresPremieresERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/modeles-odoo"
-            element={
-              <PrivateRoute>
-                <ModelesERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/taches"
-            element={
-              <PrivateRoute>
-                <TachesERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/utilisateurs"
-            element={
-              <PrivateRoute>
-                <UtilisateursERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/commercial-dashboard"
-            element={
-              <PrivateRoute>
-                <CommercialDashboard />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/purchase-requests"
-            element={
-              <PrivateRoute>
-                <PurchaseRequestsERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/purchase-receptions"
-            element={
-              <PrivateRoute>
-                <PurchaseReceptionsERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/pos-odoo"
-            element={
-              <PrivateRoute>
-                <POSERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/chart-of-accounts"
-            element={
-              <PrivateRoute>
-                <ChartOfAccountsERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/crm/campaigns"
-            element={
-              <PrivateRoute>
-                <CRMCampaignsERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/bank-reconciliation"
-            element={
-              <PrivateRoute>
-                <BankReconciliationERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/devis-odoo"
-            element={
-              <PrivateRoute>
-                <DevisERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/factures-odoo"
-            element={
-              <PrivateRoute>
-                <FacturesERP />
+                <Parametrage />
               </PrivateRoute>
             }
           />
@@ -1264,55 +810,6 @@ const AppContent: React.FC = () => {
             element={
               <PrivateRoute>
                 <ListePalettes />
-              </PrivateRoute>
-            }
-          />
-          {/* Nouveaux modules ERP */}
-          <Route
-            path="/pos"
-            element={
-              <PrivateRoute>
-                <POSERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/purchase-requests"
-            element={
-              <PrivateRoute>
-                <PurchaseRequestsERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/purchase-receptions"
-            element={
-              <PrivateRoute>
-                <PurchaseReceptionsERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/chart-of-accounts"
-            element={
-              <PrivateRoute>
-                <ChartOfAccountsERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/crm/campaigns"
-            element={
-              <PrivateRoute>
-                <CRMCampaignsERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/account/reconciliations"
-            element={
-              <PrivateRoute>
-                <BankReconciliationERP />
               </PrivateRoute>
             }
           />

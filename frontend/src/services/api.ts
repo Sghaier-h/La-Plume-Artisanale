@@ -537,58 +537,9 @@ export const articlesService = {
 };
 
 // ===== SERVICES ERP STANDARDS (Odoo-inspired) =====
-
-// Product Templates Service - Corrigé pour utiliser /product/templates
-export const productTemplatesService = {
-  getTemplates: (params?: any) => api.get('/product/templates', { params }),
-  getTemplate: (id: number, options?: { loadRelations?: boolean }) => {
-    const url = `/product/templates/${id}`;
-    return options?.loadRelations 
-      ? api.get(url, { params: { loadRelations: true } })
-      : api.get(url);
-  },
-  createTemplate: (data: any) => api.post('/product/templates', data),
-  updateTemplate: (id: number, data: any) => api.put(`/product/templates/${id}`, data),
-  deleteTemplate: (id: number) => api.delete(`/product/templates/${id}`),
-  getProductStock: (id: number) => api.get(`/product/templates/${id}/stock`),
-  getProductMovements: (id: number) => api.get(`/product/templates/${id}/movements`),
-  uploadImage: (id: number, file: File) => {
-    const formData = new FormData();
-    formData.append('image', file);
-    return api.post(`/product/templates/${id}/image`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
-  },
-  deleteImage: (id: number, imageId?: number) => api.delete(`/product/templates/${id}/image/${imageId || 1}`),
-  getImages: (id: number) => api.get(`/product/templates/${id}/images`),
-};
-
-// Products Service - Alias pour compatibilité
-export const productsService = {
-  getProducts: (params?: any) => api.get('/product/templates', { params }),
-  getProduct: (id: number, options?: { loadRelations?: boolean }) => {
-    const url = `/product/templates/${id}`;
-    return options?.loadRelations 
-      ? api.get(url, { params: { loadRelations: true } })
-      : api.get(url);
-  },
-  createProduct: (data: any) => api.post('/product/templates', data),
-  updateProduct: (id: number, data: any) => api.put(`/product/templates/${id}`, data),
-  deleteProduct: (id: number) => api.delete(`/product/templates/${id}`),
-  // Relations
-  getProductCategories: () => api.get('/product/categories'),
-  getProductStock: (id: number) => api.get(`/product/templates/${id}/stock`),
-  getProductMovements: (id: number) => api.get(`/product/templates/${id}/movements`),
-  uploadImage: (id: number, file: File) => {
-    const formData = new FormData();
-    formData.append('image', file);
-    return api.post(`/product/templates/${id}/image`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
-  },
-  deleteImage: (id: number, imageId?: number) => api.delete(`/product/templates/${id}/image/${imageId || 1}`),
-  getImages: (id: number) => api.get(`/product/templates/${id}/images`),
-};
+// Note: productTemplatesService, productsService, productCategoryService,
+// et pricelistsService supprimés — le module backend /api/product/* et l'arbre
+// frontend pages/erp/ ont été retirés. Utiliser produitsService à la place.
 
 export const saleOrdersService = {
   getOrders: (params?: any) => api.get('/sale/orders', { params }),
@@ -827,15 +778,6 @@ export const settingsService = {
   updateSettings: (module: string, data: any) => api.put(`/settings/${module}`, data),
 };
 
-export const productCategoryService = {
-  getCategories: (params?: any) => api.get('/product/categories', { params }),
-  getCategoryById: (id: number) => api.get(`/product/categories/${id}`),
-  getCategoryTree: (params?: any) => api.get('/product/categories/tree', { params }),
-  createCategory: (data: any) => api.post('/product/categories', data),
-  updateCategory: (id: number, data: any) => api.put(`/product/categories/${id}`, data),
-  deleteCategory: (id: number) => api.delete(`/product/categories/${id}`),
-};
-
 export const payrollTunisiaService = {
   computePayslip: (data: any) => api.post('/payroll-tunisia/compute', data),
   getSalaryRules: (params?: any) => api.get('/payroll-tunisia/salary-rules', { params }),
@@ -877,26 +819,6 @@ export const bomService = {
   deleteBOM: (id: number) => api.delete(`/mrp/boms/${id}`),
   getBOMHierarchy: (id: number) => api.get(`/mrp/boms/${id}/hierarchy`),
   calculateBOMCost: (id: number) => api.get(`/mrp/boms/${id}/cost`),
-};
-
-// Services supplémentaires pour modules ERP
-export const pricelistsService = {
-  getPricelists: (params?: any) => api.get('/product/pricelists', { params }),
-  getPricelist: (id: number, options?: { loadRelations?: boolean }) => {
-    const url = `/product/pricelists/${id}`;
-    return options?.loadRelations 
-      ? api.get(url, { params: { loadRelations: true } })
-      : api.get(url);
-  },
-  createPricelist: (data: any) => api.post('/product/pricelists', data),
-  updatePricelist: (id: number, data: any) => api.put(`/product/pricelists/${id}`, data),
-  deletePricelist: (id: number) => api.delete(`/product/pricelists/${id}`),
-  getPricelistItems: (pricelistId: number) => api.get(`/product/pricelists/${pricelistId}/items`),
-  createPricelistItem: (pricelistId: number, data: any) => api.post(`/product/pricelists/${pricelistId}/items`, data),
-  updatePricelistItem: (pricelistId: number, itemId: number, data: any) => 
-    api.put(`/product/pricelists/${pricelistId}/items/${itemId}`, data),
-  deletePricelistItem: (pricelistId: number, itemId: number) => 
-    api.delete(`/product/pricelists/${pricelistId}/items/${itemId}`),
 };
 
 export const companiesService = {
