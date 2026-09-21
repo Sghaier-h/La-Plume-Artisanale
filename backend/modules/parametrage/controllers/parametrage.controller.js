@@ -220,6 +220,148 @@ export const upsertByCle = async (req, res) => {
   }
 };
 
+// ── Helper : liste des paramètres par préfixe(s) de clé ───────────
+const _getByPrefixes = async (prefixes) => {
+  const pk = await getPkColumn();
+  const conds = prefixes.map((_, i) => `cle ILIKE $${i + 1}`).join(' OR ');
+  const params = prefixes.map(p => `${p}%`);
+  const r = await pool.query(
+    `SELECT ${pk} AS id, cle, valeur, type_valeur, categorie, editable_ui,
+            date_creation, date_modification
+     FROM parametrage
+     WHERE cle IS NOT NULL AND (${conds})
+     ORDER BY cle`,
+    params
+  );
+  return r.rows.map(castValue);
+};
+
+// ── Helper : upsert multiple ──────────────────────────────────────
+const _bulkUpsert = async (items, allowedPrefixes = null) => {
+  let inserted = 0, updated = 0;
+  for (const p of items || []) {
+    if (!p.cle) continue;
+    if (allowedPrefixes && !allowedPrefixes.some(prefix => p.cle.toLowerCase().startsWith(prefix.toLowerCase()))) {
+      continue;
+    }
+    const existing = await pool.query(`SELECT 1 FROM parametrage WHERE cle = $1 LIMIT 1`, [p.cle]);
+    if (existing.rows[0]) {
+      await pool.query(
+        `UPDATE parametrage SET valeur=$1, type_valeur=COALESCE($2, type_valeur),
+                categorie=COALESCE($3, categorie), editable_ui=COALESCE($4, editable_ui),
+                date_modification=NOW() WHERE cle=$5`,
+        [p.valeur ?? null, p.type_valeur || null, p.categorie || null, p.editable_ui ?? null, p.cle]
+      );
+      updated++;
+    } else {
+      await pool.query(
+        `INSERT INTO parametrage (cle, valeur, type_valeur, categorie, editable_ui, date_creation)
+         VALUES ($1,$2,$3,$4,$5,NOW())`,
+        [p.cle, p.valeur ?? null, p.type_valeur || 'string', p.categorie || null, p.editable_ui ?? true]
+      );
+      inserted++;
+    }
+  }
+  return { inserted, updated };
+};
+
+// ─── GET /api/parametrage/societe ─────────────────────────────────
+export const getSociete = async (req, res) => {
+  try {
+    const items = await _getByPrefixes(['app.', 'societe.']);
+    return sendSuccess(res, { items, total: items.length });
+  } catch (error) {
+    return handleError(res, error, 'getSociete');
+  }
+};
+
+// ─── PUT /api/parametrage/societe ─────────────────────────────────
+export const updateSociete = async (req, res) => {
+  try {
+    if (!isAdmin(req)) return sendError(res, 'Réservé aux administrateurs', 403);
+    const body = req.body || {};
+    const params = Array.isArray(body) ? body : (Array.isArray(body.params) ? body.params : null);
+    if (!params) return sendError(res, 'params (array) requis', 400);
+    const result = await _bulkUpsert(params, ['app.', 'societe.']);
+    return sendSuccess(res, { ...result, total: params.length }, 'Paramètres société mis à jour');
+  } catch (error) {
+    return handleError(res, error, 'updateSociete');
+  }
+};
+
+// ─── GET /api/parametrage/systeme ─────────────────────────────────
+export const getSysteme = async (req, res) => {
+  try {
+    const items = await _getByPrefixes(['app.', 'systeme.']);
+    return sendSuccess(res, { items, total: items.length });
+  } catch (error) {
+    return handleError(res, error, 'getSysteme');
+  }
+};
+
+// ─── PUT /api/parametrage/systeme/:cle ────────────────────────────
+export const updateSystemeCle = async (req, res) => {
+  try {
+    if (!isAdmin(req)) return sendError(res, 'Réservé aux administrateurs', 403);
+    const cle = req.params.cle;
+    const lower = (cle || '').toLowerCase();
+    if (!lower.startsWith('app.') && !lower.startsWith('systeme.')) {
+      return sendError(res, 'Clé hors périmètre systeme (app.* ou systeme.*)', 400);
+    }
+    const { valeur, type_valeur, categorie, editable_ui } = req.body || {};
+    const existing = await pool.query(`SELECT 1 FROM parametrage WHERE cle = $1`, [cle]);
+    if (existing.rows[0]) {
+      await pool.query(
+        `UPDATE parametrage
+           SET valeur = COALESCE($1, valeur),
+               type_valeur = COALESCE($2, type_valeur),
+               categorie = COALESCE($3, categorie),
+               editable_ui = COALESCE($4, editable_ui),
+               date_modification = NOW()
+         WHERE cle = $5`,
+        [valeur ?? null, type_valeur || null, categorie || null, editable_ui ?? null, cle]
+      );
+    } else {
+      await pool.query(
+        `INSERT INTO parametrage (cle, valeur, type_valeur, categorie, editable_ui, date_creation)
+         VALUES ($1,$2,$3,$4,$5,NOW())`,
+        [cle, valeur ?? null, type_valeur || 'string', categorie || 'systeme', editable_ui ?? true]
+      );
+    }
+    return sendSuccess(res, { cle }, 'Paramètre système enregistré');
+  } catch (error) {
+    return handleError(res, error, 'updateSystemeCle');
+  }
+};
+
+// ─── GET /api/parametrage/module/:module ──────────────────────────
+export const getByModule = async (req, res) => {
+  try {
+    const mod = (req.params.module || '').toLowerCase();
+    if (!mod) return sendError(res, 'module requis', 400);
+    const items = await _getByPrefixes([`${mod}.`]);
+    return sendSuccess(res, { items, total: items.length });
+  } catch (error) {
+    return handleError(res, error, 'getByModule');
+  }
+};
+
+// ─── PUT /api/parametrage/module/:module ──────────────────────────
+export const updateByModule = async (req, res) => {
+  try {
+    if (!isAdmin(req)) return sendError(res, 'Réservé aux administrateurs', 403);
+    const mod = (req.params.module || '').toLowerCase();
+    if (!mod) return sendError(res, 'module requis', 400);
+    const body = req.body || {};
+    const params = Array.isArray(body) ? body : (Array.isArray(body.params) ? body.params : null);
+    if (!params) return sendError(res, 'params (array) requis', 400);
+    const result = await _bulkUpsert(params, [`${mod}.`]);
+    return sendSuccess(res, { ...result, module: mod, total: params.length }, 'Paramètres module mis à jour');
+  } catch (error) {
+    return handleError(res, error, 'updateByModule');
+  }
+};
+
 // ─── GET /api/parametrage/:id ─────────────────────────────────────
 export const getParametrageById = async (req, res) => {
   try {

@@ -13,6 +13,12 @@ import {
   envoyerFacture,
   envoyerBL,
   envoyerCommandeConfirmation,
+  sendAlias,
+  envoyerTemplate,
+  orderConfirmationByBody,
+  taskNotification,
+  dashboardContacts,
+  dashboardSend,
   webhook,
 } from '../controllers/whatsapp.controller.js';
 
@@ -30,6 +36,14 @@ router.post('/envoyer', envoyerMessage);
 router.post('/envoyer/facture/:id_facture(\\d+)', envoyerFacture);
 router.post('/envoyer/bl/:id_bl(\\d+)', envoyerBL);
 router.post('/envoyer/commande-confirmation/:id_commande(\\d+)', envoyerCommandeConfirmation);
+
+// Alias & endpoints attendus par le frontend
+router.post('/send', sendAlias);
+router.post('/template', envoyerTemplate);
+router.post('/order-confirmation', orderConfirmationByBody);
+router.post('/task-notification', taskNotification);
+router.get('/dashboard/:name/contact', dashboardContacts);
+router.post('/dashboard/:name/send', dashboardSend);
 
 router.get('/', getWhatsapp);
 router.get('/:id(\\d+)', getWhatsappById);

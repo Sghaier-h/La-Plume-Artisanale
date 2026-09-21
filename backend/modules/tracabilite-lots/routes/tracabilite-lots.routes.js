@@ -16,6 +16,8 @@ import {
   deleteLotCoupe,
   getLotsForOf,
   getChaineTracabilite,
+  getQrCode,
+  imprimerEtiquette,
 } from '../controllers/tracabilite-lots.controller.js';
 
 const router = express.Router();
@@ -32,6 +34,8 @@ router.get('/coupe/:id(\\d+)',       getLotCoupe);
 router.put('/coupe/:id(\\d+)',       updateLotCoupe);
 router.put('/coupe/:id(\\d+)/statut', changeStatutLot);
 router.delete('/coupe/:id(\\d+)',    deleteLotCoupe);
+router.get('/:id(\\d+)/qr-code',     getQrCode);
+router.post('/:id(\\d+)/imprimer-etiquette', imprimerEtiquette);
 router.get('/:id_lot(\\d+)/chaine',  getChaineTracabilite);
 
 // Liste globale

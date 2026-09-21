@@ -278,5 +278,95 @@ export const getStatsGlobal = async (_req, res) => {
   }
 };
 
+// ─── GET /api/soustraitants/:id/mouvements ─────────────────────────
+// Historique des mouvements pour un sous-traitant, avec détails joints.
+export const getMouvementsBySoustraitant = async (req, res) => {
+  try {
+    const head = await pool.query(
+      `${BASE_SELECT} WHERE mst.id_sous_traitant = $1
+       ORDER BY mst.date_mouvement DESC NULLS LAST, mst.id_mouvement_st DESC`,
+      [req.params.id]
+    );
+    const ids = head.rows.map((r) => r.id_mouvement_st);
+    let details = [];
+    if (ids.length) {
+      const dr = await pool.query(
+        `SELECT d.*, d.id_detail_st AS id
+           FROM mouvements_st_detail d
+          WHERE d.id_mouvement_st = ANY($1::int[])
+          ORDER BY d.id_detail_st ASC`,
+        [ids]
+      );
+      details = dr.rows;
+    }
+    const byMvt = new Map();
+    for (const d of details) {
+      const arr = byMvt.get(d.id_mouvement_st) || [];
+      arr.push(d);
+      byMvt.set(d.id_mouvement_st, arr);
+    }
+    const items = head.rows.map((r) => ({ ...r, details: byMvt.get(r.id_mouvement_st) || [] }));
+    return sendSuccess(res, { items, total: items.length });
+  } catch (error) {
+    return handleError(res, error, 'getMouvementsBySoustraitant');
+  }
+};
+
+// ─── POST /api/soustraitants/:id/sortie ────────────────────────────
+// Alias : crée un mouvement de sortie pour un sous-traitant précis.
+export const createSortieSoustraitant = (req, res) => {
+  req.body = {
+    ...(req.body || {}),
+    id_sous_traitant: parseInt(req.params.id, 10),
+    type_mouvement: 'sortie',
+  };
+  return createSoustraitant(req, res);
+};
+
+// ─── GET /api/soustraitants/alertes/retard ─────────────────────────
+// Mouvements en retard (date_retour_prevue < NOW et pas encore retournés).
+export const getAlertesRetard = async (_req, res) => {
+  try {
+    const sql = `
+      SELECT
+        mst.*,
+        mst.id_mouvement_st AS id,
+        of_.numero_of,
+        (of_.numero_of || COALESCE(' — ' || ac.designation, '')) AS of_libelle,
+        ac.designation AS article_designation,
+        (st.raison_sociale) AS sous_traitant_nom,
+        EXTRACT(DAY FROM (NOW() - mst.date_retour_prevue))::int AS jours_retard
+      FROM mouvements_sous_traitance mst
+      LEFT JOIN ordres_fabrication of_ ON mst.id_of = of_.id_of
+      LEFT JOIN articles_catalogue   ac ON of_.id_article = ac.id_article
+      LEFT JOIN sous_traitants       st ON mst.id_sous_traitant = st.id_sous_traitant
+      WHERE mst.date_retour_prevue < NOW()
+        AND mst.date_retour_reelle IS NULL
+        AND mst.statut = 'en_cours'
+      ORDER BY mst.date_retour_prevue ASC
+    `;
+    let r;
+    try {
+      r = await pool.query(sql);
+    } catch {
+      // Fallback si la table `sous_traitants` ou `articles_catalogue` est absente
+      r = await pool.query(`
+        SELECT
+          mst.*,
+          mst.id_mouvement_st AS id,
+          EXTRACT(DAY FROM (NOW() - mst.date_retour_prevue))::int AS jours_retard
+        FROM mouvements_sous_traitance mst
+        WHERE mst.date_retour_prevue < NOW()
+          AND mst.date_retour_reelle IS NULL
+          AND mst.statut = 'en_cours'
+        ORDER BY mst.date_retour_prevue ASC
+      `);
+    }
+    return sendSuccess(res, { items: r.rows, total: r.rows.length });
+  } catch (error) {
+    return handleError(res, error, 'getAlertesRetard');
+  }
+};
+
 // ─── Rétro-compat CRUD ─────────────────────────────────────────────
 export const getSoustraitants_alias = getSoustraitants;

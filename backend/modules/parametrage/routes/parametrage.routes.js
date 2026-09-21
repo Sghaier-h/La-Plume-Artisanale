@@ -15,6 +15,12 @@ import {
   importParametrage,
   getByCle,
   upsertByCle,
+  getSociete,
+  updateSociete,
+  getSysteme,
+  updateSystemeCle,
+  getByModule,
+  updateByModule,
 } from '../controllers/parametrage.controller.js';
 
 const router = express.Router();
@@ -28,6 +34,14 @@ router.post('/import', importParametrage);
 
 router.get('/cle/:cle', getByCle);
 router.put('/cle/:cle', upsertByCle);
+
+// Endpoints regroupés attendus par le frontend
+router.get('/societe', getSociete);
+router.put('/societe', updateSociete);
+router.get('/systeme', getSysteme);
+router.put('/systeme/:cle', updateSystemeCle);
+router.get('/module/:module', getByModule);
+router.put('/module/:module', updateByModule);
 
 router.get('/', getParametrage);
 router.post('/', createParametrage);

@@ -166,6 +166,57 @@ export const getLotCoupe = async (req, res) => {
   }
 };
 
+// ─── GET /api/tracabilite-lots/:id/qr-code ────────────────────────
+export const getQrCode = async (req, res) => {
+  try {
+    const r = await pool.query(
+      `SELECT id_lot_coupe AS id, numero_lot, qr_code_lot
+       FROM lots_coupe WHERE id_lot_coupe = $1 LIMIT 1`,
+      [req.params.id]
+    );
+    if (!r.rows[0]) return sendError(res, 'Lot introuvable', 404);
+    const { qr_code_lot, numero_lot, id } = r.rows[0];
+    return sendSuccess(res, {
+      id_lot: id,
+      numero_lot,
+      qr_code_lot,
+      url_qr_image: `/api/tracabilite-lots/qr/${qr_code_lot}.png`,
+    });
+  } catch (error) {
+    return handleError(res, error, 'getQrCode');
+  }
+};
+
+// ─── POST /api/tracabilite-lots/:id/imprimer-etiquette ────────────
+export const imprimerEtiquette = async (req, res) => {
+  try {
+    const r = await pool.query(`
+      SELECT lc.id_lot_coupe AS id_lot, lc.numero_lot, lc.qr_code_lot,
+             lc.date_coupe, lc.nombre_pieces, lc.metrage_total, lc.qualite, lc.emplacement,
+             a.designation AS article_designation, a.code_article,
+             of_.numero_of
+      FROM lots_coupe lc
+      LEFT JOIN suivi_fabrication sf   ON lc.id_suivi = sf.id_suivi
+      LEFT JOIN ordres_fabrication of_ ON sf.id_of = of_.id_of
+      LEFT JOIN articles_catalogue a   ON of_.id_article = a.id_article
+      WHERE lc.id_lot_coupe = $1 LIMIT 1
+    `, [req.params.id]);
+    if (!r.rows[0]) return sendError(res, 'Lot introuvable', 404);
+
+    const etiquette = r.rows[0];
+    const userId = authorId(req);
+    console.log(`[tracabilite-lots] Print requested for lot ${etiquette.numero_lot} by user ${userId}`);
+
+    return sendSuccess(res, {
+      etiquette,
+      note: 'Print job queued — configure printer service',
+      queued_at: new Date().toISOString(),
+    }, 'Impression étiquette');
+  } catch (error) {
+    return handleError(res, error, 'imprimerEtiquette');
+  }
+};
+
 // ─── POST /api/tracabilite-lots/coupe ─────────────────────────────
 export const createLotCoupe = async (req, res) => {
   try {

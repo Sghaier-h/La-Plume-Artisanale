@@ -136,6 +136,75 @@ export const getRecentByUser = async (req, res) => {
   }
 };
 
+// ─── GET /api/audit/stats/by-table ────────────────────────────────
+export const getStatsByTable = async (req, res) => {
+  try {
+    const r = await pool.query(
+      `SELECT entity_type, COUNT(*)::int AS count
+       FROM audit
+       WHERE action IS NOT NULL AND entity_type IS NOT NULL
+       GROUP BY entity_type
+       ORDER BY count DESC`
+    );
+    return sendSuccess(res, { items: r.rows, total: r.rows.length });
+  } catch (error) {
+    return handleError(res, error, 'getStatsByTable');
+  }
+};
+
+// ─── GET /api/audit/stats/by-user ─────────────────────────────────
+export const getStatsByUser = async (req, res) => {
+  try {
+    const r = await pool.query(
+      `SELECT a.id_user, u.email, u.nom, u.prenom, COUNT(*)::int AS count
+       FROM audit a
+       LEFT JOIN utilisateurs u ON a.id_user = u.id_utilisateur
+       WHERE a.action IS NOT NULL AND a.id_user IS NOT NULL
+       GROUP BY a.id_user, u.email, u.nom, u.prenom
+       ORDER BY count DESC`
+    );
+    return sendSuccess(res, { items: r.rows, total: r.rows.length });
+  } catch (error) {
+    return handleError(res, error, 'getStatsByUser');
+  }
+};
+
+// ─── GET /api/audit/record/:table/:id ─────────────────────────────
+export const getByRecord = async (req, res) => {
+  try {
+    const { table, id } = req.params;
+    const r = await pool.query(
+      `SELECT a.id_audit AS id, a.id_user, a.action, a.entity_type, a.entity_id,
+              a.ancien_valeur, a.nouveau_valeur, a.ip_address, a.user_agent, a.date_action,
+              u.email AS user_email, u.nom AS user_nom, u.prenom AS user_prenom
+       FROM audit a
+       LEFT JOIN utilisateurs u ON a.id_user = u.id_utilisateur
+       WHERE a.entity_type = $1 AND a.entity_id = $2
+       ORDER BY a.date_action DESC`,
+      [table, id]
+    );
+    return sendSuccess(res, { items: r.rows, total: r.rows.length });
+  } catch (error) {
+    return handleError(res, error, 'getByRecord');
+  }
+};
+
+// ─── GET /api/audit/tables ────────────────────────────────────────
+export const getTables = async (req, res) => {
+  try {
+    const r = await pool.query(
+      `SELECT entity_type, COUNT(*)::int AS count
+       FROM audit
+       WHERE entity_type IS NOT NULL
+       GROUP BY entity_type
+       ORDER BY entity_type`
+    );
+    return sendSuccess(res, { items: r.rows, total: r.rows.length });
+  } catch (error) {
+    return handleError(res, error, 'getTables');
+  }
+};
+
 // ─── GET /api/audit/:id ───────────────────────────────────────────
 export const getAuditById = async (req, res) => {
   try {

@@ -14,6 +14,8 @@ import {
   downloadDocument,
   getByEntity,
   getStatsGlobal,
+  getDossierFabrication,
+  exportExcel,
 } from '../controllers/documents.controller.js';
 
 const router = express.Router();
@@ -23,6 +25,8 @@ router.use(authenticate);
 // Routes spécifiques avant /:id
 router.get('/stats/global', getStatsGlobal);
 router.get('/entity/:type/:id(\\d+)', getByEntity);
+router.get('/of/:id(\\d+)/dossier-fabrication', getDossierFabrication);
+router.get('/export/excel', exportExcel);
 router.post('/upload', uploadDocument);
 router.get('/:id(\\d+)/download', downloadDocument);
 

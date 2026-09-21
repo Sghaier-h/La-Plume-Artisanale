@@ -123,6 +123,54 @@ export const getByEntity = async (req, res) => {
   }
 };
 
+// ─── GET /api/documents/of/:id/dossier-fabrication ────────────────
+export const getDossierFabrication = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const docsQ = await pool.query(
+      `SELECT d.id_documents AS id, d.name, d.description, d.filename, d.filepath, d.mimetype,
+              d.size_bytes, d.categorie, d.tags, d.entity_type, d.entity_id, d.uploaded_by, d.is_public,
+              d.created_at, u.email AS uploader_email
+       FROM documents d
+       LEFT JOIN utilisateurs u ON d.uploaded_by = u.id_utilisateur
+       WHERE d.entity_type = 'of' AND d.entity_id = $1 AND d.filename IS NOT NULL
+       ORDER BY d.created_at DESC`,
+      [id]
+    );
+
+    let of_info = null;
+    try {
+      const ofQ = await pool.query(
+        `SELECT of_.id_of, of_.numero_of, of_.quantite_a_produire, of_.statut,
+                of_.date_debut, of_.date_fin_prevue,
+                a.designation AS article_designation, a.code_article
+         FROM ordres_fabrication of_
+         LEFT JOIN articles_catalogue a ON of_.id_article = a.id_article
+         WHERE of_.id_of = $1 LIMIT 1`,
+        [id]
+      );
+      of_info = ofQ.rows[0] || null;
+    } catch {}
+
+    return sendSuccess(res, {
+      id_of: parseInt(id, 10),
+      of: of_info,
+      documents: docsQ.rows,
+      total: docsQ.rows.length,
+    });
+  } catch (error) {
+    return handleError(res, error, 'getDossierFabrication');
+  }
+};
+
+// ─── GET /api/documents/export/excel ──────────────────────────────
+export const exportExcel = async (req, res) => {
+  return res.status(202).json({
+    success: true,
+    note: 'Export Excel — not yet implemented, use excel-import module for xlsx generation',
+  });
+};
+
 // ─── POST /api/documents/upload ───────────────────────────────────
 export const uploadDocument = async (req, res) => {
   return res.status(202).json({

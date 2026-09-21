@@ -81,6 +81,43 @@ router.post('/equipe/:id_operateur(\\d+)/creer-utilisateur', async (req, res) =>
   }
 });
 
+// Liste des rôles disponibles
+router.get('/roles', async (req, res) => {
+  const fallback = [
+    { code_role: 'ADMIN', nom: 'Administrateur' },
+    { code_role: 'CHEF_PRODUCTION', nom: 'Chef de production' },
+    { code_role: 'COMMERCIAL', nom: 'Commercial' },
+    { code_role: 'MAGASINIER', nom: 'Magasinier' },
+    { code_role: 'QUALITE', nom: 'Contrôle qualité' },
+    { code_role: 'TISSEUR', nom: 'Tisseur' },
+    { code_role: 'OPERATEUR', nom: 'Opérateur' },
+  ];
+  try {
+    const r = await pool.query(`SELECT id_role, code_role, nom, description FROM roles ORDER BY id_role ASC`);
+    return sendSuccess(res, r.rows.length ? r.rows : fallback, 'Rôles');
+  } catch (error) {
+    return sendSuccess(res, fallback, 'Rôles (fallback)');
+  }
+});
+
+// Dashboards disponibles par rôle
+router.get('/dashboards', async (req, res) => {
+  try {
+    const dashboards = [
+      { role: 'ADMIN', dashboards: ['dashboard-admin'] },
+      { role: 'CHEF_PRODUCTION', dashboards: ['dashboard-chef-production'] },
+      { role: 'COMMERCIAL', dashboards: ['dashboard-commercial'] },
+      { role: 'MAGASINIER', dashboards: ['dashboard-magasinier'] },
+      { role: 'QUALITE', dashboards: ['dashboard-qualite'] },
+      { role: 'TISSEUR', dashboards: ['tablette/tisseur'] },
+      { role: 'OPERATEUR', dashboards: ['tablette/operateur'] },
+    ];
+    return sendSuccess(res, dashboards, 'Dashboards par rôle');
+  } catch (error) {
+    return handleError(res, error, 'getDashboards');
+  }
+});
+
 // CRUD
 router.get('/', getUtilisateurs);
 router.post('/', createUtilisateurs);

@@ -236,6 +236,172 @@ export const envoyerCommandeConfirmation = async (req, res) => {
   }
 };
 
+// ─── POST /api/whatsapp/send (alias de /envoyer) ───────────────────
+export const sendAlias = envoyerMessage;
+
+// ─── POST /api/whatsapp/template ───────────────────────────────────
+export const envoyerTemplate = async (req, res) => {
+  try {
+    const userId = authorId(req);
+    const { destinataire_phone, template_code, variables, entity_type, entity_id } = req.body || {};
+    if (!destinataire_phone) return sendError(res, 'destinataire_phone requis', 400);
+    if (!template_code) return sendError(res, 'template_code requis', 400);
+    const tpl = TEMPLATES.find(t => t.code === template_code);
+    const message = tpl
+      ? `[${tpl.label}] ${JSON.stringify(variables || {})}`
+      : `[${template_code}] ${JSON.stringify(variables || {})}`;
+    const row = await _enqueue({
+      phone: destinataire_phone, message, template_code,
+      entity_type: entity_type || null, entity_id: entity_id || null, userId,
+    });
+    return sendSuccess(res, row, 'Message WhatsApp (template) envoyé', 201);
+  } catch (error) {
+    return handleError(res, error, 'envoyerTemplate');
+  }
+};
+
+// ─── POST /api/whatsapp/order-confirmation (body: {id_commande}) ───
+export const orderConfirmationByBody = async (req, res) => {
+  try {
+    const userId = authorId(req);
+    const { id_commande } = req.body || {};
+    if (!id_commande) return sendError(res, 'id_commande requis', 400);
+    let phone = null; let numero = id_commande;
+    try {
+      const r = await pool.query(
+        `SELECT co.*, c.telephone AS client_phone
+         FROM commandes co LEFT JOIN clients c ON c.id_client = co.id_client
+         WHERE co.id_commandes = $1 OR co.id_commande = $1 LIMIT 1`,
+        [id_commande]
+      );
+      if (r.rows[0]) { phone = r.rows[0].client_phone; numero = r.rows[0].numero_commande || numero; }
+    } catch {}
+    if (!phone) return sendError(res, 'Téléphone client introuvable pour cette commande', 404);
+    const row = await _enqueue({
+      phone, message: `Commande ${numero} confirmée`,
+      template_code: 'commande_confirmee', entity_type: 'commande', entity_id: id_commande, userId,
+    });
+    return sendSuccess(res, row, 'Confirmation commande envoyée', 201);
+  } catch (error) {
+    return handleError(res, error, 'orderConfirmationByBody');
+  }
+};
+
+// ─── POST /api/whatsapp/task-notification ──────────────────────────
+export const taskNotification = async (req, res) => {
+  try {
+    const userId = authorId(req);
+    const { id_operateur, id_tache, message: bodyMessage } = req.body || {};
+    if (!id_operateur) return sendError(res, 'id_operateur requis', 400);
+    let phone = null; let nom = null;
+    try {
+      const r = await pool.query(
+        `SELECT o.*, u.telephone AS user_phone, u.nom, u.prenom
+         FROM operateurs o LEFT JOIN utilisateurs u ON u.id_utilisateur = o.id_utilisateur
+         WHERE o.id_operateurs = $1 OR o.id_operateur = $1 LIMIT 1`,
+        [id_operateur]
+      );
+      if (r.rows[0]) {
+        phone = r.rows[0].telephone || r.rows[0].user_phone;
+        nom = `${r.rows[0].prenom || ''} ${r.rows[0].nom || ''}`.trim();
+      }
+    } catch {}
+    if (!phone) {
+      try {
+        const r2 = await pool.query(
+          `SELECT telephone, nom, prenom FROM utilisateurs WHERE id_utilisateur = $1 LIMIT 1`,
+          [id_operateur]
+        );
+        if (r2.rows[0]) { phone = r2.rows[0].telephone; nom = `${r2.rows[0].prenom || ''} ${r2.rows[0].nom || ''}`.trim(); }
+      } catch {}
+    }
+    if (!phone) return sendError(res, 'Téléphone opérateur introuvable', 404);
+    const msg = bodyMessage || `Nouvelle tâche assignée${id_tache ? ` #${id_tache}` : ''}${nom ? ` — ${nom}` : ''}`;
+    const row = await _enqueue({
+      phone, message: msg, template_code: 'task_notification',
+      entity_type: 'tache', entity_id: id_tache || null, userId,
+    });
+    return sendSuccess(res, row, 'Notification tâche envoyée', 201);
+  } catch (error) {
+    return handleError(res, error, 'taskNotification');
+  }
+};
+
+// ─── GET /api/whatsapp/dashboard/:name/contact ─────────────────────
+export const dashboardContacts = async (req, res) => {
+  try {
+    const role = (req.params.name || '').toLowerCase();
+    if (!role) return sendError(res, 'role requis', 400);
+    let rows = [];
+    try {
+      const r = await pool.query(
+        `SELECT u.id_utilisateur AS id_operateur, u.nom, u.prenom, u.email,
+                u.telephone AS phone, u.role, u.poste
+         FROM utilisateurs u
+         WHERE u.actif = true
+           AND (LOWER(u.role) = $1 OR LOWER(u.poste) = $1)
+           AND u.telephone IS NOT NULL`,
+        [role]
+      );
+      rows = r.rows;
+    } catch {
+      try {
+        const r2 = await pool.query(
+          `SELECT id_utilisateur AS id_operateur, nom, prenom, email, telephone AS phone, role
+           FROM utilisateurs WHERE LOWER(role) = $1 AND telephone IS NOT NULL`,
+          [role]
+        );
+        rows = r2.rows;
+      } catch {}
+    }
+    return sendSuccess(res, { items: rows, total: rows.length });
+  } catch (error) {
+    return handleError(res, error, 'dashboardContacts');
+  }
+};
+
+// ─── POST /api/whatsapp/dashboard/:name/send ───────────────────────
+export const dashboardSend = async (req, res) => {
+  try {
+    const userId = authorId(req);
+    const role = (req.params.name || '').toLowerCase();
+    const { message, urgent } = req.body || {};
+    if (!message) return sendError(res, 'message requis', 400);
+    let contacts = [];
+    try {
+      const r = await pool.query(
+        `SELECT telephone AS phone FROM utilisateurs
+         WHERE actif = true AND (LOWER(role) = $1 OR LOWER(poste) = $1)
+           AND telephone IS NOT NULL`,
+        [role]
+      );
+      contacts = r.rows;
+    } catch {
+      try {
+        const r2 = await pool.query(
+          `SELECT telephone AS phone FROM utilisateurs WHERE LOWER(role) = $1 AND telephone IS NOT NULL`,
+          [role]
+        );
+        contacts = r2.rows;
+      } catch {}
+    }
+    const sent = [];
+    for (const c of contacts) {
+      if (!c.phone) continue;
+      try {
+        const row = await _enqueue({
+          phone: c.phone, message: (urgent ? '[URGENT] ' : '') + message,
+          template_code: null, entity_type: `dashboard:${role}`, entity_id: null, userId,
+        });
+        sent.push(row);
+      } catch {}
+    }
+    return sendSuccess(res, { items: sent, total: sent.length }, `${sent.length} messages envoyés`, 201);
+  } catch (error) {
+    return handleError(res, error, 'dashboardSend');
+  }
+};
+
 // ─── POST /api/whatsapp/webhook (no auth) ──────────────────────────
 export const webhook = async (req, res) => {
   try {

@@ -40,6 +40,6 @@ export default {
     'routes/hr_payslip.routes.js'
   ],
   apiPaths: {
-    'routes/hr_recruitment.routes.js': '/api'
+    'routes/hr_recruitment.routes.js': '/api/hr/recruitments'
   }
 };
