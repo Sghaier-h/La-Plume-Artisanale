@@ -16,7 +16,14 @@ import {
   getStatsGlobal,
   getDossierFabrication,
   exportExcel,
+  documentsUpload,
 } from '../controllers/documents.controller.js';
+
+// Middleware pour capturer les erreurs multer (limite taille, MIME)
+const handleMulter = (mw) => (req, res, next) => mw(req, res, (err) => {
+  if (err) return res.status(err.status || 400).json({ success: false, error: { message: err.message } });
+  next();
+});
 
 const router = express.Router();
 
@@ -27,7 +34,7 @@ router.get('/stats/global', getStatsGlobal);
 router.get('/entity/:type/:id(\\d+)', getByEntity);
 router.get('/of/:id(\\d+)/dossier-fabrication', getDossierFabrication);
 router.get('/export/excel', exportExcel);
-router.post('/upload', uploadDocument);
+router.post('/upload', handleMulter(documentsUpload.single('file')), uploadDocument);
 router.get('/:id(\\d+)/download', downloadDocument);
 
 // CRUD

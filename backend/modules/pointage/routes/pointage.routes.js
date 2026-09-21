@@ -3,6 +3,9 @@
  */
 
 import express from 'express';
+import multer from 'multer';
+import fs from 'fs';
+import path from 'path';
 import { authenticate } from '../../../src/middleware/auth.middleware.js';
 import {
   getPointage,
@@ -18,10 +21,58 @@ import {
   getPointageUserToday,
   getPointageUserMonth,
 } from '../controllers/pointage.controller.js';
+import {
+  importPunches as timemotoImport,
+  importCsv as timemotoImportCsv,
+  getConfig as timemotoGetConfig,
+  updateConfig as timemotoUpdateConfig,
+  getMapping as timemotoGetMapping,
+  updateMapping as timemotoUpdateMapping,
+  syncCloud as timemotoSyncCloud,
+  getHistory as timemotoHistory,
+} from '../controllers/timemoto.controller.js';
 
 const router = express.Router();
 
 router.use(authenticate);
+
+// ─── Multer CSV upload (TimeMoto USB export) ──────────────────────
+const TIMEMOTO_TMP = path.resolve(process.cwd(), 'uploads', 'timemoto');
+try { fs.mkdirSync(TIMEMOTO_TMP, { recursive: true }); } catch {}
+const csvStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, TIMEMOTO_TMP),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname) || '.csv';
+    cb(null, `timemoto_${Date.now()}_${Math.random().toString(36).slice(2, 8)}${ext}`);
+  },
+});
+const csvUpload = multer({
+  storage: csvStorage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const ok = /\.(csv|txt|tsv)$/i.test(file.originalname);
+    if (!ok) {
+      const err = new Error('Extension non supportée (csv/txt/tsv)');
+      err.status = 400;
+      return cb(err);
+    }
+    cb(null, true);
+  },
+});
+const handleMulter = (mw) => (req, res, next) => mw(req, res, (err) => {
+  if (err) return res.status(err.status || 400).json({ success: false, error: { message: err.message } });
+  next();
+});
+
+// ─── TimeMoto (AVANT /:id pour éviter conflits) ───────────────────
+router.post('/timemoto/import',                             timemotoImport);
+router.post('/timemoto/csv',    handleMulter(csvUpload.single('file')), timemotoImportCsv);
+router.get ('/timemoto/config',                             timemotoGetConfig);
+router.put ('/timemoto/config',                             timemotoUpdateConfig);
+router.get ('/timemoto/mapping',                            timemotoGetMapping);
+router.put ('/timemoto/mapping/:id_utilisateur(\\d+)',      timemotoUpdateMapping);
+router.post('/timemoto/sync',                               timemotoSyncCloud);
+router.get ('/timemoto/history',                            timemotoHistory);
 
 // Routes spécifiques AVANT /:id
 router.get('/stats/global', getStatsGlobal);

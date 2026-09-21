@@ -15,8 +15,55 @@
 
 import { pool } from '../../../src/utils/db.js';
 import { sendError, sendSuccess, handleError } from '../../../src/utils/error.helper.js';
+import multer from 'multer';
+import fs from 'fs';
+import path from 'path';
 
 const authorId = (req) => req.user?.id || req.user?.userId || null;
+
+// ─── Multer configuration ─────────────────────────────────────────
+const UPLOADS_ROOT = path.resolve(process.cwd(), 'uploads', 'documents');
+
+const ALLOWED_MIME = new Set([
+  'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // docx
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',       // xlsx
+  'text/plain', 'text/csv',
+]);
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    try {
+      const d = new Date();
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dir = path.join(UPLOADS_ROOT, String(yyyy), mm);
+      fs.mkdirSync(dir, { recursive: true });
+      cb(null, dir);
+    } catch (err) {
+      cb(err);
+    }
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    const base = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9-_]/g, '_');
+    cb(null, `${base}_${Date.now()}${ext}`);
+  },
+});
+
+export const documentsUpload = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+  fileFilter: (req, file, cb) => {
+    if (!ALLOWED_MIME.has(file.mimetype)) {
+      const err = new Error(`Type MIME non autorisé: ${file.mimetype}`);
+      err.status = 400;
+      return cb(err);
+    }
+    cb(null, true);
+  },
+});
 
 // Migration idempotente : ajouter les colonnes GED au chargement
 (async () => {
@@ -173,10 +220,53 @@ export const exportExcel = async (req, res) => {
 
 // ─── POST /api/documents/upload ───────────────────────────────────
 export const uploadDocument = async (req, res) => {
-  return res.status(202).json({
-    success: true,
-    note: 'File upload — configure multer to save to uploads/documents/ and update metadata row',
-  });
+  try {
+    const userId = authorId(req);
+    if (!req.file) return sendError(res, 'Aucun fichier reçu (champ "file")', 400);
+
+    const {
+      name, description, categorie, tags, entity_type, entity_id, is_public,
+    } = req.body || {};
+
+    const relPath = path.relative(process.cwd(), req.file.path).replace(/\\/g, '/');
+
+    let parsedTags = null;
+    if (tags) {
+      try { parsedTags = Array.isArray(tags) ? tags : JSON.parse(tags); }
+      catch { parsedTags = String(tags).split(',').map(t => t.trim()).filter(Boolean); }
+    }
+
+    const r = await pool.query(
+      `INSERT INTO documents
+         (name, description, filename, filepath, mimetype, size_bytes, categorie, tags,
+          entity_type, entity_id, uploaded_by, is_public, active, created_at, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, true, NOW(), $11)
+       RETURNING id_documents AS id, name, filename, filepath, mimetype, size_bytes, categorie,
+                 tags, entity_type, entity_id, uploaded_by, is_public, created_at`,
+      [
+        name || req.file.originalname,
+        description || null,
+        req.file.originalname,
+        relPath,
+        req.file.mimetype,
+        req.file.size,
+        categorie || null,
+        parsedTags,
+        entity_type || null,
+        entity_id ? parseInt(entity_id, 10) : null,
+        userId,
+        is_public === 'true' || is_public === true,
+      ]
+    );
+
+    const doc = r.rows[0];
+    doc.download_url = `/api/documents/${doc.id}/download`;
+    return sendSuccess(res, doc, 'Document uploadé', 201);
+  } catch (error) {
+    // Nettoyer le fichier orphelin si l'INSERT échoue
+    if (req.file?.path) { try { fs.unlinkSync(req.file.path); } catch {} }
+    return handleError(res, error, 'uploadDocument');
+  }
 };
 
 // ─── GET /api/documents/:id ───────────────────────────────────────
@@ -201,18 +291,33 @@ export const getDocumentById = async (req, res) => {
 // ─── GET /api/documents/:id/download ──────────────────────────────
 export const downloadDocument = async (req, res) => {
   try {
+    const userId = authorId(req);
+    const userRole = req.user?.role || '';
     const r = await pool.query(
-      `SELECT filename, filepath, mimetype FROM documents WHERE id_documents = $1`,
+      `SELECT filename, filepath, mimetype, is_public, uploaded_by, created_by
+         FROM documents WHERE id_documents = $1`,
       [req.params.id]
     );
     if (!r.rows[0]) return sendError(res, 'Document introuvable', 404);
-    return res.status(200).json({
-      success: true,
-      note: 'File download not yet implemented',
-      filepath: r.rows[0].filepath,
-      filename: r.rows[0].filename,
-      mimetype: r.rows[0].mimetype,
-    });
+
+    const doc = r.rows[0];
+
+    // Autorisation : si is_public=false → uploader ou ADMIN uniquement
+    if (!doc.is_public) {
+      const isOwner = String(doc.uploaded_by) === String(userId) || String(doc.created_by) === String(userId);
+      const isAdmin = userRole === 'ADMIN';
+      if (!isOwner && !isAdmin) return sendError(res, 'Accès non autorisé', 403);
+    }
+
+    if (!doc.filepath) return sendError(res, 'Fichier non disponible', 404);
+    const absolutePath = path.isAbsolute(doc.filepath)
+      ? doc.filepath
+      : path.resolve(process.cwd(), doc.filepath);
+    if (!fs.existsSync(absolutePath)) return sendError(res, 'Fichier manquant sur disque', 404);
+
+    if (doc.mimetype) res.setHeader('Content-Type', doc.mimetype);
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(doc.filename || 'document')}"`);
+    return res.sendFile(absolutePath);
   } catch (error) {
     return handleError(res, error, 'downloadDocument');
   }

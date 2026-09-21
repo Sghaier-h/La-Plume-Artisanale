@@ -289,8 +289,17 @@ export const utilisateursService = {
   getCommerciaux: () => api.get('/utilisateurs/commerciaux'),
   getDashboards: () => api.get('/utilisateurs/dashboards'),
   getEquipe: () => api.get('/utilisateurs/equipe'),
-  creerUtilisateurEquipe: (idOperateur: number, data: { email: string; password: string; dashboards: string[] }) => 
+  creerUtilisateurEquipe: (idOperateur: number, data: { email: string; password: string; dashboards: string[] }) =>
     api.post(`/utilisateurs/equipe/${idOperateur}/creer-utilisateur`, data),
+  // Rôles / Permissions (RBAC)
+  getRolesUtilisateur: (id: number) => api.get(`/utilisateurs/${id}/roles`),
+  addRoleUtilisateur: (id: number, id_role: number) => api.post(`/utilisateurs/${id}/roles`, { id_role }),
+  removeRoleUtilisateur: (id: number, id_role: number) => api.delete(`/utilisateurs/${id}/roles/${id_role}`),
+  getPermissions: () => api.get('/utilisateurs/permissions'),
+  getRolePermissions: (id_role: number) => api.get(`/utilisateurs/roles/${id_role}/permissions`),
+  updateRolePermissions: (id_role: number, codes: string[]) =>
+    api.put(`/utilisateurs/roles/${id_role}/permissions`, { codes }),
+  getUserPermissions: (id: number) => api.get(`/utilisateurs/${id}/permissions`),
 };
 
 export const auditService = {
@@ -700,6 +709,13 @@ export const hrRecruitmentService = {
   refuseApplicant: (id: number, data?: any) => api.post(`/hr/recruitments/${id}/refuse`, data),
   rejectApplicant: (id: number, data?: any) => api.post(`/hr/recruitments/${id}/reject`, data),
   getStages: (params?: any) => api.get('/hr/recruitments/stages', { params }),
+  getStats: () => api.get('/hr/recruitments/stats/global'),
+  getFunnel: (days?: number) => api.get('/hr/recruitments/funnel', { params: days ? { days } : {} }),
+  getTimeline: (id: number) => api.get(`/hr/recruitments/${id}/timeline`),
+  addNote: (id: number, text: string) => api.post(`/hr/recruitments/${id}/notes`, { text }),
+  scheduleInterview: (id: number, data: any) => api.post(`/hr/recruitments/${id}/interview`, data),
+  getPostes: () => api.get('/hr/recruitments/postes'),
+  getAnalytics: () => api.get('/hr/recruitments/analytics/mensuel'),
 };
 
 export const hrPayslipsService = {

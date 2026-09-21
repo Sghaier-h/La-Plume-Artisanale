@@ -13,6 +13,7 @@
 
 import { pool } from '../../../src/utils/db.js';
 import { sendError, sendSuccess, handleError } from '../../../src/utils/error.helper.js';
+import { askAI } from '../../../src/services/ai.service.js';
 
 const authorId = (req) => req.user?.id || req.user?.userId || null;
 
@@ -40,16 +41,37 @@ const authorId = (req) => req.user?.id || req.user?.userId || null;
 
 const MODEL_PLACEHOLDER = 'stub-llm-v0';
 
-const _log = async ({ userId, prompt, response, entity_type, entity_id, latency_ms }) => {
+const _log = async ({ userId, prompt, response, entity_type, entity_id, latency_ms, model, tokens_input, tokens_output, cost, error_message }) => {
   const r = await pool.query(
     `INSERT INTO ai
        (user_id, prompt, response, model, tokens_input, tokens_output, cost,
-        entity_type, entity_id, latency_ms, created_at, created_by)
-     VALUES ($1, $2, $3, $4, 0, 0, 0, $5, $6, $7, NOW(), $1)
-     RETURNING id_ai AS id, user_id, prompt, response, model, entity_type, entity_id, feedback, latency_ms, created_at`,
-    [userId, prompt, response, MODEL_PLACEHOLDER, entity_type || null, entity_id || null, latency_ms || 0]
+        entity_type, entity_id, latency_ms, error_message, created_at, created_by)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), $1)
+     RETURNING id_ai AS id, user_id, prompt, response, model, tokens_input, tokens_output, cost,
+               entity_type, entity_id, feedback, latency_ms, error_message, created_at`,
+    [
+      userId, prompt, response, model || MODEL_PLACEHOLDER,
+      tokens_input || 0, tokens_output || 0, cost || 0,
+      entity_type || null, entity_id || null, latency_ms || 0,
+      error_message || null,
+    ]
   );
   return r.rows[0];
+};
+
+// Appel unifié : appelle askAI puis renvoie {response, model, tokens_*, cost, latency_ms, mocked?}.
+const _invokeAI = async ({ prompt, systemPrompt, maxTokens }) => {
+  const r = await askAI({ prompt, systemPrompt, maxTokens });
+  return {
+    response: r.response || (r.error ? `Erreur IA: ${r.error}` : ''),
+    model: r.model || MODEL_PLACEHOLDER,
+    tokens_input: r.tokens_input || 0,
+    tokens_output: r.tokens_output || 0,
+    cost: r.cost || 0,
+    latency_ms: r.latency_ms || 0,
+    mocked: !!r.mocked,
+    error_message: r.success ? null : (r.error || (r.mocked ? 'AI_API_KEY non configurée' : null)),
+  };
 };
 
 // ─── GET /api/ai/history ───────────────────────────────────────────
@@ -100,12 +122,17 @@ export const ask = async (req, res) => {
     const userId = authorId(req);
     const { prompt, entity_type, entity_id } = req.body || {};
     if (!prompt) return sendError(res, 'prompt requis', 400);
-    const started = Date.now();
-    const response = `Placeholder — LLM not configured. Prompt: ${prompt}`;
+    const ai = await _invokeAI({ prompt });
     const row = await _log({
-      userId, prompt, response, entity_type, entity_id, latency_ms: Date.now() - started,
+      userId, prompt, response: ai.response, entity_type, entity_id,
+      latency_ms: ai.latency_ms, model: ai.model,
+      tokens_input: ai.tokens_input, tokens_output: ai.tokens_output, cost: ai.cost,
+      error_message: ai.error_message,
     });
-    return sendSuccess(res, row, 'Réponse IA (placeholder)', 201);
+    const msg = ai.mocked ? 'Réponse IA (placeholder — AI_API_KEY absent)'
+              : ai.error_message ? 'Erreur IA'
+              : 'Réponse IA';
+    return sendSuccess(res, { ...row, mocked: ai.mocked }, msg, 201);
   } catch (error) {
     return handleError(res, error, 'ask');
   }
@@ -116,22 +143,29 @@ export const summarizeOF = async (req, res) => {
   try {
     const userId = authorId(req);
     const { id_of } = req.params;
-    let numero = id_of;
+    let of = null;
     try {
       const r = await pool.query(
-        `SELECT numero_of FROM ordres_fabrication
+        `SELECT * FROM ordres_fabrication
          WHERE id_ordres_fabrication = $1 OR id_of = $1 LIMIT 1`,
         [id_of]
       );
-      if (r.rows[0]?.numero_of) numero = r.rows[0].numero_of;
+      of = r.rows[0] || null;
     } catch {}
-    const summary = `OF #${numero} — Placeholder summary.`;
-    const started = Date.now();
+    const numero = of?.numero_of || id_of;
+    const details = of
+      ? `Numéro: ${numero}\nÉtat: ${of.etat || of.statut || 'n/a'}\nQuantité: ${of.quantite_totale || of.quantite || 'n/a'}\nProduit: ${of.reference_produit || of.id_produit || 'n/a'}\nDate début: ${of.date_debut_prevue || of.date_debut || 'n/a'}\nDate fin: ${of.date_fin_prevue || of.date_fin || 'n/a'}`
+      : `OF #${id_of} — pas de détails trouvés en base.`;
+    const prompt = `Résume cet Ordre de Fabrication en 3 phrases, en français, ton professionnel:\n\n${details}`;
+    const ai = await _invokeAI({ prompt, maxTokens: 400 });
     const row = await _log({
-      userId, prompt: `summarize OF ${id_of}`, response: summary,
-      entity_type: 'ordre_fabrication', entity_id: id_of, latency_ms: Date.now() - started,
+      userId, prompt, response: ai.response,
+      entity_type: 'ordre_fabrication', entity_id: id_of,
+      latency_ms: ai.latency_ms, model: ai.model,
+      tokens_input: ai.tokens_input, tokens_output: ai.tokens_output, cost: ai.cost,
+      error_message: ai.error_message,
     });
-    return sendSuccess(res, { summary, log: row });
+    return sendSuccess(res, { summary: ai.response, mocked: ai.mocked, log: row });
   } catch (error) {
     return handleError(res, error, 'summarizeOF');
   }
@@ -142,14 +176,45 @@ export const suggestPlanning = async (req, res) => {
   try {
     const userId = authorId(req);
     const { constraints } = req.body || {};
+
+    // Contexte: OF en attente + capacités machines.
+    let pendingOFs = [];
+    let machines = [];
+    try {
+      const r = await pool.query(
+        `SELECT numero_of, etat, quantite_totale, date_fin_prevue
+         FROM ordres_fabrication
+         WHERE etat IN ('en_attente', 'planifie', 'en_cours')
+         ORDER BY date_fin_prevue NULLS LAST LIMIT 20`
+      );
+      pendingOFs = r.rows;
+    } catch {}
+    try {
+      const r = await pool.query(
+        `SELECT nom, capacite_theorique_h, etat FROM machines WHERE actif = true LIMIT 20`
+      );
+      machines = r.rows;
+    } catch {}
+
+    const prompt = `Tu es un planificateur atelier textile. Propose un planning optimal en 5 points bref.
+Contraintes utilisateur: ${JSON.stringify(constraints || {})}
+OFs en attente:\n${JSON.stringify(pendingOFs, null, 2)}
+Capacités machines:\n${JSON.stringify(machines, null, 2)}`;
+
+    const ai = await _invokeAI({ prompt, maxTokens: 800 });
     const suggestion = {
-      note: 'Placeholder — planification IA non configurée.',
+      note: ai.mocked ? 'Placeholder — AI_API_KEY absent.' : undefined,
+      recommandation: ai.response,
+      contexte: { pendingOFs_count: pendingOFs.length, machines_count: machines.length },
       constraints_reçues: constraints || null,
-      recommandation: 'Répartir la charge sur 5 jours en priorité aux OF en retard.',
+      mocked: ai.mocked,
     };
     await _log({
-      userId, prompt: 'suggest planning', response: JSON.stringify(suggestion),
-      entity_type: 'planning', entity_id: null, latency_ms: 0,
+      userId, prompt, response: ai.response,
+      entity_type: 'planning', entity_id: null,
+      latency_ms: ai.latency_ms, model: ai.model,
+      tokens_input: ai.tokens_input, tokens_output: ai.tokens_output, cost: ai.cost,
+      error_message: ai.error_message,
     });
     return sendSuccess(res, suggestion);
   } catch (error) {
@@ -161,21 +226,47 @@ export const suggestPlanning = async (req, res) => {
 export const detectAnomalies = async (req, res) => {
   try {
     const userId = authorId(req);
+    // Stats des 30 derniers jours pour alimenter le prompt.
     let sample_count = 0;
+    let stats = null;
     try {
       const r = await pool.query(
-        `SELECT COUNT(*)::int AS c FROM suivi_fabrication WHERE created_at >= NOW() - INTERVAL '30 days'`
+        `SELECT COUNT(*)::int AS c,
+                AVG(rendement)::float AS avg_rendement,
+                AVG(trs)::float AS avg_trs,
+                MIN(rendement)::float AS min_rendement,
+                MAX(rendement)::float AS max_rendement
+         FROM suivi_fabrication
+         WHERE created_at >= NOW() - INTERVAL '30 days'`
       );
       sample_count = r.rows[0]?.c || 0;
+      stats = r.rows[0] || null;
+    } catch {}
+
+    const prompt = `Analyse les statistiques de production des 30 derniers jours et identifie les anomalies (rendement anormalement bas, TRS en chute, variance excessive). Retourne un JSON avec clé "anomalies": [{type, severity, description, recommandation}].
+Statistiques:\n${JSON.stringify(stats, null, 2)}
+Nombre d'échantillons: ${sample_count}`;
+
+    const ai = await _invokeAI({ prompt, maxTokens: 800 });
+    let anomalies = [];
+    try {
+      const m = ai.response?.match(/\{[\s\S]*\}/);
+      if (m) anomalies = JSON.parse(m[0]).anomalies || [];
     } catch {}
     const report = {
-      note: 'Placeholder — détection d\'anomalies IA non configurée.',
+      note: ai.mocked ? 'Placeholder — AI_API_KEY absent.' : undefined,
       lignes_analysees: sample_count,
-      anomalies: [],
+      stats,
+      anomalies,
+      analyse_brute: ai.response,
+      mocked: ai.mocked,
     };
     await _log({
-      userId, prompt: 'detect anomalies', response: JSON.stringify(report),
-      entity_type: 'suivi_fabrication', entity_id: null, latency_ms: 0,
+      userId, prompt, response: ai.response,
+      entity_type: 'suivi_fabrication', entity_id: null,
+      latency_ms: ai.latency_ms, model: ai.model,
+      tokens_input: ai.tokens_input, tokens_output: ai.tokens_output, cost: ai.cost,
+      error_message: ai.error_message,
     });
     return sendSuccess(res, report);
   } catch (error) {

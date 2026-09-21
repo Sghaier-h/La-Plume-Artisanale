@@ -1,36 +1,94 @@
-import React, { useMemo, useState, useRef, useEffect } from 'react';
+/**
+ * DashboardLayout - Shell principal de l'application La Plume Artisanale.
+ * - Sidebar (240px, repliable a 64px) avec sections modulaires
+ * - Top bar (64px) : breadcrumbs, recherche globale (Ctrl+K), theme toggle,
+ *   notifications, messages, selecteur de societe, menu utilisateur.
+ * - Responsive : sidebar en drawer (hamburger) sous 768px, repliee sous 1024px.
+ * - Utilise exclusivement les design tokens (design-system.css).
+ *
+ * L'API existante (title / subtitle / activeSection / onSectionChange /
+ * children / sidebarFooter) est preservee pour eviter de casser les pages.
+ * Les sections propres au dashboard courant sont exposees en barre d'onglets
+ * secondaire (juste sous la topbar).
+ */
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LogOut, ChevronDown, LayoutDashboard } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
-import { useAuth } from '../hooks/useAuth';
 import {
-  DASHBOARD_LIST,
+  Menu as MenuIcon,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  LogOut,
+  Settings,
+  User,
+  MessageSquare,
+  Home as HomeIcon,
+  ShoppingCart,
+  Users,
+  Factory,
+  Package,
+  UserCog,
+  Truck,
+  Handshake,
+  Wrench,
+  Sliders,
+  Store,
+  Sparkles,
+} from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
+import { useUnreadMessages } from '../hooks/useUnreadMessages';
+import Breadcrumbs from './Breadcrumbs';
+import GlobalSearch from './GlobalSearch';
+import NotificationCenter from './NotificationCenter';
+import CompanySwitcher from './CompanySwitcher';
+import ThemeToggle from './dashboard/ThemeToggle';
+import {
   DASHBOARD_SECTIONS,
-  getAllowedDashboardIds,
   getDashboardIdByPath,
-  type DashboardId,
   type DashboardSection,
 } from '../config/dashboards';
 
-function getIconComponent(name: string): React.ComponentType<{ className?: string }> {
-  const Icon = (LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[name];
+function getIconComponent(name: string): React.ComponentType<{ size?: number }> {
+  const Icon = (LucideIcons as unknown as Record<string, React.ComponentType<{ size?: number }>>)[
+    name
+  ];
   return Icon || LucideIcons.LayoutDashboard;
 }
 
 export interface DashboardLayoutProps {
-  /** Titre affiché dans le header */
   title: string;
-  /** Sous-titre optionnel */
   subtitle?: string;
-  /** Section active (id) pour le menu gauche */
   activeSection: string;
-  /** Callback au clic sur une section du menu gauche */
   onSectionChange: (sectionId: string) => void;
-  /** Contenu principal (zone scrollable) */
   children: React.ReactNode;
-  /** Action optionnelle en bas du menu gauche (ex: bouton Envoyer Message) */
   sidebarFooter?: React.ReactNode;
 }
+
+interface NavItem {
+  id: string;
+  label: string;
+  icon: React.ComponentType<{ size?: number }>;
+  path: string;
+  matchPrefixes?: string[];
+}
+
+const NAV_ITEMS: NavItem[] = [
+  { id: 'home', label: 'Accueil', icon: HomeIcon, path: '/dashboard-admin', matchPrefixes: ['/dashboard-'] },
+  { id: 'ventes', label: 'Ventes', icon: ShoppingCart, path: '/commandes', matchPrefixes: ['/commandes', '/sale-orders', '/factures', '/bl'] },
+  { id: 'crm', label: 'CRM', icon: Users, path: '/crm', matchPrefixes: ['/crm', '/clients'] },
+  { id: 'fabrication', label: 'Fabrication', icon: Factory, path: '/of', matchPrefixes: ['/of', '/productions', '/modeles', '/quality'] },
+  { id: 'stock', label: 'Stock', icon: Package, path: '/stock', matchPrefixes: ['/stock', '/articles', '/articles-catalogue', '/inventory', '/warehouse'] },
+  { id: 'personnel', label: 'Personnel', icon: UserCog, path: '/hr', matchPrefixes: ['/hr', '/personnel'] },
+  { id: 'fournisseurs', label: 'Fournisseurs', icon: Truck, path: '/fournisseurs', matchPrefixes: ['/fournisseurs', '/purchase-orders', '/suppliers'] },
+  { id: 'soustraitants', label: 'Sous-traitants', icon: Handshake, path: '/soustraitants' },
+  { id: 'machines', label: 'Machines & Maintenance', icon: Wrench, path: '/machines', matchPrefixes: ['/machines', '/maintenance'] },
+  { id: 'parametrage', label: 'Parametrage', icon: Sliders, path: '/parametrage', matchPrefixes: ['/parametrage', '/settings'] },
+  { id: 'ecommerce', label: 'E-commerce', icon: Store, path: '/ecommerce' },
+  { id: 'ia', label: 'IA', icon: Sparkles, path: '/ia' },
+];
+
+const SIDEBAR_KEY = 'lp_sidebar_collapsed';
 
 export function DashboardLayout({
   title,
@@ -43,176 +101,611 @@ export function DashboardLayout({
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
+  const unreadMsg = useUnreadMessages();
+
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(SIDEBAR_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (userMenuRef.current && !userMenuRef.current.contains(target)) setUserMenuOpen(false);
+    try {
+      localStorage.setItem(SIDEBAR_KEY, collapsed ? '1' : '0');
+    } catch {}
+  }, [collapsed]);
+
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node))
+        setUserMenuOpen(false);
     };
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
   }, []);
-  const allowedIds = useMemo(
-    () => getAllowedDashboardIds(user?.role, user?.dashboardsAttribues),
-    [user?.role, user?.dashboardsAttribues]
-  );
+
+  useEffect(() => {
+    const onResize = () => {
+      const w = window.innerWidth;
+      if (w < 1024) setCollapsed(true);
+      if (w >= 768) setMobileOpen(false);
+    };
+    window.addEventListener('resize', onResize);
+    onResize();
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setUserMenuOpen(false);
+        setMobileOpen(false);
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
 
   const currentDashboardId = useMemo(
     () => getDashboardIdByPath(location.pathname),
     [location.pathname]
   );
-
   const sections: DashboardSection[] = useMemo(() => {
     if (!currentDashboardId) return [];
     return DASHBOARD_SECTIONS[currentDashboardId] || [];
   }, [currentDashboardId]);
 
-  const isCurrent = (path: string) =>
-    location.pathname === path || location.pathname.startsWith(path + '/');
+  const isActiveNav = (n: NavItem) => {
+    if (location.pathname === n.path) return true;
+    const prefixes = n.matchPrefixes || [n.path];
+    return prefixes.some((p) => location.pathname === p || location.pathname.startsWith(p + '/'));
+  };
 
-  /** Dashboards autorisés pour l'opérateur (les désactivés ne s'affichent pas) */
-  const allowedDashboards = useMemo(
-    () => DASHBOARD_LIST.filter((d) => allowedIds.includes(d.id)),
-    [allowedIds]
-  );
+  const sidebarWidth = collapsed ? 64 : 240;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Barre du haut : titre + onglets du dashboard (position 2e photo) puis PILOTAGE/Admin puis user */}
-      <header className="bg-slate-100 border-b border-slate-200 sticky top-0 z-40 shadow-sm">
-        <div className="px-4 flex flex-col">
-          {/* Ligne 1 : uniquement boutons à sélectionner (icônes dashboards) | Titre | User */}
-          <div className="h-14 flex items-center justify-between gap-4">
-            {/* Boutons dashboards : sélection uniquement, pas de menu déroulant */}
-            <div className="flex items-center gap-1.5 flex-shrink-0">
-              {allowedDashboards.map((d) => {
-                const Icon = getIconComponent(d.icon);
-                const isActive = isCurrent(d.path);
-                return (
-                  <button
-                    key={d.id}
-                    type="button"
-                    onClick={() => navigate(d.path)}
-                    title={d.label}
-                    className={`p-2.5 rounded-xl transition-all duration-200 ${
-                      isActive
-                        ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-amber-50 shadow-md ring-2 ring-amber-200/50'
-                        : 'bg-slate-200 text-amber-400 hover:bg-slate-300 hover:text-amber-500'
-                    }`}
+    <div
+      style={{
+        minHeight: '100vh',
+        background: 'var(--bg-app)',
+        color: 'var(--fg-primary)',
+        fontFamily: 'var(--font-sans)',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      <style>{`
+        .lp-focus:focus-visible {
+          outline: 2px solid var(--accent-terracotta);
+          outline-offset: 2px;
+        }
+        .lp-sidebar-scroll::-webkit-scrollbar { width: 6px; }
+        .lp-sidebar-scroll::-webkit-scrollbar-thumb {
+          background: var(--border-default); border-radius: 3px;
+        }
+        @media (max-width: 768px) {
+          .lp-sidebar-desktop { display: none !important; }
+        }
+        @media (min-width: 769px) {
+          .lp-hamburger { display: none !important; }
+          .lp-sidebar-drawer { display: none !important; }
+        }
+      `}</style>
+
+      <header
+        style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 'var(--z-sticky)' as unknown as number,
+          height: 'var(--header-h)',
+          background: 'var(--bg-elevated)',
+          borderBottom: '1px solid var(--border-subtle)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 'var(--s-3)',
+          padding: '0 var(--s-4)',
+          boxShadow: 'var(--shadow-xs)',
+        }}
+      >
+        <button
+          className="lp-hamburger lp-focus"
+          type="button"
+          onClick={() => setMobileOpen(true)}
+          aria-label="Ouvrir le menu"
+          style={iconBtn()}
+        >
+          <MenuIcon size={20} />
+        </button>
+
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 'var(--s-4)' }}>
+          <div style={{ flex: '0 1 auto', minWidth: 0 }}>
+            <Breadcrumbs />
+          </div>
+          <div style={{ flex: 1, display: 'flex', justifyContent: 'center', minWidth: 0 }}>
+            <GlobalSearch />
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--s-2)' }}>
+          <ThemeToggle />
+          <NotificationCenter />
+          <button
+            type="button"
+            className="lp-focus"
+            onClick={() => navigate('/messages')}
+            aria-label={`Messages (${unreadMsg} non-lus)`}
+            style={{ ...iconBtn(), position: 'relative' }}
+          >
+            <MessageSquare size={18} />
+            {unreadMsg > 0 && (
+              <span style={badgeStyle()}>{unreadMsg > 99 ? '99+' : unreadMsg}</span>
+            )}
+          </button>
+          <div style={{ minWidth: 0 }}>
+            <CompanySwitcher />
+          </div>
+
+          {user && (
+            <div ref={userMenuRef} style={{ position: 'relative' }}>
+              <button
+                type="button"
+                className="lp-focus"
+                onClick={() => setUserMenuOpen((v) => !v)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 'var(--s-2)',
+                  padding: '4px 8px 4px 4px',
+                  background: userMenuOpen ? 'var(--bg-hover)' : 'transparent',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: 'var(--radius-full)',
+                  cursor: 'pointer',
+                  color: 'var(--fg-primary)',
+                  transition: 'background var(--duration) var(--ease)',
+                }}
+              >
+                {user.photo || user.avatar ? (
+                  <img
+                    src={user.photo || user.avatar}
+                    alt=""
+                    style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: '50%',
+                      background: 'var(--accent-terracotta)',
+                      color: '#fff',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 700,
+                      fontSize: 12,
+                    }}
                   >
-                    <Icon className="w-5 h-5" />
-                  </button>
-                );
-              })}
-            </div>
-            <h1 className="flex-1 text-center text-lg font-bold text-gray-900 truncate px-4 min-w-0">
-              {title}
-            </h1>
-            <div className="flex items-center gap-3 flex-shrink-0 h-10">
-            {/* Opérateur : même hauteur que dashboard et onglets */}
-            {user && (
-              <div className="relative h-full" ref={userMenuRef}>
-                <button
-                  type="button"
-                  onClick={() => setUserMenuOpen((o) => !o)}
-                  className="flex items-center gap-2.5 h-full px-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 border border-amber-400/50 text-amber-50 shadow-md hover:from-amber-600 hover:to-amber-700 transition-colors min-w-0"
-                  title={`${user.prenom && user.nom ? `${user.prenom} ${user.nom}` : user.nom || user.prenom || user.email} - Connecté`}
-                >
-                  {user.photo || user.avatar ? (
-                    <img
-                      src={user.photo || user.avatar}
-                      alt=""
-                      className="w-9 h-9 rounded-full object-cover border-2 border-white/50 flex-shrink-0"
-                    />
-                  ) : (
-                    <div className="w-9 h-9 rounded-full bg-amber-400/30 text-amber-50 flex items-center justify-center text-sm font-bold flex-shrink-0 ring-1 ring-amber-300/50">
-                      {(user.prenom?.[0] || user.nom?.[0] || user.email?.[0] || 'U').toUpperCase()}
-                    </div>
-                  )}
-                  <div className="hidden sm:block text-left min-w-0">
-                    <div className="text-sm font-semibold leading-tight truncate max-w-[140px]">
-                      {user.prenom && user.nom ? `${user.prenom} ${user.nom}` : user.nom || user.prenom || user.email}
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs text-amber-50/95">
-                      <span className="w-1.5 h-1.5 rounded-full bg-green-300 animate-pulse flex-shrink-0" title="Connecté" />
-                      <span>Connecté</span>
-                    </div>
-                  </div>
-                  <ChevronDown className={`w-4 h-4 flex-shrink-0 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
-                </button>
-                {userMenuOpen && (
-                  <div className="absolute right-0 top-full mt-1 py-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setUserMenuOpen(false);
-                        logout();
-                        navigate('/login');
-                      }}
-                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      Déconnexion
-                    </button>
+                    {(user.prenom?.[0] || user.nom?.[0] || user.email?.[0] || 'U').toUpperCase()}
                   </div>
                 )}
-              </div>
-            )}
-            {!user && (
-              <div className="flex items-center gap-2 h-full px-3 rounded-xl bg-gray-100 text-gray-600 text-sm">
-                <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
-                Non connecté
-              </div>
-            )}
+                <ChevronDown size={14} style={{ color: 'var(--fg-muted)' }} />
+              </button>
+              {userMenuOpen && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    right: 0,
+                    top: 'calc(100% + 6px)',
+                    minWidth: 200,
+                    background: 'var(--bg-elevated)',
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: 'var(--radius-md)',
+                    boxShadow: 'var(--shadow-lg)',
+                    overflow: 'hidden',
+                    zIndex: 'var(--z-dropdown)' as unknown as number,
+                  }}
+                >
+                  <div style={{ padding: 'var(--s-3) var(--s-4)', borderBottom: '1px solid var(--border-subtle)' }}>
+                    <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600 }}>
+                      {user.prenom && user.nom
+                        ? `${user.prenom} ${user.nom}`
+                        : user.nom || user.prenom || user.email}
+                    </div>
+                    {user.email && (
+                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-muted)' }}>
+                        {user.email}
+                      </div>
+                    )}
+                  </div>
+                  <MenuBtn
+                    icon={<User size={16} />}
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      navigate('/mon-profil');
+                    }}
+                  >
+                    Mon profil
+                  </MenuBtn>
+                  <MenuBtn
+                    icon={<Settings size={16} />}
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      navigate('/parametrage');
+                    }}
+                  >
+                    Parametres
+                  </MenuBtn>
+                  <MenuBtn
+                    icon={<LogOut size={16} />}
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      logout();
+                      navigate('/login');
+                    }}
+                    danger
+                  >
+                    Deconnexion
+                  </MenuBtn>
+                </div>
+              )}
             </div>
+          )}
+        </div>
+      </header>
+
+      <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+        <aside
+          className="lp-sidebar-desktop lp-sidebar-scroll"
+          style={{
+            width: sidebarWidth,
+            flexShrink: 0,
+            background: 'var(--bg-canvas)',
+            borderRight: '1px solid var(--border-subtle)',
+            display: 'flex',
+            flexDirection: 'column',
+            overflowY: 'auto',
+            transition: 'width var(--duration-slow) var(--ease)',
+          }}
+        >
+          <SidebarBody
+            collapsed={collapsed}
+            items={NAV_ITEMS}
+            isActive={isActiveNav}
+            onNavigate={(p) => navigate(p)}
+          />
+          <div style={{ marginTop: 'auto', padding: 'var(--s-2)' }}>
+            <button
+              type="button"
+              className="lp-focus"
+              onClick={() => setCollapsed((v) => !v)}
+              aria-label={collapsed ? 'Etendre le menu' : 'Reduire le menu'}
+              style={{
+                width: '100%',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 'var(--s-2)',
+                padding: 'var(--s-2)',
+                background: 'transparent',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: 'var(--radius-sm)',
+                color: 'var(--fg-muted)',
+                cursor: 'pointer',
+                fontSize: 'var(--text-xs)',
+              }}
+            >
+              {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+              {!collapsed && <span>Replier</span>}
+            </button>
           </div>
-          {/* Ligne 2 : onglets (teal/émeraude, distinct du bleu-violet) */}
-          <div className="h-12 flex items-center border-t border-teal-100 bg-gradient-to-r from-teal-50/80 to-emerald-50/80">
-            <nav className="flex flex-nowrap gap-1.5 overflow-x-auto scrollbar-thin items-center h-10 w-full px-1">
-              {sections.map((sec) => {
-                const SecIcon = getIconComponent(sec.icon);
-                const active = activeSection === sec.id;
+        </aside>
+
+        {mobileOpen && (
+          <div
+            className="lp-sidebar-drawer"
+            onClick={() => setMobileOpen(false)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(20,12,6,0.5)',
+              zIndex: 'var(--z-modal)' as unknown as number,
+            }}
+          >
+            <aside
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                width: 260,
+                height: '100%',
+                background: 'var(--bg-canvas)',
+                borderRight: '1px solid var(--border-subtle)',
+                display: 'flex',
+                flexDirection: 'column',
+                overflowY: 'auto',
+              }}
+            >
+              <SidebarBody
+                collapsed={false}
+                items={NAV_ITEMS}
+                isActive={isActiveNav}
+                onNavigate={(p) => {
+                  setMobileOpen(false);
+                  navigate(p);
+                }}
+              />
+            </aside>
+          </div>
+        )}
+
+        <main style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+          {(title || subtitle) && (
+            <div style={{ padding: 'var(--s-4) var(--s-6) 0 var(--s-6)' }}>
+              <h1
+                style={{
+                  fontFamily: 'var(--font-serif)',
+                  fontSize: 'var(--text-xl)',
+                  fontWeight: 600,
+                  margin: 0,
+                  color: 'var(--fg-primary)',
+                }}
+              >
+                {title}
+              </h1>
+              {subtitle && (
+                <div
+                  style={{
+                    marginTop: 4,
+                    color: 'var(--fg-muted)',
+                    fontSize: 'var(--text-sm)',
+                  }}
+                >
+                  {subtitle}
+                </div>
+              )}
+            </div>
+          )}
+
+          {sections.length > 0 && (
+            <nav
+              aria-label="Sections"
+              style={{
+                display: 'flex',
+                gap: 'var(--s-1)',
+                padding: 'var(--s-3) var(--s-6) 0 var(--s-6)',
+                overflowX: 'auto',
+              }}
+            >
+              {sections.map((s) => {
+                const Icon = getIconComponent(s.icon);
+                const active = activeSection === s.id;
                 return (
                   <button
-                    key={sec.id}
-                    onClick={() => onSectionChange(sec.id)}
-                    className={`flex items-center gap-1.5 h-full px-3 rounded-lg text-sm font-medium whitespace-nowrap flex-shrink-0 transition-colors ${
-                      active
-                        ? 'bg-gradient-to-r from-teal-500 to-emerald-600 text-white shadow-md'
-                        : 'text-teal-700 bg-white/90 border border-teal-100 hover:bg-teal-50 hover:border-teal-200'
-                    }`}
+                    key={s.id}
+                    type="button"
+                    className="lp-focus"
+                    onClick={() => onSectionChange(s.id)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 'var(--s-2)',
+                      padding: 'var(--s-2) var(--s-3)',
+                      background: active ? 'var(--bg-elevated)' : 'transparent',
+                      border: '1px solid',
+                      borderColor: active ? 'var(--border-default)' : 'transparent',
+                      borderBottom: active
+                        ? '2px solid var(--accent-terracotta)'
+                        : '2px solid transparent',
+                      borderRadius: 'var(--radius-sm) var(--radius-sm) 0 0',
+                      color: active ? 'var(--fg-primary)' : 'var(--fg-secondary)',
+                      fontFamily: 'var(--font-sans)',
+                      fontSize: 'var(--text-sm)',
+                      fontWeight: active ? 600 : 500,
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                      transition: 'all var(--duration) var(--ease)',
+                    }}
                   >
-                    <SecIcon className="w-4 h-4" />
-                    <span>{sec.label}</span>
+                    <Icon size={14} />
+                    {s.label}
                   </button>
                 );
               })}
             </nav>
-          </div>
-        </div>
-      </header>
+          )}
 
-      <div className="flex flex-1 min-h-0 w-full">
-        <main className="flex-1 min-w-0 flex flex-col">
-          <div className="flex-1 overflow-auto p-3 sm:p-4">
-            <div className="w-full max-w-7xl mx-auto">{children}</div>
+          <div style={{ flex: 1, overflow: 'auto', padding: 'var(--s-4) var(--s-6)' }}>
+            <div style={{ width: '100%', maxWidth: 'var(--container-max)', margin: '0 auto' }}>
+              {children}
+            </div>
           </div>
         </main>
       </div>
 
-      {/* Bouton Envoyer Message style WhatsApp en bas à droite (icône plume) */}
       {sidebarFooter && (
         <div
-          className="fixed bottom-6 right-6 z-50 flex items-center justify-center w-14 h-14 rounded-full bg-green-500 shadow-xl hover:bg-green-600 text-white transition-all hover:scale-105 active:scale-95"
           title="Envoyer Message"
+          style={{
+            position: 'fixed',
+            bottom: 'var(--s-6)',
+            right: 'var(--s-6)',
+            width: 56,
+            height: 56,
+            borderRadius: '50%',
+            background: 'var(--accent-sage)',
+            color: '#fff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: 'var(--shadow-lg)',
+            zIndex: 'var(--z-elevated)' as unknown as number,
+          }}
         >
           {sidebarFooter}
         </div>
       )}
     </div>
   );
+}
+
+const SidebarBody: React.FC<{
+  collapsed: boolean;
+  items: NavItem[];
+  isActive: (n: NavItem) => boolean;
+  onNavigate: (path: string) => void;
+}> = ({ collapsed, items, isActive, onNavigate }) => (
+  <div style={{ padding: 'var(--s-3) var(--s-2)' }}>
+    <div
+      style={{
+        padding: '0 var(--s-2) var(--s-3) var(--s-2)',
+        fontFamily: 'var(--font-serif)',
+        fontSize: 'var(--text-md)',
+        fontWeight: 600,
+        color: 'var(--fg-primary)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 'var(--s-2)',
+        whiteSpace: 'nowrap',
+        overflow: 'hidden',
+      }}
+    >
+      <span
+        aria-hidden
+        style={{
+          width: 28,
+          height: 28,
+          borderRadius: 'var(--radius-sm)',
+          background: 'var(--accent-terracotta)',
+          color: '#fff',
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontWeight: 700,
+          flexShrink: 0,
+        }}
+      >
+        LP
+      </span>
+      {!collapsed && <span>La Plume</span>}
+    </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      {items.map((n) => {
+        const active = isActive(n);
+        const Icon = n.icon;
+        return (
+          <button
+            key={n.id}
+            type="button"
+            className="lp-focus"
+            onClick={() => onNavigate(n.path)}
+            title={collapsed ? n.label : undefined}
+            style={{
+              position: 'relative',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 'var(--s-3)',
+              padding: collapsed ? 'var(--s-2)' : 'var(--s-2) var(--s-3)',
+              justifyContent: collapsed ? 'center' : 'flex-start',
+              background: active ? 'var(--bg-hover)' : 'transparent',
+              border: 'none',
+              borderRadius: 'var(--radius-sm)',
+              color: active ? 'var(--fg-primary)' : 'var(--fg-secondary)',
+              fontFamily: 'var(--font-sans)',
+              fontSize: 'var(--text-sm)',
+              fontWeight: active ? 600 : 500,
+              cursor: 'pointer',
+              textAlign: 'left',
+              transition: 'background var(--duration-fast) var(--ease)',
+            }}
+          >
+            {active && (
+              <span
+                aria-hidden
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  top: 6,
+                  bottom: 6,
+                  width: 3,
+                  borderRadius: 3,
+                  background: 'var(--accent-terracotta)',
+                }}
+              />
+            )}
+            <Icon size={18} />
+            {!collapsed && <span style={{ flex: 1 }}>{n.label}</span>}
+          </button>
+        );
+      })}
+    </div>
+  </div>
+);
+
+const MenuBtn: React.FC<{
+  icon: React.ReactNode;
+  onClick: () => void;
+  danger?: boolean;
+  children: React.ReactNode;
+}> = ({ icon, onClick, danger, children }) => (
+  <button
+    type="button"
+    className="lp-focus"
+    onClick={onClick}
+    style={{
+      width: '100%',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 'var(--s-2)',
+      padding: 'var(--s-2) var(--s-4)',
+      background: 'transparent',
+      border: 'none',
+      color: danger ? 'var(--color-danger)' : 'var(--fg-primary)',
+      cursor: 'pointer',
+      fontSize: 'var(--text-sm)',
+      textAlign: 'left',
+    }}
+  >
+    {icon}
+    {children}
+  </button>
+);
+
+function iconBtn(): React.CSSProperties {
+  return {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 36,
+    height: 36,
+    background: 'transparent',
+    border: 'none',
+    borderRadius: 'var(--radius-full)',
+    color: 'var(--fg-secondary)',
+    cursor: 'pointer',
+    transition: 'background var(--duration) var(--ease)',
+  };
+}
+
+function badgeStyle(): React.CSSProperties {
+  return {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    minWidth: 18,
+    height: 18,
+    padding: '0 5px',
+    borderRadius: 'var(--radius-full)',
+    background: 'var(--color-danger)',
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 700,
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  };
 }
 
 export default DashboardLayout;

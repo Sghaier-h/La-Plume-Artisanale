@@ -138,4 +138,86 @@ router.get('/:id(\\d+)/roles', getRoles);
 router.post('/:id(\\d+)/roles', addRole);
 router.delete('/:id(\\d+)/roles/:id_role(\\d+)', removeRole);
 
+// ============================================================
+// Permissions (RBAC)
+// ============================================================
+
+// Liste de toutes les permissions (groupées par module côté client)
+router.get('/permissions', async (_req, res) => {
+  try {
+    const r = await pool.query(
+      `SELECT id_permission, code, libelle, module, description
+       FROM permissions
+       ORDER BY module ASC, code ASC`
+    );
+    return sendSuccess(res, r.rows, 'Permissions');
+  } catch (error) {
+    return handleError(res, error, 'getPermissions');
+  }
+});
+
+// Permissions assignées à un rôle
+router.get('/roles/:id_role(\\d+)/permissions', async (req, res) => {
+  try {
+    const r = await pool.query(
+      `SELECT p.id_permission, p.code, p.libelle, p.module, p.description
+       FROM role_permissions rp
+       JOIN permissions p ON p.id_permission = rp.id_permission
+       WHERE rp.id_role = $1
+       ORDER BY p.module ASC, p.code ASC`,
+      [req.params.id_role]
+    );
+    return sendSuccess(res, r.rows, 'Permissions du rôle');
+  } catch (error) {
+    return handleError(res, error, 'getRolePermissions');
+  }
+});
+
+// Mise à jour bulk des permissions d'un rôle : body { codes: string[] }
+router.put('/roles/:id_role(\\d+)/permissions', async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { id_role } = req.params;
+    const codes = Array.isArray(req.body?.codes) ? req.body.codes : [];
+    await client.query('BEGIN');
+    await client.query('DELETE FROM role_permissions WHERE id_role = $1', [id_role]);
+    if (codes.length > 0) {
+      await client.query(
+        `INSERT INTO role_permissions (id_role, id_permission)
+         SELECT $1, p.id_permission FROM permissions p WHERE p.code = ANY($2::text[])
+         ON CONFLICT DO NOTHING`,
+        [id_role, codes]
+      );
+    }
+    await client.query('COMMIT');
+    return sendSuccess(res, { id_role: Number(id_role), codes }, 'Permissions mises à jour');
+  } catch (error) {
+    try { await client.query('ROLLBACK'); } catch (_) {}
+    return handleError(res, error, 'updateRolePermissions');
+  } finally {
+    client.release();
+  }
+});
+
+// Permissions effectives d'un utilisateur (union de ses rôles)
+router.get('/:id(\\d+)/permissions', async (req, res) => {
+  try {
+    const r = await pool.query(
+      `SELECT DISTINCT p.id_permission, p.code, p.libelle, p.module, p.description,
+              r.code_role AS source_role
+       FROM utilisateurs_roles ur
+       JOIN role_permissions rp ON rp.id_role = ur.id_role
+       JOIN permissions p ON p.id_permission = rp.id_permission
+       JOIN roles r ON r.id_role = ur.id_role
+       WHERE ur.id_utilisateur = $1
+       ORDER BY p.module ASC, p.code ASC`,
+      [req.params.id]
+    );
+    const codes = Array.from(new Set(r.rows.map((row) => row.code)));
+    return sendSuccess(res, { codes, permissions: r.rows }, 'Permissions effectives');
+  } catch (error) {
+    return handleError(res, error, 'getUserPermissions');
+  }
+});
+
 export default router;

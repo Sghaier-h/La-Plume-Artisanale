@@ -13,6 +13,36 @@
 import { pool } from '../../../src/utils/db.js';
 import { getUserId } from '../../../src/utils/audit.helper.js';
 import { sendError, sendSuccess, handleError } from '../../../src/utils/error.helper.js';
+import multer from 'multer';
+import * as XLSX from 'xlsx';
+import fs from 'fs';
+import path from 'path';
+
+// ─── Multer configuration (disk temp storage for xlsx uploads) ───
+const XLSX_TMP = path.resolve(process.cwd(), 'uploads', 'tmp');
+try { fs.mkdirSync(XLSX_TMP, { recursive: true }); } catch {}
+
+const xlsxStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, XLSX_TMP),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname) || '.xlsx';
+    cb(null, `import_${Date.now()}_${Math.random().toString(36).slice(2, 8)}${ext}`);
+  },
+});
+
+export const excelUpload = multer({
+  storage: xlsxStorage,
+  limits: { fileSize: 25 * 1024 * 1024 }, // 25 MB
+  fileFilter: (req, file, cb) => {
+    const ok = /\.(xlsx|xls|csv)$/i.test(file.originalname);
+    if (!ok) {
+      const err = new Error('Extension non supportée (xlsx/xls/csv uniquement)');
+      err.status = 400;
+      return cb(err);
+    }
+    cb(null, true);
+  },
+});
 
 let _io = null;
 const getIo = async () => {
@@ -92,80 +122,183 @@ export const getImportTemplates = async (req, res) => {
   }
 };
 
+// ─── Helpers de parsing xlsx ─────────────────────────────────────
+const parseSheetFromBuffer = (buffer) => {
+  const wb = XLSX.read(buffer, { type: 'buffer' });
+  const first = wb.SheetNames[0];
+  if (!first) return { rows: [], headers: [] };
+  const sheet = wb.Sheets[first];
+  const rows = XLSX.utils.sheet_to_json(sheet, { defval: null, raw: false });
+  const headers = rows.length > 0 ? Object.keys(rows[0]) : [];
+  return { rows, headers };
+};
+
+const loadBufferFromReq = (req) => {
+  if (req.file?.path) return fs.readFileSync(req.file.path);
+  const { base64_file } = req.body || {};
+  if (base64_file) {
+    const clean = String(base64_file).replace(/^data:[^;]+;base64,/, '');
+    return Buffer.from(clean, 'base64');
+  }
+  return null;
+};
+
 // ─── POST /api/excel-import/preview ──────────────────────────────
 export const previewImport = async (req, res) => {
   try {
-    const { template_code, base64_file } = req.body || {};
+    const template_code = req.body?.template_code || req.query?.template_code;
     if (!template_code) return sendError(res, 'template_code requis', 400);
 
     const template = TEMPLATES.find(t => t.code === template_code);
     if (!template) return sendError(res, `Template '${template_code}' inconnu`, 400);
 
-    // Placeholder : parsing xlsx non implémenté (xlsx lib dispo mais fichier non stocké)
-    return res.status(202).json({
-      success: true,
-      data: {
-        template: template.code,
-        entity_type: template.entity_type,
-        expected_columns: template.columns,
-        preview_rows: [],
-        estimated_import: 0,
-        errors: [],
-        file_received: !!base64_file,
-        note: 'Preview — parsing xlsx not yet implemented. Configure a xlsx parser lib.',
-      },
-      message: 'Preview stub',
-    });
+    const buffer = loadBufferFromReq(req);
+    if (!buffer) return sendError(res, 'Fichier requis (multipart "file" ou body.base64_file)', 400);
+
+    const { rows, headers } = parseSheetFromBuffer(buffer);
+    const missing_columns = template.columns.filter(c => !headers.includes(c));
+    const extra_columns = headers.filter(h => !template.columns.includes(h));
+
+    // Cleanup temp
+    if (req.file?.path) { try { fs.unlinkSync(req.file.path); } catch {} }
+
+    return sendSuccess(res, {
+      template: template.code,
+      entity_type: template.entity_type,
+      expected_columns: template.columns,
+      headers,
+      missing_columns,
+      extra_columns,
+      preview_rows: rows.slice(0, 10),
+      total_rows: rows.length,
+      errors: [],
+    }, 'Preview OK');
   } catch (error) {
+    if (req.file?.path) { try { fs.unlinkSync(req.file.path); } catch {} }
     return handleError(res, error, 'previewImport');
   }
+};
+
+// ─── Inserters par entity_type ───────────────────────────────────
+const ROW_INSERTERS = {
+  clients: async (row, userId) => {
+    if (!row.code_client || !row.raison_sociale) throw new Error('code_client et raison_sociale requis');
+    await pool.query(
+      `INSERT INTO clients (code_client, raison_sociale, email, telephone, adresse, ville, code_postal, pays, contact_principal, matricule_fiscal, actif, created_by, date_creation)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,true,$11,NOW())
+       ON CONFLICT (code_client) DO NOTHING`,
+      [
+        String(row.code_client).trim(),
+        String(row.raison_sociale).trim(),
+        row.email || null,
+        row.telephone || null,
+        row.adresse || null,
+        row.ville || null,
+        row.code_postal || null,
+        row.pays || null,
+        row.contact || row.contact_principal || null,
+        row.matricule_fiscal || null,
+        userId,
+      ]
+    );
+  },
+  matieres_premieres: async (row, userId) => {
+    const code = row.code_matiere || row.code_mp;
+    if (!code || !row.designation) throw new Error('code_matiere et designation requis');
+    await pool.query(
+      `INSERT INTO matieres_premieres (code_mp, designation, famille, unite, stock_actuel, stock_min, prix_achat, actif, date_creation, created_by)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,true,CURRENT_TIMESTAMP,$8)
+       ON CONFLICT (code_mp) DO NOTHING`,
+      [
+        String(code).trim(),
+        String(row.designation).trim(),
+        row.famille || null,
+        row.unite || null,
+        row.stock_initial != null ? Number(row.stock_initial) : null,
+        row.stock_min != null ? Number(row.stock_min) : null,
+        row.prix_achat != null ? Number(row.prix_achat) : null,
+        userId,
+      ]
+    );
+  },
 };
 
 // ─── POST /api/excel-import/upload ───────────────────────────────
 export const uploadImport = async (req, res) => {
   try {
     const userId = getUserId(req) || 1;
-    const { template_code, base64_file, filename, mapping_config } = req.body || {};
+    const template_code = req.body?.template_code || req.query?.template_code;
+    const { mapping_config } = req.body || {};
+    const filename = req.file?.originalname || req.body?.filename || `${template_code}.xlsx`;
     if (!template_code) return sendError(res, 'template_code requis', 400);
 
     const template = TEMPLATES.find(t => t.code === template_code);
     if (!template) return sendError(res, `Template '${template_code}' inconnu`, 400);
 
-    const r = await pool.query(
+    const buffer = loadBufferFromReq(req);
+    if (!buffer) return sendError(res, 'Fichier requis (multipart "file" ou body.base64_file)', 400);
+
+    const { rows } = parseSheetFromBuffer(buffer);
+
+    // Créer la ligne excel_import
+    const insertRow = await pool.query(
       `INSERT INTO excel_import
          (filename, entity_type, imported_rows, error_rows, imported_by, imported_at, mapping_config, status, created_at, created_by)
-       VALUES ($1, $2, 0, 0, $3, NOW(), $4, 'queued', NOW(), $3)
+       VALUES ($1, $2, 0, 0, $3, NOW(), $4, 'processing', NOW(), $3)
        RETURNING id_excel AS id, filename, entity_type, status, imported_by, imported_at`,
       [
-        filename || `${template_code}.xlsx`,
+        filename,
         template.entity_type,
         userId,
-        mapping_config ? JSON.stringify(mapping_config) : null,
+        mapping_config ? (typeof mapping_config === 'string' ? mapping_config : JSON.stringify(mapping_config)) : null,
       ]
     );
+    const importRow = insertRow.rows[0];
 
-    const row = r.rows[0];
+    // Exécuter l'import ligne par ligne
+    const inserter = ROW_INSERTERS[template.entity_type];
+    let imported_rows = 0;
+    let error_rows = 0;
+    const errors = [];
 
-    // Émettre l'événement Socket.IO
+    if (inserter) {
+      for (let i = 0; i < rows.length; i++) {
+        try {
+          await inserter(rows[i], userId);
+          imported_rows++;
+        } catch (err) {
+          error_rows++;
+          if (errors.length < 20) errors.push({ row: i + 2, error: err.message });
+        }
+      }
+    } else {
+      errors.push({ error: `Aucun inserter configuré pour '${template.entity_type}' (import métadonnées uniquement)` });
+    }
+
+    const final_status = error_rows === 0 ? 'completed' : (imported_rows > 0 ? 'partial' : 'failed');
+    const updated = await pool.query(
+      `UPDATE excel_import SET imported_rows=$2, error_rows=$3, status=$4, updated_at=NOW(), updated_by=$5
+       WHERE id_excel=$1 RETURNING id_excel AS id, filename, entity_type, status, imported_rows, error_rows`,
+      [importRow.id, imported_rows, error_rows, final_status, userId]
+    );
+
+    // Cleanup temp
+    if (req.file?.path) { try { fs.unlinkSync(req.file.path); } catch {} }
+
     try {
       const io = await getIo();
-      if (io) io.emit('excel-import:queued', row);
+      if (io) io.emit('excel-import:completed', updated.rows[0]);
     } catch {}
 
-    return res.status(202).json({
-      success: true,
-      data: {
-        ...row,
-        template: template.code,
-        expected_columns: template.columns,
-        file_received: !!base64_file,
-        preview_rows: [],
-        estimated_import: 0,
-        errors: [],
-      },
-      message: 'Import queued — parsing xlsx not yet implemented. Configure a xlsx parser lib.',
-    });
+    return sendSuccess(res, {
+      ...updated.rows[0],
+      template: template.code,
+      expected_columns: template.columns,
+      total_rows: rows.length,
+      errors,
+    }, `Import terminé: ${imported_rows} lignes importées, ${error_rows} erreurs`);
   } catch (error) {
+    if (req.file?.path) { try { fs.unlinkSync(req.file.path); } catch {} }
     return handleError(res, error, 'uploadImport');
   }
 };

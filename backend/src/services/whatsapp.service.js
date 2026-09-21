@@ -83,3 +83,52 @@ class WhatsAppService {
 }
 
 export default new WhatsAppService();
+
+// ─── Named export: sendWhatsapp (WhatsApp Business Cloud API) ─────────────
+// Graceful degradation : si WHATSAPP_API_URL ou WHATSAPP_TOKEN absent → { mocked:true }.
+export const sendWhatsapp = async ({ to, message, templateName, languageCode = 'fr' } = {}) => {
+  const API_URL = process.env.WHATSAPP_API_URL;
+  const TOKEN = process.env.WHATSAPP_TOKEN || process.env.WHATSAPP_API_KEY;
+  if (!API_URL || !TOKEN) {
+    return {
+      success: false,
+      mocked: true,
+      message: 'WhatsApp API non configurée — message loggé mais non envoyé',
+      to,
+      body: message,
+    };
+  }
+  try {
+    const payload = templateName
+      ? {
+          messaging_product: 'whatsapp',
+          to,
+          type: 'template',
+          template: { name: templateName, language: { code: languageCode } },
+        }
+      : {
+          messaging_product: 'whatsapp',
+          to,
+          type: 'text',
+          text: { body: message },
+        };
+    const r = await axios.post(API_URL, payload, {
+      headers: {
+        Authorization: `Bearer ${TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      timeout: 10000,
+    });
+    return {
+      success: true,
+      messageId: r.data?.messages?.[0]?.id,
+      response: r.data,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.error?.message || error.message,
+    };
+  }
+};
+

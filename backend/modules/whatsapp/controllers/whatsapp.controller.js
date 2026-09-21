@@ -15,6 +15,7 @@
 
 import { pool } from '../../../src/utils/db.js';
 import { sendError, sendSuccess, handleError } from '../../../src/utils/error.helper.js';
+import { sendWhatsapp } from '../../../src/services/whatsapp.service.js';
 
 let _io = null;
 const getIo = async () => {
@@ -126,20 +127,55 @@ export const getWhatsappById = async (req, res) => {
   }
 };
 
-// Helper interne : insertion + stub d'envoi immédiat
+// Helper interne : insertion en 'queued' + appel API WhatsApp (si configurée).
+// La ligne DB est toujours créée ; seul l'envoi externe est optionnel.
 const _enqueue = async ({ phone, message, template_code, entity_type, entity_id, userId }) => {
   const r = await pool.query(
     `INSERT INTO whatsapp
-       (destinataire_phone, message, template_code, entity_type, entity_id, statut, sent_at, created_at, created_by)
-     VALUES ($1, $2, $3, $4, $5, 'sent', NOW(), NOW(), $6)
-     RETURNING id_whatsapp AS id, destinataire_phone, message, template_code, entity_type, entity_id, statut, sent_at`,
+       (destinataire_phone, message, template_code, entity_type, entity_id, statut, created_at, created_by)
+     VALUES ($1, $2, $3, $4, $5, 'queued', NOW(), $6)
+     RETURNING id_whatsapp AS id, destinataire_phone, message, template_code, entity_type, entity_id, statut, sent_at, error_message`,
     [phone, message, template_code || null, entity_type || null, entity_id || null, userId]
   );
-  const row = r.rows[0];
-  console.log(`[whatsapp] STUB → phone=${phone} template=${template_code || 'libre'} entity=${entity_type || '-'}#${entity_id || '-'}`);
+  let row = r.rows[0];
+
+  let result;
+  try {
+    result = await sendWhatsapp({ to: phone, message, templateName: template_code || undefined });
+  } catch (err) {
+    result = { success: false, error: err.message };
+  }
+
+  if (result.success) {
+    const u = await pool.query(
+      `UPDATE whatsapp SET statut = 'sent', sent_at = NOW(), error_message = NULL
+       WHERE id_whatsapp = $1
+       RETURNING id_whatsapp AS id, destinataire_phone, message, template_code, entity_type, entity_id, statut, sent_at, error_message`,
+      [row.id]
+    );
+    row = u.rows[0];
+    console.log(`[whatsapp] sent → ${phone} (id=${result.messageId || '-'})`);
+  } else if (result.mocked) {
+    const u = await pool.query(
+      `UPDATE whatsapp SET statut = 'queued', error_message = $2 WHERE id_whatsapp = $1
+       RETURNING id_whatsapp AS id, destinataire_phone, message, template_code, entity_type, entity_id, statut, sent_at, error_message`,
+      [row.id, result.message || 'WhatsApp API non configurée']
+    );
+    row = { ...u.rows[0], mocked: true };
+    console.log(`[whatsapp] queued (API non configurée) → ${phone}`);
+  } else {
+    const u = await pool.query(
+      `UPDATE whatsapp SET statut = 'failed', error_message = $2 WHERE id_whatsapp = $1
+       RETURNING id_whatsapp AS id, destinataire_phone, message, template_code, entity_type, entity_id, statut, sent_at, error_message`,
+      [row.id, (result.error || 'unknown').slice(0, 500)]
+    );
+    row = u.rows[0];
+    console.warn(`[whatsapp] FAILED → ${phone}: ${result.error}`);
+  }
+
   try {
     const io = await getIo();
-    if (io) io.emit('whatsapp:sent', row);
+    if (io) io.emit(`whatsapp:${row.statut}`, row);
   } catch {}
   return row;
 };

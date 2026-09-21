@@ -14,6 +14,7 @@
 
 import { pool } from '../../../src/utils/db.js';
 import { sendError, sendSuccess, handleError } from '../../../src/utils/error.helper.js';
+import { sendEmail } from '../../../src/services/email.service.js';
 
 let _io = null;
 const getIo = async () => {
@@ -52,23 +53,66 @@ const TEMPLATES = [
   { code: 'relance', libelle: 'Relance paiement', sujet: 'Relance — facture {{numero}}', corps_html: '<p>Bonjour,</p><p>Nous vous rappelons que la facture {{numero}} reste impayée.</p>' },
 ];
 
-// Envoi simulé — insère la ligne + marque sent + émet Socket.IO
+// Insère la ligne en 'queued' puis tente un envoi SMTP réel via sendEmail().
+// Met à jour statut (sent | queued | failed) selon le résultat.
 const persistAndSend = async ({ userId, destinataire, id_destinataire, sujet, corps_html, corps_texte, entity_type, entity_id }) => {
+  // 1) Insertion préalable en statut 'queued' — la ligne est toujours sauvegardée.
   const r = await pool.query(
     `INSERT INTO email
        (name, destinataire, id_destinataire, sujet, corps_html, corps_texte, statut,
-        entity_type, entity_id, sent_at, active, created_at, created_by)
-     VALUES ($1, $2, $3, $4, $5, $6, 'sent', $7, $8, NOW(), true, NOW(), $9)
+        entity_type, entity_id, active, created_at, created_by)
+     VALUES ($1, $2, $3, $4, $5, $6, 'queued', $7, $8, true, NOW(), $9)
      RETURNING id_email AS id, destinataire, id_destinataire, sujet, corps_html, corps_texte, statut,
-               entity_type, entity_id, sent_at`,
+               entity_type, entity_id, sent_at, error_message`,
     [sujet || 'email', destinataire, id_destinataire || null, sujet || null,
      corps_html || null, corps_texte || null, entity_type || null, entity_id || null, userId]
   );
-  const row = r.rows[0];
-  console.log(`[email] simulated send to ${destinataire}: "${sujet}"`);
+  let row = r.rows[0];
+
+  // 2) Tentative d'envoi (SMTP optionnel — dégradation gracieuse si non configuré).
+  let result;
+  try {
+    result = await sendEmail({
+      to: destinataire,
+      subject: sujet || '(sans objet)',
+      html: corps_html,
+      text: corps_texte,
+    });
+  } catch (err) {
+    result = { success: false, error: err.message };
+  }
+
+  // 3) Mise à jour du statut selon le résultat.
+  if (result.success) {
+    const u = await pool.query(
+      `UPDATE email SET statut = 'sent', sent_at = NOW(), error_message = NULL
+       WHERE id_email = $1
+       RETURNING id_email AS id, destinataire, sujet, statut, sent_at, error_message`,
+      [row.id]
+    );
+    row = { ...row, ...u.rows[0] };
+    console.log(`[email] sent to ${destinataire}: "${sujet}" (id=${result.messageId || '-'})`);
+  } else if (result.mocked) {
+    const u = await pool.query(
+      `UPDATE email SET statut = 'queued', error_message = $2 WHERE id_email = $1
+       RETURNING id_email AS id, destinataire, sujet, statut, sent_at, error_message`,
+      [row.id, result.message || 'SMTP non configuré']
+    );
+    row = { ...row, ...u.rows[0], mocked: true };
+    console.log(`[email] queued (SMTP non configuré) → ${destinataire}: "${sujet}"`);
+  } else {
+    const u = await pool.query(
+      `UPDATE email SET statut = 'failed', error_message = $2 WHERE id_email = $1
+       RETURNING id_email AS id, destinataire, sujet, statut, sent_at, error_message`,
+      [row.id, (result.error || 'unknown').slice(0, 500)]
+    );
+    row = { ...row, ...u.rows[0] };
+    console.warn(`[email] FAILED → ${destinataire}: ${result.error}`);
+  }
+
   try {
     const io = await getIo();
-    if (io) io.emit('email:sent', row);
+    if (io) io.emit(`email:${row.statut}`, row);
   } catch {}
   return row;
 };
@@ -121,7 +165,10 @@ export const envoyerEmail = async (req, res) => {
     const { destinataire, sujet, corps_html, corps_texte, entity_type, entity_id, id_destinataire } = req.body || {};
     if (!destinataire) return sendError(res, 'destinataire requis', 400);
     const row = await persistAndSend({ userId, destinataire, id_destinataire, sujet, corps_html, corps_texte, entity_type, entity_id });
-    return sendSuccess(res, row, 'Email envoyé (simulation)', 201);
+    const msg = row.statut === 'sent' ? 'Email envoyé'
+              : row.statut === 'queued' ? 'Email en file (SMTP non configuré)'
+              : 'Email en erreur';
+    return sendSuccess(res, row, msg, 201);
   } catch (error) {
     return handleError(res, error, 'envoyerEmail');
   }
@@ -133,20 +180,30 @@ export const envoyerFacture = async (req, res) => {
     const userId = authorId(req);
     const idFacture = req.params.id_facture;
     const f = await pool.query(
-      `SELECT f.id_facture, f.numero_facture, c.raison_sociale, c.email
+      `SELECT f.*, c.raison_sociale, c.email
        FROM factures f LEFT JOIN clients c ON f.id_client = c.id_client
        WHERE f.id_facture = $1`,
       [idFacture]
     );
     if (!f.rows[0]) return sendError(res, 'Facture introuvable', 404);
     const facture = f.rows[0];
-    const tpl = TEMPLATES.find(t => t.code === 'facture');
-    const sujet = tpl.sujet.replace('{{numero}}', facture.numero_facture || idFacture);
-    const corps_html = tpl.corps_html.replace('{{numero}}', facture.numero_facture || idFacture);
+    const numero = facture.numero_facture || idFacture;
+    const montant = facture.montant_total || facture.total_ttc || facture.montant_ttc || '';
+    const client = facture.raison_sociale || '';
+    const sujet = `Votre facture ${numero}`;
+    const corps_html = `
+      <p>Bonjour ${client},</p>
+      <p>Veuillez trouver ci-après votre facture <b>${numero}</b>${montant ? ` d'un montant de <b>${montant} TND</b>` : ''}.</p>
+      <p>Lien PDF: <a href="${req.body?.lien_pdf || '#'}">Télécharger la facture</a></p>
+      <p>Cordialement,<br>La Plume Artisanale</p>
+    `;
     const destinataire = req.body?.destinataire || facture.email;
     if (!destinataire) return sendError(res, 'Email destinataire introuvable', 400);
     const row = await persistAndSend({ userId, destinataire, sujet, corps_html, entity_type: 'facture', entity_id: idFacture });
-    return sendSuccess(res, row, 'Facture envoyée', 201);
+    const msg = row.statut === 'sent' ? 'Facture envoyée'
+              : row.statut === 'queued' ? 'Facture en file (SMTP non configuré)'
+              : 'Facture en erreur';
+    return sendSuccess(res, row, msg, 201);
   } catch (error) {
     return handleError(res, error, 'envoyerFacture');
   }

@@ -1,16 +1,14 @@
 /**
- * Breadcrumbs - Fil d'Ariane pour la navigation
- * Permet de naviguer entre les pages et de voir la hiérarchie
+ * Breadcrumbs - Fil d'Ariane auto-dérivé depuis useLocation()
+ * Utilise les design tokens (design-system.css).
  */
-
 import React from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ChevronRight, Home } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { Home } from 'lucide-react';
 
 interface BreadcrumbItem {
   label: string;
   path?: string;
-  icon?: React.ReactNode;
 }
 
 interface BreadcrumbsProps {
@@ -18,92 +16,131 @@ interface BreadcrumbsProps {
   customItems?: BreadcrumbItem[];
 }
 
+// Mapping global des routes vers des libellés lisibles
+const ROUTE_LABELS: Record<string, string> = {
+  '/dashboard-admin': 'Tableau de bord administrateur',
+  '/dashboard-chef-production': 'Chef de production',
+  '/dashboard-tisseur': 'Tisseur',
+  '/dashboard-magasinier-mp': 'Magasinier MP',
+  '/dashboard-post-coupe': 'Post-coupe',
+  '/dashboard-controle-central': 'Contrôle central',
+  '/dashboard-magasinier-soustraitants': 'Magasinier sous-traitants',
+  '/chef-atelier-dashboard': 'Chef d’atelier',
+  '/sale-orders': 'Commandes de vente',
+  '/products': 'Produits',
+  '/stock-pickings': 'Livraisons / Réceptions',
+  '/productions': 'Ordres de production',
+  '/account-moves': 'Écritures comptables',
+  '/purchase-orders': "Commandes d'achat",
+  '/crm': 'CRM',
+  '/crm/leads': 'Leads',
+  '/commandes': 'Commandes',
+  '/clients': 'Clients',
+  '/fournisseurs': 'Fournisseurs',
+  '/soustraitants': 'Sous-traitants',
+  '/of': 'Ordres de fabrication',
+  '/machines': 'Machines',
+  '/maintenance': 'Maintenance',
+  '/stock': 'Stock',
+  '/parametrage': 'Paramétrage',
+  '/modeles': 'Modèles',
+  '/articles': 'Articles',
+  '/articles-catalogue': 'Catalogue articles',
+  '/factures': 'Factures',
+  '/bl': 'Bons de livraison',
+  '/hr': 'Personnel',
+  '/ecommerce': 'E-commerce',
+  '/ia': 'Intelligence artificielle',
+  '/notifications': 'Notifications',
+  '/settings': 'Paramètres',
+};
+
+function humanize(seg: string): string {
+  return seg.charAt(0).toUpperCase() + seg.slice(1).replace(/-/g, ' ');
+}
+
 const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ items, customItems }) => {
   const location = useLocation();
-  const navigate = useNavigate();
 
-  // Mapping des routes vers des labels
-  const routeLabels: Record<string, string> = {
-    '/dashboard-admin': 'Dashboard',
-    '/sale-orders': 'Commandes de Vente',
-    '/products': 'Produits',
-    '/stock-pickings': 'Livraisons / Réceptions',
-    '/productions': 'Ordres de Production',
-    '/account-moves': 'Écritures Comptables',
-    '/purchase-orders': 'Commandes d\'Achat',
-    '/crm/leads': 'Leads CRM',
-    '/commandes': 'Commandes',
-    '/clients': 'Clients',
-    '/fournisseurs': 'Fournisseurs',
-    '/of': 'Ordres de Fabrication',
-    '/machines': 'Machines',
-    '/stock': 'Stock',
-    '/parametrage': 'Paramétrage',
-    '/modeles': 'Modèles',
-    '/articles': 'Articles',
-  };
-
-  // Générer les breadcrumbs automatiquement depuis l'URL
-  const generateBreadcrumbs = (): BreadcrumbItem[] => {
-    // Ne pas afficher le breadcrumb automatique pour les pages ERP (elles ont leur propre breadcrumb dans ERPHeader)
-    const erpPaths = ['/erp', '/products', '/sale-orders', '/stock-pickings', '/purchase-orders', 
-                     '/productions', '/account-moves', '/crm', '/hr', '/project', '/inventory', 
-                     '/warehouse', '/suppliers', '/bom', '/ecommerce', '/settings', '/quality', 
-                     '/soustraitants', '/warehouse-management'];
-    const isErpPage = erpPaths.some(path => location.pathname.startsWith(path));
-    if (isErpPage) {
-      return [];
-    }
-
-    const paths = location.pathname.split('/').filter(Boolean);
-    const breadcrumbs: BreadcrumbItem[] = [];
-
-    let currentPath = '';
-    paths.forEach((path, index) => {
-      currentPath += `/${path}`;
-      const label = routeLabels[currentPath] || 
-                    path.charAt(0).toUpperCase() + path.slice(1).replace(/-/g, ' ');
-      
-      // Ne pas ajouter de lien pour le dernier élément
-      if (index === paths.length - 1) {
-        breadcrumbs.push({ label });
-      } else {
-        breadcrumbs.push({ label, path: currentPath });
-      }
+  const generate = (): BreadcrumbItem[] => {
+    const parts = location.pathname.split('/').filter(Boolean);
+    if (parts.length === 0) return [];
+    const out: BreadcrumbItem[] = [{ label: 'Accueil', path: '/' }];
+    let acc = '';
+    parts.forEach((p, i) => {
+      acc += `/${p}`;
+      const label = ROUTE_LABELS[acc] || humanize(p);
+      const isLast = i === parts.length - 1;
+      out.push({ label, path: isLast ? undefined : acc });
     });
-
-    return breadcrumbs;
+    return out;
   };
 
-  const breadcrumbItems = customItems || items || generateBreadcrumbs();
-
-  if (breadcrumbItems.length <= 1) {
-    return null;
-  }
+  const list = customItems || items || generate();
+  if (list.length <= 1) return null;
 
   return (
-    <nav className="flex items-center space-x-2 text-sm text-gray-600 mb-4 px-4 py-2 bg-gray-50 rounded-lg">
-      {breadcrumbItems.map((item, index) => {
-        const isLast = index === breadcrumbItems.length - 1;
-        
+    <nav
+      aria-label="Fil d’Ariane"
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: 'var(--s-2)',
+        fontFamily: 'var(--font-sans)',
+        fontSize: 'var(--text-sm)',
+        color: 'var(--fg-muted)',
+        minWidth: 0,
+      }}
+    >
+      {list.map((item, index) => {
+        const isLast = index === list.length - 1;
+        const content = (
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 'var(--s-1)',
+              color: isLast ? 'var(--fg-primary)' : 'var(--fg-secondary)',
+              fontWeight: isLast ? 600 : 400,
+              maxWidth: 240,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {index === 0 && <Home size={14} />}
+            {item.label}
+          </span>
+        );
         return (
-          <React.Fragment key={index}>
+          <React.Fragment key={`${item.label}-${index}`}>
             {item.path && !isLast ? (
               <Link
                 to={item.path}
-                className="flex items-center gap-1 hover:text-blue-600 transition-colors"
+                style={{
+                  textDecoration: 'none',
+                  color: 'inherit',
+                  transition: 'color var(--duration) var(--ease)',
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget.firstChild as HTMLElement).style.color =
+                    'var(--accent-terracotta)';
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget.firstChild as HTMLElement).style.color =
+                    'var(--fg-secondary)';
+                }}
               >
-                {item.icon && <span className="flex items-center">{item.icon}</span>}
-                <span>{item.label}</span>
+                {content}
               </Link>
             ) : (
-              <span className={`flex items-center gap-1 ${isLast ? 'text-gray-900 font-medium' : ''}`}>
-                {item.icon && <span className="flex items-center">{item.icon}</span>}
-                <span>{item.label}</span>
-              </span>
+              content
             )}
             {!isLast && (
-              <ChevronRight className="w-4 h-4 text-gray-400" />
+              <span aria-hidden style={{ color: 'var(--fg-muted)' }}>
+                &rsaquo;
+              </span>
             )}
           </React.Fragment>
         );

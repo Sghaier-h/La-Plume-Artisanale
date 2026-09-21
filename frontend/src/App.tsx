@@ -49,6 +49,7 @@ const MultiSociete = React.lazy(() => import('./pages/MultiSociete'));
 const Communication = React.lazy(() => import('./pages/Communication'));
 const TracabiliteLots = React.lazy(() => import('./pages/TracabiliteLots'));
 const RhRecrutement = React.lazy(() => import('./pages/RhRecrutement'));
+const PointageTimeMoto = React.lazy(() => import('./pages/PointageTimeMoto'));
 const MessagesOperateurs = React.lazy(() => import('./pages/MessagesOperateurs'));
 const Ecommerce = React.lazy(() => import('./pages/Ecommerce'));
 const FoutaManagementApp = React.lazy(() => import('./pages/FoutaManagement'));
@@ -75,6 +76,7 @@ const Facture = React.lazy(() => import('./pages/Facture'));
 const Avoir = React.lazy(() => import('./pages/Avoir'));
 const BonRetour = React.lazy(() => import('./pages/BonRetour'));
 const GestionAttributs = React.lazy(() => import('./pages/GestionAttributs'));
+const GestionPermissions = React.lazy(() => import('./pages/GestionPermissions'));
 const ParametresProduitService = React.lazy(() => import('./pages/ParametresProduitService'));
 const Inventaire = React.lazy(() => import('./pages/Inventaire'));
 const Entrepot = React.lazy(() => import('./pages/Entrepot'));
@@ -437,6 +439,14 @@ const AppContent: React.FC = () => {
             }
           />
           <Route
+            path="/parametres/permissions"
+            element={
+              <PrivateRoute>
+                <GestionPermissions />
+              </PrivateRoute>
+            }
+          />
+          <Route
             path="/import-excel"
             element={
               <ProtectedRoute requiredRole="ADMIN">
@@ -537,6 +547,14 @@ const AppContent: React.FC = () => {
             element={
               <PrivateRoute>
                 <RhRecrutement />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/rh/pointage-timemoto"
+            element={
+              <PrivateRoute>
+                <PointageTimeMoto />
               </PrivateRoute>
             }
           />
