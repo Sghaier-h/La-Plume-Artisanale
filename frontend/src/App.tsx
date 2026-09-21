@@ -22,6 +22,7 @@ import TaskNotification from './components/TaskNotification';
 // ── Lazy-loaded pages (code splitting) ─────────────────────────────────
 // Pages principales (chargées à la demande)
 const DashboardAdministrateur = React.lazy(() => import('./pages/DashboardAdministrateur'));
+const DashboardCommercial = React.lazy(() => import('./pages/DashboardCommercial'));
 const Articles = React.lazy(() => import('./pages/Articles'));
 const Clients = React.lazy(() => import('./pages/Clients'));
 const Commandes = React.lazy(() => import('./pages/Commandes'));
@@ -73,6 +74,7 @@ const CatalogueArticles = React.lazy(() => import('./pages/CatalogueArticles'));
 const Devis = React.lazy(() => import('./pages/Devis'));
 const BonLivraison = React.lazy(() => import('./pages/BonLivraison'));
 const Facture = React.lazy(() => import('./pages/Facture'));
+const RelancesFactures = React.lazy(() => import('./pages/RelancesFactures'));
 const Avoir = React.lazy(() => import('./pages/Avoir'));
 const BonRetour = React.lazy(() => import('./pages/BonRetour'));
 const GestionAttributs = React.lazy(() => import('./pages/GestionAttributs'));
@@ -88,6 +90,23 @@ const SemiFini = React.lazy(() => import('./pages/SemiFini'));
 const MatierePremiereStock = React.lazy(() => import('./pages/MatierePremiereStock'));
 const Fourniture = React.lazy(() => import('./pages/Fourniture'));
 const ImportExcel = React.lazy(() => import('./pages/ImportExcel'));
+
+// ── Portail Client (auth séparée) ────────────────────────────────────
+const PortailLogin = React.lazy(() => import('./pages/portail/PortailLogin'));
+const PortailReset = React.lazy(() => import('./pages/portail/PortailReset'));
+const PortailDashboard = React.lazy(() => import('./pages/portail/PortailDashboard'));
+const PortailCommandes = React.lazy(() => import('./pages/portail/PortailCommandes'));
+const PortailCommandeDetail = React.lazy(() => import('./pages/portail/PortailCommandeDetail'));
+const PortailFactures = React.lazy(() => import('./pages/portail/PortailFactures'));
+const PortailBL = React.lazy(() => import('./pages/portail/PortailBL'));
+const PortailDevis = React.lazy(() => import('./pages/portail/PortailDevis'));
+const PortailDemandes = React.lazy(() => import('./pages/portail/PortailDemandes'));
+const PortailProfil = React.lazy(() => import('./pages/portail/PortailProfil'));
+const PortailPrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('portail_token') : null;
+  if (!token) return <Navigate to="/portail/login" replace />;
+  return <>{children}</>;
+};
 
 // Composant pour rediriger vers le premier dashboard de l'utilisateur
 const NavigateToUserDashboard: React.FC = () => {
@@ -111,6 +130,8 @@ const NavigateToUserDashboard: React.FC = () => {
     'chef-atelier': '/chef-atelier',
     'magasinier-soustraitants': '/dashboard-magasinier-soustraitants',
     'gpao': '/dashboard-admin',
+    'dashboard-commercial': '/dashboard-commercial',
+    'commercial': '/dashboard-commercial',
   };
 
   // Mapping rôle -> dashboard par défaut (si pas de dashboard attribué)
@@ -127,6 +148,8 @@ const NavigateToUserDashboard: React.FC = () => {
     'CHEF_ATELIER': '/chef-atelier',
     'MAGASINIER_SOUSTRAITANTS': '/dashboard-magasinier-soustraitants',
     'GPAO': '/dashboard-admin',
+    'COMMERCIAL': '/dashboard-commercial',
+    'COMMERCIALE': '/dashboard-commercial',
   };
 
   // Si admin, toujours rediriger vers dashboard-admin
@@ -253,6 +276,18 @@ const AppContent: React.FC = () => {
         <Suspense fallback={<LoadingSpinner />}>
         <Routes>
           <Route path="/login" element={<Login />} />
+
+          {/* Portail Client — auth séparée, hors PrivateRoute admin */}
+          <Route path="/portail/login" element={<PortailLogin />} />
+          <Route path="/portail/reset-password/:token" element={<PortailReset />} />
+          <Route path="/portail" element={<PortailPrivateRoute><PortailDashboard /></PortailPrivateRoute>} />
+          <Route path="/portail/commandes" element={<PortailPrivateRoute><PortailCommandes /></PortailPrivateRoute>} />
+          <Route path="/portail/commandes/:id" element={<PortailPrivateRoute><PortailCommandeDetail /></PortailPrivateRoute>} />
+          <Route path="/portail/factures" element={<PortailPrivateRoute><PortailFactures /></PortailPrivateRoute>} />
+          <Route path="/portail/bons-livraison" element={<PortailPrivateRoute><PortailBL /></PortailPrivateRoute>} />
+          <Route path="/portail/devis" element={<PortailPrivateRoute><PortailDevis /></PortailPrivateRoute>} />
+          <Route path="/portail/demandes" element={<PortailPrivateRoute><PortailDemandes /></PortailPrivateRoute>} />
+          <Route path="/portail/profil" element={<PortailPrivateRoute><PortailProfil /></PortailPrivateRoute>} />
           <Route
             path="/"
             element={
@@ -278,6 +313,22 @@ const AppContent: React.FC = () => {
             }
           />
           <Route path="/dashboard-administrateur" element={<Navigate to="/dashboard-admin" replace />} />
+          <Route
+            path="/dashboard-commercial"
+            element={
+              <PrivateRoute showNav={true}>
+                <DashboardCommercial />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/dashboard-commercial/:id_commercial"
+            element={
+              <PrivateRoute showNav={true}>
+                <DashboardCommercial />
+              </PrivateRoute>
+            }
+          />
           <Route
             path="/modeles"
             element={
@@ -371,6 +422,14 @@ const AppContent: React.FC = () => {
             element={
               <PrivateRoute>
                 <Facture />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/relances"
+            element={
+              <PrivateRoute>
+                <RelancesFactures />
               </PrivateRoute>
             }
           />

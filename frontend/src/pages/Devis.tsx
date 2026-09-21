@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { FileText, Plus, Edit, Trash2, Search, Download, Eye, X, CheckCircle } from 'lucide-react';
 import { devisService, commandesService, clientsService, articlesService } from '../services/api';
+import ArticlePicker from '../components/ArticlePicker';
 
 interface LigneDevis {
   id_article?: number;
@@ -21,6 +22,7 @@ const Devis: React.FC = () => {
   const [selectedDevis, setSelectedDevis] = useState<any>(null);
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState({ statut: '', client_id: '' });
+  const [pickerIndex, setPickerIndex] = useState<number | null>(null);
 
   const [formData, setFormData] = useState({
     id_client: '',
@@ -434,16 +436,13 @@ const Devis: React.FC = () => {
                       {formData.lignes.map((ligne, index) => (
                         <tr key={index} className="border-t">
                           <td className="px-4 py-2">
-                            <select
-                              value={ligne.id_article}
-                              onChange={(e) => updateLigne(index, 'id_article', parseInt(e.target.value))}
-                              className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                            <button
+                              type="button"
+                              onClick={() => setPickerIndex(index)}
+                              className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-left bg-white hover:bg-gray-50"
                             >
-                              <option value="0">Sélectionner</option>
-                              {articles.map(a => (
-                                <option key={a.id_article} value={a.id_article}>{a.designation || a.libelle}</option>
-                              ))}
-                            </select>
+                              {ligne.designation || (ligne.id_article ? `Article #${ligne.id_article}` : 'Sélectionner un article...')}
+                            </button>
                           </td>
                           <td className="px-4 py-2">
                             <input
@@ -581,7 +580,14 @@ const Devis: React.FC = () => {
                       >
                         <Eye className="w-4 h-4" />
                       </button>
-                      <button className="text-green-600 hover:text-green-700">
+                      <button
+                        onClick={async () => {
+                          try { await devisService.downloadPDF(devis.id_devis, devis.numero_devis); }
+                          catch { alert('Erreur lors du téléchargement du PDF'); }
+                        }}
+                        className="text-[#C8663D] hover:text-[#a94f2b]"
+                        title="Télécharger PDF"
+                      >
                         <Download className="w-4 h-4" />
                       </button>
                       <button 
@@ -862,6 +868,24 @@ const Devis: React.FC = () => {
           </div>
         )}
       </div>
+
+      <ArticlePicker
+        isOpen={pickerIndex !== null}
+        onClose={() => setPickerIndex(null)}
+        onSelect={(article) => {
+          if (pickerIndex === null) return;
+          const newLignes = [...formData.lignes];
+          newLignes[pickerIndex] = {
+            ...newLignes[pickerIndex],
+            id_article: article.id_article,
+            designation: article.designation,
+            prix_unitaire_ht: article.prix_vente,
+            quantite: article.quantite,
+          };
+          setFormData({ ...formData, lignes: newLignes });
+          setPickerIndex(null);
+        }}
+      />
     </div>
   );
 };

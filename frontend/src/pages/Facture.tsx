@@ -659,7 +659,17 @@ const Facture: React.FC = () => {
                         >
                           <Eye className="w-4 h-4" />
                         </button>
-                        <button className="text-green-600 hover:text-green-700" title="Télécharger PDF">
+                        <button
+                          onClick={async () => {
+                            try {
+                              await facturesService.downloadPDF(facture.id_facture, facture.numero_facture);
+                            } catch (err) {
+                              alert('Erreur lors du téléchargement du PDF');
+                            }
+                          }}
+                          className="text-[#C8663D] hover:text-[#a94f2b]"
+                          title="Télécharger PDF"
+                        >
                           <Download className="w-4 h-4" />
                         </button>
                         <button 

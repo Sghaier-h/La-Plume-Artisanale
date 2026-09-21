@@ -14,6 +14,8 @@ import {
   getModelesStatsCategories,
   uploadPhoto,
   uploadPhotoMiddleware,
+  getModeleVariantes,
+  getModeleMatrice,
 } from '../controllers/modeles.controller.js';
 
 const router = express.Router();
@@ -22,6 +24,8 @@ router.use(authenticate);
 router.get('/stats/categories', getModelesStatsCategories);
 router.get('/code/:code', getModeleByCode);
 router.post('/:id(\\d+)/upload-photo', uploadPhotoMiddleware, uploadPhoto);
+router.get('/:id(\\d+)/variantes', getModeleVariantes);
+router.get('/:id(\\d+)/matrice', getModeleMatrice);
 
 router.get('/', getModeles);
 router.post('/', createModeles);

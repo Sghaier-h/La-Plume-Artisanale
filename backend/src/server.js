@@ -314,11 +314,19 @@ httpServer.on('error', (err) => {
   }
 });
 
-httpServer.listen(PORT, () => {
+httpServer.listen(PORT, async () => {
   logger.info(`Serveur démarré sur le port ${PORT}`);
   logger.info('Socket.IO actif');
   if (isDevelopment) {
     logger.info(`Documentation API: http://localhost:${PORT}/api-docs`);
+  }
+
+  // ── Relances factures — cron quotidien ─────────────────────────
+  try {
+    const { startRelancesScheduler } = await import('./services/relances-scheduler.service.js');
+    await startRelancesScheduler();
+  } catch (e) {
+    logger.warn('Scheduler relances non démarré', { message: e.message });
   }
 });
 

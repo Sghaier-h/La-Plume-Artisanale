@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowLeft, Plus, Edit, Trash2, Search, Download, Eye, X, FileText } from 'lucide-react';
 import { avoirsService, clientsService, facturesService } from '../services/api';
+import ArticlePicker from '../components/ArticlePicker';
 
 interface LigneAvoir {
   id_article?: number;
@@ -23,6 +24,7 @@ const Avoir: React.FC = () => {
   const [selectedAvoir, setSelectedAvoir] = useState<any>(null);
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState({ statut: '', client_id: '' });
+  const [pickerIndex, setPickerIndex] = useState<number | null>(null);
 
   const [formData, setFormData] = useState({
     id_facture: '',
@@ -417,13 +419,23 @@ const Avoir: React.FC = () => {
                       {formData.lignes.map((ligne, index) => (
                         <tr key={index} className="border-t">
                           <td className="px-4 py-2">
-                            <input
-                              type="text"
-                              value={ligne.designation || ''}
-                              onChange={(e) => updateLigne(index, 'designation', e.target.value)}
-                              className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                              placeholder="Désignation"
-                            />
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="text"
+                                value={ligne.designation || ''}
+                                onChange={(e) => updateLigne(index, 'designation', e.target.value)}
+                                className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
+                                placeholder="Désignation"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setPickerIndex(index)}
+                                title="Choisir un article du catalogue"
+                                className="px-2 py-1 border border-gray-300 rounded text-xs bg-white hover:bg-gray-50"
+                              >
+                                📦
+                              </button>
+                            </div>
                           </td>
                           <td className="px-4 py-2">
                             <input
@@ -589,7 +601,14 @@ const Avoir: React.FC = () => {
                         >
                           <Eye className="w-4 h-4" />
                         </button>
-                        <button className="text-green-600 hover:text-green-700" title="Télécharger PDF">
+                        <button
+                          onClick={async () => {
+                            try { await avoirsService.downloadPDF(avoir.id_avoir, avoir.numero_avoir); }
+                            catch { alert('Erreur lors du téléchargement du PDF'); }
+                          }}
+                          className="text-[#C8663D] hover:text-[#a94f2b]"
+                          title="Télécharger PDF"
+                        >
                           <Download className="w-4 h-4" />
                         </button>
                         <button 
@@ -822,6 +841,24 @@ const Avoir: React.FC = () => {
           </div>
         )}
       </div>
+
+      <ArticlePicker
+        isOpen={pickerIndex !== null}
+        onClose={() => setPickerIndex(null)}
+        onSelect={(article) => {
+          if (pickerIndex === null) return;
+          const newLignes = [...formData.lignes];
+          newLignes[pickerIndex] = {
+            ...newLignes[pickerIndex],
+            id_article: article.id_article,
+            designation: article.designation,
+            prix_unitaire_ht: article.prix_vente,
+            quantite: article.quantite,
+          };
+          setFormData({ ...formData, lignes: newLignes });
+          setPickerIndex(null);
+        }}
+      />
     </div>
   );
 };

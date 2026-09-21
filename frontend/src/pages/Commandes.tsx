@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { commandesService, clientsService, articlesService, bonsLivraisonService, parametresCatalogueService } from '../services/api';
 import { ShoppingCart, Plus, Edit, Trash2, Search, Eye, X, CheckCircle, Package, Calendar, User, DollarSign, Truck, Upload, File } from 'lucide-react';
+import ArticlePicker from '../components/ArticlePicker';
 import { useNavigate, Link } from 'react-router-dom';
 
 const Commandes: React.FC = () => {
@@ -13,7 +14,8 @@ const Commandes: React.FC = () => {
   const [editingCommande, setEditingCommande] = useState<any>(null);
   const [selectedCommande, setSelectedCommande] = useState<any>(null);
   const [search, setSearch] = useState('');
-  const [filters, setFilters] = useState({ statut: '', client_id: '' });
+  const [filters, setFilters] = useState({ statut: '', client_id: '', sans_of: '' });
+  const [pickerIndex, setPickerIndex] = useState<number | null>(null);
 
   const [formData, setFormData] = useState({
     id_client: '',
@@ -217,6 +219,16 @@ const Commandes: React.FC = () => {
                 <option key={client.id_client} value={client.id_client}>{client.raison_sociale}</option>
               ))}
             </select>
+            <select
+              value={filters.sans_of}
+              onChange={(e) => setFilters({ ...filters, sans_of: e.target.value })}
+              className="px-4 py-2 border rounded"
+              title="Filtrer par présence d'OF"
+            >
+              <option value="">OF: tous</option>
+              <option value="1">Validées sans OF</option>
+              <option value="0">Avec OF</option>
+            </select>
           </div>
         </div>
 
@@ -342,27 +354,13 @@ const Commandes: React.FC = () => {
                         {/* Référence Commerciale */}
                         <div className="col-span-1">
                           <label className="block text-sm font-medium text-gray-700 mb-1">Référence Commerciale *</label>
-                          <select
-                            required
-                            value={ligne.ref_commerciale || ligne.id_article}
-                            onChange={(e) => {
-                              const article = articles.find(a => a.ref_commercial === e.target.value || a.id_article === parseInt(e.target.value));
-                              updateLigne(index, 'ref_commerciale', e.target.value);
-                              updateLigne(index, 'id_article', article?.id_article || '');
-                              updateLigne(index, 'description_article', article?.description_article || article?.designation_article || '');
-                              updateLigne(index, 'dimensions', article?.dimensions || '');
-                              updateLigne(index, 'type_finition', article?.type_finition || '');
-                              updateLigne(index, 'prix_unitaire', article?.prix_vente || article?.prix_unitaire_base || '');
-                            }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                          <button
+                            type="button"
+                            onClick={() => setPickerIndex(index)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-left bg-white hover:bg-gray-50"
                           >
-                            <option value="">Sélectionner un article...</option>
-                            {articles.filter(a => a.actif && a.dans_catalogue_produit).map((article) => (
-                              <option key={article.id_article} value={article.ref_commercial || article.id_article}>
-                                {article.ref_commercial} - {article.designation_article || article.modele}
-                              </option>
-                            ))}
-                          </select>
+                            {ligne.description_article || ligne.ref_commerciale || (ligne.id_article ? `Article #${ligne.id_article}` : 'Sélectionner un article...')}
+                          </button>
                         </div>
 
                         {/* Description Article (automatique) */}
@@ -569,6 +567,20 @@ const Commandes: React.FC = () => {
                     }`}>
                       {commande.statut}
                     </span>
+                    {typeof commande.nb_ofs === 'number' && (
+                      <span
+                        className={`ml-2 px-2 py-1 text-xs rounded ${
+                          commande.nb_ofs > 0
+                            ? 'bg-indigo-100 text-indigo-800'
+                            : commande.statut === 'validee'
+                              ? 'bg-orange-100 text-orange-800'
+                              : 'bg-gray-100 text-gray-600'
+                        }`}
+                        title="Nombre d'ordres de fabrication liés"
+                      >
+                        {commande.nb_ofs > 0 ? `${commande.nb_ofs} OF` : 'OF manquants'}
+                      </span>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                     <div className="flex gap-2">
@@ -776,6 +788,25 @@ const Commandes: React.FC = () => {
         )}
         </div>
       </div>
+
+      <ArticlePicker
+        isOpen={pickerIndex !== null}
+        onClose={() => setPickerIndex(null)}
+        onSelect={(article) => {
+          if (pickerIndex === null) return;
+          const newLignes = [...formData.lignes];
+          newLignes[pickerIndex] = {
+            ...newLignes[pickerIndex],
+            id_article: article.id_article,
+            ref_commerciale: article.code_article,
+            description_article: article.designation,
+            prix_unitaire: article.prix_vente,
+            quantite_commandee: article.quantite,
+          };
+          setFormData({ ...formData, lignes: newLignes });
+          setPickerIndex(null);
+        }}
+      />
     </div>
   );
 };

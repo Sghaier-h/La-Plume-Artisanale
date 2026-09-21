@@ -216,6 +216,178 @@ export const uploadPhoto = async (req, res) => {
   }
 };
 
+// ─── Helper: agrège le stock disponible par article (best-effort) ────────
+const fetchStockMap = async (ids) => {
+  const out = new Map();
+  if (!ids?.length) return out;
+  const placeholders = ids.map((_, i) => `$${i + 1}`).join(',');
+  const tryQueries = [
+    `SELECT id_article,
+            COALESCE(SUM(CASE WHEN statut IN ('reserve') THEN quantite_disponible ELSE 0 END), 0) AS reserve,
+            COALESCE(SUM(CASE WHEN statut IN ('disponible','en_stock') THEN quantite_disponible ELSE 0 END), 0) AS dispo,
+            COALESCE(SUM(quantite_disponible), 0) AS actuel
+       FROM stock_produits_finis
+      WHERE id_article IN (${placeholders})
+      GROUP BY id_article`,
+    `SELECT id_article,
+            0 AS reserve,
+            COALESCE(SUM(quantite), 0) AS dispo,
+            COALESCE(SUM(quantite), 0) AS actuel
+       FROM stock_pf
+      WHERE id_article IN (${placeholders})
+      GROUP BY id_article`,
+  ];
+  for (const q of tryQueries) {
+    try {
+      const r = await pool.query(q, ids);
+      for (const row of r.rows) {
+        out.set(Number(row.id_article), {
+          stock_actuel: Number(row.actuel) || 0,
+          stock_reserve: Number(row.reserve) || 0,
+          stock_disponible: Math.max(0, (Number(row.dispo) || 0) - (Number(row.reserve) || 0)),
+        });
+      }
+      if (out.size) return out;
+    } catch { /* try next */ }
+  }
+  return out;
+};
+
+// ─── Helper: charge modèle + variantes + référentiels ────────────────────
+const loadVariantes = async (modeleId) => {
+  const mRes = await pool.query(
+    `SELECT id_modeles, code_modele, libelle, categorie, image_url,
+            dimensions_std, composition, prix_base
+       FROM modeles WHERE id_modeles = $1 LIMIT 1`,
+    [modeleId]
+  );
+  const modele = mRes.rows[0];
+  if (!modele) return null;
+
+  const aRes = await pool.query(
+    `SELECT a.id_article, a.code_article, a.designation,
+            a.id_dimension,        d.libelle AS dimension_libelle,
+            a.id_couleur,          c.nom     AS couleur_libelle, c.code_hex AS couleur_hex,
+            a.id_finition,         f.libelle AS finition_libelle,
+            a.id_tissage,          t.libelle AS tissage_libelle,
+            a.id_personnalisation, p.libelle AS personnalisation_libelle,
+            a.id_nombre_couleurs,  nc.libelle AS nombre_couleurs_libelle,
+            a.prix_vente, a.prix_revient, a.prix_unitaire_base,
+            a.qte_minimal_stock, a.image_url, a.temps_production_standard,
+            a.actif
+       FROM articles_catalogue a
+       LEFT JOIN parametres_dimensions       d  ON a.id_dimension = d.id
+       LEFT JOIN parametres_couleurs         c  ON a.id_couleur = c.id
+       LEFT JOIN parametres_finitions        f  ON a.id_finition = f.id
+       LEFT JOIN parametres_tissages         t  ON a.id_tissage = t.id
+       LEFT JOIN parametres_personnalisations p ON a.id_personnalisation = p.id
+       LEFT JOIN parametres_nombre_couleurs  nc ON a.id_nombre_couleurs = nc.id
+       WHERE a.id_modele = $1 AND (a.actif IS NULL OR a.actif = true)
+       ORDER BY d.libelle NULLS LAST, c.nom NULLS LAST`,
+    [modeleId]
+  );
+
+  const ids = aRes.rows.map((r) => r.id_article);
+  const stockMap = await fetchStockMap(ids);
+
+  const variantes = aRes.rows.map((r) => {
+    const s = stockMap.get(Number(r.id_article)) || { stock_actuel: 0, stock_reserve: 0, stock_disponible: 0 };
+    const min = Number(r.qte_minimal_stock) || 0;
+    return {
+      ...r,
+      prix_vente: r.prix_vente != null ? Number(r.prix_vente) : Number(r.prix_unitaire_base) || 0,
+      prix_revient: r.prix_revient != null ? Number(r.prix_revient) : null,
+      stock_actuel: s.stock_actuel,
+      stock_reserve: s.stock_reserve,
+      stock_disponible: s.stock_disponible,
+      stock_alerte: s.stock_disponible <= min,
+    };
+  });
+
+  // Attributs disponibles (déduits des variantes)
+  const uniq = (arr, key) => {
+    const seen = new Map();
+    for (const v of arr) {
+      const id = v[key];
+      if (id == null || seen.has(id)) continue;
+      seen.set(id, v);
+    }
+    return [...seen.values()];
+  };
+  const attributs_disponibles = {
+    dimensions: uniq(variantes, 'id_dimension')
+      .map((v) => ({ id_dimension: v.id_dimension, libelle: v.dimension_libelle }))
+      .filter((x) => x.id_dimension != null),
+    couleurs: uniq(variantes, 'id_couleur')
+      .map((v) => ({ id_couleur: v.id_couleur, libelle: v.couleur_libelle, hex: v.couleur_hex }))
+      .filter((x) => x.id_couleur != null),
+    finitions: uniq(variantes, 'id_finition')
+      .map((v) => ({ id_finition: v.id_finition, libelle: v.finition_libelle }))
+      .filter((x) => x.id_finition != null),
+    tissages: uniq(variantes, 'id_tissage')
+      .map((v) => ({ id_tissage: v.id_tissage, libelle: v.tissage_libelle }))
+      .filter((x) => x.id_tissage != null),
+    personnalisations: uniq(variantes, 'id_personnalisation')
+      .map((v) => ({ id_personnalisation: v.id_personnalisation, libelle: v.personnalisation_libelle }))
+      .filter((x) => x.id_personnalisation != null),
+    nombres_couleurs: uniq(variantes, 'id_nombre_couleurs')
+      .map((v) => ({ id_nombre_couleurs: v.id_nombre_couleurs, libelle: v.nombre_couleurs_libelle }))
+      .filter((x) => x.id_nombre_couleurs != null),
+  };
+
+  return { modele, attributs_disponibles, variantes };
+};
+
+// ─── GET /api/modeles/:id/variantes ──────────────────────────────
+export const getModeleVariantes = async (req, res) => {
+  try {
+    const data = await loadVariantes(req.params.id);
+    if (!data) return sendError(res, 'Modèle introuvable', 404);
+    return sendSuccess(res, { ...data, total: data.variantes.length });
+  } catch (error) {
+    return handleError(res, error, 'getModeleVariantes');
+  }
+};
+
+// ─── GET /api/modeles/:id/matrice ────────────────────────────────
+export const getModeleMatrice = async (req, res) => {
+  try {
+    const data = await loadVariantes(req.params.id);
+    if (!data) return sendError(res, 'Modèle introuvable', 404);
+
+    const dimensions = data.attributs_disponibles.dimensions.map((d) => ({
+      id: d.id_dimension, libelle: d.libelle,
+    }));
+    const couleurs = data.attributs_disponibles.couleurs.map((c) => ({
+      id: c.id_couleur, libelle: c.libelle, hex: c.hex,
+    }));
+
+    // matrice[rowCouleur][colDimension] = variante ou null
+    const matrice = couleurs.map((c) =>
+      dimensions.map((d) => {
+        const v = data.variantes.find(
+          (x) => x.id_couleur === c.id && x.id_dimension === d.id
+        );
+        if (!v) return null;
+        return {
+          id_article: v.id_article,
+          code_article: v.code_article,
+          designation: v.designation,
+          prix_vente: v.prix_vente,
+          stock_disponible: v.stock_disponible,
+          stock_actuel: v.stock_actuel,
+          qte_minimal_stock: v.qte_minimal_stock,
+          alerte: v.stock_alerte,
+        };
+      })
+    );
+
+    return sendSuccess(res, { modele: data.modele, dimensions, couleurs, matrice });
+  } catch (error) {
+    return handleError(res, error, 'getModeleMatrice');
+  }
+};
+
 // ─── DELETE /api/modeles/:id ─────────────────────────────────────
 export const deleteModeles = async (req, res) => {
   try {

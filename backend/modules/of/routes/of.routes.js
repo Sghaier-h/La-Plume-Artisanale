@@ -9,7 +9,8 @@ import {
   getOfById,
   createOf,
   updateOf,
-  deleteOf
+  deleteOf,
+  getOFDetailComplet
 } from '../controllers/of.controller.js';
 import {
   getAnalyseAlimentation,
@@ -43,6 +44,9 @@ router.post('/:id(\\d+)/assigner-machine', authenticate, async (req, res) => {
     return handleError(res, error, 'assignerMachineOf');
   }
 });
+
+// ─── Détail complet (timeline, suivis, coûts, lots, NC, MP) ───
+router.get('/:id(\\d+)/detail-complet', authenticate, getOFDetailComplet);
 
 // ─── CRUD OF ───
 router.get('/', authenticate, getOf);

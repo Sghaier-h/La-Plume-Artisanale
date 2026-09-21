@@ -17,10 +17,28 @@ import {
   annulerAvoir,
   deleteAvoir,
 } from '../controllers/avoirs.controller.js';
+import {
+  streamPDF, drawAvoir, fetchAvoirFull, loadSociete,
+} from '../../../src/services/pdf.service.js';
 
 const router = express.Router();
 
 router.use(authenticate);
+
+// PDF
+router.get('/:id(\\d+)/pdf', async (req, res) => {
+  try {
+    const data = await fetchAvoirFull(req.params.id);
+    if (!data) return sendError(res, 'Avoir introuvable', 404);
+    const societe = await loadSociete();
+    return streamPDF(
+      res,
+      `avoir-${data.avoir.numero_avoir || req.params.id}`,
+      drawAvoir,
+      { ...data, societe }
+    );
+  } catch (error) { return handleError(res, error, 'getAvoirPDF'); }
+});
 
 router.get('/stats/global', getStatsGlobal);
 

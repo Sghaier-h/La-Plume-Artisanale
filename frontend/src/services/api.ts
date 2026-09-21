@@ -179,6 +179,29 @@ export const commandesService = {
   createCommande: (data: any) => api.post('/commandes', data),
   updateCommande: (id: number, data: any) => api.put(`/commandes/${id}`, data),
   validerCommande: (id: number) => api.post(`/commandes/${id}/valider`),
+  previewOFs: (id: number) => api.get(`/commandes/${id}/preview-ofs`),
+  generateOFs: (id: number, payload?: { overrides?: any[]; force?: boolean }) =>
+    api.post(`/commandes/${id}/generer-ofs`, payload || {}),
+  analyseStock: (id: number) => api.get(`/commandes/${id}/analyse-stock`),
+  executerChoix: (id: number, decisions: any[]) =>
+    api.post(`/commandes/${id}/executer-choix`, { decisions }),
+  getWithOFs: (id: number) => api.get(`/commandes/${id}/with-ofs`),
+};
+
+/**
+ * Télécharge un PDF depuis une URL d'API et déclenche le save-as navigateur.
+ */
+export const downloadPdf = async (url: string, filename: string) => {
+  const res = await api.get(url, { responseType: 'blob' });
+  const blob = new Blob([res.data], { type: 'application/pdf' });
+  const objectUrl = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = objectUrl;
+  a.download = `${filename}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
 };
 
 export const devisService = {
@@ -188,6 +211,7 @@ export const devisService = {
   updateDevis: (id: number, data: any) => api.put(`/devis/${id}`, data),
   deleteDevis: (id: number) => api.delete(`/devis/${id}`),
   transformerEnCommande: (id: number, data?: any) => api.post(`/devis/${id}/transformer`, data),
+  downloadPDF: (id: number, numero?: string) => downloadPdf(`/devis/${id}/pdf`, `devis-${numero || id}`),
 };
 
 export const bonsLivraisonService = {
@@ -197,6 +221,7 @@ export const bonsLivraisonService = {
   createFromCommande: (id: number, data?: any) => api.post(`/bons-livraison/from-commande/${id}`, data),
   updateBonLivraison: (id: number, data: any) => api.put(`/bons-livraison/${id}`, data),
   deleteBonLivraison: (id: number) => api.delete(`/bons-livraison/${id}`),
+  downloadPDF: (id: number, numero?: string) => downloadPdf(`/bons-livraison/${id}/pdf`, `bl-${numero || id}`),
 };
 
 export const facturesService = {
@@ -207,6 +232,7 @@ export const facturesService = {
   createFromBL: (id: number, data?: any) => api.post(`/factures/from-bl/${id}`, data),
   updateFacture: (id: number, data: any) => api.put(`/factures/${id}`, data),
   deleteFacture: (id: number) => api.delete(`/factures/${id}`),
+  downloadPDF: (id: number, numero?: string) => downloadPdf(`/factures/${id}/pdf`, `facture-${numero || id}`),
 };
 
 export const avoirsService = {
@@ -216,6 +242,7 @@ export const avoirsService = {
   createFromFacture: (id: number, data?: any) => api.post(`/avoirs/from-facture/${id}`, data),
   updateAvoir: (id: number, data: any) => api.put(`/avoirs/${id}`, data),
   deleteAvoir: (id: number) => api.delete(`/avoirs/${id}`),
+  downloadPDF: (id: number, numero?: string) => downloadPdf(`/avoirs/${id}/pdf`, `avoir-${numero || id}`),
 };
 
 export const bonsRetourService = {
@@ -245,6 +272,7 @@ export const ofService = {
   assignerMachine: (id: number, data: any) => api.post(`/of/${id}/assigner-machine`, data),
   demarrerOF: (id: number) => api.post(`/of/${id}/demarrer`),
   terminerOF: (id: number, data?: any) => api.post(`/of/${id}/terminer`, data),
+  getDetailComplet: (id: number) => api.get(`/of/${id}/detail-complet`),
 };
 
 export const soustraitantsService = {
@@ -509,6 +537,8 @@ export const modelesService = {
   uploadPhotoModele: (id: number, formData: FormData) => api.post(`/modeles/${id}/upload-photo`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
+  getVariantes: (id: number) => api.get(`/modeles/${id}/variantes`),
+  getMatrice: (id: number) => api.get(`/modeles/${id}/matrice`),
 };
 
 export const articlesGeneresService = {
@@ -999,4 +1029,25 @@ export const multisocieteCompaniesService = {
   createCompany: (data: any) => api.post('/multisociete/companies', data),
   updateCompany: (id: number, data: any) => api.put(`/multisociete/companies/${id}`, data),
   deleteCompany: (id: number) => api.delete(`/multisociete/companies/${id}`),
+};
+
+export const relancesService = {
+  getRelances: (params?: any) => api.get('/relances', { params }),
+  getRelance: (id: number) => api.get(`/relances/${id}`),
+  getRelancesFacture: (idFacture: number) => api.get(`/relances/facture/${idFacture}`),
+  getFacturesImpayees: () => api.get('/relances/factures-impayees'),
+  getStatsGlobal: () => api.get('/relances/stats/global'),
+  genererRelances: (body?: { dry_run?: boolean; force_all?: boolean }) =>
+    api.post('/relances/generer', body || {}),
+  envoyerRelanceManuelle: (
+    idFacture: number,
+    body: { niveau: number; canal?: string; destinataire?: string; sujet?: string; contenu?: string },
+  ) => api.post(`/relances/facture/${idFacture}/envoyer`, body),
+  enregistrerReponse: (id: number, body?: { reponse_recue?: boolean; date_reponse?: string }) =>
+    api.put(`/relances/${id}/reponse`, body || {}),
+};
+
+export const parametrageService = {
+  getAll: (params?: any) => api.get('/parametrage', { params }),
+  update: (cle: string, valeur: any) => api.put(`/parametrage/${encodeURIComponent(cle)}`, { valeur }),
 };

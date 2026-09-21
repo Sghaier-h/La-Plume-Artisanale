@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Truck, Plus, Edit, Trash2, Search, Download, Eye, CheckCircle, X, Package, Receipt } from 'lucide-react';
 import { bonsLivraisonService, commandesService, clientsService, articlesService, facturesService } from '../services/api';
+import ArticlePicker from '../components/ArticlePicker';
 
 interface LigneBL {
   id_article?: number;
@@ -25,6 +26,7 @@ const BonLivraison: React.FC = () => {
   const [selectedCommande, setSelectedCommande] = useState<any>(null);
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState({ statut: '', client_id: '' });
+  const [pickerIndex, setPickerIndex] = useState<number | null>(null);
 
   const [formData, setFormData] = useState({
     id_commande: '',
@@ -423,25 +425,13 @@ const BonLivraison: React.FC = () => {
                       {formData.lignes.map((ligne, index) => (
                         <tr key={index} className="border-t">
                           <td className="px-4 py-2">
-                            <select
-                              value={ligne.id_article || ''}
-                              onChange={(e) => {
-                                const article = articles.find(a => a.id_article?.toString() === e.target.value);
-                                updateLigne(index, 'id_article', e.target.value ? parseInt(e.target.value) : undefined);
-                                if (article) {
-                                  updateLigne(index, 'designation', article.designation || article.libelle);
-                                  updateLigne(index, 'prix_unitaire_ht', article.prix_vente || 0);
-                                }
-                              }}
-                              className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                            <button
+                              type="button"
+                              onClick={() => setPickerIndex(index)}
+                              className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-left bg-white hover:bg-gray-50"
                             >
-                              <option value="">Sélectionner</option>
-                              {articles.map(a => (
-                                <option key={a.id_article} value={a.id_article}>
-                                  {a.designation || a.libelle}
-                                </option>
-                              ))}
-                            </select>
+                              {ligne.designation || (ligne.id_article ? `Article #${ligne.id_article}` : 'Sélectionner un article...')}
+                            </button>
                           </td>
                           <td className="px-4 py-2">
                             <input
@@ -576,7 +566,14 @@ const BonLivraison: React.FC = () => {
                         >
                           <Eye className="w-4 h-4" />
                         </button>
-                        <button className="text-green-600 hover:text-green-700" title="Télécharger PDF">
+                        <button
+                          onClick={async () => {
+                            try { await bonsLivraisonService.downloadPDF(bl.id_bl, bl.numero_bl); }
+                            catch { alert('Erreur lors du téléchargement du PDF'); }
+                          }}
+                          className="text-[#C8663D] hover:text-[#a94f2b]"
+                          title="Télécharger PDF"
+                        >
                           <Download className="w-4 h-4" />
                         </button>
                         <button 
@@ -814,6 +811,24 @@ const BonLivraison: React.FC = () => {
           </div>
         )}
       </div>
+
+      <ArticlePicker
+        isOpen={pickerIndex !== null}
+        onClose={() => setPickerIndex(null)}
+        onSelect={(article) => {
+          if (pickerIndex === null) return;
+          const newLignes = [...formData.lignes];
+          newLignes[pickerIndex] = {
+            ...newLignes[pickerIndex],
+            id_article: article.id_article,
+            designation: article.designation,
+            prix_unitaire_ht: article.prix_vente,
+            quantite_livree: article.quantite,
+          };
+          setFormData({ ...formData, lignes: newLignes });
+          setPickerIndex(null);
+        }}
+      />
     </div>
   );
 };

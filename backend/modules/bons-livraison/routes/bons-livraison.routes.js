@@ -17,10 +17,28 @@ import {
   annulerBL,
   deleteBonsLivraison,
 } from '../controllers/bons-livraison.controller.js';
+import {
+  streamPDF, drawBL, fetchBLFull, loadSociete,
+} from '../../../src/services/pdf.service.js';
 
 const router = express.Router();
 
 router.use(authenticate);
+
+// PDF
+router.get('/:id(\\d+)/pdf', async (req, res) => {
+  try {
+    const data = await fetchBLFull(req.params.id);
+    if (!data) return sendError(res, 'Bon de livraison introuvable', 404);
+    const societe = await loadSociete();
+    return streamPDF(
+      res,
+      `bl-${data.bl.numero_bl || req.params.id}`,
+      drawBL,
+      { ...data, societe }
+    );
+  } catch (error) { return handleError(res, error, 'getBLPDF'); }
+});
 
 // Specific paths BEFORE /:id
 router.get('/stats/global', getStatsGlobal);

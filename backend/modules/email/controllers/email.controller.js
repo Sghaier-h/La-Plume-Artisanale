@@ -15,6 +15,11 @@
 import { pool } from '../../../src/utils/db.js';
 import { sendError, sendSuccess, handleError } from '../../../src/utils/error.helper.js';
 import { sendEmail } from '../../../src/services/email.service.js';
+import {
+  bufferPDF, drawInvoice, drawQuote, drawBL, drawAvoir,
+  fetchFactureFull, fetchDevisFull, fetchBLFull, fetchAvoirFull,
+  loadSociete,
+} from '../../../src/services/pdf.service.js';
 
 let _io = null;
 const getIo = async () => {
@@ -55,7 +60,7 @@ const TEMPLATES = [
 
 // Insère la ligne en 'queued' puis tente un envoi SMTP réel via sendEmail().
 // Met à jour statut (sent | queued | failed) selon le résultat.
-const persistAndSend = async ({ userId, destinataire, id_destinataire, sujet, corps_html, corps_texte, entity_type, entity_id }) => {
+const persistAndSend = async ({ userId, destinataire, id_destinataire, sujet, corps_html, corps_texte, entity_type, entity_id, attachments }) => {
   // 1) Insertion préalable en statut 'queued' — la ligne est toujours sauvegardée.
   const r = await pool.query(
     `INSERT INTO email
@@ -77,6 +82,7 @@ const persistAndSend = async ({ userId, destinataire, id_destinataire, sujet, co
       subject: sujet || '(sans objet)',
       html: corps_html,
       text: corps_texte,
+      attachments: attachments || undefined,
     });
   } catch (err) {
     result = { success: false, error: err.message };
@@ -199,7 +205,19 @@ export const envoyerFacture = async (req, res) => {
     `;
     const destinataire = req.body?.destinataire || facture.email;
     if (!destinataire) return sendError(res, 'Email destinataire introuvable', 400);
-    const row = await persistAndSend({ userId, destinataire, sujet, corps_html, entity_type: 'facture', entity_id: idFacture });
+
+    // Génération PDF en pièce jointe
+    let attachments;
+    try {
+      const full = await fetchFactureFull(idFacture);
+      if (full) {
+        const societe = await loadSociete();
+        const pdfBuffer = await bufferPDF(drawInvoice, { ...full, societe });
+        attachments = [{ filename: `facture-${numero}.pdf`, content: pdfBuffer, contentType: 'application/pdf' }];
+      }
+    } catch (e) { console.warn('[email] PDF facture non généré:', e.message); }
+
+    const row = await persistAndSend({ userId, destinataire, sujet, corps_html, entity_type: 'facture', entity_id: idFacture, attachments });
     const msg = row.statut === 'sent' ? 'Facture envoyée'
               : row.statut === 'queued' ? 'Facture en file (SMTP non configuré)'
               : 'Facture en erreur';
@@ -227,7 +245,18 @@ export const envoyerBL = async (req, res) => {
     const corps_html = tpl.corps_html.replace('{{numero}}', bl.numero_bl || idBl);
     const destinataire = req.body?.destinataire || bl.email;
     if (!destinataire) return sendError(res, 'Email destinataire introuvable', 400);
-    const row = await persistAndSend({ userId, destinataire, sujet, corps_html, entity_type: 'bl', entity_id: idBl });
+
+    let attachments;
+    try {
+      const full = await fetchBLFull(idBl);
+      if (full) {
+        const societe = await loadSociete();
+        const pdfBuffer = await bufferPDF(drawBL, { ...full, societe });
+        attachments = [{ filename: `bl-${bl.numero_bl || idBl}.pdf`, content: pdfBuffer, contentType: 'application/pdf' }];
+      }
+    } catch (e) { console.warn('[email] PDF BL non généré:', e.message); }
+
+    const row = await persistAndSend({ userId, destinataire, sujet, corps_html, entity_type: 'bl', entity_id: idBl, attachments });
     return sendSuccess(res, row, 'BL envoyé', 201);
   } catch (error) {
     return handleError(res, error, 'envoyerBL');
@@ -252,7 +281,18 @@ export const envoyerDevis = async (req, res) => {
     const corps_html = tpl.corps_html.replace('{{numero}}', devis.numero_devis || idDevis);
     const destinataire = req.body?.destinataire || devis.email;
     if (!destinataire) return sendError(res, 'Email destinataire introuvable', 400);
-    const row = await persistAndSend({ userId, destinataire, sujet, corps_html, entity_type: 'devis', entity_id: idDevis });
+
+    let attachments;
+    try {
+      const full = await fetchDevisFull(idDevis);
+      if (full) {
+        const societe = await loadSociete();
+        const pdfBuffer = await bufferPDF(drawQuote, { ...full, societe });
+        attachments = [{ filename: `devis-${devis.numero_devis || idDevis}.pdf`, content: pdfBuffer, contentType: 'application/pdf' }];
+      }
+    } catch (e) { console.warn('[email] PDF devis non généré:', e.message); }
+
+    const row = await persistAndSend({ userId, destinataire, sujet, corps_html, entity_type: 'devis', entity_id: idDevis, attachments });
     return sendSuccess(res, row, 'Devis envoyé', 201);
   } catch (error) {
     return handleError(res, error, 'envoyerDevis');
