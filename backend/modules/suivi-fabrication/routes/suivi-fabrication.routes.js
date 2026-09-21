@@ -1,5 +1,5 @@
 /**
- * Routes SuiviFabrication - Module modulaire
+ * Routes Suivi Fabrication
  */
 
 import express from 'express';
@@ -9,15 +9,26 @@ import {
   getSuiviFabricationById,
   createSuiviFabrication,
   updateSuiviFabrication,
-  deleteSuiviFabrication
+  deleteSuiviFabrication,
+  getOfSummary,
+  getMachineStats,
+  getOperateurDay,
 } from '../controllers/suivi-fabrication.controller.js';
 
 const router = express.Router();
 
-router.get('/', authenticate, getSuiviFabrication);
-router.get('/:id', authenticate, getSuiviFabricationById);
-router.post('/', authenticate, createSuiviFabrication);
-router.put('/:id', authenticate, updateSuiviFabrication);
-router.delete('/:id', authenticate, deleteSuiviFabrication);
+router.use(authenticate);
+
+// Routes spécifiques AVANT /:id
+router.get('/of/:id_of(\\d+)/summary',            getOfSummary);
+router.get('/machine/:id_machine(\\d+)/stats',    getMachineStats);
+router.get('/operateur/:id_operateur(\\d+)/day',  getOperateurDay);
+
+// CRUD standard
+router.get('/',             getSuiviFabrication);
+router.post('/',            createSuiviFabrication);
+router.get('/:id(\\d+)',     getSuiviFabricationById);
+router.put('/:id(\\d+)',     updateSuiviFabrication);
+router.delete('/:id(\\d+)',  deleteSuiviFabrication);
 
 export default router;

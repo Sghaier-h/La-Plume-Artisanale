@@ -1,5 +1,5 @@
 /**
- * Routes Taches - Module modulaire
+ * Routes Taches
  */
 
 import express from 'express';
@@ -9,15 +9,29 @@ import {
   getTachesById,
   createTaches,
   updateTaches,
-  deleteTaches
+  deleteTaches,
+  demarrerTache,
+  terminerTache,
+  updateProgression,
+  getTachesStats,
+  getTachesOperateurDay,
 } from '../controllers/taches.controller.js';
 
 const router = express.Router();
+router.use(authenticate);
 
-router.get('/', authenticate, getTaches);
-router.get('/:id', authenticate, getTachesById);
-router.post('/', authenticate, createTaches);
-router.put('/:id', authenticate, updateTaches);
-router.delete('/:id', authenticate, deleteTaches);
+// Chemins spécifiques avant /:id
+router.get('/stats/global', getTachesStats);
+router.get('/operateur/:id_operateur(\\d+)/day', getTachesOperateurDay);
+router.put('/:id(\\d+)/demarrer', demarrerTache);
+router.put('/:id(\\d+)/terminer', terminerTache);
+router.put('/:id(\\d+)/progression', updateProgression);
+
+// CRUD
+router.get('/', getTaches);
+router.post('/', createTaches);
+router.get('/:id(\\d+)', getTachesById);
+router.put('/:id(\\d+)', updateTaches);
+router.delete('/:id(\\d+)', deleteTaches);
 
 export default router;

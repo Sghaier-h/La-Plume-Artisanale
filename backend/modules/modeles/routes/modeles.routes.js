@@ -1,5 +1,5 @@
 /**
- * Routes Modeles - Module modulaire
+ * Routes Modeles
  */
 
 import express from 'express';
@@ -9,15 +9,24 @@ import {
   getModelesById,
   createModeles,
   updateModeles,
-  deleteModeles
+  deleteModeles,
+  getModeleByCode,
+  getModelesStatsCategories,
+  uploadPhoto,
+  uploadPhotoMiddleware,
 } from '../controllers/modeles.controller.js';
 
 const router = express.Router();
+router.use(authenticate);
 
-router.get('/', authenticate, getModeles);
-router.get('/:id', authenticate, getModelesById);
-router.post('/', authenticate, createModeles);
-router.put('/:id', authenticate, updateModeles);
-router.delete('/:id', authenticate, deleteModeles);
+router.get('/stats/categories', getModelesStatsCategories);
+router.get('/code/:code', getModeleByCode);
+router.post('/:id(\\d+)/upload-photo', uploadPhotoMiddleware, uploadPhoto);
+
+router.get('/', getModeles);
+router.post('/', createModeles);
+router.get('/:id(\\d+)', getModelesById);
+router.put('/:id(\\d+)', updateModeles);
+router.delete('/:id(\\d+)', deleteModeles);
 
 export default router;
