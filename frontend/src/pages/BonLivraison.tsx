@@ -58,13 +58,13 @@ const BonLivraison: React.FC = () => {
       ]);
 
       if (blRes.data?.success) {
-        setBonsLivraison(blRes.data.data || []);
+        const blRaw = blRes.data.data; setBonsLivraison(Array.isArray(blRaw) ? blRaw : (blRaw?.data || blRaw?.bons_livraison || []));
       } else {
         setBonsLivraison([]);
       }
       
       setCommandes(cmdRes.data?.data || []);
-      setClients(clientsRes.data?.data || []);
+      const clientsRaw = clientsRes.data?.data; setClients(Array.isArray(clientsRaw) ? clientsRaw : (clientsRaw?.data || clientsRaw?.clients || []));
       setArticles(articlesRes.data?.data || []);
     } catch (error) {
       console.error('Erreur chargement BL:', error);

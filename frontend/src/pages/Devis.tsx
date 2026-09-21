@@ -55,12 +55,12 @@ const Devis: React.FC = () => {
       ]);
       
       if (devisRes.data?.success) {
-        setDevis(devisRes.data.data || []);
+        const devisRaw = devisRes.data.data; setDevis(Array.isArray(devisRaw) ? devisRaw : (devisRaw?.data || devisRaw?.devis || []));
       } else {
         setDevis([]);
       }
       
-      setClients(clientsRes.data?.data || []);
+      const clientsRaw = clientsRes.data?.data; setClients(Array.isArray(clientsRaw) ? clientsRaw : (clientsRaw?.data || clientsRaw?.clients || []));
       setArticles(articlesRes.data?.data || []);
     } catch (error) {
       console.error('Erreur chargement devis:', error);

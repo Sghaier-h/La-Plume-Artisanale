@@ -146,7 +146,7 @@ const DashboardAdministrateur: React.FC = () => {
             icon={<Receipt size={16} />}
             tone="brown"
             loading={loading}
-            onClick={() => navigate('/factures')}
+            onClick={() => navigate('/facture')}
           />
           <KpiCard
             label="Machines"
@@ -296,7 +296,7 @@ const DashboardAdministrateur: React.FC = () => {
               { label: 'Ordres de fabrication', path: '/of', tone: 'indigo' },
               { label: 'Stock', path: '/stock', tone: 'sage' },
               { label: 'Clients', path: '/clients', tone: 'rose' },
-              { label: 'Factures', path: '/factures', tone: 'brown' },
+              { label: 'Factures', path: '/facture', tone: 'brown' },
             ].map((a) => (
               <button
                 key={a.path}

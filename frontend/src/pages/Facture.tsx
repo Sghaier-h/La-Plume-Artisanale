@@ -60,15 +60,16 @@ const Facture: React.FC = () => {
       ]);
       
       if (facturesRes.data?.success) {
-        setFactures(facturesRes.data.data || []);
+        const facturesRaw = facturesRes.data.data;
+        setFactures(Array.isArray(facturesRaw) ? facturesRaw : (facturesRaw?.data || facturesRaw?.factures || []));
       } else {
         setFactures([]);
       }
       
-      setClients(clientsRes.data?.data || []);
+      const clientsRaw = clientsRes.data?.data; setClients(Array.isArray(clientsRaw) ? clientsRaw : (clientsRaw?.data || clientsRaw?.clients || []));
       setCommandes(cmdRes.data?.data || []);
       if (blRes.data?.success) {
-        setBonsLivraison(blRes.data.data || []);
+        const blRaw = blRes.data.data; setBonsLivraison(Array.isArray(blRaw) ? blRaw : (blRaw?.data || blRaw?.bons_livraison || []));
       }
     } catch (error) {
       console.error('Erreur chargement factures:', error);

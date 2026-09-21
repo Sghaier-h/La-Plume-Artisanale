@@ -53,15 +53,15 @@ const BonRetour: React.FC = () => {
       ]);
 
       if (brRes.data?.success) {
-        setBonsRetour(brRes.data.data || []);
+        const brRaw = brRes.data.data; setBonsRetour(Array.isArray(brRaw) ? brRaw : (brRaw?.data || brRaw?.bons_retour || []));
       } else {
         setBonsRetour([]);
       }
       
       if (blRes.data?.success) {
-        setBonsLivraison(blRes.data.data || []);
+        const blRaw = blRes.data.data; setBonsLivraison(Array.isArray(blRaw) ? blRaw : (blRaw?.data || blRaw?.bons_livraison || []));
       }
-      setClients(clientsRes.data?.data || []);
+      const clientsRaw = clientsRes.data?.data; setClients(Array.isArray(clientsRaw) ? clientsRaw : (clientsRaw?.data || clientsRaw?.clients || []));
     } catch (error) {
       console.error('Erreur chargement BR:', error);
       setBonsRetour([]);

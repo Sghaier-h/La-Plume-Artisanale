@@ -56,14 +56,14 @@ const Avoir: React.FC = () => {
       ]);
       
       if (avoirsRes.data?.success) {
-        setAvoirs(avoirsRes.data.data || []);
+        const avRaw = avoirsRes.data.data; setAvoirs(Array.isArray(avRaw) ? avRaw : (avRaw?.data || avRaw?.avoirs || []));
       } else {
         setAvoirs([]);
       }
       
-      setClients(clientsRes.data?.data || []);
+      const clientsRaw = clientsRes.data?.data; setClients(Array.isArray(clientsRaw) ? clientsRaw : (clientsRaw?.data || clientsRaw?.clients || []));
       if (facturesRes.data?.success) {
-        setFactures(facturesRes.data.data || []);
+        const fRaw = facturesRes.data.data; setFactures(Array.isArray(fRaw) ? fRaw : (fRaw?.data || fRaw?.factures || []));
       }
     } catch (error) {
       console.error('Erreur chargement avoirs:', error);
