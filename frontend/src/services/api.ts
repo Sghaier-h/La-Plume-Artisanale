@@ -351,6 +351,17 @@ export const tracabiliteLotsService = {
   createLot: (data: any) => api.post('/tracabilite-lots', data),
   getQRCodeLot: (id: number) => api.get(`/tracabilite-lots/${id}/qr-code`),
   genererEtiquette: (id: number) => api.post(`/tracabilite-lots/${id}/imprimer-etiquette`),
+  getStatsGlobal: () => api.get('/tracabilite-lots/stats/global'),
+  scanQR: (code: string) => api.get(`/tracabilite-lots/qr/${encodeURIComponent(code)}`),
+  getLotsCoupe: (params?: any) => api.get('/tracabilite-lots/coupe', { params }),
+  getLotCoupe: (id: number) => api.get(`/tracabilite-lots/coupe/${id}`),
+  createLotCoupe: (data: any) => api.post('/tracabilite-lots/coupe', data),
+  updateLotCoupe: (id: number, data: any) => api.put(`/tracabilite-lots/coupe/${id}`, data),
+  updateStatutLot: (id: number, statut: string) =>
+    api.put(`/tracabilite-lots/coupe/${id}/statut`, { statut }),
+  deleteLotCoupe: (id: number) => api.delete(`/tracabilite-lots/coupe/${id}`),
+  getLotsByOF: (id_of: number) => api.get(`/tracabilite-lots/of/${id_of}`),
+  getChaine: (id: number) => api.get(`/tracabilite-lots/${id}/chaine`),
 };
 
 export const qualiteAvanceeService = {
@@ -685,8 +696,9 @@ export const hrRecruitmentService = {
   createApplicant: (data: any) => api.post('/hr/recruitments', data),
   updateApplicant: (id: number, data: any) => api.put(`/hr/recruitments/${id}`, data),
   deleteApplicant: (id: number) => api.delete(`/hr/recruitments/${id}`),
-  hireApplicant: (id: number) => api.post(`/hr/recruitments/${id}/hire`),
-  refuseApplicant: (id: number) => api.post(`/hr/recruitments/${id}/refuse`),
+  hireApplicant: (id: number, data?: any) => api.post(`/hr/recruitments/${id}/hire`, data),
+  refuseApplicant: (id: number, data?: any) => api.post(`/hr/recruitments/${id}/refuse`, data),
+  rejectApplicant: (id: number, data?: any) => api.post(`/hr/recruitments/${id}/reject`, data),
   getStages: (params?: any) => api.get('/hr/recruitments/stages', { params }),
 };
 

@@ -1,273 +1,198 @@
-import React, { useState, useEffect } from 'react';
-import { tachesService } from '../services/api';
-import { useWebSocket } from '../hooks/useWebSocket';
-import { Package, CheckCircle, Camera, Bell, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { io, Socket } from 'socket.io-client';
+import { Package, AlertTriangle, ArrowRightLeft, PlusCircle, CheckCircle } from 'lucide-react';
+import DashboardLayout from '../components/DashboardLayout';
+import LoadingSpinner from '../components/LoadingSpinner';
+import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
+import api from '../services/api';
+import { useAuth } from '../hooks/useAuth';
 
-interface Tache {
-  id_tache: number;
-  id_of: number;
-  numero_of: string;
-  type_tache: string;
-  statut: string;
-  priorite: number;
-  article_designation?: string;
-  instructions?: string;
-}
+const SOCKET_URL =
+  process.env.REACT_APP_SOCKET_URL ||
+  (process.env.NODE_ENV === 'production' ? window.location.origin : 'http://localhost:5000');
 
-interface MatierePremiere {
-  selecteur: string;
-  designation: string;
-  quantite_kg: number;
-  entrepot: string;
-  scanne: boolean;
-}
+const toArr = (x: any): any[] =>
+  Array.isArray(x) ? x : (x?.data || x?.items || x?.rows || x?.alertes || x?.taches || []);
 
 const TabletteMagasinier: React.FC = () => {
-  const [taches, setTaches] = useState<Tache[]>([]);
-  const [tacheSelectionnee, setTacheSelectionnee] = useState<Tache | null>(null);
-  const [matieresPremieres, setMatieresPremieres] = useState<MatierePremiere[]>([]);
+  const { user } = useAuth();
+  const operateurId = user?.id;
+
   const [loading, setLoading] = useState(true);
-  const { socket, connected, notifications } = useWebSocket();
+  const [alertes, setAlertes] = useState<any[]>([]);
+  const [taches, setTaches] = useState<any[]>([]);
+  const [showForm, setShowForm] = useState(false);
+  const [mvt, setMvt] = useState({ id_mp: '', quantite: '', type_mouvement: 'SORTIE', id_entrepot_source: '', id_entrepot_destination: '', motif: '' });
+  const [saving, setSaving] = useState(false);
+
+  const loadData = useCallback(async () => {
+    if (!operateurId) return;
+    try {
+      const [alertesRes, tachesRes] = await Promise.all([
+        api.get('/matieres-premieres/alertes/stock'),
+        api.get(`/taches/operateur/${operateurId}/day`),
+      ]);
+      setAlertes(toArr(alertesRes.data?.data ?? alertesRes.data));
+      const tachesData = toArr(tachesRes.data?.data ?? tachesRes.data).filter(
+        (t: any) => !t.poste || String(t.poste).toLowerCase().includes('magasin') || String(t.type_tache || '').toLowerCase().includes('prep')
+      );
+      setTaches(tachesData);
+    } catch (err) { console.error('Erreur chargement magasin:', err); }
+    finally { setLoading(false); }
+  }, [operateurId]);
+
+  useEffect(() => { loadData(); }, [loadData]);
 
   useEffect(() => {
-    loadMesTaches();
-    const interval = setInterval(loadMesTaches, 10000);
-    return () => clearInterval(interval);
-  }, []);
+    const token = localStorage.getItem('token');
+    if (!token || !operateurId) return;
+    const socket: Socket = io(SOCKET_URL, { transports: ['websocket'], auth: { token } });
+    socket.on('tache:new', loadData);
+    socket.on('tache:completed', loadData);
+    return () => { socket.disconnect(); };
+  }, [operateurId, loadData]);
 
-  useEffect(() => {
-    if (tacheSelectionnee) {
-      loadMatieresPremieres(tacheSelectionnee.id_of);
-    }
-  }, [tacheSelectionnee]);
-
-  const loadMesTaches = async () => {
+  const handleEnregistrerMvt = async () => {
+    if (!mvt.id_mp || !mvt.quantite) { alert('MP et quantité requis'); return; }
+    setSaving(true);
     try {
-      const res = await tachesService.getMesTaches();
-      const taches = res.data.data.taches || [];
-      setTaches(taches.sort((a: Tache, b: Tache) => a.priorite - b.priorite));
-    } catch (err) {
-      console.error('Erreur chargement tâches:', err);
-    } finally {
-      setLoading(false);
-    }
+      await api.post('/stock/mouvements', {
+        id_mp: parseInt(mvt.id_mp, 10),
+        quantite: parseFloat(mvt.quantite),
+        type_mouvement: mvt.type_mouvement,
+        id_entrepot_source: mvt.id_entrepot_source ? parseInt(mvt.id_entrepot_source, 10) : null,
+        id_entrepot_destination: mvt.id_entrepot_destination ? parseInt(mvt.id_entrepot_destination, 10) : null,
+        motif: mvt.motif,
+        id_operateur: operateurId,
+      });
+      setMvt({ id_mp: '', quantite: '', type_mouvement: 'SORTIE', id_entrepot_source: '', id_entrepot_destination: '', motif: '' });
+      setShowForm(false);
+      loadData();
+    } catch { alert('Erreur enregistrement mouvement'); }
+    finally { setSaving(false); }
   };
 
-  const loadMatieresPremieres = async (ofId: number) => {
-    // Simuler données MP (à remplacer par vraie API)
-    setMatieresPremieres([
-      { selecteur: 'S01', designation: 'FIL-BL-2/28 (Blanc)', quantite_kg: 15, entrepot: 'E1', scanne: true },
-      { selecteur: 'S02', designation: 'FIL-EC-2/28 (Écru)', quantite_kg: 8, entrepot: 'E2', scanne: false },
-      { selecteur: 'S03', designation: 'FIL-BL-2/28 (Blanc)', quantite_kg: 5, entrepot: 'E1', scanne: false },
-      { selecteur: 'CHAI', designation: 'FIL-EC-2/30 (Écru)', quantite_kg: 25, entrepot: 'E1', scanne: true }
-    ]);
+  const handleTerminerTache = async (id: number) => {
+    try { await api.put(`/taches/${id}/terminer`); loadData(); }
+    catch { alert('Erreur finalisation'); }
   };
 
-  const handleScanner = (selecteur: string) => {
-    // Simuler scan QR
-    setMatieresPremieres(prev => prev.map(mp => 
-      mp.selecteur === selecteur ? { ...mp, scanne: true } : mp
-    ));
-  };
-
-  const handleValiderPreparation = async () => {
-    if (!tacheSelectionnee) return;
-    
-    const toutesScannees = matieresPremieres.every(mp => mp.scanne);
-    if (!toutesScannees) {
-      alert('Veuillez scanner toutes les matières premières');
-      return;
-    }
-
-    try {
-      await tachesService.terminerTache(tacheSelectionnee.id_tache);
-      loadMesTaches();
-      setTacheSelectionnee(null);
-      setMatieresPremieres([]);
-    } catch (err) {
-      alert('Erreur lors de la validation');
-    }
-  };
-
-  const handleDemarrer = async (tacheId: number) => {
-    try {
-      await tachesService.demarrerTache(tacheId);
-      loadMesTaches();
-    } catch (err) {
-      alert('Erreur lors du démarrage');
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600"></div>
-      </div>
-    );
-  }
+  const critiques = alertes.filter((a: any) => a.niveau === 'CRITIQUE' || (a.stock_actuel != null && a.stock_min != null && a.stock_actuel <= a.stock_min * 0.5)).length;
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* En-tête */}
-      <div className="bg-green-600 text-white p-4 flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          <Package className="w-8 h-8" />
-          <div>
-            <h1 className="text-xl font-bold">Poste Magasin MP</h1>
-            <div className="text-sm opacity-90">
-              <span className={`${connected ? 'text-green-300' : 'text-red-300'}`}>
-                {connected ? '🟢 Connecté' : '🔴 Déconnecté'}
-              </span>
-            </div>
+    <DashboardLayout title="Tablette Magasinier" activeSection="tablette" onSectionChange={() => {}}>
+      {loading ? <LoadingSpinner message="Chargement du poste magasin..." /> : (
+        <DashboardShell
+          eyebrow="Poste magasin MP"
+          title={`Bienvenue ${user?.prenom || ''} ${user?.nom || ''}`}
+          subtitle="Alertes stock et transferts de matières premières."
+          headerRight={<ThemeToggle />}
+        >
+          <div className="lp-metric-grid">
+            <KpiCard label="Alertes stock" value={alertes.length} icon={<AlertTriangle size={18} />} tone="terracotta" />
+            <KpiCard label="Critiques" value={critiques} icon={<AlertTriangle size={18} />} tone="rose" />
+            <KpiCard label="Transferts du jour" value={taches.length} icon={<ArrowRightLeft size={18} />} tone="indigo" />
+            <KpiCard label="MP suivies" value={alertes.length} icon={<Package size={18} />} tone="sage" />
           </div>
-        </div>
-        {notifications.length > 0 && (
-          <div className="relative">
-            <Bell className="w-6 h-6" />
-            <span className="absolute -top-2 -right-2 bg-red-500 rounded-full w-5 h-5 flex items-center justify-center text-xs">
-              {notifications.length}
-            </span>
-          </div>
-        )}
-      </div>
 
-      <div className="p-6 max-w-4xl mx-auto">
-        <h2 className="text-2xl font-bold mb-4">🎯 Mes Préparations à Faire</h2>
-
-        <div className="space-y-4 mb-6">
-          {taches.map((tache) => (
-            <div
-              key={tache.id_tache}
-              className={`bg-white rounded-lg shadow-lg p-4 border-2 ${
-                tache.priorite === 1 ? 'border-red-400 bg-red-50' :
-                tache.priorite === 2 ? 'border-orange-400 bg-orange-50' :
-                'border-blue-400 bg-blue-50'
-              }`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div>
-                  {tache.priorite === 1 && <span className="text-red-600 font-bold text-lg mr-2">🔴 URGENT</span>}
-                  {tache.priorite === 2 && <span className="text-orange-600 font-bold text-lg mr-2">🟡 URGENT</span>}
-                  <span className="font-bold text-lg">{tache.numero_of}</span>
+          <SectionCard
+            title="Enregistrer un mouvement MP"
+            subtitle="Entrée, sortie ou transfert"
+            icon={<ArrowRightLeft size={16} />}
+            actions={<button style={btnGhost} onClick={() => setShowForm(v => !v)}><PlusCircle size={14} /> {showForm ? 'Fermer' : 'Nouveau mouvement'}</button>}
+          >
+            {showForm ? (
+              <div style={{ display: 'grid', gap: 'var(--s-3)' }}>
+                <div style={{ display: 'grid', gap: 'var(--s-3)', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))' }}>
+                  <div><label style={labelStyle}>ID matière première</label><input style={bigInputStyle} value={mvt.id_mp} onChange={e => setMvt({ ...mvt, id_mp: e.target.value })} /></div>
+                  <div><label style={labelStyle}>Quantité</label><input type="number" style={bigInputStyle} value={mvt.quantite} onChange={e => setMvt({ ...mvt, quantite: e.target.value })} /></div>
+                  <div>
+                    <label style={labelStyle}>Type</label>
+                    <select style={bigInputStyle} value={mvt.type_mouvement} onChange={e => setMvt({ ...mvt, type_mouvement: e.target.value })}>
+                      <option>ENTREE</option><option>SORTIE</option><option>TRANSFERT</option>
+                    </select>
+                  </div>
+                  <div><label style={labelStyle}>Entrepôt source</label><input style={bigInputStyle} value={mvt.id_entrepot_source} onChange={e => setMvt({ ...mvt, id_entrepot_source: e.target.value })} /></div>
+                  <div><label style={labelStyle}>Entrepôt destination</label><input style={bigInputStyle} value={mvt.id_entrepot_destination} onChange={e => setMvt({ ...mvt, id_entrepot_destination: e.target.value })} /></div>
                 </div>
-                {tache.statut === 'ASSIGNEE' && (
-                  <button
-                    onClick={() => handleDemarrer(tache.id_tache)}
-                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
-                  >
-                    Démarrer
-                  </button>
-                )}
-              </div>
-
-              {tache.article_designation && (
-                <div className="text-gray-700 mb-2">Article: {tache.article_designation}</div>
-              )}
-
-              {tache.statut === 'EN_COURS' && (
-                <button
-                  onClick={() => setTacheSelectionnee(tache)}
-                  className="mt-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-                >
-                  Voir détails préparation
+                <label style={labelStyle}>Motif</label>
+                <input style={bigInputStyle} value={mvt.motif} onChange={e => setMvt({ ...mvt, motif: e.target.value })} placeholder="Ex : préparation OF-2026-0042" />
+                <button style={btnPrimary} onClick={handleEnregistrerMvt} disabled={saving}>
+                  <CheckCircle size={16} /> {saving ? 'Enregistrement...' : 'Enregistrer'}
                 </button>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Détails préparation */}
-        {tacheSelectionnee && (
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold">
-                {tacheSelectionnee.priorite === 1 && '🔴 URGENT - '}
-                {tacheSelectionnee.priorite === 2 && '🟡 URGENT - '}
-                OF {tacheSelectionnee.numero_of}
-              </h3>
-              <button
-                onClick={() => setTacheSelectionnee(null)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                ✕
-              </button>
-            </div>
-
-            {tacheSelectionnee.article_designation && (
-              <div className="mb-4">
-                <div className="text-sm text-gray-600">Article</div>
-                <div className="text-lg font-semibold">{tacheSelectionnee.article_designation}</div>
               </div>
+            ) : (
+              <div style={{ padding: 'var(--s-3)', color: 'var(--fg-muted)' }}>Cliquez sur "Nouveau mouvement" pour enregistrer une entrée, sortie ou transfert.</div>
             )}
+          </SectionCard>
 
-            <div className="mb-4">
-              <h4 className="font-semibold mb-2">Matières à préparer:</h4>
-              <div className="space-y-2">
-                {matieresPremieres.map((mp) => (
-                  <div
-                    key={mp.selecteur}
-                    className={`p-3 rounded border-2 ${
-                      mp.scanne ? 'bg-green-50 border-green-300' : 'bg-gray-50 border-gray-300'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="font-semibold">
-                          {mp.selecteur}: {mp.designation}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          {mp.quantite_kg} kg | Entrepôt: {mp.entrepot}
-                        </div>
+          <SectionCard title="Alertes stock" subtitle={`${alertes.length} MP sous seuil`} icon={<AlertTriangle size={16} />}>
+            {alertes.length === 0 ? (
+              <div style={{ padding: 'var(--s-4)', color: 'var(--fg-muted)' }}>Aucune alerte stock.</div>
+            ) : (
+              <div style={{ display: 'grid', gap: 'var(--s-3)' }}>
+                {alertes.map((a: any, i: number) => (
+                  <div key={a.id_mp || a.id || i} style={rowCard}>
+                    <div>
+                      <div style={{ fontSize: 'var(--text-md)', fontWeight: 600 }}>
+                        {a.designation || a.nom_mp || `MP #${a.id_mp || a.id}`}
                       </div>
-                      <div className="flex items-center gap-2">
-                        {mp.scanne ? (
-                          <CheckCircle className="w-6 h-6 text-green-600" />
-                        ) : (
-                          <button
-                            onClick={() => handleScanner(mp.selecteur)}
-                            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
-                          >
-                            <Camera className="w-4 h-4" />
-                            Scanner QR
-                          </button>
-                        )}
+                      <div style={{ fontSize: 'var(--text-sm)', color: 'var(--fg-muted)' }}>
+                        Stock : {a.stock_actuel ?? a.stock ?? '—'} · Seuil : {a.stock_min ?? a.seuil_min ?? '—'}
                       </div>
                     </div>
+                    <span style={{ padding: '4px 10px', borderRadius: 'var(--radius-full)', background: (a.niveau === 'CRITIQUE' ? 'var(--accent-rose)' : 'var(--accent-gold)'), color: '#fff', fontSize: 'var(--text-xs)', fontWeight: 700 }}>
+                      {a.niveau || 'ALERTE'}
+                    </span>
                   </div>
                 ))}
               </div>
-            </div>
-
-            {matieresPremieres.every(mp => mp.scanne) && (
-              <button
-                onClick={handleValiderPreparation}
-                className="w-full bg-green-600 text-white px-6 py-4 rounded-lg hover:bg-green-700 text-lg font-semibold flex items-center justify-center gap-2"
-              >
-                <CheckCircle className="w-5 h-5" />
-                VALIDER PRÉPARATION
-              </button>
             )}
-          </div>
-        )}
+          </SectionCard>
 
-        {/* Messages */}
-        {notifications.filter(n => n.type_notification === 'MESSAGE_RESPONSABLE').length > 0 && (
-          <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4 mt-6">
-            <div className="font-semibold mb-2">💬 Message du responsable</div>
-            {notifications
-              .filter(n => n.type_notification === 'MESSAGE_RESPONSABLE')
-              .slice(0, 1)
-              .map((notif, idx) => (
-                <div key={idx} className="text-sm">
-                  <div className="font-medium">{notif.titre}</div>
-                  <div className="text-gray-700">{notif.message}</div>
-                </div>
-              ))}
-          </div>
-        )}
-      </div>
-    </div>
+          <SectionCard title="Mes transferts du jour" subtitle={`${taches.length} tâches magasin`} icon={<ArrowRightLeft size={16} />}>
+            {taches.length === 0 ? (
+              <div style={{ padding: 'var(--s-4)', color: 'var(--fg-muted)' }}>Aucune préparation assignée.</div>
+            ) : (
+              <div style={{ display: 'grid', gap: 'var(--s-3)' }}>
+                {taches.map((t: any) => (
+                  <div key={t.id_tache} style={rowCard}>
+                    <div>
+                      <div style={{ fontSize: 'var(--text-md)', fontWeight: 600 }}>{t.numero_of || `OF #${t.id_of}`}</div>
+                      <div style={{ fontSize: 'var(--text-sm)', color: 'var(--fg-muted)' }}>
+                        {t.article_designation || t.type_tache} · {t.statut}
+                      </div>
+                    </div>
+                    {t.statut !== 'TERMINEE' && (
+                      <button style={{ ...btnPrimary, background: 'var(--accent-sage)', borderColor: 'var(--accent-sage)' }} onClick={() => handleTerminerTache(t.id_tache)}>
+                        <CheckCircle size={14} /> Valider
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </SectionCard>
+        </DashboardShell>
+      )}
+    </DashboardLayout>
   );
+};
+
+const labelStyle: React.CSSProperties = { display: 'block', fontSize: 'var(--text-md)', fontWeight: 600, marginBottom: 8, color: 'var(--fg-secondary)' };
+const bigInputStyle: React.CSSProperties = {
+  width: '100%', padding: '14px 16px', fontSize: 'var(--text-lg)', border: '2px solid var(--border-default)',
+  borderRadius: 'var(--radius-sm)', background: 'var(--bg-elevated)', color: 'var(--fg-primary)', minHeight: 56,
+};
+const btnBase: React.CSSProperties = {
+  display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 20px', minHeight: 48,
+  borderRadius: 'var(--radius-sm)', fontSize: 'var(--text-md)', fontWeight: 600, cursor: 'pointer', border: '1px solid transparent',
+};
+const btnPrimary: React.CSSProperties = { ...btnBase, background: 'var(--accent-terracotta)', color: '#fff', borderColor: 'var(--accent-terracotta)' };
+const btnGhost: React.CSSProperties = { ...btnBase, background: 'var(--bg-hover)', color: 'var(--fg-primary)', borderColor: 'var(--border-default)', padding: '8px 14px', minHeight: 40, fontSize: 'var(--text-sm)' };
+const rowCard: React.CSSProperties = {
+  display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--s-3)',
+  padding: 'var(--s-4)', background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)',
 };
 
 export default TabletteMagasinier;

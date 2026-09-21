@@ -5,12 +5,13 @@ import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { logger } from './utils/logger.js';
 import { errorHandler } from './utils/error.helper.js';
 import { pool } from './utils/db.js';
+import { loginRateLimit, apiRateLimit } from './middleware/rate-limit.middleware.js';
+import { autoAuditAll } from './middleware/audit.middleware.js';
 
 dotenv.config();
 
@@ -36,14 +37,30 @@ app.set('trust proxy', 1);
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
+// ── CORS : whitelist depuis CORS_ORIGIN (séparé par virgules), '*' en dev ──
+const corsWhitelist = (process.env.CORS_ORIGIN || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+const defaultOrigins = [
+  'http://localhost:3000',
+  'https://fabrication.laplume-artisanale.tn',
+  process.env.FRONTEND_URL || 'http://localhost:3000'
+];
+const allowedOrigins = corsWhitelist.length ? corsWhitelist : defaultOrigins;
+const isDev = process.env.NODE_ENV !== 'production';
+
 app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'https://fabrication.laplume-artisanale.tn',
-    process.env.FRONTEND_URL || 'http://localhost:3000'
-  ],
+  origin: (origin, cb) => {
+    // Requêtes non-CORS (Postman, curl) : pas d'origin → autorisé
+    if (!origin) return cb(null, true);
+    if (isDev && (allowedOrigins.includes('*') || corsWhitelist.length === 0)) return cb(null, true);
+    if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) return cb(null, true);
+    return cb(new Error(`CORS refusé pour l'origine ${origin}`));
+  },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Active-Company-Id']
 }));
 app.use(express.json({ limit: '10mb' }));
@@ -54,32 +71,18 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// ── Rate limiting ──────────────────────────────────────────────────────
+// ── Rate limiting (in-memory MVP) ──────────────────────────────────────
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: isDevelopment ? 1000 : 100,
-  message: {
-    success: false,
-    error: { message: 'Trop de requêtes. Veuillez patienter quelques instants.' }
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+// Limite spécifique au login (5 / IP / 15 min)
+app.use('/api/auth/login', loginRateLimit);
+// Limite globale API (300 / IP / min)
+app.use('/api/', apiRateLimit);
 
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: isDevelopment ? 50 : 10,
-  message: {
-    success: false,
-    error: { message: 'Trop de tentatives de connexion. Patientez 15 minutes.' }
-  },
-  skipSuccessfulRequests: true,
-});
-
-app.use('/api/auth/', authLimiter);
-app.use('/api/', limiter);
+// ── Audit automatique (attache res.on('finish') AVANT les routes) ──────
+// N'écrit dans `audit` que pour 2xx + POST/PUT/PATCH/DELETE et n'échoue
+// jamais silencieusement la requête utilisateur.
+app.use(autoAuditAll);
 
 // ── Swagger (optionnel) ────────────────────────────────────────────────
 (async function initSwagger() {

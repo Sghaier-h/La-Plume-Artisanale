@@ -181,6 +181,77 @@ export const createAuditLog = async (options) => {
 };
 
 /**
+ * Factory : middleware d'audit ciblé sur une route.
+ *   auditAction('LOGIN', 'utilisateurs')
+ *   auditAction()  // action déduite de req.method, entity_type = null
+ *
+ * Écrit dans la table `audit` (schéma fourni :
+ *   id_user, action, entity_type, entity_id,
+ *   ancien_valeur, nouveau_valeur, ip_address, user_agent, date_action)
+ * après envoi de la réponse via res.on('finish'), uniquement si :
+ *   - le status est 2xx
+ *   - req.user est défini
+ * Toute erreur est silencieuse (l'audit ne bloque jamais la requête).
+ */
+export const auditAction = (action, entityType) => (req, res, next) => {
+  res.on('finish', () => {
+    try {
+      if (!req.user) return;
+      if (res.statusCode < 200 || res.statusCode >= 300) return;
+
+      const derived =
+        action ||
+        (req.method === 'POST'   ? 'CREATE' :
+         req.method === 'PUT'    ? 'UPDATE' :
+         req.method === 'PATCH'  ? 'UPDATE' :
+         req.method === 'DELETE' ? 'DELETE' :
+         req.method === 'GET'    ? 'READ'   : 'UNKNOWN');
+
+      const entityId = req.params?.id ?? null;
+      const ip = req.ip || req.connection?.remoteAddress || null;
+      const ua = req.get?.('user-agent') || null;
+      const userId = req.user?.id ? parseInt(req.user.id, 10) : null;
+
+      const nouveau = ['POST', 'PUT', 'PATCH'].includes(req.method)
+        ? (req.body && Object.keys(req.body).length ? req.body : null)
+        : null;
+
+      pool.query(
+        `INSERT INTO audit
+           (id_user, action, entity_type, entity_id,
+            ancien_valeur, nouveau_valeur, ip_address, user_agent, date_action)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())`,
+        [
+          userId,
+          derived,
+          entityType || null,
+          entityId,
+          req.body?._oldValues ? JSON.stringify(req.body._oldValues) : null,
+          nouveau ? JSON.stringify(nouveau) : null,
+          ip,
+          ua
+        ]
+      ).catch((err) => {
+        console.error('[audit] insertion échouée:', err.message);
+      });
+    } catch (err) {
+      console.error('[audit] erreur non bloquante:', err.message);
+    }
+  });
+  next();
+};
+
+/**
+ * Middleware global : audite automatiquement toute route POST/PUT/PATCH/DELETE
+ * dont la réponse est 2xx et pour laquelle req.user est défini.
+ * À monter APRÈS les routes, AVANT errorHandler.
+ */
+export const autoAuditAll = (req, res, next) => {
+  if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) return next();
+  return auditAction()(req, res, next);
+};
+
+/**
  * Helper pour enregistrer les anciennes valeurs avant modification
  */
 export const captureOldValues = async (tableName, recordId, fieldsToCapture = null) => {

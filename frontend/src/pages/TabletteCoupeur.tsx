@@ -1,240 +1,200 @@
-import React, { useState, useEffect } from 'react';
-import { tachesService } from '../services/api';
-import { useWebSocket } from '../hooks/useWebSocket';
-import { Scissors, Play, CheckCircle, Clock, Bell, Camera } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { io, Socket } from 'socket.io-client';
+import { Scissors, Play, CheckCircle, Camera, Package } from 'lucide-react';
+import DashboardLayout from '../components/DashboardLayout';
+import LoadingSpinner from '../components/LoadingSpinner';
+import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
+import api from '../services/api';
+import { useAuth } from '../hooks/useAuth';
 
-interface Tache {
-  id_tache: number;
-  id_of: number;
-  numero_of: string;
-  type_tache: string;
-  statut: string;
-  priorite: number;
-  quantite_demandee: number;
-  article_designation?: string;
-}
+const SOCKET_URL =
+  process.env.REACT_APP_SOCKET_URL ||
+  (process.env.NODE_ENV === 'production' ? window.location.origin : 'http://localhost:5000');
+
+const toArr = (x: any): any[] =>
+  Array.isArray(x) ? x : (x?.data || x?.items || x?.taches || x?.rows || []);
 
 const TabletteCoupeur: React.FC = () => {
-  const [tachesEnAttente, setTachesEnAttente] = useState<Tache[]>([]);
-  const [tachesPretes, setTachesPretes] = useState<Tache[]>([]);
-  const [tacheEnCours, setTacheEnCours] = useState<Tache | null>(null);
+  const { user } = useAuth();
+  const operateurId = user?.id;
+
   const [loading, setLoading] = useState(true);
-  const [quantiteSaisie, setQuantiteSaisie] = useState(0);
-  const { socket, connected, notifications } = useWebSocket();
+  const [taches, setTaches] = useState<any[]>([]);
+  const [qrCode, setQrCode] = useState('');
+  const [lotInfo, setLotInfo] = useState<any>(null);
+  const [quantite, setQuantite] = useState('');
+  const [scanning, setScanning] = useState(false);
 
-  useEffect(() => {
-    loadMesTaches();
-    const interval = setInterval(loadMesTaches, 10000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const loadMesTaches = async () => {
+  const loadTaches = useCallback(async () => {
+    if (!operateurId) return;
     try {
-      const res = await tachesService.getMesTaches();
-      const taches = res.data.data.taches || [];
-      
-      const enCours = taches.find((t: Tache) => t.statut === 'EN_COURS');
-      const pretes = taches.filter((t: Tache) => t.statut === 'ASSIGNEE' || t.statut === 'EN_ATTENTE');
-      const enAttente: any[] = []; // Simuler OF en attente de tissage
-
-      setTacheEnCours(enCours || null);
-      setTachesPretes(pretes);
-      setTachesEnAttente(enAttente);
-      
-      if (enCours) {
-        setQuantiteSaisie(enCours.quantite_realisee || 0);
-      }
+      const res = await api.get(`/taches/operateur/${operateurId}/day`);
+      const arr = toArr(res.data?.data ?? res.data).filter(
+        (t: any) => !t.poste || String(t.poste).toLowerCase().includes('coupe') || String(t.type_tache || '').toLowerCase().includes('coupe')
+      );
+      setTaches(arr);
     } catch (err) {
       console.error('Erreur chargement tâches:', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [operateurId]);
 
-  const handleDemarrer = async (tacheId: number) => {
+  useEffect(() => { loadTaches(); }, [loadTaches]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token || !operateurId) return;
+    const socket: Socket = io(SOCKET_URL, { transports: ['websocket'], auth: { token } });
+    socket.on('tache:new', loadTaches);
+    socket.on('tache:completed', loadTaches);
+    return () => { socket.disconnect(); };
+  }, [operateurId, loadTaches]);
+
+  const handleScanQr = async () => {
+    if (!qrCode.trim()) return;
+    setScanning(true);
+    setLotInfo(null);
     try {
-      await tachesService.demarrerTache(tacheId);
-      loadMesTaches();
-    } catch (err) {
-      alert('Erreur lors du démarrage');
-    }
+      const res = await api.get(`/tracabilite-lots/qr/${encodeURIComponent(qrCode.trim())}`);
+      setLotInfo(res.data?.data ?? res.data);
+    } catch {
+      alert('Lot introuvable pour ce QR');
+    } finally { setScanning(false); }
   };
 
-  const handleTerminer = async () => {
-    if (!tacheEnCours) return;
-    
-    if (window.confirm(`Terminer la coupe ${tacheEnCours.numero_of} ?`)) {
-      try {
-        await tachesService.terminerTache(tacheEnCours.id_tache, {
-          quantite_realisee: quantiteSaisie
-        });
-        loadMesTaches();
-        setQuantiteSaisie(0);
-      } catch (err) {
-        alert('Erreur lors de la finalisation');
-      }
-    }
+  const handleCreerLotCoupe = async () => {
+    if (!lotInfo) { alert('Scannez un lot d\'abord'); return; }
+    try {
+      await api.post('/tracabilite-lots/coupe', {
+        id_lot_source: lotInfo.id_lot,
+        id_of: lotInfo.id_of,
+        id_operateur: operateurId,
+        quantite_coupe: parseInt(quantite, 10) || 0,
+      });
+      alert('Lot de coupe créé');
+      setLotInfo(null); setQrCode(''); setQuantite('');
+      loadTaches();
+    } catch { alert('Erreur création lot de coupe'); }
   };
 
-  const handleScannerOF = () => {
-    // Simuler scan QR OF
-    alert('OF scanné avec succès');
+  const handleDemarrer = async (id: number) => {
+    try { await api.put(`/taches/${id}/demarrer`); loadTaches(); }
+    catch { alert('Erreur démarrage'); }
+  };
+  const handleTerminer = async (id: number) => {
+    try { await api.put(`/taches/${id}/terminer`); loadTaches(); }
+    catch { alert('Erreur finalisation'); }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600"></div>
-      </div>
-    );
-  }
+  const enCours = taches.filter((t: any) => t.statut === 'EN_COURS');
+  const aFaire = taches.filter((t: any) => t.statut === 'ASSIGNEE' || t.statut === 'EN_ATTENTE');
+  const terminees = taches.filter((t: any) => t.statut === 'TERMINEE');
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* En-tête */}
-      <div className="bg-orange-600 text-white p-4 flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          <Scissors className="w-8 h-8" />
-          <div>
-            <h1 className="text-xl font-bold">Poste Coupe</h1>
-            <div className="text-sm opacity-90">
-              <span className={`${connected ? 'text-green-300' : 'text-red-300'}`}>
-                {connected ? '🟢 Connecté' : '🔴 Déconnecté'}
-              </span>
-            </div>
+    <DashboardLayout title="Tablette Coupeur" activeSection="tablette" onSectionChange={() => {}}>
+      {loading ? <LoadingSpinner message="Chargement du poste coupe..." /> : (
+        <DashboardShell
+          eyebrow="Poste coupe"
+          title={`Bienvenue ${user?.prenom || ''} ${user?.nom || ''}`}
+          subtitle="Scanne un lot QR et crée les lots de coupe correspondants."
+          headerRight={<ThemeToggle />}
+        >
+          <div className="lp-metric-grid">
+            <KpiCard label="À couper" value={aFaire.length} icon={<Scissors size={18} />} tone="gold" />
+            <KpiCard label="En cours" value={enCours.length} icon={<Play size={18} />} tone="terracotta" />
+            <KpiCard label="Terminées" value={terminees.length} icon={<CheckCircle size={18} />} tone="sage" hint="Aujourd'hui" />
+            <KpiCard label="Total jour" value={taches.length} icon={<Package size={18} />} tone="indigo" />
           </div>
-        </div>
-        {notifications.length > 0 && (
-          <div className="relative">
-            <Bell className="w-6 h-6" />
-            <span className="absolute -top-2 -right-2 bg-red-500 rounded-full w-5 h-5 flex items-center justify-center text-xs">
-              {notifications.length}
-            </span>
-          </div>
-        )}
-      </div>
 
-      <div className="p-6 max-w-4xl mx-auto">
-        {/* En attente de tissage */}
-        {tachesEnAttente.length > 0 && (
-          <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              <Clock className="w-5 h-5" />
-              ⏳ En Attente de Tissage
-            </h2>
-            <div className="space-y-2">
-              {tachesEnAttente.map((tache) => (
-                <div key={tache.id_tache} className="p-3 bg-gray-50 rounded">
-                  <div className="font-semibold">{tache.numero_of} - Tissage en cours (85%)</div>
-                  <div className="text-sm text-gray-600">Estimé disponible: ~30 min</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Tâche en cours */}
-        {tacheEnCours ? (
-          <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-            <h2 className="text-2xl font-bold mb-4">✂️ Coupe en Cours</h2>
-            <div className="space-y-4">
-              <div>
-                <div className="text-sm text-gray-600">OF</div>
-                <div className="text-xl font-semibold">{tacheEnCours.numero_of}</div>
+          <SectionCard title="Scanner QR lot" subtitle="Saisir ou coller le code QR d'un lot source" icon={<Camera size={16} />}>
+            <div style={{ display: 'grid', gap: 'var(--s-3)' }}>
+              <input
+                type="text"
+                value={qrCode}
+                onChange={(e) => setQrCode(e.target.value)}
+                placeholder="Code QR du lot (ex : LOT-2026-0042)"
+                style={bigInputStyle}
+              />
+              <div style={btnRow}>
+                <button style={btnPrimary} onClick={handleScanQr} disabled={scanning || !qrCode.trim()}>
+                  <Camera size={16} /> {scanning ? 'Recherche...' : 'Rechercher lot'}
+                </button>
               </div>
-              {tacheEnCours.article_designation && (
-                <div>
-                  <div className="text-sm text-gray-600">Article</div>
-                  <div className="text-lg">{tacheEnCours.article_designation}</div>
+              {lotInfo && (
+                <div style={{ display: 'grid', gap: 'var(--s-3)', padding: 'var(--s-4)', background: 'var(--bg-hover)', borderRadius: 'var(--radius-sm)' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 'var(--s-3)' }}>
+                    <InfoBox label="Lot" value={lotInfo.numero_lot || lotInfo.id_lot} />
+                    <InfoBox label="OF" value={lotInfo.numero_of || lotInfo.id_of || '—'} />
+                    <InfoBox label="Article" value={lotInfo.article_designation || '—'} />
+                    <InfoBox label="Quantité dispo" value={lotInfo.quantite || lotInfo.quantite_disponible || '—'} />
+                  </div>
+                  <label style={labelStyle}>Quantité à couper</label>
+                  <input type="number" inputMode="numeric" value={quantite} onChange={(e) => setQuantite(e.target.value)} style={bigInputStyle} placeholder="0" />
+                  <button style={btnPrimary} onClick={handleCreerLotCoupe} disabled={!quantite}>
+                    <Scissors size={16} /> Créer lot de coupe
+                  </button>
                 </div>
               )}
-              <div>
-                <label className="block text-sm font-medium mb-2">Quantité coupée</label>
-                <input
-                  type="number"
-                  value={quantiteSaisie}
-                  onChange={(e) => setQuantiteSaisie(parseInt(e.target.value) || 0)}
-                  min={0}
-                  max={tacheEnCours.quantite_demandee}
-                  className="w-full px-4 py-3 border-2 border-orange-300 rounded-lg text-xl font-semibold text-center"
-                />
-                <div className="text-sm text-gray-600 mt-1">
-                  Demandée: {tacheEnCours.quantite_demandee} pièces
-                </div>
-              </div>
-              <button
-                onClick={handleTerminer}
-                className="w-full bg-green-600 text-white px-6 py-4 rounded-lg hover:bg-green-700 text-lg font-semibold flex items-center justify-center gap-2"
-              >
-                <CheckCircle className="w-5 h-5" />
-                TERMINER COUPE
-              </button>
             </div>
-          </div>
-        ) : (
-          <div className="bg-white rounded-lg shadow-lg p-6 mb-6 text-center">
-            <div className="text-xl text-gray-600 mb-4">Aucune coupe en cours</div>
-          </div>
-        )}
+          </SectionCard>
 
-        {/* Prêts à couper */}
-        {tachesPretes.length > 0 && (
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <h2 className="text-xl font-semibold mb-4">✅ Prêts à Couper</h2>
-            <div className="space-y-3">
-              {tachesPretes.map((tache) => (
-                <div
-                  key={tache.id_tache}
-                  className="p-4 rounded-lg border-2 border-green-300 bg-green-50"
-                >
-                  <div className="flex items-center justify-between">
+          <SectionCard title="Mes tâches de coupe" subtitle={`${aFaire.length} à faire · ${enCours.length} en cours`} icon={<Scissors size={16} />}>
+            {taches.length === 0 ? (
+              <div style={{ padding: 'var(--s-4)', color: 'var(--fg-muted)' }}>Aucune tâche assignée aujourd'hui.</div>
+            ) : (
+              <div style={{ display: 'grid', gap: 'var(--s-3)' }}>
+                {taches.map((t: any) => (
+                  <div key={t.id_tache} style={rowCard}>
                     <div>
-                      <div className="font-semibold text-lg">🟢 {tache.numero_of}</div>
-                      {tache.article_designation && (
-                        <div className="text-sm text-gray-600">{tache.article_designation}</div>
-                      )}
-                      <div className="text-sm text-gray-500">Quantité: {tache.quantite_demandee} pièces</div>
+                      <div style={{ fontSize: 'var(--text-md)', fontWeight: 600 }}>{t.numero_of || `#${t.id_of}`}</div>
+                      <div style={{ fontSize: 'var(--text-sm)', color: 'var(--fg-muted)' }}>
+                        {t.article_designation || t.type_tache} · Qté {t.quantite_demandee} · {t.statut}
+                      </div>
                     </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={handleScannerOF}
-                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
-                      >
-                        <Camera className="w-4 h-4" />
-                        Scanner OF
-                      </button>
-                      <button
-                        onClick={() => handleDemarrer(tache.id_tache)}
-                        className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2"
-                      >
-                        <Play className="w-4 h-4" />
-                        Démarrer
-                      </button>
+                    <div style={{ display: 'flex', gap: 'var(--s-2)' }}>
+                      {t.statut === 'ASSIGNEE' && (
+                        <button style={btnPrimary} onClick={() => handleDemarrer(t.id_tache)}>
+                          <Play size={14} /> Démarrer
+                        </button>
+                      )}
+                      {t.statut === 'EN_COURS' && (
+                        <button style={{ ...btnPrimary, background: 'var(--accent-sage)', borderColor: 'var(--accent-sage)' }} onClick={() => handleTerminer(t.id_tache)}>
+                          <CheckCircle size={14} /> Terminer
+                        </button>
+                      )}
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Statistiques */}
-        <div className="bg-white rounded-lg shadow-lg p-6 mt-6">
-          <h3 className="text-lg font-semibold mb-4">📊 Aujourd'hui</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <div className="text-sm text-gray-600">Pièces coupées</div>
-              <div className="text-2xl font-bold text-green-600">120</div>
-            </div>
-            <div>
-              <div className="text-sm text-gray-600">Rebut</div>
-              <div className="text-2xl font-bold text-red-600">0</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+                ))}
+              </div>
+            )}
+          </SectionCard>
+        </DashboardShell>
+      )}
+    </DashboardLayout>
   );
+};
+
+const InfoBox: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
+  <div style={{ padding: 'var(--s-3)', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-sm)' }}>
+    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>{label}</div>
+    <div style={{ fontSize: 'var(--text-md)', fontWeight: 600 }}>{value}</div>
+  </div>
+);
+const labelStyle: React.CSSProperties = { display: 'block', fontSize: 'var(--text-md)', fontWeight: 600, marginBottom: 8, color: 'var(--fg-secondary)' };
+const bigInputStyle: React.CSSProperties = {
+  width: '100%', padding: '14px 16px', fontSize: 'var(--text-lg)', border: '2px solid var(--border-default)',
+  borderRadius: 'var(--radius-sm)', background: 'var(--bg-elevated)', color: 'var(--fg-primary)', minHeight: 56,
+};
+const btnRow: React.CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: 'var(--s-3)' };
+const btnBase: React.CSSProperties = {
+  display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 20px', minHeight: 48,
+  borderRadius: 'var(--radius-sm)', fontSize: 'var(--text-md)', fontWeight: 600, cursor: 'pointer', border: '1px solid transparent',
+};
+const btnPrimary: React.CSSProperties = { ...btnBase, background: 'var(--accent-terracotta)', color: '#fff', borderColor: 'var(--accent-terracotta)' };
+const rowCard: React.CSSProperties = {
+  display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--s-3)',
+  padding: 'var(--s-4)', background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)',
 };
 
 export default TabletteCoupeur;

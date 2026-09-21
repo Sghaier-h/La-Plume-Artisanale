@@ -47,6 +47,8 @@ const QualiteAvance = React.lazy(() => import('./pages/QualiteAvance'));
 const Couts = React.lazy(() => import('./pages/Couts'));
 const MultiSociete = React.lazy(() => import('./pages/MultiSociete'));
 const Communication = React.lazy(() => import('./pages/Communication'));
+const TracabiliteLots = React.lazy(() => import('./pages/TracabiliteLots'));
+const RhRecrutement = React.lazy(() => import('./pages/RhRecrutement'));
 const MessagesOperateurs = React.lazy(() => import('./pages/MessagesOperateurs'));
 const Ecommerce = React.lazy(() => import('./pages/Ecommerce'));
 const FoutaManagementApp = React.lazy(() => import('./pages/FoutaManagement'));
@@ -519,6 +521,22 @@ const AppContent: React.FC = () => {
             element={
               <PrivateRoute>
                 <Communication />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/tracabilite-lots"
+            element={
+              <PrivateRoute>
+                <TracabiliteLots />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/rh-recrutement"
+            element={
+              <PrivateRoute>
+                <RhRecrutement />
               </PrivateRoute>
             }
           />
