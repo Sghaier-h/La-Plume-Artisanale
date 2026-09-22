@@ -29,8 +29,9 @@ const MatierePremiereStock: React.FC = () => {
     setLoading(true);
     try {
       const response = await matieresPremieresService.getMatieresPremieres({ search });
-      const matieresData = response.data.data?.matieres || response.data.data || [];
-      setMatieres(matieresData);
+      const _r = response.data?.data;
+      const matieresData = Array.isArray(_r) ? _r : (_r?.matieres || _r?.data || _r?.items || []);
+      setMatieres(Array.isArray(matieresData) ? matieresData : []);
     } catch (error) {
       console.error('Erreur chargement matières premières:', error);
       // Données mockées
