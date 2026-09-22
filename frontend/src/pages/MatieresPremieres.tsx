@@ -36,7 +36,7 @@ const MatieresPremieres: React.FC = () => {
     try {
       setLoading(true);
       const response = await matieresPremieresService.getMatieresPremieres({ search });
-      setMatieres(response.data.data.matieres || []);
+      setMatieres(((v) => Array.isArray(v) ? v : (v?.matieres_premieres || v?.matieres || v?.data || v?.items || (v && typeof v === 'object' ? Object.values(v).find((x: any) => Array.isArray(x)) : null) || []))(response.data?.data) as any[]);
     } catch (error) {
       console.error('Erreur chargement:', error);
     } finally {

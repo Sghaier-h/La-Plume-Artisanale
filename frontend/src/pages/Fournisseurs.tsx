@@ -45,7 +45,7 @@ const Fournisseurs: React.FC = () => {
     setError(null);
     try {
       const res = await fournisseursService.getFournisseurs({ search });
-      setFournisseurs(res.data.data.fournisseurs || []);
+      setFournisseurs(((v) => Array.isArray(v) ? v : (v?.fournisseurs || v?.data || v?.items || (v && typeof v === 'object' ? Object.values(v).find((x: any) => Array.isArray(x)) : null) || []))(res.data?.data) as any[]);
     } catch (err: any) {
       console.error('Erreur chargement fournisseurs:', err);
       setError(err.response?.data?.error?.message || 'Erreur lors du chargement');
