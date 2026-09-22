@@ -190,14 +190,55 @@ const Modeles: React.FC = () => {
         setModeles(mockModeles);
       }
 
-      // Charger les attributs
+      // Charger les attributs (nouveau format: bundle { dimensions, couleurs, finitions, tissages, ... })
       try {
         const attributsRes = await produitsService.getAttributs();
-        // Gérer différents formats de réponse
-        if (attributsRes?.data?.data) {
-          setAttributs(Array.isArray(attributsRes.data.data) ? attributsRes.data.data : []);
-        } else if (attributsRes?.data) {
-          setAttributs(Array.isArray(attributsRes.data) ? attributsRes.data : []);
+        // Extraire le bundle en gérant les enveloppes { data: <bundle> } ou { data: { data: <bundle> } }
+        let bundle: any = attributsRes?.data?.data ?? attributsRes?.data ?? {};
+        if (bundle && bundle.data && !Array.isArray(bundle) && !bundle.dimensions) {
+          bundle = bundle.data;
+        }
+        // Ancien code déjà déployé: c'est peut-être encore un Attribut[]
+        if (Array.isArray(bundle)) {
+          setAttributs(bundle as Attribut[]);
+        } else if (bundle && typeof bundle === 'object') {
+          // Synthétiser un Attribut[] compatible avec le formulaire à partir du bundle
+          const mkAttribut = (
+            code_attribut: string,
+            libelle: string,
+            rows: any[] | undefined,
+            mapper: (r: any) => { code: string; libelle: string; couleur_hex?: string }
+          ): Attribut | null => {
+            if (!Array.isArray(rows) || rows.length === 0) return null;
+            return {
+              id_attribut: 0,
+              code_attribut,
+              libelle,
+              type_attribut: 'liste',
+              valeurs_possibles: rows.map(mapper).filter(v => v.code)
+            };
+          };
+          const synth: Attribut[] = [];
+          const dim = mkAttribut('dimension', 'Dimension', bundle.dimensions,
+            (r) => ({ code: String(r.code ?? r.libelle ?? r.id ?? ''), libelle: String(r.libelle ?? r.code ?? '') }));
+          if (dim) synth.push(dim);
+          const tis = mkAttribut('tissage', 'Type de tissage', bundle.tissages,
+            (r) => ({ code: String(r.code ?? r.libelle ?? r.id ?? ''), libelle: String(r.libelle ?? r.code ?? '') }));
+          if (tis) synth.push(tis);
+          const fin = mkAttribut('finition', 'Type de finition', bundle.finitions,
+            (r) => ({ code: String(r.code ?? r.libelle ?? r.id ?? ''), libelle: String(r.libelle ?? r.code ?? '') }));
+          if (fin) synth.push(fin);
+          const nc = mkAttribut('nombre_couleur', 'Nombre de couleurs', bundle.nombres_couleurs,
+            (r) => ({ code: String(r.code ?? r.libelle ?? r.id ?? ''), libelle: String(r.libelle ?? r.code ?? '') }));
+          if (nc) synth.push(nc);
+          const coul = mkAttribut('couleur', 'Couleur', bundle.couleurs,
+            (r) => ({
+              code: String(r.code_commercial ?? r.code ?? r.id ?? ''),
+              libelle: String(r.nom ?? r.libelle ?? ''),
+              couleur_hex: r.code_hex
+            }));
+          if (coul) synth.push(coul);
+          setAttributs(synth);
         } else {
           setAttributs([]);
         }
