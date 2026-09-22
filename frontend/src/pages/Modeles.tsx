@@ -13,6 +13,7 @@ interface Prix {
 
 interface Modele {
   id_modele?: number;
+  id_modeles?: number;
   code_modele: string;
   designation: string;
   description?: string;
@@ -1312,7 +1313,7 @@ const Modeles: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-gray-200">
               {filteredModeles.map((modele) => (
-                <tr key={modele.id_modele} onClick={() => modele.id_modele && navigate(`/modeles/${modele.id_modele}`)} className="hover:bg-gray-50 cursor-pointer">
+                <tr key={(modele.id_modeles ?? modele.id_modele)} onClick={() => (modele.id_modeles ?? modele.id_modele) && navigate(`/modeles/${(modele.id_modeles ?? modele.id_modele)}`)} className="hover:bg-gray-50 cursor-pointer">
                   <td className="px-6 py-4">
                     {modele.photo_modele ? (
                       <img src={modele.photo_modele} alt={modele.designation} className="w-12 h-12 object-cover rounded" />
@@ -1344,7 +1345,7 @@ const Modeles: React.FC = () => {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (modele.id_modele) navigate(`/modeles/${modele.id_modele}`);
+                          if ((modele.id_modeles ?? modele.id_modele)) navigate(`/modeles/${(modele.id_modeles ?? modele.id_modele)}`);
                         }}
                         className="text-green-600 hover:text-green-700"
                         title="Voir les détails"
@@ -1363,7 +1364,7 @@ const Modeles: React.FC = () => {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          modele.id_modele && handleDelete(modele.id_modele);
+                          const _id = modele.id_modeles ?? modele.id_modele; if (_id != null) handleDelete(_id);
                         }}
                         className="text-red-600 hover:text-red-700"
                       >
@@ -1381,10 +1382,10 @@ const Modeles: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredModeles.map((modele) => (
               <div 
-                key={modele.id_modele} 
+                key={(modele.id_modeles ?? modele.id_modele)} 
                 className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
                 onClick={() => {
-                  if (modele.id_modele) navigate(`/modeles/${modele.id_modele}`);
+                  if ((modele.id_modeles ?? modele.id_modele)) navigate(`/modeles/${(modele.id_modeles ?? modele.id_modele)}`);
                 }}
               >
                 <div className="h-48 bg-gray-200 flex items-center justify-center overflow-hidden">
@@ -1419,7 +1420,7 @@ const Modeles: React.FC = () => {
                   <div className="flex gap-2 pt-3 border-t" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => {
-                        if (modele.id_modele) navigate(`/modeles/${modele.id_modele}`);
+                        if ((modele.id_modeles ?? modele.id_modele)) navigate(`/modeles/${(modele.id_modeles ?? modele.id_modele)}`);
                       }}
                       className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
                     >
@@ -1433,9 +1434,9 @@ const Modeles: React.FC = () => {
                       <Edit className="w-4 h-4" />
                       Modifier
                     </button>
-                    {modele.id_modele && (
+                    {(modele.id_modeles ?? modele.id_modele) && (
                       <button
-                        onClick={() => handleDelete(modele.id_modele!)}
+                        onClick={() => handleDelete((modele.id_modeles ?? modele.id_modele)!)}
                         className="px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700"
                       >
                         <Trash2 className="w-4 h-4" />
