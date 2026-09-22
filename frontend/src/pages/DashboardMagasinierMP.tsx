@@ -3,7 +3,6 @@ import {
   Package, TrendingDown, AlertTriangle, CheckCircle, Clock, Search, Printer,
   ArrowRightLeft, Box, Download, Plus, ChevronDown, ChevronRight, Activity,
 } from 'lucide-react';
-import DashboardLayout from '../components/DashboardLayout';
 import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
 import WhatsAppWidget from '../components/WhatsAppWidget';
 
@@ -639,7 +638,7 @@ const DashboardMagasinierMP: React.FC = () => {
   const transfertsCount = transfertsEnAttente.length;
 
   return (
-    <DashboardLayout title="Tableau de bord — Magasinier matières premières" activeSection="dashboard" onSectionChange={() => {}}>
+    <>
       <DashboardShell
         eyebrow="Poste — Magasinier MP"
         title="Tableau de bord — Magasinier matières premières"
@@ -727,7 +726,7 @@ const DashboardMagasinierMP: React.FC = () => {
       )}
 
       <WhatsAppWidget dashboardName="Magasinier MP" position="bottom-right" />
-    </DashboardLayout>
+    </>
   );
 };
 

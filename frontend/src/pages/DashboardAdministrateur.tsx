@@ -5,7 +5,6 @@ import {
   ArrowUpRight, Calendar, TrendingUp, Activity,
 } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import DashboardLayout from '../components/DashboardLayout';
 import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
 import { useDashboardKpis } from '../hooks/useDashboardKpis';
 
@@ -60,11 +59,7 @@ const DashboardAdministrateur: React.FC = () => {
   ];
 
   return (
-    <DashboardLayout
-      title="Dashboard Administrateur"
-      activeSection="dashboard"
-      onSectionChange={() => {}}
-    >
+    <>
       <DashboardShell
         eyebrow="Vue d'ensemble"
         title="Tableau de bord — Administrateur"
@@ -334,7 +329,7 @@ const DashboardAdministrateur: React.FC = () => {
           </div>
         </SectionCard>
       </DashboardShell>
-    </DashboardLayout>
+    </>
   );
 };
 

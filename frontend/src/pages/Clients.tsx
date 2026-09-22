@@ -76,7 +76,7 @@ const Clients: React.FC = () => {
       if (filters.actif !== '') params.actif = filters.actif;
       
       const res = await clientsService.getClients(params);
-      setClients(res.data.data || []);
+      { const _r = res.data?.data; setClients(Array.isArray(_r) ? _r : (_r?.data || _r?.clients || [])); }
     } catch (error) {
       console.error('Erreur chargement clients:', error);
     } finally {

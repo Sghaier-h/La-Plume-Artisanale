@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Scissors, Calendar, Printer, TrendingUp, AlertTriangle, CheckCircle, Clock, Activity, Users } from 'lucide-react';
-import DashboardLayout from '../components/DashboardLayout';
 import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
 
 const DashboardPostCoupe: React.FC = () => {
@@ -58,7 +57,7 @@ const DashboardPostCoupe: React.FC = () => {
   };
 
   return (
-    <DashboardLayout title="Poste Coupe" activeSection="dashboard" onSectionChange={() => {}}>
+    <>
       <DashboardShell
         eyebrow="Poste — Coupe"
         title="Tableau de bord — Poste coupe"
@@ -156,7 +155,7 @@ const DashboardPostCoupe: React.FC = () => {
           </div>
         </SectionCard>
       </DashboardShell>
-    </DashboardLayout>
+    </>
   );
 };
 

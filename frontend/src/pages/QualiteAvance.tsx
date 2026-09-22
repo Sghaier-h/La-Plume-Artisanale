@@ -29,8 +29,8 @@ const QualiteAvance: React.FC = () => {
 
       setControles(controlesRes.data.data.controles || []);
       setNonConformites(ncRes.data.data || []);
-      setStatistiques(statsRes.data.data);
-      setDiagrammes(diagrammesRes.data.data);
+      setStatistiques((() => { const _r = statsRes.data?.data; return Array.isArray(_r) ? _r : (_r?.data || _r?.statistiques || []); })());
+      setDiagrammes((() => { const _r = diagrammesRes.data?.data; return Array.isArray(_r) ? _r : (_r?.data || _r?.diagrammes || []); })());
     } catch (error) {
       console.error('Erreur chargement:', error);
     } finally {

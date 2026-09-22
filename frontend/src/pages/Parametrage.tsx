@@ -41,10 +41,10 @@ const Parametrage: React.FC = () => {
       setLoading(true);
       if (activeTab === 'societe') {
         const response = await parametrageService.getSociete();
-        setSociete(response.data.data);
+        setSociete((() => { const _r = response.data?.data; return Array.isArray(_r) ? _r : (_r?.data || _r?.societe || []); })());
       } else if (activeTab === 'systeme') {
         const response = await parametrageService.getParametresSysteme();
-        setParametresSysteme(response.data.data);
+        setParametresSysteme((() => { const _r = response.data?.data; return Array.isArray(_r) ? _r : (_r?.data || _r?.parametresSysteme || []); })());
       } else if (activeTab === 'vente') {
         const response = await parametrageService.getParametresModule?.('vente') || { data: { data: {} } };
         setParametresVente(response.data.data || {
@@ -1401,7 +1401,7 @@ const ImportExportSection: React.FC = () => {
 
     try {
       const response = await excelImportService.preview(selectedFile, selectedType);
-      setPreviewData(response.data.data);
+      setPreviewData((() => { const _r = response.data?.data; return Array.isArray(_r) ? _r : (_r?.data || _r?.previewData || []); })());
       
       // Initialiser le mapping par défaut (mapping intelligent basé sur les noms)
       const defaultMapping: Record<string, string> = {};

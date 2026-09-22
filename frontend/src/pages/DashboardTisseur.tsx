@@ -4,7 +4,6 @@ import {
   Wrench, Activity, Zap, Boxes, FileWarning, Box, FileText, RefreshCw,
 } from 'lucide-react';
 import WhatsAppWidget from '../components/WhatsAppWidget';
-import DashboardLayout from '../components/DashboardLayout';
 import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
 
 const DashboardTisseur = () => {
@@ -648,7 +647,7 @@ const DashboardTisseur = () => {
   ];
 
   return (
-    <DashboardLayout title="Tableau de bord — Tisseur" activeSection="dashboard" onSectionChange={() => {}}>
+    <>
       <DashboardShell
         eyebrow="Poste — Tisseur"
         title="Tableau de bord — Tisseur"
@@ -959,7 +958,7 @@ const DashboardTisseur = () => {
       )}
 
       <WhatsAppWidget dashboardName="Tisseur" position="bottom-right" />
-    </DashboardLayout>
+    </>
   );
 };
 

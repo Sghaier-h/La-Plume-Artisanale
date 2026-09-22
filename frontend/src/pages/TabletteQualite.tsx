@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { CheckCircle, XCircle, AlertTriangle, ShieldCheck, PlusCircle } from 'lucide-react';
-import DashboardLayout from '../components/DashboardLayout';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
 import api from '../services/api';
@@ -94,7 +93,7 @@ const TabletteQualite: React.FC = () => {
   const nonConformes = controles.length - conformes;
 
   return (
-    <DashboardLayout title="Tablette Qualité" activeSection="tablette" onSectionChange={() => {}}>
+    <>
       {loading ? <LoadingSpinner message="Chargement du poste qualité..." /> : (
         <DashboardShell
           eyebrow="Contrôle qualité"
@@ -206,7 +205,7 @@ const TabletteQualite: React.FC = () => {
           </SectionCard>
         </DashboardShell>
       )}
-    </DashboardLayout>
+    </>
   );
 };
 

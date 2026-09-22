@@ -3,7 +3,6 @@ import {
   Camera, Package, AlertTriangle, Printer, Clock, ArrowRight, Scissors, Tag, Zap,
   PackageCheck, Bell, XCircle, CheckCircle, AlertCircle, Activity, Users, Wrench,
 } from 'lucide-react';
-import DashboardLayout from '../components/DashboardLayout';
 import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
 
 const ChefAtelierDashboard: React.FC = () => {
@@ -824,7 +823,7 @@ const ChefAtelierDashboard: React.FC = () => {
   );
 
   return (
-    <DashboardLayout title="Tableau de bord — Chef d'atelier" activeSection="dashboard" onSectionChange={() => {}}>
+    <>
       <DashboardShell
         eyebrow="Poste — Chef d'atelier"
         title="Tableau de bord — Chef d'atelier"
@@ -894,7 +893,7 @@ const ChefAtelierDashboard: React.FC = () => {
       <DeuxiemeChoixModal />
       <ComplementUrgentModal />
       <MaintenanceModal />
-    </DashboardLayout>
+    </>
   );
 };
 

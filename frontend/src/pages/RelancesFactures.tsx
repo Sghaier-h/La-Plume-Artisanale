@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { AlertCircle, Send, RefreshCw, Play, Mail, Settings as SettingsIcon, FileText } from 'lucide-react';
-import DashboardLayout from '../components/DashboardLayout';
 import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
 import { relancesService, parametrageService } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
@@ -144,7 +143,7 @@ const RelancesFactures: React.FC = () => {
   };
 
   return (
-    <DashboardLayout title="Relances factures" activeSection="relances" onSectionChange={() => {}}>
+    <>
       <DashboardShell
         eyebrow="Facturation"
         title="Relances factures impayées"
@@ -341,7 +340,7 @@ const RelancesFactures: React.FC = () => {
           }}>{toast.msg}</div>
         )}
       </DashboardShell>
-    </DashboardLayout>
+    </>
   );
 };
 

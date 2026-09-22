@@ -4,7 +4,6 @@ import { useWebSocket } from '../hooks/useWebSocket';
 import {
   Factory, Users, CheckCircle, Clock, AlertCircle, Send, Bell, Activity,
 } from 'lucide-react';
-import DashboardLayout from '../components/DashboardLayout';
 import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
 
 interface Tache {
@@ -115,7 +114,7 @@ const ResponsableDashboard: React.FC = () => {
   };
 
   return (
-    <DashboardLayout title="Dashboard Responsable" activeSection="dashboard" onSectionChange={() => {}}>
+    <>
       <DashboardShell
         eyebrow="Poste — Responsable général"
         title="Tableau de bord — Responsable"
@@ -276,7 +275,7 @@ const ResponsableDashboard: React.FC = () => {
           </div>
         </SectionCard>
       </DashboardShell>
-    </DashboardLayout>
+    </>
   );
 };
 

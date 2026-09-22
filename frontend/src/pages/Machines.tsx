@@ -38,8 +38,8 @@ const Machines: React.FC = () => {
         machinesService.getMachines({ ...filters, search }),
         machinesService.getTypesMachines()
       ]);
-      setMachines(machinesRes.data.data);
-      setTypes(typesRes.data.data);
+      setMachines((() => { const _r = machinesRes.data?.data; return Array.isArray(_r) ? _r : (_r?.data || _r?.machines || []); })());
+      setTypes((() => { const _r = typesRes.data?.data; return Array.isArray(_r) ? _r : (_r?.data || _r?.types || []); })());
     } catch (error) {
       console.error('Erreur chargement machines:', error);
     } finally {
@@ -271,7 +271,7 @@ const Machines: React.FC = () => {
                           try {
                             const result = await machinesService.getMachine(machine.id_machine);
                             if (result.data?.data) {
-                              setSelectedMachine(result.data.data);
+                              setSelectedMachine((() => { const _r = result.data?.data; return Array.isArray(_r) ? _r : (_r?.data || _r?.selectedMachine || []); })());
                             }
                           } catch (error: any) {
                             console.error('Erreur chargement machine:', error);

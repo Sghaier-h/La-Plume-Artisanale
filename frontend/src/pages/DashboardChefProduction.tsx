@@ -8,7 +8,6 @@ import {
   AlertCircle, CheckCircle, Clock, TrendingUp, Package, Wrench, Activity,
   Calendar, Plus, Filter, Download, Move, AlertTriangle, Factory, Scissors,
 } from 'lucide-react';
-import DashboardLayout from '../components/DashboardLayout';
 import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
 
 const DashboardChefProduction: React.FC = () => {
@@ -146,11 +145,7 @@ const DashboardChefProduction: React.FC = () => {
   } as React.CSSProperties;
 
   return (
-    <DashboardLayout
-      title="Tableau de bord Chef de production"
-      activeSection="dashboard"
-      onSectionChange={() => {}}
-    >
+    <>
       <DashboardShell
         eyebrow="Poste — Chef de production"
         title="Tableau de bord — Chef de production"
@@ -573,7 +568,7 @@ const DashboardChefProduction: React.FC = () => {
           </div>
         </div>
       )}
-    </DashboardLayout>
+    </>
   );
 };
 

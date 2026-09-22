@@ -671,7 +671,7 @@ const NavigationEnhanced: React.FC<NavigationEnhancedProps> = ({ onNavigate }) =
 
         {/* Accueil en haut */}
         <button
-          onClick={() => handleNavigation('/erp/home')}
+          onClick={() => handleNavigation('/dashboard-admin')}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl mb-2 text-slate-700 hover:bg-gradient-to-r hover:from-amber-50 hover:to-slate-100 hover:shadow-md transition-all duration-200"
           title="Accueil"
         >

@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { Factory, Play, CheckCircle, AlertTriangle, Activity, TrendingUp, Wrench } from 'lucide-react';
-import DashboardLayout from '../components/DashboardLayout';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
 import api from '../services/api';
@@ -112,7 +111,7 @@ const TabletteTisseur: React.FC = () => {
   const tachesSuivantes = taches.filter((t: any) => t.statut !== 'EN_COURS' && t.statut !== 'TERMINEE').slice(0, 5);
 
   return (
-    <DashboardLayout title="Tablette Tisseur" activeSection="tablette" onSectionChange={() => {}}>
+    <>
       {loading ? <LoadingSpinner message="Chargement du poste tisseur..." /> : (
         <DashboardShell
           eyebrow="Poste tissage"
@@ -199,7 +198,7 @@ const TabletteTisseur: React.FC = () => {
           </SectionCard>
         </DashboardShell>
       )}
-    </DashboardLayout>
+    </>
   );
 };
 

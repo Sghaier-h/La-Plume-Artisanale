@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Shield, Search, UserPlus, X, Save, CheckCircle2 } from 'lucide-react';
-import DashboardLayout from '../components/DashboardLayout';
 import { DashboardShell, SectionCard, ThemeToggle } from '../components/dashboard';
 import { utilisateursService } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
@@ -590,7 +589,7 @@ const GestionPermissions: React.FC = () => {
   );
 
   return (
-    <DashboardLayout title="Gestion des droits" activeSection="permissions" onSectionChange={() => {}}>
+    <>
       <DashboardShell
         eyebrow="Paramètres avancés — RBAC"
         title="Gestion des droits"
@@ -615,7 +614,7 @@ const GestionPermissions: React.FC = () => {
 
         {toast && <Toast message={toast} onClose={() => setToast(null)} />}
       </DashboardShell>
-    </DashboardLayout>
+    </>
   );
 };
 

@@ -45,10 +45,10 @@ const Commandes: React.FC = () => {
         articlesService.getArticles(),
         parametresCatalogueService.getTypesPersonnalisation().catch(() => ({ data: { data: [] } }))
       ]);
-      setCommandes(cmdRes.data.data);
-      setClients(clientsRes.data.data);
-      setArticles(articlesRes.data.data);
-      setTypesPersonnalisation(typesPersoRes.data.data || []);
+      const cmdRaw = cmdRes.data?.data; setCommandes(Array.isArray(cmdRaw) ? cmdRaw : (cmdRaw?.data || cmdRaw?.commandes || []));
+      const clRaw = clientsRes.data?.data; setClients(Array.isArray(clRaw) ? clRaw : (clRaw?.data || clRaw?.clients || []));
+      const arRaw = articlesRes.data?.data; setArticles(Array.isArray(arRaw) ? arRaw : (arRaw?.data || arRaw?.articles || []));
+      const tpRaw = typesPersoRes.data?.data; setTypesPersonnalisation(Array.isArray(tpRaw) ? tpRaw : (tpRaw?.data || []));
     } catch (error) {
       console.error('Erreur chargement commandes:', error);
     } finally {
@@ -713,7 +713,7 @@ const Commandes: React.FC = () => {
                               <td className="px-4 py-2">{ligne.code_article || ligne.ref_article || '-'}</td>
                               <td className="px-4 py-2">{ligne.designation || ligne.libelle || '-'}</td>
                               <td className="px-4 py-2">{ligne.quantite_commandee || ligne.quantite}</td>
-                              <td className="px-4 py-2">{ligne.prix_unitaire?.toFixed(2)} {selectedCommande.devise || 'TND'}</td>
+                              <td className="px-4 py-2">{Number(ligne.prix_unitaire || 0).toFixed(2)} {selectedCommande.devise || 'TND'}</td>
                               <td className="px-4 py-2">{ligne.remise || 0}%</td>
                               <td className="px-4 py-2 font-semibold">
                                 {((ligne.prix_unitaire || 0) * (ligne.quantite_commandee || ligne.quantite || 0) * (1 - (ligne.remise || 0) / 100)).toFixed(2)} {selectedCommande.devise || 'TND'}
@@ -733,7 +733,7 @@ const Commandes: React.FC = () => {
                       <div className="w-64">
                         <div className="flex justify-between text-lg font-bold border-t pt-2">
                           <span>Total:</span>
-                          <span>{selectedCommande.montant_total?.toFixed(2)} {selectedCommande.devise || 'TND'}</span>
+                          <span>{Number(selectedCommande.montant_total || 0).toFixed(2)} {selectedCommande.devise || 'TND'}</span>
                         </div>
                       </div>
                     </div>

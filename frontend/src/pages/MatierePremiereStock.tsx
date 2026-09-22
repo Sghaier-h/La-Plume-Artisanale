@@ -169,7 +169,7 @@ const MatierePremiereStock: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">{matiere.stock_minimum || '-'}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">{matiere.prix_unitaire?.toFixed(2) || '0.00'} TND</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">{Number(matiere.prix_unitaire || 0).toFixed(2) || '0.00'} TND</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {matiere.actif ? (
                         <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">Actif</span>
@@ -195,7 +195,7 @@ const MatierePremiereStock: React.FC = () => {
                     <p><span className="font-medium">Code:</span> <span className="font-mono text-xs">{matiere.code_mp}</span></p>
                     {matiere.qr_mp && <p className="font-mono text-xs text-gray-500">{matiere.qr_mp}</p>}
                     <div className="mt-2 pt-2 border-t">
-                      <p className="font-semibold text-green-600 text-lg">{matiere.prix_unitaire?.toFixed(2) || '0.00'} TND</p>
+                      <p className="font-semibold text-green-600 text-lg">{Number(matiere.prix_unitaire || 0).toFixed(2) || '0.00'} TND</p>
                       <p className="text-xs text-gray-500">Stock Min: {matiere.stock_minimum || '-'}</p>
                     </div>
                   </div>

@@ -267,11 +267,11 @@ const ModeleDetails: React.FC = () => {
             <div className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Prix de revient</label>
-                <p className="text-2xl font-bold text-gray-900">{modele.prix_reviens?.toFixed(2)} TND</p>
+                <p className="text-2xl font-bold text-gray-900">{Number(modele.prix_reviens || 0).toFixed(2)} TND</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Prix de vente</label>
-                <p className="text-2xl font-bold text-green-600">{modele.prix_vente?.toFixed(2)} TND</p>
+                <p className="text-2xl font-bold text-green-600">{Number(modele.prix_vente || 0).toFixed(2)} TND</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Marge</label>

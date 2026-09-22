@@ -522,7 +522,7 @@ const BonRetour: React.FC = () => {
                             try {
                               const result = await bonsRetourService.getBonRetourById(br.id_retour);
                               if (result.data?.success) {
-                                setSelectedBR(result.data.data);
+                                setSelectedBR((() => { const _r = result.data?.data; return Array.isArray(_r) ? _r : (_r?.data || _r?.selectedBR || []); })());
                               }
                             } catch (error: any) {
                               console.error('Erreur chargement BR:', error);

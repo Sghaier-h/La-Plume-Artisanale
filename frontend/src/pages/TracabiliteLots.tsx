@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { Package, ScanLine, Printer, RefreshCw, X, CheckCircle2, Search, Layers } from 'lucide-react';
-import DashboardLayout from '../components/DashboardLayout';
 import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
 import { tracabiliteLotsService } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
@@ -137,7 +136,7 @@ const TracabiliteLots: React.FC = () => {
   };
 
   return (
-    <DashboardLayout title="Traçabilité des lots" activeSection="tracabilite" onSectionChange={() => {}}>
+    <>
       <DashboardShell
         eyebrow="Suivi qualité fouta"
         title="Traçabilité des lots"
@@ -293,7 +292,7 @@ const TracabiliteLots: React.FC = () => {
           </div>
         )}
       </DashboardShell>
-    </DashboardLayout>
+    </>
   );
 };
 

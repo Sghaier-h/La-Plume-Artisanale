@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { Clock, RefreshCw, Upload, Save, Cloud, Users, History, CheckCircle2 } from 'lucide-react';
-import DashboardLayout from '../components/DashboardLayout';
 import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
 import { useAuth } from '../hooks/useAuth';
 import axios from 'axios';
@@ -243,7 +242,7 @@ const PointageTimeMoto: React.FC = () => {
   };
 
   return (
-    <DashboardLayout title="Synchro pointeuse TimeMoto" activeSection="rh-pointage-timemoto" onSectionChange={() => {}}>
+    <>
       <DashboardShell
         eyebrow="Ressources humaines"
         title="Synchro pointeuse TimeMoto"
@@ -421,7 +420,7 @@ const PointageTimeMoto: React.FC = () => {
           </div>
         )}
       </DashboardShell>
-    </DashboardLayout>
+    </>
   );
 };
 

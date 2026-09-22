@@ -402,8 +402,8 @@ const ListePalettes: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm">{liste.numero_commande || '-'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">{liste.nom_client || '-'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">{liste.nombre_palettes || 0}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">{liste.poids_total?.toFixed(2) || '0.00'}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">{liste.volume_total?.toFixed(2) || '0.00'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">{Number(liste.poids_total || 0).toFixed(2) || '0.00'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">{Number(liste.volume_total || 0).toFixed(2) || '0.00'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">{liste.transporteur || '-'}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 rounded text-xs ${getStatutColor(liste.statut)}`}>
@@ -440,8 +440,8 @@ const ListePalettes: React.FC = () => {
                     <p><span className="font-medium">Client:</span> {liste.nom_client || '-'}</p>
                     <div className="mt-2 pt-2 border-t">
                       <p className="text-xs text-gray-500">Palettes: {liste.nombre_palettes || 0}</p>
-                      <p className="text-xs text-gray-500">Poids: {liste.poids_total?.toFixed(2) || '0.00'} kg</p>
-                      <p className="text-xs text-gray-500">Volume: {liste.volume_total?.toFixed(2) || '0.00'} m³</p>
+                      <p className="text-xs text-gray-500">Poids: {Number(liste.poids_total || 0).toFixed(2) || '0.00'} kg</p>
+                      <p className="text-xs text-gray-500">Volume: {Number(liste.volume_total || 0).toFixed(2) || '0.00'} m³</p>
                       {liste.transporteur && <p className="text-xs text-gray-500">Transporteur: {liste.transporteur}</p>}
                     </div>
                   </div>

@@ -1301,8 +1301,8 @@ const Modeles: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap font-medium">{modele.code_modele}</td>
                   <td className="px-6 py-4 whitespace-nowrap">{modele.designation}</td>
                   <td className="px-6 py-4 whitespace-nowrap">{modele.produit}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">{modele.prix_reviens?.toFixed(2)} TND</td>
-                  <td className="px-6 py-4 whitespace-nowrap font-semibold text-green-600">{modele.prix_vente?.toFixed(2)} TND</td>
+                  <td className="px-6 py-4 whitespace-nowrap">{Number(modele.prix_reviens || 0).toFixed(2)} TND</td>
+                  <td className="px-6 py-4 whitespace-nowrap font-semibold text-green-600">{Number(modele.prix_vente || 0).toFixed(2)} TND</td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {modele.dans_catalogue_produit ? (
                       <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">Oui</span>
@@ -1386,7 +1386,7 @@ const Modeles: React.FC = () => {
                   <div className="flex items-center justify-between mb-3">
                     <div>
                       <p className="text-xs text-gray-500">Prix de vente</p>
-                      <p className="font-semibold text-green-600">{modele.prix_vente?.toFixed(2)} TND</p>
+                      <p className="font-semibold text-green-600">{Number(modele.prix_vente || 0).toFixed(2)} TND</p>
                     </div>
                     {modele.dans_catalogue_produit && (
                       <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">Catalogue</span>

@@ -554,7 +554,7 @@ const BonLivraison: React.FC = () => {
                             try {
                               const result = await bonsLivraisonService.getBonLivraisonById(bl.id_bl);
                               if (result.data?.success) {
-                                setSelectedBL(result.data.data);
+                                setSelectedBL((() => { const _r = result.data?.data; return Array.isArray(_r) ? _r : (_r?.data || _r?.selectedBL || []); })());
                               }
                             } catch (error: any) {
                               console.error('Erreur chargement BL:', error);

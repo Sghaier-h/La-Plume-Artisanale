@@ -7,7 +7,6 @@ import {
 import {
   CheckCircle, ShieldCheck, AlertTriangle, ClipboardCheck, TrendingUp, Activity, FileText, X,
 } from 'lucide-react';
-import DashboardLayout from '../components/DashboardLayout';
 import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
 
 const DashboardControleCentral: React.FC = () => {
@@ -85,7 +84,7 @@ const DashboardControleCentral: React.FC = () => {
   };
 
   return (
-    <DashboardLayout title="Dashboard Contrôle Qualité" activeSection="dashboard" onSectionChange={() => {}}>
+    <>
       <DashboardShell
         eyebrow="Poste — Contrôle qualité"
         title="Tableau de bord — Contrôle qualité"
@@ -469,7 +468,7 @@ const DashboardControleCentral: React.FC = () => {
           </div>
         </div>
       )}
-    </DashboardLayout>
+    </>
   );
 };
 

@@ -9,7 +9,6 @@ import {
   BarChart, Bar, Cell, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, RadialBarChart, RadialBar, PolarAngleAxis, ComposedChart, Legend,
 } from 'recharts';
-import DashboardLayout from '../components/DashboardLayout';
 import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
 import { useAuth } from '../hooks/useAuth';
 import api from '../services/api';
@@ -165,7 +164,7 @@ const DashboardCommercial: React.FC = () => {
     : `${user?.prenom ?? ''} ${user?.nom ?? ''}`.trim();
 
   return (
-    <DashboardLayout title="Dashboard Commercial" activeSection="dashboard" onSectionChange={() => {}}>
+    <>
       <DashboardShell
         eyebrow="Vue personnelle"
         title={`Espace commercial — ${nomComplet || '…'}`}
@@ -553,7 +552,7 @@ const DashboardCommercial: React.FC = () => {
           </button>
         </Modal>
       )}
-    </DashboardLayout>
+    </>
   );
 };
 

@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { Wrench, PlusCircle, Clock, CheckCircle, Activity, AlertTriangle, X } from 'lucide-react';
-import DashboardLayout from '../components/DashboardLayout';
 import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
 import api, { machinesService, utilisateursService } from '../services/api';
 import { connectSocket } from '../services/socket';
@@ -122,7 +121,7 @@ const Maintenance: React.FC = () => {
   const kpiCoutMois = fmtInt(stats?.cout_mois ?? stats?.cout_total_mois ?? 0);
 
   return (
-    <DashboardLayout title="Maintenance" activeSection="maintenance" onSectionChange={() => {}}>
+    <>
       <DashboardShell
         eyebrow="Gestion des interventions"
         title="Maintenance atelier"
@@ -278,7 +277,7 @@ const Maintenance: React.FC = () => {
           </div>
         )}
       </DashboardShell>
-    </DashboardLayout>
+    </>
   );
 };
 

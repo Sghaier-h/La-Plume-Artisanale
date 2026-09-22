@@ -328,7 +328,7 @@ const Fournisseurs: React.FC = () => {
                               try {
                                 const result = await fournisseursService.getFournisseur(fournisseur.id_fournisseur);
                                 if (result.data?.data) {
-                                  setSelectedFournisseur(result.data.data);
+                                  setSelectedFournisseur((() => { const _r = result.data?.data; return Array.isArray(_r) ? _r : (_r?.data || _r?.selectedFournisseur || []); })());
                                 }
                               } catch (error: any) {
                                 console.error('Erreur chargement fournisseur:', error);
@@ -379,7 +379,7 @@ const Fournisseurs: React.FC = () => {
                         try {
                           const result = await fournisseursService.getFournisseur(fournisseur.id_fournisseur);
                           if (result.data?.data) {
-                            setSelectedFournisseur(result.data.data);
+                            setSelectedFournisseur((() => { const _r = result.data?.data; return Array.isArray(_r) ? _r : (_r?.data || _r?.selectedFournisseur || []); })());
                           }
                         } catch (error: any) {
                           console.error('Erreur chargement fournisseur:', error);

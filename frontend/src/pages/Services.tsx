@@ -383,7 +383,7 @@ const Services: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap font-mono text-sm font-medium">{service.code}</td>
                     <td className="px-6 py-4 whitespace-nowrap font-semibold">{service.libelle}</td>
                     <td className="px-6 py-4 text-sm text-gray-600">{service.description || '-'}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">{service.prix_unitaire.toFixed(2)} TND</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">{Number(service.prix_unitaire || 0).toFixed(2)} TND</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       {service.duree_estimee ? `${service.duree_estimee} ${service.unite_duree}(s)` : '-'}
                     </td>
@@ -446,7 +446,7 @@ const Services: React.FC = () => {
               <div className="space-y-2 text-sm">
                 <div className="flex items-center gap-2 text-gray-700">
                   <DollarSign className="w-4 h-4 text-green-600" />
-                  <span className="font-semibold">{service.prix_unitaire.toFixed(2)} TND</span>
+                  <span className="font-semibold">{Number(service.prix_unitaire || 0).toFixed(2)} TND</span>
                 </div>
                 {service.duree_estimee && (
                   <div className="flex items-center gap-2 text-gray-700">

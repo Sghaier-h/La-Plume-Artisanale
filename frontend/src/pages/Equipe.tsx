@@ -584,7 +584,7 @@ const Equipe: React.FC = () => {
                 <div className="grid grid-cols-2 gap-2">
                   <div className="bg-blue-50 p-2 rounded">
                     <p className="text-xs text-blue-600">Horaire Brut</p>
-                    <p className="font-bold text-blue-900">{membre.horaireBrut.toFixed(2)} DT</p>
+                    <p className="font-bold text-blue-900">{Number(membre.horaireBrut || 0).toFixed(2)} DT</p>
                   </div>
                   <div className="bg-green-50 p-2 rounded">
                     <p className="text-xs text-green-600">Salaire Brut</p>

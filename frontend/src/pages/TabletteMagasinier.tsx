@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { Package, AlertTriangle, ArrowRightLeft, PlusCircle, CheckCircle } from 'lucide-react';
-import DashboardLayout from '../components/DashboardLayout';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
 import api from '../services/api';
@@ -80,7 +79,7 @@ const TabletteMagasinier: React.FC = () => {
   const critiques = alertes.filter((a: any) => a.niveau === 'CRITIQUE' || (a.stock_actuel != null && a.stock_min != null && a.stock_actuel <= a.stock_min * 0.5)).length;
 
   return (
-    <DashboardLayout title="Tablette Magasinier" activeSection="tablette" onSectionChange={() => {}}>
+    <>
       {loading ? <LoadingSpinner message="Chargement du poste magasin..." /> : (
         <DashboardShell
           eyebrow="Poste magasin MP"
@@ -175,7 +174,7 @@ const TabletteMagasinier: React.FC = () => {
           </SectionCard>
         </DashboardShell>
       )}
-    </DashboardLayout>
+    </>
   );
 };
 

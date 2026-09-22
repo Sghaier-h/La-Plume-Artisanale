@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Clock, LogIn, LogOut, Users, Calendar, Activity } from 'lucide-react';
-import DashboardLayout from '../components/DashboardLayout';
 import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
 import api from '../services/api';
 import { connectSocket } from '../services/socket';
@@ -108,7 +107,7 @@ const Pointage: React.FC = () => {
   const isCheckedIn = today?.check_in && !today?.check_out;
 
   return (
-    <DashboardLayout title="Pointage" activeSection="pointage" onSectionChange={() => {}}>
+    <>
       <DashboardShell
         eyebrow="Présence & pointage"
         title="Pointage / Présence"
@@ -183,7 +182,7 @@ const Pointage: React.FC = () => {
           </SectionCard>
         )}
       </DashboardShell>
-    </DashboardLayout>
+    </>
   );
 };
 

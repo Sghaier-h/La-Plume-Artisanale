@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { Scissors, Play, CheckCircle, Camera, Package } from 'lucide-react';
-import DashboardLayout from '../components/DashboardLayout';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
 import api from '../services/api';
@@ -92,7 +91,7 @@ const TabletteCoupeur: React.FC = () => {
   const terminees = taches.filter((t: any) => t.statut === 'TERMINEE');
 
   return (
-    <DashboardLayout title="Tablette Coupeur" activeSection="tablette" onSectionChange={() => {}}>
+    <>
       {loading ? <LoadingSpinner message="Chargement du poste coupe..." /> : (
         <DashboardShell
           eyebrow="Poste coupe"
@@ -171,7 +170,7 @@ const TabletteCoupeur: React.FC = () => {
           </SectionCard>
         </DashboardShell>
       )}
-    </DashboardLayout>
+    </>
   );
 };
 

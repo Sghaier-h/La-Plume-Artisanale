@@ -9,7 +9,6 @@ import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
 } from 'recharts';
-import DashboardLayout from '../components/DashboardLayout';
 import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
 import { hrRecruitmentService } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
@@ -257,7 +256,7 @@ const RhRecrutement: React.FC = () => {
   );
 
   return (
-    <DashboardLayout title="Recrutement RH" activeSection="rh-recrutement" onSectionChange={() => {}}>
+    <>
       <DashboardShell
         eyebrow="Ressources humaines"
         title="Recrutement RH"
@@ -607,7 +606,7 @@ const RhRecrutement: React.FC = () => {
           </div>
         )}
       </DashboardShell>
-    </DashboardLayout>
+    </>
   );
 };
 

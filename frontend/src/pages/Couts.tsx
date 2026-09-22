@@ -40,9 +40,9 @@ const Couts: React.FC = () => {
         coutsService.analyserEcarts(selectedOF)
       ]);
 
-      setCoutTheorique(theoriqueRes.data.data);
-      setCoutReel(reelRes.data.data);
-      setAnalyseEcarts(ecartsRes.data.data);
+      setCoutTheorique((() => { const _r = theoriqueRes.data?.data; return Array.isArray(_r) ? _r : (_r?.data || _r?.coutTheorique || []); })());
+      setCoutReel((() => { const _r = reelRes.data?.data; return Array.isArray(_r) ? _r : (_r?.data || _r?.coutReel || []); })());
+      setAnalyseEcarts((() => { const _r = ecartsRes.data?.data; return Array.isArray(_r) ? _r : (_r?.data || _r?.analyseEcarts || []); })());
     } catch (error) {
       console.error('Erreur chargement coûts:', error);
     } finally {

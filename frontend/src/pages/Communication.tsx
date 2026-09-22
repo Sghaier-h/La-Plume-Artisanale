@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { MessageSquare, Send, Mail, Phone, Users, PlusCircle, X, RefreshCw } from 'lucide-react';
-import DashboardLayout from '../components/DashboardLayout';
 import { DashboardShell, SectionCard, ThemeToggle } from '../components/dashboard';
 import { communicationService } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
@@ -112,7 +111,7 @@ const Communication: React.FC = () => {
   const filteredConvs = useMemo(() => conversations, [conversations]);
 
   return (
-    <DashboardLayout title="Communication" activeSection="communication" onSectionChange={() => {}}>
+    <>
       <DashboardShell
         eyebrow="Communication"
         title="Communication multi-canal"
@@ -243,7 +242,7 @@ const Communication: React.FC = () => {
           }}>{toast.msg}</div>
         )}
       </DashboardShell>
-    </DashboardLayout>
+    </>
   );
 };
 

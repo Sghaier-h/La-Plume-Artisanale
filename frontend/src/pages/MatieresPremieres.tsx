@@ -264,7 +264,7 @@ const MatieresPremieres: React.FC = () => {
                               try {
                                 const result = await matieresPremieresService.getMatierePremiere(matiere.id_mp);
                                 if (result.data?.data) {
-                                  setSelectedMatiere(result.data.data);
+                                  setSelectedMatiere((() => { const _r = result.data?.data; return Array.isArray(_r) ? _r : (_r?.data || _r?.selectedMatiere || []); })());
                                 }
                               } catch (error: any) {
                                 console.error('Erreur chargement matière:', error);
@@ -328,7 +328,7 @@ const MatieresPremieres: React.FC = () => {
                             try {
                               const result = await matieresPremieresService.getMatierePremiere(matiere.id_mp);
                               if (result.data?.data) {
-                                setSelectedMatiere(result.data.data);
+                                setSelectedMatiere((() => { const _r = result.data?.data; return Array.isArray(_r) ? _r : (_r?.data || _r?.selectedMatiere || []); })());
                               }
                             } catch (error: any) {
                               console.error('Erreur chargement matière:', error);

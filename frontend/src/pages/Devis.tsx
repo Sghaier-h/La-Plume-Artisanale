@@ -566,7 +566,7 @@ const Devis: React.FC = () => {
                           try {
                             const result = await devisService.getDevisById(devis.id_devis);
                             if (result.data?.success) {
-                              setSelectedDevis(result.data.data);
+                              setSelectedDevis((() => { const _r = result.data?.data; return Array.isArray(_r) ? _r : (_r?.data || _r?.selectedDevis || []); })());
                             } else {
                               alert('Erreur lors du chargement du devis');
                             }

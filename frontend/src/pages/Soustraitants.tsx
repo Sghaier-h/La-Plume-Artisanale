@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Truck, AlertTriangle, PlusCircle, CheckCircle, Clock, X, ArrowUpRight } from 'lucide-react';
-import DashboardLayout from '../components/DashboardLayout';
 import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
 import api from '../services/api';
 import { connectSocket } from '../services/socket';
@@ -105,7 +104,7 @@ const Soustraitants: React.FC = () => {
   };
 
   return (
-    <DashboardLayout title="Sous-traitants" activeSection="soustraitants" onSectionChange={() => {}}>
+    <>
       <DashboardShell
         eyebrow="Gestion sous-traitants"
         title="Gestion sous-traitants"
@@ -248,7 +247,7 @@ const Soustraitants: React.FC = () => {
           </div>
         )}
       </DashboardShell>
-    </DashboardLayout>
+    </>
   );
 };
 

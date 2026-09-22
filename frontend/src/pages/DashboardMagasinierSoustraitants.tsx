@@ -4,7 +4,6 @@ import {
   ArrowRight, Plus, Building2, MessageSquare, Eye, Bell,
   X, Mail as MailIcon, Phone as PhoneIcon, MapPin, AlertCircle, Zap, Activity,
 } from 'lucide-react';
-import DashboardLayout from '../components/DashboardLayout';
 import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
 import { soustraitantsService, ofService, messagesService } from '../services/api';
 
@@ -118,9 +117,9 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
         soustraitantsService.getAlertesRetard()
       ]);
 
-      setSoustraitantsList(soustraitantsRes.data.data);
+      setSoustraitantsList((() => { const _r = soustraitantsRes.data?.data; return Array.isArray(_r) ? _r : (_r?.data || _r?.soustraitantsList || []); })());
       setOfs(ofsRes.data?.data || []);
-      setAlertes(alertesRes.data.data);
+      setAlertes((() => { const _r = alertesRes.data?.data; return Array.isArray(_r) ? _r : (_r?.data || _r?.alertes || []); })());
 
       const soustraitantsDetails: SoustraitantDetails[] = [];
       const mouvementsData: Mouvement[] = [];
@@ -358,11 +357,7 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
   } as React.CSSProperties);
 
   return (
-    <DashboardLayout
-      title="Tableau de bord — Magasinier sous-traitants"
-      activeSection="dashboard"
-      onSectionChange={() => {}}
-    >
+    <>
       <DashboardShell
         eyebrow="Poste — Magasinier sous-traitants"
         title="Tableau de bord — Magasinier sous-traitants"
@@ -1092,7 +1087,7 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
           </div>
         </div>
       )}
-    </DashboardLayout>
+    </>
   );
 };
 

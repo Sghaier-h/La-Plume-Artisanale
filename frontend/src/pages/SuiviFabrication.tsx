@@ -473,7 +473,7 @@ const SuiviFabrication: React.FC = () => {
                                 try {
                                   const result = await suiviFabricationService.getSuiviFabrication(suivi.id_suivi);
                                   if (result.data?.data) {
-                                    setSelectedSuivi(result.data.data);
+                                    setSelectedSuivi((() => { const _r = result.data?.data; return Array.isArray(_r) ? _r : (_r?.data || _r?.selectedSuivi || []); })());
                                   }
                                 } catch (error: any) {
                                   console.error('Erreur chargement suivi:', error);

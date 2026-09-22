@@ -979,7 +979,7 @@ const Articles: React.FC = () => {
                     )}
                     {['T', 'Q', 'C', 'S'].includes(formData.code_nombre_couleur) && (
                       <>
-                        {[1, 2, 3, 4, 5, 6].slice(0, 
+                        {[1, 2, 3, 4, 5, 6].slice(0,
                           formData.code_nombre_couleur === 'T' ? 3 :
                           formData.code_nombre_couleur === 'Q' ? 4 :
                           formData.code_nombre_couleur === 'C' ? 5 : 6
@@ -1490,8 +1490,8 @@ const Articles: React.FC = () => {
                       const prix = getPrixFromModele(article);
                       return (
                         <div className="text-sm">
-                          <div className="font-semibold text-green-600">{prix.prix_vente.toFixed(2)} TND</div>
-                          <div className="text-xs text-gray-500">Reviens: {prix.prix_reviens.toFixed(2)} TND</div>
+                          <div className="font-semibold text-green-600">{Number(prix.prix_vente || 0).toFixed(2)} TND</div>
+                          <div className="text-xs text-gray-500">Reviens: {Number(prix.prix_reviens || 0).toFixed(2)} TND</div>
                           {prix.prix_multiple && prix.prix_multiple.length > 0 && (
                             <div className="text-xs text-blue-600 mt-1">
                               +{prix.prix_multiple.length} autre(s) prix
@@ -1625,7 +1625,7 @@ const Articles: React.FC = () => {
                         <p><span className="font-medium">Couleur:</span> {article.couleur_article || 'N/A'}</p>
                         <p><span className="font-medium">Dimensions:</span> {article.dimensions || 'N/A'}</p>
                         {article.prix_vente && (
-                          <p><span className="font-medium">Prix:</span> {article.prix_vente.toFixed(2)} €</p>
+                          <p><span className="font-medium">Prix:</span> {Number(article.prix_vente || 0).toFixed(2)} €</p>
                         )}
                       </div>
                       <div className="flex items-center justify-between mb-3">
@@ -1749,8 +1749,8 @@ const Articles: React.FC = () => {
                       const prix = getPrixFromModele(article);
                       return (
                         <div className="mt-2 pt-2 border-t">
-                          <p className="font-semibold text-green-600">{prix.prix_vente.toFixed(2)} TND</p>
-                          <p className="text-xs text-gray-500">Reviens: {prix.prix_reviens.toFixed(2)} TND</p>
+                          <p className="font-semibold text-green-600">{Number(prix.prix_vente || 0).toFixed(2)} TND</p>
+                          <p className="text-xs text-gray-500">Reviens: {Number(prix.prix_reviens || 0).toFixed(2)} TND</p>
                         </div>
                       );
                     })()}

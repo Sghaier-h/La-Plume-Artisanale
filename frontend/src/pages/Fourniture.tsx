@@ -187,7 +187,7 @@ const Fourniture: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">{fourniture.stock_minimum || '-'}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">{fourniture.prix_unitaire?.toFixed(2) || '0.00'} TND</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">{Number(fourniture.prix_unitaire || 0).toFixed(2) || '0.00'} TND</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {fourniture.actif ? (
                         <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">Actif</span>
@@ -213,7 +213,7 @@ const Fourniture: React.FC = () => {
                     <p><span className="font-medium">Code:</span> <span className="font-mono text-xs">{fourniture.code_fourniture}</span></p>
                     {fourniture.categorie && <p><span className="font-medium">Catégorie:</span> {fourniture.categorie}</p>}
                     <div className="mt-2 pt-2 border-t">
-                      <p className="font-semibold text-green-600 text-lg">{fourniture.prix_unitaire?.toFixed(2) || '0.00'} TND</p>
+                      <p className="font-semibold text-green-600 text-lg">{Number(fourniture.prix_unitaire || 0).toFixed(2) || '0.00'} TND</p>
                       <p className="text-xs text-gray-500">Stock Min: {fourniture.stock_minimum || '-'}</p>
                     </div>
                   </div>

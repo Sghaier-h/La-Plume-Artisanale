@@ -630,7 +630,7 @@ const CommandeDetails: React.FC = () => {
                 {commande.montant_total && (
                   <div>
                     <span className="text-sm text-gray-600">Montant Total:</span>
-                    <p className="font-semibold text-lg">{commande.montant_total.toFixed(2)} {commande.devise || 'TND'}</p>
+                    <p className="font-semibold text-lg">{Number(commande.montant_total || 0).toFixed(2)} {commande.devise || 'TND'}</p>
                   </div>
                 )}
                 {commande.conditions_paiement && (
@@ -699,7 +699,7 @@ const CommandeDetails: React.FC = () => {
                       <span>Commandé: <strong style={{ color: 'var(--fg-default)' }}>{line.quantite_commandee}</strong></span>
                       <span>Stock: <strong style={{ color: 'var(--fg-default)' }}>{line.quantite_prise_stock}</strong></span>
                       <span>À fabriquer: <strong style={{ color: 'var(--fg-default)' }}>{line.quantite_a_fabriquer}</strong></span>
-                      <span>Montant HT: <strong style={{ color: 'var(--fg-default)' }}>{line.montant_ht.toFixed(2)} {commande.devise || 'TND'}</strong></span>
+                      <span>Montant HT: <strong style={{ color: 'var(--fg-default)' }}>{Number(line.montant_ht || 0).toFixed(2)} {commande.devise || 'TND'}</strong></span>
                     </div>
 
                     {line.ofs.length === 0 && line.statut_ligne === 'a_traiter' && (
@@ -1211,7 +1211,7 @@ const CommandeDetails: React.FC = () => {
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                               <div><span className="text-gray-500">Machine : </span>{a.of_estimation.machine_suggeree_numero || '—'}</div>
                               <div><span className="text-gray-500">Temps : </span>{a.of_estimation.temps_production_jours ?? '—'} j</div>
-                              <div><span className="text-gray-500">Coût : </span>{a.of_estimation.cout_estime?.toFixed(2) ?? '—'} TND</div>
+                              <div><span className="text-gray-500">Coût : </span>{Number(a.of_estimation.cout_estime || 0).toFixed(2) ?? '—'} TND</div>
                               <div><span className="text-gray-500">Priorité : </span>
                                 <select
                                   value={d.priorite}
@@ -1262,7 +1262,7 @@ const CommandeDetails: React.FC = () => {
                   </div>
                   <div className="p-4 rounded border bg-white">
                     <div className="text-xs text-gray-500">Coût de fabrication estimé</div>
-                    <div className="text-3xl font-bold">{recap.cout.toFixed(2)} TND</div>
+                    <div className="text-3xl font-bold">{Number(recap.cout || 0).toFixed(2)} TND</div>
                   </div>
                   <div className="rounded border overflow-hidden">
                     <table className="w-full text-sm">
