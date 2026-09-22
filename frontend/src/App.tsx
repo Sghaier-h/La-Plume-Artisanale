@@ -48,6 +48,7 @@ const PlanificationGantt = React.lazy(() => import('./pages/PlanificationGantt')
 const QualiteAvance = React.lazy(() => import('./pages/QualiteAvance'));
 const Couts = React.lazy(() => import('./pages/Couts'));
 const MultiSociete = React.lazy(() => import('./pages/MultiSociete'));
+const Reports = React.lazy(() => import('./pages/Reports'));
 const Communication = React.lazy(() => import('./pages/Communication'));
 const TracabiliteLots = React.lazy(() => import('./pages/TracabiliteLots'));
 const RhRecrutement = React.lazy(() => import('./pages/RhRecrutement'));
@@ -588,6 +589,14 @@ const AppContent: React.FC = () => {
               <ProtectedRoute requiredRole="ADMIN">
                 <MultiSociete />
               </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reports"
+            element={
+              <PrivateRoute>
+                <Reports />
+              </PrivateRoute>
             }
           />
           <Route
