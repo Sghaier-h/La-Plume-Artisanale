@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { commandesService, clientsService, articlesService, bonsLivraisonService, parametresCatalogueService } from '../services/api';
 import { ShoppingCart, Plus, Edit, Trash2, Search, Eye, X, CheckCircle, Package, Calendar, User, DollarSign, Truck, Upload, File } from 'lucide-react';
 import ArticlePicker from '../components/ArticlePicker';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 
 const Commandes: React.FC = () => {
   const [commandes, setCommandes] = useState<any[]>([]);
@@ -33,9 +33,25 @@ const Commandes: React.FC = () => {
   
   const [uploadingFiles, setUploadingFiles] = useState<{ [key: number]: boolean }>({});
 
+  const [searchParams, setSearchParams] = useSearchParams();
+
   useEffect(() => {
     loadData();
   }, [filters, search]);
+
+  useEffect(() => {
+    const editId = searchParams.get('edit');
+    if (editId && commandes.length > 0) {
+      const cmd = commandes.find((c: any) => c.id_commande?.toString() === editId);
+      if (cmd) {
+        handleEdit(cmd);
+        const next = new URLSearchParams(searchParams);
+        next.delete('edit');
+        setSearchParams(next, { replace: true });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [commandes]);
 
   const loadData = async () => {
     try {

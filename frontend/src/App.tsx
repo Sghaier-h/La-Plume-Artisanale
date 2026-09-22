@@ -13,6 +13,7 @@ import { useApp } from './store/AppContext';
 import { NotificationProvider } from './components/erp';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { NavigationProvider } from './components/NavigationContext';
+import { BreadcrumbProvider } from './components/BreadcrumbContext';
 import ContextActions from './components/ContextActions';
 import Breadcrumbs from './components/Breadcrumbs';
 import NotificationCenter from './components/NotificationCenter';
@@ -270,6 +271,7 @@ const ContentWrapper: React.FC<{ showNav: boolean; children: React.ReactNode }> 
 const AppContent: React.FC = () => {
   return (
     <NavigationProvider>
+      <BreadcrumbProvider>
       <div className="App">
         <NotificationCenter />
         <ContextActions />
@@ -939,6 +941,7 @@ const AppContent: React.FC = () => {
         </Suspense>
         </ErrorBoundary>
       </div>
+      </BreadcrumbProvider>
     </NavigationProvider>
   );
 };

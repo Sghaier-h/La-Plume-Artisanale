@@ -5,6 +5,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home } from 'lucide-react';
+import { useBreadcrumbContext } from './BreadcrumbContext';
 
 interface BreadcrumbItem {
   label: string;
@@ -61,6 +62,7 @@ function humanize(seg: string): string {
 
 const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ items, customItems }) => {
   const location = useLocation();
+  const { dynamicLabel } = useBreadcrumbContext();
 
   const generate = (): BreadcrumbItem[] => {
     const parts = location.pathname.split('/').filter(Boolean);
@@ -69,8 +71,11 @@ const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ items, customItems }) => {
     let acc = '';
     parts.forEach((p, i) => {
       acc += `/${p}`;
-      const label = ROUTE_LABELS[acc] || humanize(p);
       const isLast = i === parts.length - 1;
+      const isNumeric = /^\d+$/.test(p);
+      let label = ROUTE_LABELS[acc] || humanize(p);
+      if (isLast && dynamicLabel) label = dynamicLabel;
+      else if (isNumeric && isLast) label = `#${p}`;
       out.push({ label, path: isLast ? undefined : acc });
     });
     return out;
