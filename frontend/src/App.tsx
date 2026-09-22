@@ -310,6 +310,27 @@ const AppContent: React.FC = () => {
               </PrivateRoute>
             }
           />
+          {/* Redirections pour compatibilité menu ↔ pages existantes */}
+          <Route path="/products" element={<Navigate to="/articles" replace />} />
+          <Route path="/product-categories" element={<Navigate to="/parametres-catalogue" replace />} />
+          <Route path="/sale-orders" element={<Navigate to="/commandes" replace />} />
+          <Route path="/purchase-orders" element={<Navigate to="/fournisseurs" replace />} />
+          <Route path="/suppliers" element={<Navigate to="/fournisseurs" replace />} />
+          <Route path="/warehouse-management" element={<Navigate to="/entrepot" replace />} />
+          <Route path="/stock-pickings" element={<Navigate to="/bon-livraison" replace />} />
+          <Route path="/hr/employees" element={<Navigate to="/equipe" replace />} />
+          <Route path="/hr/recruitment" element={<Navigate to="/rh-recrutement" replace />} />
+          <Route path="/hr/payslips" element={<Navigate to="/rh/pointage-timemoto" replace />} />
+          <Route path="/payroll-tunisia" element={<Navigate to="/rh/pointage-timemoto" replace />} />
+          <Route path="/companies" element={<Navigate to="/multisociete" replace />} />
+          <Route path="/settings" element={<Navigate to="/parametrage" replace />} />
+          <Route path="/account-moves" element={<Navigate to="/facture" replace />} />
+          <Route path="/bom" element={<Navigate to="/modeles" replace />} />
+          <Route path="/ai" element={<Navigate to="/dashboard-admin" replace />} />
+          <Route path="/devis/create" element={<Navigate to="/devis?new=1" replace />} />
+          <Route path="/commandes/create" element={<Navigate to="/commandes?new=1" replace />} />
+          <Route path="/ecommerce-odoo" element={<Navigate to="/ecommerce" replace />} />
+          <Route path="/soustraitants-odoo" element={<Navigate to="/soustraitants" replace />} />
           <Route
             path="/dashboard-admin"
             element={

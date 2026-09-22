@@ -1312,7 +1312,7 @@ const Modeles: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-gray-200">
               {filteredModeles.map((modele) => (
-                <tr key={modele.id_modele} className="hover:bg-gray-50">
+                <tr key={modele.id_modele} onClick={() => modele.id_modele && navigate(`/modeles/${modele.id_modele}`)} className="hover:bg-gray-50 cursor-pointer">
                   <td className="px-6 py-4">
                     {modele.photo_modele ? (
                       <img src={modele.photo_modele} alt={modele.designation} className="w-12 h-12 object-cover rounded" />
