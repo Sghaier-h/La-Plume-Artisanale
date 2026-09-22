@@ -37,7 +37,15 @@ const ParametresCatalogue: React.FC = () => {
           res = await parametresCatalogueService.getModeles();
           break;
       }
-      setData(res.data.data || []);
+      setData((() => {
+        const _r = res.data?.data;
+        if (Array.isArray(_r)) return _r;
+        if (_r && Array.isArray(_r.data)) return _r.data;
+        if (_r && typeof _r === 'object') {
+          for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+        }
+        return [];
+      })());
     } catch (err: any) {
       console.error('Erreur chargement paramètres:', err);
       setError(err.response?.data?.error?.message || 'Erreur lors du chargement');

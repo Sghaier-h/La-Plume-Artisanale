@@ -67,7 +67,15 @@ const Facture: React.FC = () => {
       }
       
       const clientsRaw = clientsRes.data?.data; setClients(Array.isArray(clientsRaw) ? clientsRaw : (clientsRaw?.data || clientsRaw?.clients || []));
-      setCommandes(cmdRes.data?.data || []);
+      setCommandes((() => {
+        const _r = cmdRes.data?.data;
+        if (Array.isArray(_r)) return _r;
+        if (_r && Array.isArray(_r.data)) return _r.data;
+        if (_r && typeof _r === 'object') {
+          for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+        }
+        return [];
+      })());
       if (blRes.data?.success) {
         const blRaw = blRes.data.data; setBonsLivraison(Array.isArray(blRaw) ? blRaw : (blRaw?.data || blRaw?.bons_livraison || []));
       }

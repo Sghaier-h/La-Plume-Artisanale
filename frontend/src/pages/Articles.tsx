@@ -255,7 +255,15 @@ const Articles: React.FC = () => {
       // Charger les couleurs depuis l'API
       try {
         const couleursRes = await parametresCatalogueService.getCouleurs();
-        setCouleurs(couleursRes.data?.data || couleursRes.data || []);
+        setCouleurs((() => {
+          const _r = couleursRes.data?.data;
+          if (Array.isArray(_r)) return _r;
+          if (_r && Array.isArray(_r.data)) return _r.data;
+          if (_r && typeof _r === 'object') {
+            for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+          }
+          return [];
+        })());
       } catch (error) {
         console.error('Erreur chargement couleurs:', error);
       }
@@ -263,7 +271,15 @@ const Articles: React.FC = () => {
       // Charger les nombre de couleurs depuis l'API
       try {
         const nbCouleursRes = await parametresCatalogueService.getNombreCouleurs();
-        setNombreCouleurs(nbCouleursRes.data?.data || nbCouleursRes.data || []);
+        setNombreCouleurs((() => {
+          const _r = nbCouleursRes.data?.data;
+          if (Array.isArray(_r)) return _r;
+          if (_r && Array.isArray(_r.data)) return _r.data;
+          if (_r && typeof _r === 'object') {
+            for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+          }
+          return [];
+        })());
       } catch (error) {
         console.error('Erreur chargement nombre de couleurs:', error);
       }
@@ -271,7 +287,15 @@ const Articles: React.FC = () => {
       // Charger les attributs (pour compatibilité)
       try {
         const attributsRes = await produitsService.getAttributs();
-        setAttributs(attributsRes.data.data || []);
+        setAttributs((() => {
+          const _r = attributsRes.data?.data;
+          if (Array.isArray(_r)) return _r;
+          if (_r && Array.isArray(_r.data)) return _r.data;
+          if (_r && typeof _r === 'object') {
+            for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+          }
+          return [];
+        })());
       } catch (error) {
         console.error('Erreur chargement attributs:', error);
       }

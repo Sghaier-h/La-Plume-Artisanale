@@ -88,7 +88,15 @@ const OFDetails: React.FC = () => {
         setOf(response.data.data || response.data);
         try {
           const suivisRes = await suiviFabricationService.getSuivisFabrication({ id_of: id });
-          setSuivis(suivisRes.data?.data || []);
+          setSuivis((() => {
+            const _r = suivisRes.data?.data;
+            if (Array.isArray(_r)) return _r;
+            if (_r && Array.isArray(_r.data)) return _r.data;
+            if (_r && typeof _r === 'object') {
+              for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+            }
+            return [];
+          })());
         } catch (err) {
           console.warn('Erreur chargement suivis:', err);
         }

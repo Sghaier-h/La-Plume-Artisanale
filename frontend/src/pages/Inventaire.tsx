@@ -52,7 +52,15 @@ const Inventaire: React.FC = () => {
     try {
       const response = await inventaireService.getInventaires({ search });
       if (response.data?.success) {
-        setInventaires(response.data.data || []);
+        setInventaires((() => {
+          const _r = response.data?.data;
+          if (Array.isArray(_r)) return _r;
+          if (_r && Array.isArray(_r.data)) return _r.data;
+          if (_r && typeof _r === 'object') {
+            for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+          }
+          return [];
+        })());
       } else {
         // Fallback sur données mockées si l'API ne retourne pas success
         const mockInventaires: Inventaire[] = [

@@ -118,7 +118,15 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
       ]);
 
       setSoustraitantsList((() => { const _r = soustraitantsRes.data?.data; return Array.isArray(_r) ? _r : (_r?.data || _r?.soustraitantsList || []); })());
-      setOfs(ofsRes.data?.data || []);
+      setOfs((() => {
+        const _r = ofsRes.data?.data;
+        if (Array.isArray(_r)) return _r;
+        if (_r && Array.isArray(_r.data)) return _r.data;
+        if (_r && typeof _r === 'object') {
+          for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+        }
+        return [];
+      })());
       setAlertes((() => { const _r = alertesRes.data?.data; return Array.isArray(_r) ? _r : (_r?.data || _r?.alertes || []); })());
 
       const soustraitantsDetails: SoustraitantDetails[] = [];

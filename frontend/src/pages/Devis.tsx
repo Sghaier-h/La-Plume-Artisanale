@@ -63,7 +63,15 @@ const Devis: React.FC = () => {
       }
       
       const clientsRaw = clientsRes.data?.data; setClients(Array.isArray(clientsRaw) ? clientsRaw : (clientsRaw?.data || clientsRaw?.clients || []));
-      setArticles(articlesRes.data?.data || []);
+      setArticles((() => {
+        const _r = articlesRes.data?.data;
+        if (Array.isArray(_r)) return _r;
+        if (_r && Array.isArray(_r.data)) return _r.data;
+        if (_r && typeof _r === 'object') {
+          for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+        }
+        return [];
+      })());
     } catch (error) {
       console.error('Erreur chargement devis:', error);
       setDevis([]);

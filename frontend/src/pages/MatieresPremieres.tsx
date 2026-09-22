@@ -47,7 +47,15 @@ const MatieresPremieres: React.FC = () => {
   const loadTypesMP = async () => {
     try {
       const response = await matieresPremieresService.getTypesMP();
-      setTypesMP(response.data.data || []);
+      setTypesMP((() => {
+        const _r = response.data?.data;
+        if (Array.isArray(_r)) return _r;
+        if (_r && Array.isArray(_r.data)) return _r.data;
+        if (_r && typeof _r === 'object') {
+          for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+        }
+        return [];
+      })());
     } catch (error) {
       console.error('Erreur chargement types:', error);
     }

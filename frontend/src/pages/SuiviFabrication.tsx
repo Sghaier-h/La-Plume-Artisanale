@@ -58,8 +58,24 @@ const SuiviFabrication: React.FC = () => {
         machinesService.getMachines({ actif: 'true' }).catch(() => ({ data: { data: [] } }))
       ]);
       setSuivis(suivisRes.data?.data?.suivis || []);
-      setOfs(ofsRes.data?.data || []);
-      setMachines(machinesRes.data?.data || []);
+      setOfs((() => {
+        const _r = ofsRes.data?.data;
+        if (Array.isArray(_r)) return _r;
+        if (_r && Array.isArray(_r.data)) return _r.data;
+        if (_r && typeof _r === 'object') {
+          for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+        }
+        return [];
+      })());
+      setMachines((() => {
+        const _r = machinesRes.data?.data;
+        if (Array.isArray(_r)) return _r;
+        if (_r && Array.isArray(_r.data)) return _r.data;
+        if (_r && typeof _r === 'object') {
+          for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+        }
+        return [];
+      })());
     } catch (err: any) {
       console.error('Erreur chargement suivis:', err);
       setError(err.response?.data?.error?.message || 'Erreur lors du chargement');

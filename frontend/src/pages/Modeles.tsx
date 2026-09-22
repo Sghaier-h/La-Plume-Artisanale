@@ -141,7 +141,15 @@ const Modeles: React.FC = () => {
       // Charger les types de produits
       try {
         const typesProduitsRes = await parametresCatalogueService.getTypesProduits();
-        setTypesProduits(typesProduitsRes.data?.data || typesProduitsRes.data || []);
+        setTypesProduits((() => {
+          const _r = typesProduitsRes.data?.data;
+          if (Array.isArray(_r)) return _r;
+          if (_r && Array.isArray(_r.data)) return _r.data;
+          if (_r && typeof _r === 'object') {
+            for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+          }
+          return [];
+        })());
       } catch (error) {
         console.error('Erreur chargement types produits:', error);
       }
@@ -149,7 +157,15 @@ const Modeles: React.FC = () => {
       // Charger les types de tissages
       try {
         const typesTissagesRes = await parametresCatalogueService.getTissages();
-        setTypesTissages(typesTissagesRes.data?.data || typesTissagesRes.data || []);
+        setTypesTissages((() => {
+          const _r = typesTissagesRes.data?.data;
+          if (Array.isArray(_r)) return _r;
+          if (_r && Array.isArray(_r.data)) return _r.data;
+          if (_r && typeof _r === 'object') {
+            for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+          }
+          return [];
+        })());
       } catch (error) {
         console.error('Erreur chargement types tissages:', error);
       }
@@ -157,7 +173,15 @@ const Modeles: React.FC = () => {
       // Charger les modèles
       try {
         const modelesRes = await modelesService.getModeles();
-        setModeles(modelesRes.data?.data || modelesRes.data || []);
+        setModeles((() => {
+          const _r = modelesRes.data?.data;
+          if (Array.isArray(_r)) return _r;
+          if (_r && Array.isArray(_r.data)) return _r.data;
+          if (_r && typeof _r === 'object') {
+            for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+          }
+          return [];
+        })());
       } catch (error) {
         console.error('Erreur chargement modèles:', error);
         // Fallback sur mock data si l'API n'est pas disponible

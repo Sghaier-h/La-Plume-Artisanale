@@ -23,8 +23,24 @@ const MultiSociete: React.FC = () => {
       ]);
 
       setSocietes(societesRes.data.data.societes || []);
-      setEtablissements(etablissementsRes.data.data || []);
-      setTransferts(transfertsRes.data.data || []);
+      setEtablissements((() => {
+        const _r = etablissementsRes.data?.data;
+        if (Array.isArray(_r)) return _r;
+        if (_r && Array.isArray(_r.data)) return _r.data;
+        if (_r && typeof _r === 'object') {
+          for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+        }
+        return [];
+      })());
+      setTransferts((() => {
+        const _r = transfertsRes.data?.data;
+        if (Array.isArray(_r)) return _r;
+        if (_r && Array.isArray(_r.data)) return _r.data;
+        if (_r && typeof _r === 'object') {
+          for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+        }
+        return [];
+      })());
     } catch (error) {
       console.error('Erreur chargement:', error);
     } finally {

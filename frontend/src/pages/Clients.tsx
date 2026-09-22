@@ -87,7 +87,15 @@ const Clients: React.FC = () => {
   const loadCategories = async () => {
     try {
       const res = await clientsService.getCategories();
-      setCategories(res.data.data || res.data || []);
+      setCategories((() => {
+        const _r = res.data?.data;
+        if (Array.isArray(_r)) return _r;
+        if (_r && Array.isArray(_r.data)) return _r.data;
+        if (_r && typeof _r === 'object') {
+          for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+        }
+        return [];
+      })());
     } catch (error) {
       console.error('Erreur chargement catégories:', error);
     }
@@ -96,7 +104,15 @@ const Clients: React.FC = () => {
   const loadTypesCommerciaux = async () => {
     try {
       const res = await clientsService.getTypesCommerciaux();
-      setTypesCommerciaux(res.data.data || res.data || []);
+      setTypesCommerciaux((() => {
+        const _r = res.data?.data;
+        if (Array.isArray(_r)) return _r;
+        if (_r && Array.isArray(_r.data)) return _r.data;
+        if (_r && typeof _r === 'object') {
+          for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+        }
+        return [];
+      })());
     } catch (error) {
       console.error('Erreur chargement types commerciaux:', error);
     }
@@ -105,7 +121,15 @@ const Clients: React.FC = () => {
   const loadCommerciaux = async () => {
     try {
       const res = await utilisateursService.getCommerciaux();
-      setCommerciaux(res.data.data || res.data || []);
+      setCommerciaux((() => {
+        const _r = res.data?.data;
+        if (Array.isArray(_r)) return _r;
+        if (_r && Array.isArray(_r.data)) return _r.data;
+        if (_r && typeof _r === 'object') {
+          for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+        }
+        return [];
+      })());
     } catch (error) {
       console.error('Erreur chargement commerciaux:', error);
     }

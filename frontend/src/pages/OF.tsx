@@ -51,10 +51,42 @@ const OF: React.FC = () => {
         machinesService.getMachines({ actif: 'true' }).catch(() => ({ data: { data: [] } })),
         commandesService.getCommandes({ statut: 'validee' }).catch(() => ({ data: { data: [] } }))
       ]);
-      setOfs(ofsRes.data?.data || []);
-      setArticles(articlesRes.data?.data || []);
-      setMachines(machinesRes.data?.data || []);
-      setCommandes(cmdRes.data?.data || []);
+      setOfs((() => {
+        const _r = ofsRes.data?.data;
+        if (Array.isArray(_r)) return _r;
+        if (_r && Array.isArray(_r.data)) return _r.data;
+        if (_r && typeof _r === 'object') {
+          for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+        }
+        return [];
+      })());
+      setArticles((() => {
+        const _r = articlesRes.data?.data;
+        if (Array.isArray(_r)) return _r;
+        if (_r && Array.isArray(_r.data)) return _r.data;
+        if (_r && typeof _r === 'object') {
+          for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+        }
+        return [];
+      })());
+      setMachines((() => {
+        const _r = machinesRes.data?.data;
+        if (Array.isArray(_r)) return _r;
+        if (_r && Array.isArray(_r.data)) return _r.data;
+        if (_r && typeof _r === 'object') {
+          for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+        }
+        return [];
+      })());
+      setCommandes((() => {
+        const _r = cmdRes.data?.data;
+        if (Array.isArray(_r)) return _r;
+        if (_r && Array.isArray(_r.data)) return _r.data;
+        if (_r && typeof _r === 'object') {
+          for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+        }
+        return [];
+      })());
     } catch (error) {
       console.error('Erreur chargement OF:', error);
       setOfs([]);
