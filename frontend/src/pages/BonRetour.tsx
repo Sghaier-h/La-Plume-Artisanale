@@ -669,11 +669,11 @@ const BonRetour: React.FC = () => {
                             <tr key={index}>
                               <td className="px-4 py-2">{ligne.designation}</td>
                               <td className="px-4 py-2">{ligne.quantite_retournee}</td>
-                              <td className="px-4 py-2">{ligne.prix_unitaire_ht?.toFixed(2)} TND</td>
+                              <td className="px-4 py-2">{Number(ligne.prix_unitaire_ht || 0).toFixed(2)} TND</td>
                               <td className="px-4 py-2">{ligne.taux_tva || 20}%</td>
                               <td className="px-4 py-2">{ligne.motif_retour || '-'}</td>
                               <td className="px-4 py-2 font-semibold">
-                                {ligne.montant_ttc?.toFixed(2)} TND
+                                {Number(ligne.montant_ttc || 0).toFixed(2)} TND
                               </td>
                             </tr>
                           ))}
@@ -689,15 +689,15 @@ const BonRetour: React.FC = () => {
                     <div className="w-64 space-y-2">
                       <div className="flex justify-between">
                         <span className="text-gray-600">Montant HT:</span>
-                        <span className="font-semibold">{selectedBR.montant_ht?.toFixed(2)} TND</span>
+                        <span className="font-semibold">{Number(selectedBR.montant_ht || 0).toFixed(2)} TND</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">TVA:</span>
-                        <span className="font-semibold">{selectedBR.montant_tva?.toFixed(2)} TND</span>
+                        <span className="font-semibold">{Number(selectedBR.montant_tva || 0).toFixed(2)} TND</span>
                       </div>
                       <div className="flex justify-between text-lg font-bold border-t pt-2">
                         <span>Total TTC:</span>
-                        <span>{selectedBR.montant_ttc?.toFixed(2)} TND</span>
+                        <span>{Number(selectedBR.montant_ttc || 0).toFixed(2)} TND</span>
                       </div>
                     </div>
                   </div>

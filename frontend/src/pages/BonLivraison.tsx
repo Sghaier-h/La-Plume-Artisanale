@@ -541,7 +541,7 @@ const BonLivraison: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap">{bl.numero_commande || '-'}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{bl.client_nom}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{bl.date_livraison}</td>
-                    <td className="px-6 py-4 whitespace-nowrap font-semibold">{bl.montant_ttc?.toFixed(2)} TND</td>
+                    <td className="px-6 py-4 whitespace-nowrap font-semibold">{Number(bl.montant_ttc || 0).toFixed(2)} TND</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 rounded text-xs font-medium ${getStatutColor(bl.statut)}`}>
                         {bl.statut}
@@ -715,10 +715,10 @@ const BonLivraison: React.FC = () => {
                             <tr key={index}>
                               <td className="px-4 py-2">{ligne.designation}</td>
                               <td className="px-4 py-2">{ligne.quantite_livree}</td>
-                              <td className="px-4 py-2">{ligne.prix_unitaire_ht?.toFixed(2)} TND</td>
+                              <td className="px-4 py-2">{Number(ligne.prix_unitaire_ht || 0).toFixed(2)} TND</td>
                               <td className="px-4 py-2">{ligne.taux_tva || 20}%</td>
                               <td className="px-4 py-2 font-semibold">
-                                {ligne.montant_ttc?.toFixed(2)} TND
+                                {Number(ligne.montant_ttc || 0).toFixed(2)} TND
                               </td>
                             </tr>
                           ))}
@@ -734,15 +734,15 @@ const BonLivraison: React.FC = () => {
                     <div className="w-64 space-y-2">
                       <div className="flex justify-between">
                         <span className="text-gray-600">Montant HT:</span>
-                        <span className="font-semibold">{selectedBL.montant_ht?.toFixed(2)} TND</span>
+                        <span className="font-semibold">{Number(selectedBL.montant_ht || 0).toFixed(2)} TND</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">TVA:</span>
-                        <span className="font-semibold">{selectedBL.montant_tva?.toFixed(2)} TND</span>
+                        <span className="font-semibold">{Number(selectedBL.montant_tva || 0).toFixed(2)} TND</span>
                       </div>
                       <div className="flex justify-between text-lg font-bold border-t pt-2">
                         <span>Total TTC:</span>
-                        <span>{selectedBL.montant_ttc?.toFixed(2)} TND</span>
+                        <span>{Number(selectedBL.montant_ttc || 0).toFixed(2)} TND</span>
                       </div>
                     </div>
                   </div>

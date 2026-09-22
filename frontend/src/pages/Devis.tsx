@@ -553,7 +553,7 @@ const Devis: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap font-medium">{devis.numero_devis}</td>
                   <td className="px-6 py-4 whitespace-nowrap">{devis.client_nom}</td>
                   <td className="px-6 py-4 whitespace-nowrap">{devis.date_devis}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">{devis.montant_ht?.toFixed(2)} TND</td>
+                  <td className="px-6 py-4 whitespace-nowrap">{Number(devis.montant_ht || 0).toFixed(2)} TND</td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 rounded text-xs font-medium ${getStatutColor(devis.statut)}`}>
                       {devis.statut}
@@ -723,11 +723,11 @@ const Devis: React.FC = () => {
                             <tr key={index}>
                               <td className="px-4 py-2">{ligne.designation}</td>
                               <td className="px-4 py-2">{ligne.quantite}</td>
-                              <td className="px-4 py-2">{ligne.prix_unitaire_ht?.toFixed(2)} TND</td>
+                              <td className="px-4 py-2">{Number(ligne.prix_unitaire_ht || 0).toFixed(2)} TND</td>
                               <td className="px-4 py-2">{ligne.remise || 0}%</td>
                               <td className="px-4 py-2">{ligne.taux_tva || 20}%</td>
                               <td className="px-4 py-2 font-semibold">
-                                {ligne.montant_ttc?.toFixed(2)} TND
+                                {Number(ligne.montant_ttc || 0).toFixed(2)} TND
                               </td>
                             </tr>
                           ))}
@@ -743,21 +743,21 @@ const Devis: React.FC = () => {
                     <div className="w-64 space-y-2">
                       <div className="flex justify-between">
                         <span className="text-gray-600">Montant HT:</span>
-                        <span className="font-semibold">{selectedDevis.montant_ht?.toFixed(2)} TND</span>
+                        <span className="font-semibold">{Number(selectedDevis.montant_ht || 0).toFixed(2)} TND</span>
                       </div>
                       {selectedDevis.remise_globale > 0 && (
                         <div className="flex justify-between text-red-600">
                           <span>Remise globale ({selectedDevis.remise_globale}%):</span>
-                          <span>-{selectedDevis.montant_remise?.toFixed(2)} TND</span>
+                          <span>-{Number(selectedDevis.montant_remise || 0).toFixed(2)} TND</span>
                         </div>
                       )}
                       <div className="flex justify-between">
                         <span className="text-gray-600">TVA ({selectedDevis.taux_tva || 20}%):</span>
-                        <span className="font-semibold">{selectedDevis.montant_tva?.toFixed(2)} TND</span>
+                        <span className="font-semibold">{Number(selectedDevis.montant_tva || 0).toFixed(2)} TND</span>
                       </div>
                       <div className="flex justify-between text-lg font-bold border-t pt-2">
                         <span>Total TTC:</span>
-                        <span>{selectedDevis.montant_ttc?.toFixed(2)} TND</span>
+                        <span>{Number(selectedDevis.montant_ttc || 0).toFixed(2)} TND</span>
                       </div>
                     </div>
                   </div>

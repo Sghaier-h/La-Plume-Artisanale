@@ -576,7 +576,7 @@ const Avoir: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap">{avoir.numero_facture || '-'}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{avoir.client_nom}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{avoir.date_avoir}</td>
-                    <td className="px-6 py-4 whitespace-nowrap font-semibold text-red-600">{avoir.montant_ttc?.toFixed(2)} TND</td>
+                    <td className="px-6 py-4 whitespace-nowrap font-semibold text-red-600">{Number(avoir.montant_ttc || 0).toFixed(2)} TND</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 rounded text-xs font-medium ${getStatutColor(avoir.statut)}`}>
                         {avoir.statut}
@@ -746,11 +746,11 @@ const Avoir: React.FC = () => {
                             <tr key={index}>
                               <td className="px-4 py-2">{ligne.designation}</td>
                               <td className="px-4 py-2">{ligne.quantite}</td>
-                              <td className="px-4 py-2">{ligne.prix_unitaire_ht?.toFixed(2)} TND</td>
+                              <td className="px-4 py-2">{Number(ligne.prix_unitaire_ht || 0).toFixed(2)} TND</td>
                               <td className="px-4 py-2">{ligne.remise || 0}%</td>
                               <td className="px-4 py-2">{ligne.taux_tva || 20}%</td>
                               <td className="px-4 py-2 font-semibold text-red-600">
-                                {ligne.montant_ttc?.toFixed(2)} TND
+                                {Number(ligne.montant_ttc || 0).toFixed(2)} TND
                               </td>
                             </tr>
                           ))}
@@ -766,21 +766,21 @@ const Avoir: React.FC = () => {
                     <div className="w-64 space-y-2">
                       <div className="flex justify-between">
                         <span className="text-gray-600">Montant HT:</span>
-                        <span className="font-semibold">{selectedAvoir.montant_ht?.toFixed(2)} TND</span>
+                        <span className="font-semibold">{Number(selectedAvoir.montant_ht || 0).toFixed(2)} TND</span>
                       </div>
                       {selectedAvoir.remise_globale > 0 && (
                         <div className="flex justify-between text-red-600">
                           <span>Remise globale ({selectedAvoir.remise_globale}%):</span>
-                          <span>-{selectedAvoir.montant_remise?.toFixed(2)} TND</span>
+                          <span>-{Number(selectedAvoir.montant_remise || 0).toFixed(2)} TND</span>
                         </div>
                       )}
                       <div className="flex justify-between">
                         <span className="text-gray-600">TVA ({selectedAvoir.taux_tva || 20}%):</span>
-                        <span className="font-semibold">{selectedAvoir.montant_tva?.toFixed(2)} TND</span>
+                        <span className="font-semibold">{Number(selectedAvoir.montant_tva || 0).toFixed(2)} TND</span>
                       </div>
                       <div className="flex justify-between text-lg font-bold border-t pt-2 text-red-600">
                         <span>Total TTC:</span>
-                        <span>{selectedAvoir.montant_ttc?.toFixed(2)} TND</span>
+                        <span>{Number(selectedAvoir.montant_ttc || 0).toFixed(2)} TND</span>
                       </div>
                     </div>
                   </div>

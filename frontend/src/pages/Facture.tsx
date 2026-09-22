@@ -631,9 +631,9 @@ const Facture: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap">{facture.client_nom}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{facture.date_facture}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{facture.date_echeance || '-'}</td>
-                    <td className="px-6 py-4 whitespace-nowrap font-semibold">{facture.montant_ttc?.toFixed(2)} TND</td>
+                    <td className="px-6 py-4 whitespace-nowrap font-semibold">{Number(facture.montant_ttc || 0).toFixed(2)} TND</td>
                     <td className="px-6 py-4 whitespace-nowrap text-red-600 font-semibold">
-                      {facture.montant_restant?.toFixed(2)} TND
+                      {Number(facture.montant_restant || 0).toFixed(2)} TND
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 rounded text-xs font-medium ${getStatutColor(facture.statut)}`}>
@@ -815,11 +815,11 @@ const Facture: React.FC = () => {
                             <tr key={index}>
                               <td className="px-4 py-2">{ligne.designation}</td>
                               <td className="px-4 py-2">{ligne.quantite}</td>
-                              <td className="px-4 py-2">{ligne.prix_unitaire_ht?.toFixed(2)} TND</td>
+                              <td className="px-4 py-2">{Number(ligne.prix_unitaire_ht || 0).toFixed(2)} TND</td>
                               <td className="px-4 py-2">{ligne.remise || 0}%</td>
                               <td className="px-4 py-2">{ligne.taux_tva || 20}%</td>
                               <td className="px-4 py-2 font-semibold">
-                                {ligne.montant_ttc?.toFixed(2)} TND
+                                {Number(ligne.montant_ttc || 0).toFixed(2)} TND
                               </td>
                             </tr>
                           ))}
@@ -835,32 +835,32 @@ const Facture: React.FC = () => {
                     <div className="w-64 space-y-2">
                       <div className="flex justify-between">
                         <span className="text-gray-600">Montant HT:</span>
-                        <span className="font-semibold">{selectedFacture.montant_ht?.toFixed(2)} TND</span>
+                        <span className="font-semibold">{Number(selectedFacture.montant_ht || 0).toFixed(2)} TND</span>
                       </div>
                       {selectedFacture.remise_globale > 0 && (
                         <div className="flex justify-between text-red-600">
                           <span>Remise globale ({selectedFacture.remise_globale}%):</span>
-                          <span>-{selectedFacture.montant_remise?.toFixed(2)} TND</span>
+                          <span>-{Number(selectedFacture.montant_remise || 0).toFixed(2)} TND</span>
                         </div>
                       )}
                       <div className="flex justify-between">
                         <span className="text-gray-600">TVA ({selectedFacture.taux_tva || 20}%):</span>
-                        <span className="font-semibold">{selectedFacture.montant_tva?.toFixed(2)} TND</span>
+                        <span className="font-semibold">{Number(selectedFacture.montant_tva || 0).toFixed(2)} TND</span>
                       </div>
                       <div className="flex justify-between text-lg font-bold border-t pt-2">
                         <span>Total TTC:</span>
-                        <span>{selectedFacture.montant_ttc?.toFixed(2)} TND</span>
+                        <span>{Number(selectedFacture.montant_ttc || 0).toFixed(2)} TND</span>
                       </div>
                       {selectedFacture.montant_regle > 0 && (
                         <div className="flex justify-between text-green-600">
                           <span>Montant Réglé:</span>
-                          <span>{selectedFacture.montant_regle?.toFixed(2)} TND</span>
+                          <span>{Number(selectedFacture.montant_regle || 0).toFixed(2)} TND</span>
                         </div>
                       )}
                       {selectedFacture.montant_restant > 0 && (
                         <div className="flex justify-between text-red-600 font-semibold">
                           <span>Montant Restant:</span>
-                          <span>{selectedFacture.montant_restant?.toFixed(2)} TND</span>
+                          <span>{Number(selectedFacture.montant_restant || 0).toFixed(2)} TND</span>
                         </div>
                       )}
                     </div>
