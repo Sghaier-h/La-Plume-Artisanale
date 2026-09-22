@@ -425,7 +425,7 @@ const OF: React.FC = () => {
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Sélectionner une commande (optionnel)</option>
-                    {commandes.filter(c => c.statut === 'validee' || c.statut === 'en_production').map(c => (
+                    {commandes.filter(c => !['Annuler', 'Solder', 'annulee', 'annulée', 'termine', 'terminée'].includes(c.statut)).map(c => (
                       <option key={c.id_commande} value={c.id_commande}>
                         {c.numero_commande} - {c.client_nom}
                       </option>
