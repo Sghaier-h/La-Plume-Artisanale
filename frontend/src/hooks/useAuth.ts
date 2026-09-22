@@ -14,28 +14,24 @@ export interface User {
 }
 
 export const useAuth = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(() => {
+    const token = localStorage.getItem('token');
+    const userStr = localStorage.getItem('user');
+    if (!token || !userStr) return null;
+    try {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      return JSON.parse(userStr) as User;
+    } catch {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      return null;
+    }
+  });
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    const userStr = localStorage.getItem('user');
-
-    if (token && userStr) {
-      try {
-        const userData = JSON.parse(userStr);
-        setUser(userData);
-        
-        // Configurer axios pour les requêtes futures
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      } catch (error) {
-        console.error('Erreur parsing user:', error);
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-      }
-    }
-
-    setLoading(false);
+    if (token) axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
   }, []);
 
   const logout = () => {
