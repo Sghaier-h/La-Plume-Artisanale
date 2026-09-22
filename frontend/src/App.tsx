@@ -90,6 +90,9 @@ const SemiFini = React.lazy(() => import('./pages/SemiFini'));
 const MatierePremiereStock = React.lazy(() => import('./pages/MatierePremiereStock'));
 const Fourniture = React.lazy(() => import('./pages/Fourniture'));
 const ImportExcel = React.lazy(() => import('./pages/ImportExcel'));
+const PipelineVente = React.lazy(() => import('./pages/PipelineVente'));
+const CrmLeads = React.lazy(() => import('./pages/CrmLeads'));
+const Opportunities = React.lazy(() => import('./pages/Opportunities'));
 
 // ── Portail Client (auth séparée) ────────────────────────────────────
 const PortailLogin = React.lazy(() => import('./pages/portail/PortailLogin'));
@@ -905,6 +908,30 @@ const AppContent: React.FC = () => {
             element={
               <PrivateRoute>
                 <ListePalettes />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/pipeline-vente"
+            element={
+              <PrivateRoute>
+                <PipelineVente />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/crm/leads"
+            element={
+              <PrivateRoute>
+                <CrmLeads />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/opportunities"
+            element={
+              <PrivateRoute>
+                <Opportunities />
               </PrivateRoute>
             }
           />
