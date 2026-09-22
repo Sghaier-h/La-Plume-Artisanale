@@ -4,6 +4,7 @@ export interface SectionCardProps {
   title: string;
   subtitle?: string;
   actions?: React.ReactNode;
+  headerRight?: React.ReactNode;
   icon?: React.ReactNode;
   padded?: boolean;
   children: React.ReactNode;
@@ -11,8 +12,9 @@ export interface SectionCardProps {
 }
 
 export const SectionCard: React.FC<SectionCardProps> = ({
-  title, subtitle, actions, icon, padded = true, children, className,
+  title, subtitle, actions, headerRight, icon, padded = true, children, className,
 }) => {
+  const finalActions = actions ?? headerRight;
   return (
     <section
       className={className}
@@ -80,7 +82,7 @@ export const SectionCard: React.FC<SectionCardProps> = ({
             )}
           </div>
         </div>
-        {actions && <div style={{ display: 'flex', gap: 'var(--s-2)', flexShrink: 0 }}>{actions}</div>}
+        {finalActions && <div style={{ display: 'flex', gap: 'var(--s-2)', flexShrink: 0 }}>{finalActions}</div>}
       </header>
       <div style={{ padding: padded ? 'var(--s-5)' : 0, flex: 1, minHeight: 0 }}>
         {children}

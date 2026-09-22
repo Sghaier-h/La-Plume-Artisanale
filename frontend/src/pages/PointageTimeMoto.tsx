@@ -13,9 +13,12 @@ const API_URL =
     : 'http://localhost:5000/api');
 
 const client = axios.create({ baseURL: API_URL });
-client.interceptors.request.use((cfg) => {
+client.interceptors.request.use((cfg: any) => {
   const token = localStorage.getItem('token');
-  if (token) cfg.headers = { ...cfg.headers, Authorization: `Bearer ${token}` };
+  if (token) {
+    cfg.headers = cfg.headers || {};
+    cfg.headers.Authorization = `Bearer ${token}`;
+  }
   return cfg;
 });
 

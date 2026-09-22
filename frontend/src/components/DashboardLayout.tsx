@@ -30,7 +30,7 @@ import {
   Package,
   UserCog,
   Truck,
-  Handshake,
+  HeartHandshake as Handshake,
   Wrench,
   Sliders,
   Store,
@@ -68,7 +68,7 @@ export interface DashboardLayoutProps {
 interface NavItem {
   id: string;
   label: string;
-  icon: React.ComponentType<{ size?: number }>;
+  icon: React.ComponentType<any>;
   path: string;
   matchPrefixes?: string[];
 }

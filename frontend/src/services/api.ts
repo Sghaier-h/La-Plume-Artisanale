@@ -305,6 +305,8 @@ export const parametrageService = {
   updateParametreSysteme: (cle: string, data: any) => api.put(`/parametrage/systeme/${cle}`, data),
   getParametresModule: (module: string) => api.get(`/parametrage/module/${module}`),
   updateParametresModule: (module: string, data: any) => api.put(`/parametrage/module/${module}`, data),
+  getAll: (params?: any) => api.get('/parametrage', { params }),
+  update: (cle: string, valeur: any) => api.put(`/parametrage/${encodeURIComponent(cle)}`, { valeur }),
 };
 
 export const utilisateursService = {
@@ -1045,9 +1047,4 @@ export const relancesService = {
   ) => api.post(`/relances/facture/${idFacture}/envoyer`, body),
   enregistrerReponse: (id: number, body?: { reponse_recue?: boolean; date_reponse?: string }) =>
     api.put(`/relances/${id}/reponse`, body || {}),
-};
-
-export const parametrageService = {
-  getAll: (params?: any) => api.get('/parametrage', { params }),
-  update: (cle: string, valeur: any) => api.put(`/parametrage/${encodeURIComponent(cle)}`, { valeur }),
 };

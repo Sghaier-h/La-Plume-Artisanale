@@ -48,7 +48,7 @@ interface SearchResult {
   path: string;
 }
 
-const GROUP_ICONS: Record<ResultGroupKey, React.ComponentType<{ size?: number }>> = {
+const GROUP_ICONS: Record<ResultGroupKey, React.ComponentType<any>> = {
   Clients: Users,
   Articles: Package,
   Commandes: ShoppingCart,
