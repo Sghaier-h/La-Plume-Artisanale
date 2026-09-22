@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Package, Plus, Search, Edit, List, Grid, TrendingUp } from 'lucide-react';
 import { articlesService } from '../services/api';
 
@@ -16,6 +17,7 @@ interface ProduitFini {
 }
 
 const ProduitFini: React.FC = () => {
+  const navigate = useNavigate();
   const [produits, setProduits] = useState<ProduitFini[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -157,7 +159,7 @@ const ProduitFini: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {filteredProduits.map((produit) => (
-                  <tr key={produit.id_article} className="hover:bg-gray-50">
+                  <tr key={produit.id_article} onClick={() => produit.id_article && navigate(`/articles/${produit.id_article}`)} className="hover:bg-gray-50 cursor-pointer">
                     <td className="px-6 py-4 whitespace-nowrap font-mono text-sm font-medium text-blue-600">{produit.ref_commercial}</td>
                     <td className="px-6 py-4 whitespace-nowrap font-mono text-sm text-gray-600">{produit.ref_fabrication}</td>
                     <td className="px-6 py-4 text-sm">{produit.designation}</td>
@@ -186,7 +188,7 @@ const ProduitFini: React.FC = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredProduits.map((produit) => (
-              <div key={produit.id_article} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+              <div key={produit.id_article} onClick={() => produit.id_article && navigate(`/articles/${produit.id_article}`)} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
                 <div className="h-32 bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
                   <Package className="w-16 h-16 text-blue-600" />
                 </div>
