@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FileText, Plus, Edit, Trash2, Search, Download, Eye, X, CheckCircle } from 'lucide-react';
+import { FileText, Plus, Edit, Trash2, Search, Download, Eye, X, CheckCircle, ShoppingCart } from 'lucide-react';
 import { devisService, commandesService, clientsService, articlesService } from '../services/api';
 import ArticlePicker from '../components/ArticlePicker';
 
@@ -556,8 +556,36 @@ const Devis: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {filteredDevis.map((devis) => (
-                <tr key={devis.id_devis} className="hover:bg-gray-50">
+              {filteredDevis.map((devis) => {
+                const openDevisView = async () => {
+                  try {
+                    const result = await devisService.getDevisById(devis.id_devis);
+                    if (result.data?.success) setSelectedDevis(result.data?.data);
+                    else alert('Erreur lors du chargement du devis');
+                  } catch (error: any) {
+                    console.error('Erreur chargement devis:', error);
+                    alert(error.response?.data?.error?.message || 'Erreur lors du chargement du devis');
+                  }
+                };
+                const transformerRow = async (e: React.MouseEvent) => {
+                  e.stopPropagation();
+                  if (!window.confirm(`Transformer le devis ${devis.numero_devis} en commande ?`)) return;
+                  try {
+                    const result = await devisService.transformerEnCommande(devis.id_devis);
+                    if (result.data?.success) {
+                      alert('Devis transformé en commande avec succès');
+                      loadData();
+                    } else {
+                      alert(result.data?.error?.message || 'Erreur lors de la transformation');
+                    }
+                  } catch (err: any) {
+                    console.error('Erreur transformation devis:', err);
+                    alert(err.response?.data?.error?.message || 'Erreur lors de la transformation');
+                  }
+                };
+                const dejaTransforme = devis.statut && ['transforme', 'transformé', 'TRANSFORME'].includes(devis.statut);
+                return (
+                <tr key={devis.id_devis} onClick={openDevisView} className="hover:bg-gray-50 cursor-pointer">
                   <td className="px-6 py-4 whitespace-nowrap font-medium">{devis.numero_devis}</td>
                   <td className="px-6 py-4 whitespace-nowrap">{devis.client_nom}</td>
                   <td className="px-6 py-4 whitespace-nowrap">{devis.date_devis}</td>
@@ -567,27 +595,24 @@ const Devis: React.FC = () => {
                       {devis.statut}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-6 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                     <div className="flex gap-2">
-                      <button 
-                        onClick={async () => {
-                          try {
-                            const result = await devisService.getDevisById(devis.id_devis);
-                            if (result.data?.success) {
-                              setSelectedDevis((() => { const _r = result.data?.data; return Array.isArray(_r) ? _r : (_r?.data || _r?.selectedDevis || []); })());
-                            } else {
-                              alert('Erreur lors du chargement du devis');
-                            }
-                          } catch (error: any) {
-                            console.error('Erreur chargement devis:', error);
-                            alert(error.response?.data?.error?.message || 'Erreur lors du chargement du devis');
-                          }
-                        }}
+                      <button
+                        onClick={openDevisView}
                         className="text-blue-600 hover:text-blue-700"
                         title="Consulter"
                       >
                         <Eye className="w-4 h-4" />
                       </button>
+                      {!dejaTransforme && (
+                        <button
+                          onClick={transformerRow}
+                          className="text-green-600 hover:text-green-700"
+                          title="Transformer en commande"
+                        >
+                          <ShoppingCart className="w-4 h-4" />
+                        </button>
+                      )}
                       <button
                         onClick={async () => {
                           try { await devisService.downloadPDF(devis.id_devis, devis.numero_devis); }
@@ -660,7 +685,7 @@ const Devis: React.FC = () => {
                     </div>
                   </td>
                 </tr>
-              ))}
+              );})}
             </tbody>
           </table>
         </div>

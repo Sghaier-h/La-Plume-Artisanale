@@ -655,7 +655,7 @@ const Facture: React.FC = () => {
                             try {
                               const result = await facturesService.getFactureById(facture.id_facture);
                               if (result.data?.success) {
-                                setSelectedFacture((() => { const _r = result.data?.data; return Array.isArray(_r) ? _r : (_r?.data || _r?.selectedFacture || []); })());
+                                setSelectedFacture(result.data?.data);
                               }
                             } catch (error: any) {
                               console.error('Erreur chargement facture:', error);

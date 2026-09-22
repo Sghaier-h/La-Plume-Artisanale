@@ -589,7 +589,7 @@ const Avoir: React.FC = () => {
                             try {
                               const result = await avoirsService.getAvoirById(avoir.id_avoir);
                               if (result.data?.success) {
-                                setSelectedAvoir((() => { const _r = result.data?.data; return Array.isArray(_r) ? _r : (_r?.data || _r?.selectedAvoir || []); })());
+                                setSelectedAvoir(result.data?.data);
                               }
                             } catch (error: any) {
                               console.error('Erreur chargement avoir:', error);

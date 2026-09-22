@@ -271,7 +271,7 @@ const Machines: React.FC = () => {
                           try {
                             const result = await machinesService.getMachine(machine.id_machine);
                             if (result.data?.data) {
-                              setSelectedMachine((() => { const _r = result.data?.data; return Array.isArray(_r) ? _r : (_r?.data || _r?.selectedMachine || []); })());
+                              setSelectedMachine(result.data?.data);
                             }
                           } catch (error: any) {
                             console.error('Erreur chargement machine:', error);
