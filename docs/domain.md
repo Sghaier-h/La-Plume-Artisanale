@@ -1,34 +1,75 @@
 # La Plume Artisanale — Contrat de domaine
 
-Version : 1.10 · Statut : brouillon en validation
+Version : **2.0** · Statut : brouillon en validation · Refonte complète intégrant toutes les analyses legacy.
 
-Ce document est la **source de vérité** pour le vocabulaire, les entités, les endpoints et les règles métier du projet.
+Ce document est la **source de vérité** pour le vocabulaire, les entités, les endpoints et les règles métier du projet. Il remplace intégralement les versions 1.x.
 
-Toute modification (ajout de champ, changement de règle, renommage d'endpoint) doit être ajoutée à la section [Changelog](#changelog) en bas — sinon elle n'existe pas.
-
-Périmètre validé pour la remise à plat :
-
-- **Phase 1** — CRM + Clients
-- **Phase 2** — Produits (Modèle → Articles) + Catalogues web
-- **Phase 2.5** — **Stock & Entrepôts** : entrepôts, stock par article/entrepôt, mouvements, réservations, inventaires
-- **Phase 2.7** — **Fabrication** : BOM, gamme, OF, suivi temps réel, contrôle qualité, sous-traitance, coûts, dashboards ateliers
-- **Phase 3** — Ventes : Devis · Commande · Bon de livraison · **Liste de colisage · Transporteur & suivi** · Facture · Avoir · Bon de retour
-- **Phase 3.5** — Dashboard Magasinier Préparation + Dashboard Commercial (avec commissions)
-
-Tout ce qui n'est pas dans ce périmètre est **masqué du menu** jusqu'à nouvel ordre.
+Toute modification postérieure (ajout de champ, changement de règle, renommage d'endpoint) doit apparaître au [Changelog](#changelog) — sinon elle n'existe pas.
 
 ---
 
-## 1. Règles transverses
+## Table des matières
 
-### 1.1 Nommage
+1. [Introduction & périmètre](#1-introduction--périmètre)
+2. [Règles transverses](#2-règles-transverses)
+3. [CRM & Comptes](#3-crm--comptes-phase-1)
+4. [Tarification](#4-tarification-phase-1)
+5. [Produits](#5-produits-phase-2)
+6. [Stock & Entrepôts](#6-stock--entrepôts-phase-25)
+7. [Fabrication](#7-fabrication-phase-27)
+8. [Ventes](#8-ventes-phase-3)
+9. [Achats & Fournisseurs](#9-achats--fournisseurs-phase-32)
+10. [Comptabilité](#10-comptabilité-phase-4)
+11. [Communications](#11-communications)
+12. [Messagerie inter-postes](#12-messagerie-inter-postes)
+13. [Conformité fiscale par pays](#13-conformité-fiscale-par-pays)
+14. [Dashboards](#14-dashboards)
+15. [Menu](#15-menu)
+16. [Paramètre société](#16-paramètre-société)
+17. [Ordre d'exécution](#17-ordre-dexécution)
 
-- Une seule orthographe par identifiant : `id_client`, `id_modele`, `id_article`, `id_devis`, `id_commande`, `id_bl`, `id_facture`, `id_avoir`, `id_retour`, `id_colis`, `id_palette`, `id_catalogue`, `id_transporteur`. **Jamais** de pluriel (`id_modeles` interdit).
-- Colonnes datetime : `date_creation`, `date_modification`.
+---
+
+## 1. Introduction & périmètre
+
+**Métier** : La Plume Artisanale fabrique et vend des textiles tunisiens (foutas, jetés, serviettes, ponchos, sacs) à des professionnels et particuliers, en Tunisie et à l'export UE. Fabrication à façon possible.
+
+**Périmètre couvert par cette v2.0** :
+
+| Phase | Domaine | Description courte |
+|---|---|---|
+| Phase 1 | CRM & Comptes | Clients, contacts, adresses, leads, interactions, grilles tarifaires |
+| Phase 2 | Produits | Modèles → Articles (variantes), photos multi, EAN, SEO, catalogues web |
+| Phase 2.5 | Stock & Entrepôts | 6 catégories (PF/SF/MP/Fournitures Fab/Fournitures Bureau/Emballage/Pièces Rechange), mouvements, lots, réservations, inventaires |
+| Phase 2.7 | Fabrication | BOM Master/Composants, gammes, machines (Dornier), OF Commande + OF Stock, ourdissage, tissage, coupe, contrôle qualité 1er/2e/ourlet/déchet, sous-traitance, planning Gantt, coûts |
+| Phase 3 | Ventes | Devis, Commande, BL, Colisage, Palettes, Transporteurs, Facture, Avoir, Bon retour, Paiements & Échéances, Relances |
+| Phase 3.2 | Achats & Fournisseurs | Bons de commande fournisseur, réceptions, factures fournisseur, paiements |
+| Phase 4 | Comptabilité | Plan de comptes SYSCOA, journal, TVA, fond de caisse, rapprochement bancaire, charges d'exploitation (loyer, électricité, eau, internet, salaires), immobilisations & amortissements, bilan, compte de résultat |
+| Phase 4 | Marketing | Campagnes multi-canal, segments, comptes externes (Facebook, Instagram, Google Ads, Mailchimp…) |
+| Transverse | Messagerie inter-postes | Alertes et messages entre postes atelier (500 m tissage, demande complément MP, coupe qté manquante…) |
+
+**Sources de vérité analysées** :
+- Legacy Google Apps Script (17 modules `.gs` + 14 spreadsheets Hub) — production actuelle
+- Fichier BOM 2025-2026.xlsx (feuille `Base Commandes`, 84 colonnes)
+- Fichier `references_articles.csv` (1531 articles réels)
+- 4 dashboards TSX legacy (Chef Prod, Chef Atelier, Magasinier MP, Tisseur)
+- Documents de discussion (`RECAP`, `TRANSCRIPT`)
+- Code actuel du projet (`docs/coverage-matrix.md`)
+
+**Hors périmètre v2.0 (masqué du menu)** : RH étendu, gestion des congés/sanctions, e-commerce direct, IA, portail client, dashboards tablettes déjà existants qui ne collent pas au périmètre.
+
+---
+
+## 2. Règles transverses
+
+### 2.1 Nommage
+
+- Une seule orthographe par identifiant : `id_client`, `id_contact`, `id_adresse`, `id_modele`, `id_article`, `id_devis`, `id_commande`, `id_bl`, `id_facture`, `id_avoir`, `id_retour`, `id_colis`, `id_palette`, `id_catalogue`, `id_transporteur`, `id_bom`, `id_of`, `id_entrepot`, `id_lot`, `id_mouvement`, `id_reservation`, `id_inventaire`, `id_fournisseur`, `id_bc` (bon commande), `id_reception`, `id_facture_fournisseur`, `id_ecriture`, `id_compte_comptable`. **Jamais** de pluriel dans les FK (`id_modeles` interdit).
+- Colonnes datetime : `date_creation`, `date_modification`, `date_creation_of`, `date_expedition`, etc.
 - Colonnes utilisateur : `cree_par` (id_utilisateur), `modifie_par`.
-- Statuts : minuscule avec underscore (`en_attente`, `en_cours`, `livree`, `payee`). **Jamais** `TRANSFORME` en majuscule ou `Solder` avec majuscule française.
+- Statuts : minuscule avec underscore (`en_attente`, `en_cours`, `livree`, `payee`). **Interdit** : `TRANSFORME`, `Solder`, `Terminé Qte Manquante` (utiliser `terminee_qte_manquante`).
 
-### 1.2 Enveloppe API — unique
+### 2.2 Enveloppe API — unique
 
 Toutes les réponses backend suivent :
 
@@ -44,89 +85,127 @@ Erreur :
 
 - Liste paginée → `data` = tableau, `pagination` = `{page, limit, total, total_pages}`.
 - Objet unique → `data` = objet.
-- Interdit : `data.data`, `data.items`, `data.matieres`, etc. — un seul niveau.
+- **Interdit** : `data.data`, `data.items`, `data.matieres`, `data.rows` — un seul niveau.
 
-### 1.3 Devise et arithmétique
+### 2.3 Devise et arithmétique
 
-- Devise par défaut : **TND** (Tunisie). Commande peut porter une devise explicite.
-- Colonnes monétaires : PostgreSQL `NUMERIC(14,3)`. Frontend : **toujours** `Number(x || 0).toFixed(3)` (jamais `x.toFixed` sec).
-- TVA par défaut Tunisie : 19 %. UE : selon règle intra-communautaire (voir §7).
+- Devise par défaut : **TND** (Tunisie, symbole DT).
+- Colonnes monétaires : PostgreSQL `NUMERIC(14,3)`. Frontend : **toujours** `Number(x || 0).toFixed(3)`.
+- **TVA défaut Tunisie** : **19 %**. **Timbre fiscal** : **1 DT** par facture.
+- UE B2B intra-communautaire : 0 % TVA + mention "Autoliquidation".
 
-### 1.4 RBAC
+### 2.4 RBAC — rôles
 
-Rôles Phase 1 :
+| Rôle | Portée |
+|---|---|
+| `ADMIN` | Voit tout, peut tout. Seul habilité à créer/valider une facture, un avoir, une commission versée, une écriture comptable, une clôture d'exercice. |
+| `COMMERCIAL` | Voit ses comptes uniquement (`id_commercial = <lui>`). Peut créer/modifier client, contact, devis, commande, BL. Voit son compte de commission. |
+| `MAGASINIER_STOCK` | Gère les entrepôts (réceptions, sorties, transferts, inventaires). Toutes catégories sauf MP. |
+| `MAGASINIER_MP` | Prépare les kits MP par sélecteur (S01–S08) pour chaque OF. Scan QR bobine. |
+| `MAGASINIER_PREPARATION` | Prépare le colisage des commandes. Ne voit pas les prix. |
+| `MAGASINIER_SOUSTRAITANTS` | Sortie/retour ST, contrôle qualité au retour, litiges. |
+| `CHEF_PRODUCTION` | Planning Gantt global, création OF, dispatching machines. |
+| `CHEF_ATELIER` | Pilotage terrain d'un atelier physique. |
+| `OURDISSEUR` | Prépare les ensouples (chaîne) sur ourdissoir. |
+| `TISSEUR` | Opère un métier à tisser. Tablette. |
+| `COUPEUR` | Coupe rouleaux tissés. Tablette. |
+| `CONTROLEUR_QUALITE` | Contrôle qualité par étape et global. |
+| `MECANICIEN` | Maintenance machines curative et préventive. |
+| `COMPTABLE` | Écritures, TVA, rapprochement, bilan. Ne modifie pas les factures émises. |
 
-- `ADMIN` — voit tout, peut tout. Seul rôle habilité à **créer/valider une facture, un avoir, une commission versée**.
-- `COMMERCIAL` — voit uniquement **ses** comptes (`id_commercial = <lui>`) et leurs documents. Peut créer/modifier **client, contact, devis, commande, BL**. Ne peut pas créer de facture ni d'avoir. Voit son propre compte de commission.
-- `MAGASINIER_PREPARATION` — voit toutes les commandes à préparer, gère colisage + palettes. Dashboard dédié. Ne voit pas les prix.
-- `MAGASINIER_STOCK` — gère les entrepôts (réceptions, sorties, transferts, inventaires) pour PF, SF, MP et fournitures. Dashboard dédié. Ne voit pas les prix de vente ni les commissions.
-- `CHEF_PRODUCTION` — pilote l'atelier : crée/planifie les OF, dispatche sur les machines, valide les étapes clés, gère la sous-traitance. Dashboard dédié (§6.5). Ne voit pas les prix de vente.
-- `TISSEUR` — opérateur sur métier à tisser. Voit ses OF assignés, pointe début/fin d'étape, saisit défauts. Dashboard atelier tablette dédié (§6.6). Ne voit ni prix ni clients.
-- `COUPEUR` / `POST_COUPE` — opérateur coupe & finition (frange, ourlet). Même logique que TISSEUR sur son poste. Dashboard tablette (§6.6).
-- `CONTROLEUR_QUALITE` — enregistre les contrôles qualité par étape et par OF. Dashboard dédié (§6.7). Peut bloquer un OF.
-- `MAGASINIER_MP` — prépare les kits matières premières (fils chaîne + fils par sélecteur trame S01→S08) pour chaque OF, avant que le tissage puisse démarrer. Scan QR bobine, transfert vers poste tissage. Dashboard dédié (§6.10).
-- `CHEF_ATELIER` — pilotage terrain d'un atelier physique (usine, ateliers spécialisés). Voit l'état de toutes les machines de son atelier, l'avancement des OF en cours, réaffecte opérateurs. Distinct de `CHEF_PRODUCTION` qui pilote la stratégie globale. Dashboard dédié (§6.11).
-- `MAGASINIER_SOUSTRAITANTS` — pilote la sortie/retour marchandise vers les sous-traitants (broderie, sérigraphie, laser, franging externe). Voit les OF sous-traités, prépare les bons de sortie, réceptionne, contrôle qualité au retour. Dashboard dédié (§6.12).
-- `MECANICIEN` — maintenance machines. Voit toutes les machines, leur état, planifie interventions. Dashboard dédié (§6.8).
+**Règle** : filtrage backend obligatoire. Le frontend n'est jamais autorité.
 
-Filtrage backend obligatoire — jamais côté frontend seul.
+### 2.5 Numérotation officielle
 
-### 1.5 Communications
+Alignée sur le legacy pour rétrocompatibilité :
 
-Voir §8. Distinction stricte transactionnel vs marketing.
+| Document | Format | Exemple | Notes |
+|---|---|---|---|
+| Devis | `DV-{YYYYMM}{SEQ3}` | `DV-2026090001` | SEQ mensuel |
+| Commande | `CMD-{YYYYMM}{SEQ3}` | `CMD-2026090012` | SEQ mensuel |
+| Facture | `FA-{YYYYMM}{SEQ4}` | `FA-20260900123` | SEQ **4 chiffres**, mensuel |
+| Bon de livraison | `BL-{YYYYMM}{SEQ3}` | `BL-2026090005` | SEQ mensuel |
+| Avoir | `AV-{YYYYMM}{SEQ3}` | `AV-2026090003` | SEQ mensuel |
+| Bon de retour | `BR-{YYYYMM}{SEQ3}` | `BR-2026090002` | SEQ mensuel |
+| OF Commande | `OF{6 chiffres}` | `OF249780` | SEQ global |
+| OF Stock catalogue | `CA{4 chiffres}` | `CA0087` | SEQ global (stock catalogue) |
+| Colis | `C{3 der. chiff. client}-{3 der. chiff. commande}-{NNN}` | `C234-567-001` | SEQ par commande |
+| Palette | `PAL{YY}-{seq}` | `PAL26-042` | SEQ annuel |
+| Étiquette lot | `<numOF>-<seq>` / `<numOF>-SUR<xx>` / `<numOF>-DEU<xx>` | `OF249780-3`, `OF249780-SUR01`, `OF249780-DEU02` | 5 pièces/étiquette défaut |
+| Bon commande fournisseur | `BC-{YYYYMM}{SEQ3}` | `BC-2026090001` | SEQ mensuel |
+| Réception fournisseur | `REC-{YYYYMM}{SEQ3}` | `REC-2026090001` | SEQ mensuel |
+| Facture fournisseur (référence interne) | `FF-{YYYYMM}{SEQ4}` | `FF-20260900010` | La FF a aussi son numéro fournisseur |
+| Écriture comptable | `EC-{YYYY}{SEQ6}` | `EC-2026000123` | SEQ annuel |
+| Client (code) | `CLI-{YYYY}-{NNNN}` | `CLI-2026-0234` | Les 3 derniers chiffres alimentent le num colis |
+| Bon sortie ST | `BSST-{YYYY}-{NNNNN}` | `BSST-2026-00042` | SEQ annuel |
+| Bon retour ST | `BRST-{YYYY}-{NNNNN}` | `BRST-2026-00042` | SEQ annuel |
+
+### 2.6 Bugs legacy identifiés à corriger
+
+Ces défauts sont documentés — **notre v2.0 les corrige** :
+
+- Stock réservé non déduit du stock disponible → notre `quantite_reservee` corrige (§6.4)
+- Auth avec mot de passe en clair + session sessionStorage → bcrypt + JWT + refresh token
+- Cache in-process sans invalidation → Redis + invalidation par événement métier
+- Multi-classeurs Sheets avec IDs codés en dur → PostgreSQL unique + FK strictes
+- Matching flexible colonnes (accents/casse) → schéma strict + validation
+- Mojibake UTF-8 → UTF-8 strict backend + frontend
+- Numérotation par balayage complet des feuilles → séquences PostgreSQL nativement atomiques
+- Fonctions kilométriques mélangeant lecture Sheets / règles / UI → controllers séparés services séparés
+- Absence litiges/2e choix ST → tables dédiées `litiges_st`
 
 ---
 
-## 2. Entités CRM & Clients
+## 3. CRM & Comptes (Phase 1)
 
-### 2.1 `comptes` (le "client" au sens large)
+### 3.1 `comptes`
 
-Un compte représente une société ou un particulier avec qui on peut faire du business.
+Un compte représente une société OU un particulier avec qui on fait du business.
 
 | Colonne | Type | Note |
 |---|---|---|
 | `id_client` | serial PK | |
-| `code_client` | varchar(32) unique | auto-généré `CLI-YYYY-NNNN` (les 3 derniers chiffres alimentent le num de colis) |
-| `type_compte` | enum | `societe` ou `particulier` |
-| `statut_crm` | enum | `lead` / `prospect` / `client` / `archive` |
+| `code_client` | varchar(32) unique | `CLI-{YYYY}-{NNNN}`, auto |
+| `type_compte` | enum | `societe` \| `particulier` |
+| `statut_crm` | enum | `lead` \| `prospect` \| `client` \| `archive` |
 | `raison_sociale` | varchar(200) | requis si `societe` |
 | `nom` / `prenom` | varchar(100) | requis si `particulier` |
-| `pays` | char(2) ISO | ex `TN`, `FR`, `DE` |
+| `pays` | char(2) ISO | `TN`, `FR`, `DE`... |
 | `matricule_fiscal` | varchar(50) | Tunisie |
 | `numero_tva_intracom` | varchar(20) | UE |
-| `siret` | varchar(14) | FR |
-| `id_grille_tarif` | FK grilles_tarif | tarification appliquée par défaut |
+| `siret` | varchar(14) | France |
+| `id_grille_tarif` | FK grilles_tarif | |
 | `id_commercial` | FK utilisateurs | commercial référent |
-| `source_lead` | varchar(50) | `email`, `pub_facebook`, `salon`, `referral`, `manual`, `import`... |
-| `canal_prefere` | enum | `email` / `whatsapp` / `telegram` / `telephone` |
-| `consent_marketing_email` + `date_consent_email` | bool + timestamp | voir §8 |
+| `source_lead` | varchar(50) | `email`, `pub_facebook`, `salon`, `referral`, `manual`, `import`… |
+| `canal_prefere` | enum | `email` \| `whatsapp` \| `telegram` \| `telephone` |
+| `consent_marketing_email` + `date_consent_email` | bool + timestamp | |
 | `consent_marketing_whatsapp` + `date_consent_whatsapp` | bool + timestamp | |
 | `consent_marketing_telegram` + `date_consent_telegram` | bool + timestamp | |
 | `notes` | text | |
 | `actif` | bool | |
-| `date_creation` / `cree_par` / `date_modification` / `modifie_par` | | |
+| Champs audit | | `date_creation`, `cree_par`, `date_modification`, `modifie_par` |
 
-**Règle** : un compte a **un seul** `id_commercial` référent. Le commercial peut créer un client ou un contact — le client est alors automatiquement rattaché à lui. L'ADMIN peut réassigner à tout moment.
+**Règle** : 1 seul `id_commercial` référent par compte. À la création par un COMMERCIAL, `id_commercial = <lui>`. ADMIN peut réassigner.
 
-### 2.2 `contacts`
+### 3.2 `contacts`
 
-Une personne physique attachée à UN compte.
+Personne physique attachée à UN compte.
 
 | Colonne | Type | Note |
 |---|---|---|
 | `id_contact` | serial PK | |
-| `id_client` | FK comptes | requis, `ON DELETE CASCADE` |
-| `role` | enum | `responsable` / `acheteur` / `commercial_client` / `technique` / `comptabilite` / `autre` |
-| `civilite` | enum | `M` / `Mme` / null |
+| `id_client` | FK comptes | ON DELETE CASCADE |
+| `role` | enum | `responsable` \| `acheteur` \| `commercial_client` \| `technique` \| `comptabilite` \| `autre` |
+| `civilite` | enum | `M` \| `Mme` |
 | `nom` / `prenom` | varchar(100) | |
 | `fonction` | varchar(100) | |
 | `email` | varchar(150) | |
-| `telephone` | varchar(30) | E.164 (`+21620...`) |
-| `whatsapp` | varchar(30) | |
-| `est_principal` | bool | un seul principal par compte |
+| `telephone` | varchar(30) | E.164 |
+| `whatsapp` | varchar(30) | E.164 |
+| `est_principal` | bool | 1 seul par compte |
 | `actif` | bool | |
 
-### 2.3 `adresses`
+### 3.3 `adresses`
 
 Un compte peut avoir N adresses.
 
@@ -134,121 +213,125 @@ Un compte peut avoir N adresses.
 |---|---|---|
 | `id_adresse` | serial PK | |
 | `id_client` | FK comptes | |
-| `libelle` | varchar(100) | `Siège`, `Entrepôt Sfax`, `Boutique Tunis`... |
-| `type_adresse` | enum multi | `facturation` / `livraison` / `siege` |
+| `libelle` | varchar(100) | `Siège`, `Entrepôt Sfax`… |
+| `types_adresse` | enum multi | `facturation` \| `livraison` \| `siege` |
 | `rue` / `complement` / `code_postal` / `ville` / `region` / `pays` | | |
-| `contact_livraison_nom` | varchar(150) | nom à afficher sur le BL, si différent du compte |
+| `contact_livraison_nom` | varchar(150) | |
 | `contact_livraison_telephone` | varchar(30) | |
-| `est_defaut_facturation` / `est_defaut_livraison` | bool | 1 seul défaut par type par compte |
+| `est_defaut_facturation` / `est_defaut_livraison` | bool | 1 seul défaut par type |
 
-### 2.4 `leads` (funnel d'entrée)
+### 3.4 `leads` — funnel d'entrée
 
 | Colonne | Type | Note |
 |---|---|---|
 | `id_lead` | serial PK | |
-| `canal` | enum | `email_recu` / `formulaire_web` / `pub_facebook` / `pub_google` / `salon` / `whatsapp` / `telegram` / `telephone` / `referral` |
-| `source_detail` | varchar(200) | url landing, nom campagne, numéro salon... |
-| `nom_prospect` / `email` / `telephone` / `societe` | | libres, non normalisés |
-| `message` | text | contenu du contact initial |
-| `id_utilisateur_assigne` | FK utilisateurs | à qui traiter |
-| `statut` | enum | `nouveau` / `en_traitement` / `converti` / `perdu` |
-| `id_client_converti` | FK comptes | rempli si converti |
-| `motif_perte` | varchar(200) | si perdu |
+| `canal` | enum | `email_recu` \| `formulaire_web` \| `pub_facebook` \| `pub_google` \| `salon` \| `whatsapp` \| `telegram` \| `telephone` \| `referral` |
+| `source_detail` | varchar(200) | URL, campagne, salon… |
+| `nom_prospect`, `email`, `telephone`, `societe` | | libres |
+| `message` | text | |
+| `id_utilisateur_assigne` | FK utilisateurs | |
+| `statut` | enum | `nouveau` \| `en_traitement` \| `converti` \| `perdu` |
+| `id_client_converti` | FK comptes | |
+| `motif_perte` | varchar(200) | |
 | `date_capture` / `date_conversion` | | |
 
-### 2.5 `interactions`
-
-Traces CRM chronologiques.
+### 3.5 `interactions` — journal CRM
 
 | Colonne | Type | Note |
 |---|---|---|
 | `id_interaction` | serial PK | |
-| `id_client` | FK | nullable si attaché à un id_lead |
-| `id_lead` | FK | nullable |
-| `id_contact` | FK | qui a été contacté |
-| `type` | enum | `appel_entrant` / `appel_sortant` / `email_recu` / `email_envoye` / `whatsapp` / `telegram` / `rdv` / `note` |
+| `id_client` | FK comptes | nullable |
+| `id_lead` | FK leads | nullable |
+| `id_contact` | FK contacts | |
+| `type` | enum | `appel_entrant` \| `appel_sortant` \| `email_recu` \| `email_envoye` \| `whatsapp` \| `telegram` \| `rdv` \| `note` |
 | `sujet` / `contenu` | | |
-| `direction` | enum | `entrant` / `sortant` / `interne` |
+| `direction` | enum | `entrant` \| `sortant` \| `interne` |
 | `id_utilisateur` | FK | qui a fait l'action |
-| `date_interaction` | | |
+| `date_interaction` | timestamp | |
 
-### 2.6 Machine d'états CRM
+### 3.6 Machine d'états CRM
 
 ```
-Lead brut (table leads)
-      │  qualification manuelle du commercial
+Lead brut (leads)
+      │ qualification manuelle commercial
       ▼
 Compte statut=lead
-      │  premier devis envoyé
+      │ premier devis envoyé
       ▼
 Compte statut=prospect
-      │  devis accepté OU commande créée
+      │ devis accepté OU commande créée
       ▼
-Compte statut=client  ◀────  création directe (ADMIN ou COMMERCIAL)
-      │  aucune activité 24 mois OU archivage manuel
+Compte statut=client  ◀── création directe (ADMIN ou COMMERCIAL)
+      │ inactivité 24 mois OU archivage manuel
       ▼
 Compte statut=archive
 ```
 
 ---
 
-## 3. Tarification
+## 4. Tarification (Phase 1)
 
-### 3.1 `grilles_tarif`
+**Lacune legacy** : le système actuel n'a **pas de grilles tarifaires**. Le prix est unique par article. Notre v2.0 ajoute ce concept.
 
-Grille tarifaire nommée (ex : "Particulier", "Grand compte", "Distributeur", "Export FR"). **Configurable et extensible** : l'ADMIN peut ajouter autant de grilles que nécessaire, chacune attribuable à un client via `comptes.id_grille_tarif`.
+### 4.1 `grilles_tarif`
+
+Grille nommée et configurable par l'ADMIN.
 
 | Colonne | Type | Note |
 |---|---|---|
 | `id_grille` | serial PK | |
-| `code` | varchar(30) unique | `PART`, `GC`, `DIST`, `EXP_FR`, ... |
+| `code` | varchar(30) unique | `PART`, `GC`, `DIST`, `EXP_FR`… |
 | `libelle` | varchar(100) | |
-| `type` | enum | `remise_globale_pct` / `prix_par_article` / `palier_quantite` |
-| `remise_pct` | numeric(5,2) | si `type='remise_globale_pct'` |
+| `type` | enum | `remise_globale_pct` \| `prix_par_article` \| `palier_quantite` |
+| `remise_pct` | numeric(5,2) | si `remise_globale_pct` |
 | `devise` | char(3) | |
-| `taux_tva_defaut` | numeric(5,2) | 19 pour Tunisie, 0 pour export UE B2B, 20 pour France B2C... |
+| `taux_tva_defaut` | numeric(5,2) | 19 TN, 0 UE B2B, 20 FR B2C… |
 | `actif` | bool | |
 
-### 3.2 `grille_tarif_lignes`
+### 4.2 `grille_tarif_lignes`
 
 | Colonne | Type | Note |
 |---|---|---|
 | `id_ligne` | serial PK | |
 | `id_grille` | FK | |
-| `id_article` | FK | l'article porte la variante et son prix — voir §4 |
-| `quantite_min` | int | pour paliers, défaut 1 |
+| `id_article` | FK articles | |
+| `quantite_min` | int | palier |
 | `prix_unitaire_ht` | numeric(14,3) | |
-| `remise_pct` | numeric(5,2) | supplémentaire, optionnel |
+| `remise_pct` | numeric(5,2) | optionnel supplémentaire |
 
-### 3.3 Attribution
+### 4.3 Attribution & calcul de prix
 
-Chaque `compte.id_grille_tarif` pointe vers une grille. À la création d'un devis :
+Ordre :
+1. Ligne spécifique `grille_tarif_lignes` (article + grille + quantité ≥ palier) → prend ce prix.
+2. Sinon : `article.prix_vente_ht × (1 − grille.remise_pct/100)`.
+3. TVA = `grille.taux_tva_defaut` sauf override manuel sur ligne devis/commande.
 
-1. Ligne spécifique dans `grille_tarif_lignes` pour cet article + cette grille + quantité ≥ palier → prend le prix.
-2. Sinon : `article.prix_vente_ht × (1 - grille.remise_pct/100)`.
-3. La TVA appliquée = `grille.taux_tva_defaut` sauf override manuel.
-
-**ADMIN** peut créer/modifier/supprimer une grille. **COMMERCIAL** peut appliquer une grille existante à ses comptes, pas en créer.
+**ADMIN** crée/modifie/supprime des grilles. **COMMERCIAL** applique une grille existante à ses comptes.
 
 ---
 
-## 4. Produits (Phase 2)
+## 5. Produits (Phase 2)
 
-### 4.1 `modeles`
+### 5.1 `modeles`
 
-Le produit **parent**. Ex : "ARTHUR", "IBIZA". Porte les attributs disponibles pour ses variantes. **Pas de prix** au niveau modèle : un modèle a plusieurs dimensions/finitions, les prix vivent sur `articles` (§4.4).
+Le produit parent — porte les attributs autorisés pour ses variantes.
+
+**Pas de prix au niveau modèle** : les prix vivent sur les articles.
 
 | Colonne | Type | Note |
 |---|---|---|
-| `id_modele` | serial PK | renommer depuis `id_modeles` |
-| `code_modele` | varchar(30) unique | `AR`, `IB` — préfixe des articles |
+| `id_modele` | serial PK | (renommé depuis `id_modeles`) |
+| `code_modele` | varchar(30) unique | `AR` (ARTHUR), `IB` (IBIZA), `EPU` (EPONGE UNI), `PACKCHI` (PACK CHIC)… |
 | `libelle` | varchar(200) | |
 | `description` | text | |
-| `image_url_principale` | varchar(500) | photo principale (miniature liste) — dérivée de `modele_photos` |
-| `id_categorie` | FK categories_produits | ex Fouta, Serviette, Écharpe |
+| `image_url_principale` | varchar(500) | dérivée de `photos` (§5.3) |
+| `id_categorie` | FK categories_produits | Fouta, Serviette, Écharpe, Poncho, Sac, Pack… |
+| `type_produit` | enum | `produit_fini` \| `semi_fini` \| `matiere_premiere` \| `fourniture_fabrication` \| `fourniture_bureau` \| `emballage` \| `piece_rechange` |
+| `format_ref_commerciale` | varchar(200) | template génération auto ref commerciale |
+| `format_ref_fabrication` | varchar(200) | idem ref fabrication |
 | `actif` | bool | |
 
-### 4.2 `modele_attributs`
+### 5.2 `modele_attributs`
 
 Table pivot : quels attributs sont autorisés pour ce modèle.
 
@@ -256,493 +339,379 @@ Table pivot : quels attributs sont autorisés pour ce modèle.
 |---|---|---|
 | `id` | serial PK | |
 | `id_modele` | FK | |
-| `type_attribut` | enum | `dimension` / `couleur` / `finition` / `tissage` / `nombre_couleurs` / `personnalisation` |
+| `type_attribut` | enum | `dimension` \| `couleur` \| `finition` \| `tissage` \| `nombre_couleurs` \| `personnalisation` \| `numero_metrique` \| `composition` \| `torsion` \| `grammage` |
 | `id_valeur` | int | FK vers `parametres_<type>` |
 
-### 4.2bis Photos (modèles, articles, catalogues)
+**Tables paramètres** (structure minimale `id, code, libelle, actif, ordre_affichage`) :
+- `parametres_dimensions`
+- `parametres_couleurs` (avec `code_hex`)
+- `parametres_finitions` (Frange, Frange Croisé, Frange Court, Ourlet, Couture)
+- `parametres_tissages` (Jacquard, Bonas, Grosse…)
+- `parametres_nombres_couleurs` (U/B/T/Q/C/S/Sept/Huit — 1 à 8)
+- `parametres_personnalisations`
+- `parametres_numeros_metriques` (NM05, NM15, NM20, NM25, NM30…) — pour MP fil
+- `parametres_compositions` (100% coton, 100% polyester, 80/20 CO/PES, lin, lurex…)
+- `parametres_torsions` (S, Z, faible, forte)
+- `parametres_grammages` (g/m²)
 
-Chaque modèle, chaque article et chaque catalogue peut porter **plusieurs photos** (typiquement 2 à 5), avec un ordre d'affichage et un flag `est_principale` pour la miniature.
+ADMIN peut CRUD sur toutes ces tables via §5.7 endpoints.
 
-Une seule table pivot polymorphique `photos` :
+### 5.3 `photos` — table polymorphique
+
+Un modèle, un article, un catalogue peut avoir **1 à 5 photos**.
 
 | Colonne | Type | Note |
 |---|---|---|
 | `id_photo` | serial PK | |
-| `type_entite` | enum | `modele` / `article` / `catalogue` |
-| `id_entite` | int | FK logique (id_modele / id_article / id_catalogue) |
-| `url` | varchar(500) | chemin fichier (S3 ou disque local) |
+| `type_entite` | enum | `modele` \| `article` \| `catalogue` |
+| `id_entite` | int | FK logique |
+| `url` | varchar(500) | S3 ou disque local |
 | `libelle` | varchar(150) | alt text |
-| `ordre` | int | ordre d'affichage (0 = principale par convention) |
+| `ordre` | int | 0 = principale |
 | `est_principale` | bool | 1 seule par entité — sert de miniature |
-| `taille_octets` | int | pour quotas |
+| `taille_octets` | int | |
 | `mime_type` | varchar(50) | `image/jpeg`, `image/png`, `image/webp` |
-| `date_upload` | timestamp | |
-| `upload_par` | FK utilisateurs | |
+| `date_upload` / `upload_par` | | |
 
-**Règles** :
-- Miniature `image_url_principale` sur `modeles.image_url_principale`, `articles.image_url_principale` et `catalogues.image_url_principale` est **calculée** à partir de `photos WHERE est_principale = true` — dénormalisée pour perf. Trigger DB ou hook applicatif la maintient à jour.
-- Upload via multipart : redimensionnement auto (thumbnail 200×200, medium 800×800, full original).
-- Formats acceptés : JPEG, PNG, WebP. Max 5 MB par photo.
-- Nombre max recommandé : **5 photos** par entité (3 par défaut à l'UI).
+Miniature `image_url_principale` dénormalisée sur `modeles`, `articles`, `catalogues` via trigger DB. Redimensionnement auto (thumbnail 200×200, medium 800×800, full).
 
-Endpoints :
+### 5.4 `catalogues` + `article_catalogues`
 
-```
-GET  /api/photos?type_entite=article&id_entite=42
-POST /api/photos                                — upload (multipart)
-PUT  /api/photos/:id                            — MAJ (libelle, ordre, est_principale)
-DELETE /api/photos/:id
-```
-
-### 4.3 `catalogues` et `article_catalogues`
-
-Un **catalogue** est un regroupement d'articles publiable (interne, ou synchronisable vers un site web — ex : le catalogue *ALL BY FOUTA* se synchronise vers `allbyfouta.com`).
+Regroupement d'articles publiable, éventuellement synchronisable vers un site web (ALL BY FOUTA → Shopify).
 
 `catalogues` :
 
 | Colonne | Type | Note |
 |---|---|---|
 | `id_catalogue` | serial PK | |
-| `code` | varchar(50) unique | `ALLBYFOUTA`, `PRO`, `EXPORT_FR` |
+| `code` | varchar(50) unique | `ALLBYFOUTA`, `PRO`, `EXPORT_FR`, `OUTLET`… |
 | `libelle` | varchar(200) | |
-| `image_url_principale` | varchar(500) | photo principale (couverture catalogue) — dérivée de `photos` §4.2bis |
-| `description` | text | pitch marketing / positionnement |
-| `url_site` | varchar(500) | URL du site cible si synchronisable |
-| `type_sync` | enum | `interne` / `shopify` / `woocommerce` / `custom_api` |
-| `credentials_json` | jsonb | clés API du site (chiffré) |
+| `image_url_principale` | varchar(500) | couverture, dérivée de `photos` |
+| `description` | text | positionnement marketing |
+| `url_site` | varchar(500) | site cible |
+| `type_sync` | enum | `interne` \| `shopify` \| `woocommerce` \| `custom_api` |
+| `credentials_json` | jsonb (chiffré) | clés API cible |
 | `derniere_sync` | timestamp | |
 | `actif` | bool | |
 
-`article_catalogues` (pivot, un article peut appartenir à N catalogues) :
+`article_catalogues` (pivot) :
 
 | Colonne | Type | Note |
 |---|---|---|
 | `id` | serial PK | |
 | `id_article` | FK | |
 | `id_catalogue` | FK | |
-| `publie` | bool | visible sur le canal du catalogue |
+| `publie` | bool | |
 | `date_publication` | timestamp | |
 
-### 4.4 `articles` (variantes concrètes)
+Le catalogue **`OUTLET`** est réservé aux articles `qualite = 'second_choix'` (§7.10) — vente à prix réduit.
 
-Une combinaison unique d'attributs d'un modèle = un article sellable. Table actuelle `articles_catalogue` → **renommer** en `articles`.
+### 5.5 `articles` — variantes concrètes
 
-#### Règles de génération des références (issues de l'existant, `docs/references/references_articles.csv` — 1531 articles)
+Combinaison unique d'attributs d'un modèle = article sellable.
 
-Trois références coexistent — définies pour **coller aux codes déjà utilisés en production** :
+**3 références** :
 
-**A. `code_article`** — clé interne système
-- = `ref_commerciale` (même valeur). Sert de clé de scan et jointures.
+- **`code_article`** = clé technique système, unique, jamais montrée client.
+- **`ref_fabrication`** = référence atelier (imprimée sur OF, cartes production, étiquettes lot). Contient tous les codes couleur détaillés.
+- **`ref_commerciale`** = référence catalogue vente (visible devis/facture/site web). Format compressé (max 3 sélecteurs).
 
-**B. `ref_commerciale`** — visible sur devis, facture, site web, rayonnage.
+**Règle de génération** (issue des 1531 articles réels) :
 
-Format : `<CODE_MODELE><CODE_DIMENSION>-<LETTRE_NB_COULEURS><CODE_COULEUR_BASE>-<SUFFIXE_NUANCE>[-<CODES_ADDITIONNELS>]`
+`ref_commerciale` :
+```
+<CODE_MODELE><DIM4>-<LETTRE_NB_COULEURS><CODE_COULEUR_BASE>-<SUFFIXE_NUANCE>[-<CODES_ADD>]
+```
 
-| Segment | Règle | Exemples |
-|---|---|---|
-| `CODE_MODELE` | 2-7 lettres majuscules — colonne `modeles.code_modele` | `AR` (ARTHUR), `ANA` (ARTISANAT), `EPU` (EPONGE UNI), `PACKCHI` (PACK CHIC) |
-| `CODE_DIMENSION` | Largeur + longueur chacun sur **2 chiffres**, padding 0. Si dimension non numérique → code alpha court (ADU, KID). Séparateur `/` supprimé. | `100/200 CM` → `1020` · `240/260 CM` → `2426` · `90/190 CM` → `0919` · `50/70 CM` → `0507` · `ADULT` → `ADU` |
-| `LETTRE_NB_COULEURS` | Lettre = nombre de couleurs. **Absente** si uni. | `B` (bicolore) · `T` (tricolore) · `Q` (quadricolore) · `C` (5 couleurs / cinq) · `S` (6 couleurs / six) |
-| `CODE_COULEUR_BASE` | 2 chiffres — id de la couleur principale (`parametres_couleurs.code_commercial` → 01–99) | `02`, `15`, `26` |
-| `SUFFIXE_NUANCE` | 2 chiffres — nuance ou rayure. `01` = couleur pleine, autres = variantes rayées | `01`, `03`, `17` |
-| `CODES_ADDITIONNELS` | 2-3 codes couleur supplémentaires (2 chiffres chacun), un par couleur secondaire | présents pour `Q`, `C`, `S` |
+- `DIM4` = largeur/10 (2 chiffres pad) + longueur/10 (2 chiffres pad). Ex `100/200 CM` → `1020`, `90/190` → `0919`, `50/70` → `0507`. Non numérique → code alpha (ADU, KID).
+- `LETTRE_NB_COULEURS` : **`U`** (uni, 1 couleur) — **absent** dans la ref écrite / `B` (bi/2) / `T` (tri/3) / `Q` (quadri/4) / `C` (cinq/5) / `S` (six/6) / `SP` (sept/7) / `H` (huit/8).
+- `CODE_COULEUR_BASE` : 2 chiffres id couleur principale.
+- `SUFFIXE_NUANCE` : 2 chiffres — 01 = pleine, autres = variantes rayées.
+- `CODES_ADD` : 2-3 codes couleur supplémentaires (2 chiffres) pour Q/C/S/SP/H.
 
 Exemples réels :
-- `AR1020-B02-03` = ARTHUR 100×200 CM, bicolore, base 02, nuance 03
-- `EPU0919-19` = EPONGE UNI 90×190 CM, uni, couleur 19 (pas de lettre nb couleurs, pas de suffixe séparé — motif "modele+dim+couleur")
-- `BA1020-C15-01-25` = BASQUE 100×200 CM, 5 couleurs, base 15 + 01 + 25
-- `INS1824-Q19-02-03` = INSPIRATION 180×240 CM, quadricolore, 19+02+03
-- `ST2020-S15-07-17` = ST TROPEZ 200×200 CM, 6 couleurs, 15+07+17
-- `LIL1020-B11-LuAr` = LILI LUREX bicolore, matière spéciale (Lurex Argenté) → suffixe alpha spécial autorisé pour matières particulières
+- `AR1020-B02-03` (ARTHUR 100×200, bicolore, base 02, nuance 03)
+- `EPU0919-19` (EPONGE UNI 90×190, uni, couleur 19 — pas de lettre car uni)
+- `BA1020-C15-01-25` (BASQUE 100×200, 5 couleurs, 15+01+25)
+- `ST2020-S15-07-17` (ST TROPEZ 200×200, 6 couleurs)
+- `LIL1020-B11-LuAr` (matière spéciale Lurex Argenté)
 
-**C. `ref_fabrication`** — visible sur OF, cartes atelier, ordres de tissage.
-
-Format identique à ref_commerciale **avec un tiret séparateur inséré après la lettre de nombre de couleurs** ET **codes couleurs additionnels étendus** pour donner toutes les nuances nécessaires à l'atelier de tissage.
+`ref_fabrication` = idem avec **tiret après la lettre nombre couleurs** + codes couleurs de trame étendus :
 
 | ref_commerciale | ref_fabrication |
 |---|---|
 | `AR1020-B02-03` | `AR1020-B-02-03` |
 | `BA1020-C15-01-25` | `BA1020-C-15-01-25-10-23` |
 | `ST2020-S15-07-17` | `ST2020-S-15-07-17-06-18-03` |
-| `EPU0919-19` | `EPU0919-19` (pas de lettre nb couleurs → identique) |
 
-**Règle de calcul** :
+**EAN-13** obligatoire, auto-généré à la création selon `parametres_ean` (préfixe GS1 + compteur + check digit). Modifiable manuellement par ADMIN.
 
-- Insertion d'un tiret entre `LETTRE_NB_COULEURS` et `CODE_COULEUR_BASE`.
-- Ajout des codes couleurs de trame/rayure supplémentaires stockés dans `article_couleurs_tissage` (voir table pivot §4.4bis) — une entrée par nuance/rayure additionnelle.
-
-#### Génération automatique + surcharge manuelle
-
-- À la création d'un article, le backend calcule les 3 refs à partir des ids d'attributs sélectionnés + config d'ordre stockée en `parametres_generation_refs`.
-- L'ADMIN peut surcharger manuellement `ref_commerciale` et `ref_fabrication` (utile pour cas spéciaux type Lurex `LuAr`).
-- `code_article` = clé technique, non modifiable après création (impacts sur les scans).
-- `ref_commerciale` modification → propagation snapshot dans documents en cours de brouillon uniquement, jamais sur documents validés (les `designation_snapshot` protègent l'historique).
-
-#### EAN — code-barres retail
-
-Chaque article a un **code EAN-13** pour scanner en caisse / rayon boutique / site e-commerce.
-
-- **Auto-généré** à la création selon `parametres_ean` (préfixe GS1 société + compteur incrémental interne + chiffre de contrôle EAN-13 calculé).
-- **Modifiable manuellement** par ADMIN (utile si l'article vient d'un fournisseur avec son propre EAN).
-- Colonne dédiée `ean_13`, unique.
-- Un article peut aussi avoir un **EAN-8** court (colonne `ean_8`) pour très petits emballages.
-
-`parametres_ean` (singleton config) :
-
-| Colonne | Type | Note |
-|---|---|---|
-| `id` | serial PK | |
-| `prefixe_gs1` | varchar(3) | ex `619` (Tunisie), `327` (France) — attribué par GS1 |
-| `code_entreprise` | varchar(6) | attribué par GS1 après souscription — total prefixe+code = 9 chiffres |
-| `compteur_actuel` | int | incrément interne 000000-999999 (3-4 chiffres selon longueur code entreprise) |
-| `format_ean_defaut` | enum | `ean_13` / `ean_8` |
-| `auto_generer` | bool | true = calcul auto à la création |
-
-**Calcul chiffre de contrôle EAN-13** : algo standard (poids 1/3 alternés, complément à 10) — implémenté côté backend.
+Schéma `articles` :
 
 | Colonne | Type | Note |
 |---|---|---|
 | `id_article` | serial PK | |
 | `id_modele` | FK modeles | requis |
-| `code_article` | varchar(80) unique | technique, auto — `<code_modele>-D<id>-C<id>-F<id>-T<id>-N<id>` |
-| `ref_fabrication` | varchar(80) unique | auto — pour l'atelier (voir ci-dessus) |
-| `ref_commerciale` | varchar(80) unique | auto puis surchargeable ADMIN — pour clients |
-| `designation` | varchar(300) | auto : `<libelle_modele> <dimension> <couleur> <finition>` |
-| `image_url_principale` | varchar(500) | photo principale de la variante — dérivée de `article_photos` |
+| `code_article` | varchar(80) unique | technique auto |
+| `ref_fabrication` | varchar(80) unique | atelier auto (surchargeable) |
+| `ref_commerciale` | varchar(80) unique | catalogue auto (surchargeable ADMIN) |
+| `designation` | varchar(300) | `<libelle_modele> <dimension> <couleur> <finition>` |
+| `image_url_principale` | varchar(500) | dérivée `photos` |
 | `id_dimension` | FK parametres_dimensions | |
 | `id_couleur` | FK parametres_couleurs | |
 | `id_finition` | FK parametres_finitions | |
 | `id_tissage` | FK parametres_tissages | |
-| `id_nombre_couleurs` | FK parametres_nombre_couleurs | |
+| `id_nombre_couleurs` | FK parametres_nombres_couleurs | |
 | `id_personnalisation` | FK parametres_personnalisations | |
-| `ean_13` | varchar(13) unique | code EAN-13, auto ou manuel (voir plus haut) |
-| `ean_8` | varchar(8) unique | code EAN-8 court optionnel |
-| `prix_reviens` | numeric(14,3) | coût de production de la variante |
-| `prix_vente_ht` | numeric(14,3) | prix de base HT (surcharge par grille tarifaire) |
-| `unite_vente` | varchar(10) | `pc`, `paire`, `kg` |
-| **`poids_net_g`** | numeric(10,2) | poids **net** de l'article fini en grammes (sans emballage) |
-| **`poids_brut_g`** | numeric(10,2) | poids **brut** avec emballage standard (utilisé pour calcul frais port) |
-| **`longueur_cm`** | numeric(8,2) | dimension physique — longueur emballée |
-| **`largeur_cm`** | numeric(8,2) | dimension physique — largeur emballée |
-| **`hauteur_cm`** | numeric(8,2) | dimension physique — épaisseur emballée |
-| **`volume_cm3`** | numeric(12,2) | volume calculé (colonne générée : L×l×H) |
-| **`fragile`** | bool | true = manutention spéciale, majoration transport |
-| `stock_total` | numeric(14,3) | maintenu par mouvements stock |
+| `id_numero_metrique` | FK parametres_numeros_metriques | MP uniquement |
+| `id_composition` | FK parametres_compositions | MP uniquement |
+| `type_stock` | enum | miroir de `modeles.type_produit` (dénormalisé) |
+| `ean_13` | varchar(13) unique | code-barres retail |
+| `ean_8` | varchar(8) unique | option petits emballages |
+| `qr_code` | varchar(50) | pour MP surtout — format `CC_XXX_XXX_Lot` compat legacy |
+| `qualite` | enum | `premier_choix` \| `second_choix` — les 2e choix exposés uniquement catalogue OUTLET |
+| `prix_reviens` | numeric(14,3) | coût production |
+| `prix_vente_ht` | numeric(14,3) | prix base HT (surchargé par grille) |
+| `prix_moyen_pondere_kg` | numeric(14,3) | PMP MP uniquement — MAJ à chaque réception |
+| `unite_vente` | varchar(10) | `pc`, `paire`, `kg`, `m` |
+| `poids_net_g` | numeric(10,2) | pour transport |
+| `poids_brut_g` | numeric(10,2) | pour transport + calcul frais port |
+| `longueur_cm` / `largeur_cm` / `hauteur_cm` | numeric(8,2) | dimensions emballées |
+| `volume_cm3` | numeric(12,2) | calculé (L×l×H) |
+| `fragile` | bool | majoration transport |
+| `stock_total` | vue agrégée | calculé depuis `stock_article_entrepot` |
+| `id_fournisseur_defaut` | FK fournisseurs | achat récurrent |
 | `actif` | bool | |
 
-Les 4 champs poids/dimensions **alimentent** :
-- **Calcul frais de port** : `sum(ligne.qte × article.poids_brut_g)` → poids total commande → lookup `tarifs_transport` (§5.5).
-- **Pesée automatique du colis** : quand le magasinier ajoute un article scanné à un colis (§5.6), `colis.poids_kg` peut être pré-rempli à partir de `sum(article.poids_brut_g)` (le magasinier confirme/ajuste au moment de la pesée réelle).
-- **Choix du transporteur** : palette vs colis selon poids seuil (ex `>30 kg` → palette).
-- **Facturation transport** au client (poids taxable = max(poids_brut, poids_volumétrique où poids_vol = volume_cm3 / 5000)).
+**Contrainte unique** : `(id_modele, id_dimension, id_couleur, id_finition, id_tissage, id_nombre_couleurs, id_personnalisation, id_numero_metrique, id_composition)`. C'est cette contrainte qui permet la détection "cet article existe déjà" à la création d'une variante.
 
-**Contrainte unique** : `(id_modele, id_dimension, id_couleur, id_finition, id_tissage, id_nombre_couleurs, id_personnalisation)`. C'est ce qui permet la détection "cet article existe déjà".
+### 5.6 `article_seo`
 
-### 4.5 `article_seo` (référencement web)
-
-Un article publié sur un catalogue web-sync a besoin de champs SEO. Table séparée car facultative.
+Champs SEO par article × catalogue.
 
 | Colonne | Type | Note |
 |---|---|---|
-| `id_article` | FK PK | 1-N (une entrée SEO par article × catalogue) |
-| `id_catalogue` | FK PK | SEO peut varier par catalogue |
-| `slug_url` | varchar(200) | ex `fouta-arthur-blanc-rouge-100x200` |
+| `id_article` | FK PK | |
+| `id_catalogue` | FK PK | |
+| `slug_url` | varchar(200) | `fouta-arthur-blanc-rouge-100x200` |
 | `titre_seo` | varchar(160) | balise `<title>` |
-| `meta_description` | varchar(320) | balise meta description |
-| `mots_cles` | text[] | keywords ciblés |
-| `description_longue` | text | contenu HTML riche (positionnement Google) |
-| `images_url` | text[] | plusieurs photos pour la fiche produit web |
-| `attributs_open_graph` | jsonb | OG image, OG title, partage réseaux sociaux |
-| `score_seo` | int | note calculée pour aider à améliorer position |
+| `meta_description` | varchar(320) | |
+| `mots_cles` | text[] | |
+| `description_longue` | text | HTML riche |
+| `images_url` | text[] | photos multi pour fiche produit |
+| `attributs_open_graph` | jsonb | OG image/title/desc |
+| `score_seo` | int | note calculée |
 
-### 4.6 Endpoints Produits
+### 5.7 Endpoints Produits
 
 ```
-GET    /api/modeles                           — liste
-GET    /api/modeles/:id                       — détail + attributs disponibles + variantes
-POST   /api/modeles                           — créer
-PUT    /api/modeles/:id                       — modifier
-DELETE /api/modeles/:id                       — soft delete
+GET     /api/modeles                                — liste
+GET     /api/modeles/:id                            — détail + attributs disponibles + variantes
+POST    /api/modeles                                — créer
+PUT     /api/modeles/:id                            — modifier
+DELETE  /api/modeles/:id                            — soft delete
 
-GET    /api/articles?id_modele=&id_catalogue= — variantes
-GET    /api/articles/:id                      — détail
-POST   /api/articles                          — créer variante (409 si combinaison existe)
-PUT    /api/articles/:id                      — modifier
-DELETE /api/articles/:id                      — soft delete
+GET     /api/articles?id_modele=&id_catalogue=      — variantes
+GET     /api/articles/:id                           — détail
+POST    /api/articles                               — créer variante (409 si combinaison existe)
+PUT     /api/articles/:id                           — modifier
+DELETE  /api/articles/:id                           — soft delete
 
-GET    /api/catalogues                        — liste
-POST   /api/catalogues                        — créer
-POST   /api/catalogues/:id/synchroniser       — push articles publiés vers site cible
+GET     /api/catalogues                             — liste
+POST    /api/catalogues                             — créer
+POST    /api/catalogues/:id/synchroniser            — push articles publiés vers site cible
 
-GET    /api/articles/:id/seo?id_catalogue=    — récup SEO
-PUT    /api/articles/:id/seo                  — MAJ SEO
+GET     /api/articles/:id/seo?id_catalogue=         — récup SEO
+PUT     /api/articles/:id/seo                       — MAJ SEO
 
-GET    /api/parametres/attributs              — bundle {dimensions, couleurs, finitions, tissages, personnalisations, nombres_couleurs}
+GET     /api/parametres/attributs                   — bundle {dimensions, couleurs, finitions, ...}
 
-Attributs (CRUD ADMIN pour chaque type) :
+Attributs CRUD (ADMIN) :
 GET|POST|PUT|DELETE  /api/parametres/dimensions/:id?
 GET|POST|PUT|DELETE  /api/parametres/couleurs/:id?
 GET|POST|PUT|DELETE  /api/parametres/finitions/:id?
 GET|POST|PUT|DELETE  /api/parametres/tissages/:id?
 GET|POST|PUT|DELETE  /api/parametres/nombres-couleurs/:id?
 GET|POST|PUT|DELETE  /api/parametres/personnalisations/:id?
+GET|POST|PUT|DELETE  /api/parametres/numeros-metriques/:id?
+GET|POST|PUT|DELETE  /api/parametres/compositions/:id?
+GET|POST|PUT|DELETE  /api/parametres/torsions/:id?
+GET|POST|PUT|DELETE  /api/parametres/grammages/:id?
+
+GET|POST|PUT|DELETE  /api/photos     (multipart pour POST)
 ```
 
 ---
 
-## 4bis. Stock & Entrepôts (Phase 2.5)
+## 6. Stock & Entrepôts (Phase 2.5)
 
-Chaque article physique existe **quelque part** : dans un entrepôt, à un emplacement précis, avec un statut (disponible, réservé, en préparation). Toute évolution du stock passe par un **mouvement** — traçabilité complète.
+### 6.1 Catégories de stock (7)
 
-### 4bis.0 Catégories de stock
-
-Le stock porte sur **4 catégories distinctes** — chacune avec ses écrans, ses règles et ses paramètres, mais toutes suivent le même moteur de mouvements :
-
-| Catégorie | Description | Exemples | Table source |
-|---|---|---|---|
-| **Produits finis (PF)** | Articles sellables prêts à expédier | `AR1020-B02-03` — Fouta ARTHUR blanc/rayé | `articles.type_stock='produit_fini'` |
-| **Produits semi-finis (SF)** | Étape intermédiaire de fabrication | Tissu tissé non coupé, fouta non frangée | `articles.type_stock='semi_fini'` |
-| **Matières premières (MP)** | Fil, coton, chimie — entrantes fournisseur. **Même architecture modèle-parent + variantes que les PF** (voir §4bis.0.1) | Modèle `Fil coton blanc` → variantes NM15 · NM20 · NM25 (grosseurs) × composition 100% coton / 80-20 / etc. | `articles.type_stock='matiere_premiere'` avec attributs dédiés |
-| **Fournitures fabrication** | Consommables ateliers (non incorporés au produit) | Aiguilles, huile machine, ciseaux, navettes | `articles.type_stock='fourniture_fabrication'` |
-| **Pièces de rechange** | Composants machines pour maintenance | Courroies métier, cames ratière, roulements, cartes électroniques, aiguilles Dornier, cordes satin | `articles.type_stock='piece_rechange'` |
-| **Fournitures bureau** | Consommables bureau | Papier, cartouches, stylos | `articles.type_stock='fourniture_bureau'` |
-| **Emballage** | Boîtes, sachets, étiquettes | Cartons GLS taille M, sachets kraft | `articles.type_stock='emballage'` |
-
-Ajout colonne sur `articles` :
-
-| Colonne | Type | Note |
+| Catégorie | `type_stock` | Description |
 |---|---|---|
-| `type_stock` | enum | `produit_fini` / `semi_fini` / `matiere_premiere` / `fourniture_fabrication` / `fourniture_bureau` / `emballage` / `piece_rechange` |
-| `categorie_analytique` | varchar(50) | pour valorisation comptable |
+| Produits finis | `produit_fini` | Foutas, jetés, ponchos… — sellables |
+| Produits semi-finis | `semi_fini` | Tissu tissé non fini (avant frange/finition) |
+| Matières premières | `matiere_premiere` | Fils coton/polyester, MP |
+| Fournitures fabrication | `fourniture_fabrication` | Aiguilles, huile, ciseaux, navettes |
+| Fournitures bureau | `fourniture_bureau` | Papier, cartouches |
+| Emballage | `emballage` | Cartons, sachets, étiquettes |
+| Pièces de rechange | `piece_rechange` | Courroies, cames, roulements, cartes électroniques Dornier |
 
-#### 4bis.0.1 Matière première — même architecture Modèle → Articles que les PF
-
-**Décision** : les MP réutilisent les tables `modeles` + `articles` (§4.1 / §4.4). Pas de table séparée. La distinction se fait par `modeles.type_produit = 'matiere_premiere'` et `articles.type_stock = 'matiere_premiere'`. On profite alors du même moteur de refs, EAN, poids/dimensions, photos, catalogues, stock, mouvements.
-
-**Modèle MP** = un couple (matière + couleur) décrit à haut niveau — ex `Fil coton blanc`, `Fil polyester ecru`, `Fil lin naturel`.
-
-**Article MP** (variante concrète) = une combinaison précise d'attributs — ex `Fil coton blanc en NM15 en 100% coton`, `Fil coton blanc en NM20 en 80/20 coton-polyester`.
-
-**Ajout colonne sur `modeles`** :
-
-| Colonne | Type | Note |
-|---|---|---|
-| `type_produit` | enum | `produit_fini` / `semi_fini` / `matiere_premiere` / `fourniture_fabrication` / `fourniture_bureau` / `emballage` |
-| `format_ref_commerciale` | varchar(200) | template de génération spécifique au type (défaut hérité — voir §4.4) |
-| `format_ref_fabrication` | varchar(200) | idem pour ref_fabrication |
-
-**Types d'attributs élargis** pour supporter les MP — §4.2 `modele_attributs.type_attribut` :
-
-| Type attribut | Utilisé par | Table paramètre |
-|---|---|---|
-| `dimension` | PF, SF | `parametres_dimensions` |
-| `couleur` | PF, SF, MP | `parametres_couleurs` (partagée) |
-| `finition` | PF | `parametres_finitions` |
-| `tissage` | PF | `parametres_tissages` |
-| `nombre_couleurs` | PF | `parametres_nombre_couleurs` |
-| `personnalisation` | PF | `parametres_personnalisations` |
-| **`numero_metrique`** | **MP** (fils) | **`parametres_numeros_metriques`** (NM05, NM10, NM15, NM20, NM25, NM30, NM40...) — grosseur/finesse du fil |
-| **`composition`** | **MP, PF si étiquetage** | **`parametres_compositions`** (100% coton, 100% polyester, 80/20 CO/PES, 70/30, 100% lin, 100% viscose, lurex, mélanges spéciaux) |
-| **`torsion`** | **MP** (fils) | **`parametres_torsions`** (S, Z, faible, forte) — sens et intensité |
-| **`grammage`** | **MP** (tissus, non-tissés) | **`parametres_grammages`** (g/m²) |
-
-Chaque table paramètre a la même structure minimale : `id, code, libelle, actif, ordre_affichage` + colonnes spécifiques (ex `parametres_numeros_metriques.nombre_metres_par_kg` pour conversion poids/longueur).
-
-**Format des refs MP** (par convention issue du BOM existant `NM15-01.00`) :
-
-- `ref_commerciale` MP = `<CODE_NUM_METRIQUE>-<CODE_COULEUR><SUFFIXE>` — ex `NM15-01.00` (fil NM15 blanc pur), `NM20-15.03` (fil NM20 lagon rayé)
-- `ref_fabrication` MP = même chose (le format court est déjà lisible atelier).
-- Le champ `format_ref_commerciale` sur `modeles` permet de configurer le template par modèle. Défaut par `type_produit` :
-  - PF : cf §4.4 (`<CODE_MODELE><DIM4>-<LETTRE><C2>-<N2>`)
-  - MP : `<CODE_NUM_METRIQUE>-<CODE_COULEUR><SUFFIXE>`
-  - Fournitures : `<CODE_MODELE>-<CODE_VARIANTE>` (générique)
-
-**Consommation MP → OF** : le BOM d'un OF liste les articles MP nécessaires (id + quantité en kg ou mètres). L'exécution génère `mouvements_stock` `sortie_of` (sur les MP) puis `entree_fabrication` (sur l'article PF/SF produit).
-
-**Champs additionnels sur `articles` (utiles surtout aux MP)** :
-
-| Colonne | Type | Note |
-|---|---|---|
-| `qr_code` | varchar(50) | QR code étiquette bobine/rouleau (généré à réception, imprimé) |
-| `id_fournisseur_defaut` | FK fournisseurs | achat récurrent pour ce référencement |
-| `prix_moyen_pondere_kg` | numeric(14,3) | PMP pour valorisation stock (mis à jour à chaque réception fournisseur) |
-
-#### 4bis.0.2 Lot obligatoire pour MP (traçabilité amont)
-
-**Chaque quantité de MP en stock est attachée à un `id_lot`** — pas d'exception. La règle est stricte car la traçabilité amont (numéro de lot fournisseur, date fabrication, certificat conformité) est exigée pour :
-
-- Rappels fournisseur (batch défectueux).
-- Reproductibilité couleur (deux lots de "blanc" peuvent avoir un delta chromatique — l'atelier doit savoir quel lot il consomme).
-- Traçabilité aval : sur un OF terminé, on peut remonter aux lots MP consommés → au fournisseur → à sa date de livraison.
-
-Extension de §4bis.5 `lots_articles` pour MP :
-
-| Colonne additionnelle MP | Type | Note |
-|---|---|---|
-| `numero_lot_fournisseur` | varchar(50) | tel qu'indiqué sur le bordereau amont |
-| `id_fournisseur` | FK fournisseurs | de qui vient ce lot |
-| `date_reception` | date | |
-| `certificat_conformite_url` | varchar(500) | PDF fournisseur |
-| `couleur_hex_mesure` | varchar(7) | mesure spectro colorimétrique (contrôle nuance) |
-| `poids_bobine_moyen_kg` | numeric(10,3) | pour reconditionnement |
-
-**Contrainte** : pour un `article` de `type_stock='matiere_premiere'`, chaque ligne de `stock_article_entrepot` a `id_lot NOT NULL` — le stock est granulaire au niveau lot.
-
-**Mouvements MP** : identiques aux PF (`mouvements_stock`), mais chaque mouvement porte obligatoirement `id_lot`.
-
-**Écran "vue par lot"** dans le Dashboard Magasinier Stock : liste des lots MP par article + fournisseur, quantité restante, date réception, traçabilité descendante (quels OF ont consommé ce lot).
-
-### 4bis.1 `entrepots`
-
-Un entrepôt = un lieu physique de stockage.
+### 6.2 `entrepots`
 
 | Colonne | Type | Note |
 |---|---|---|
 | `id_entrepot` | serial PK | |
-| `code` | varchar(20) unique | `USINE`, `E1`, `E2`, `E3`, `ATELIER_PREP`, `MAGASIN_TUNIS`, `HUB_MARSEILLE`... |
+| `code` | varchar(20) unique | `USINE`, `E1`, `E2`, `E3`, `E4`, `SHOWROOM`, `ATELIER_PREP`, `MAG_TUNIS`, `HUB_MARSEILLE`, `ST_DIMATEX`, `ST_CHOKRI_HADDAD`… |
 | `libelle` | varchar(150) | |
-| `type` | enum | `usine` / `entrepot_principal` / `entrepot_secondaire` / `atelier_preparation` / `magasin_vente` / `hub_transit` / `sous_traitant` |
-| `id_societe_adresse` | FK societe_adresses | l'adresse physique de l'entrepôt (§11) |
-| `responsable_id_utilisateur` | FK utilisateurs | qui gère cet entrepôt |
-| `capacite_m3` | numeric(10,2) | volume total (info) |
-| `permet_vente` | bool | true = stock d'ici peut être vendu directement |
+| `type` | enum | `usine` \| `entrepot_principal` \| `entrepot_secondaire` \| `atelier_preparation` \| `magasin_vente` \| `hub_transit` \| `sous_traitant` |
+| `id_societe_adresse` | FK societe_adresses | adresse physique (§16) |
+| `responsable_id_utilisateur` | FK | |
+| `capacite_m3` | numeric | |
+| `permet_vente` | bool | vente directe depuis ici possible |
 | `actif` | bool | |
 
-**Types d'entrepôts métier** :
-- `usine` — sortie de production, dépôt matière première
-- `entrepot_principal` — stock disponible pour vente
-- `atelier_preparation` — pool temporaire pour préparation commandes (magasinier §6.2)
-- `magasin_vente` — point de vente physique
-- `hub_transit` — plateforme intermédiaire (ex Marseille) pour redistribution
-- `sous_traitant` — stock déposé chez un sous-traitant
+**Seed initial** (issu du legacy) : `USINE`, `E1`, `E2`, `E3`, `E4`, `SHOWROOM`, `ATELIER_PREP`, `ST_DIMATEX`, `ST_CHOKRI_HADDAD`.
 
-### 4bis.2 `emplacements` (optionnel — subdivisions d'entrepôt)
+### 6.3 `emplacements`
+
+Optionnel — subdivision d'entrepôt (allée-rack-niveau).
 
 | Colonne | Type | Note |
 |---|---|---|
 | `id_emplacement` | serial PK | |
-| `id_entrepot` | FK entrepots | |
-| `code` | varchar(30) unique par entrepôt | ex `A-01-02` (Allée A, Rack 01, Niveau 02) |
+| `id_entrepot` | FK | |
+| `code` | varchar(30) | `A-01-02` |
 | `libelle` | varchar(150) | |
 | `capacite_max_articles` | int | |
 | `actif` | bool | |
 
-Facultatif — utile pour grand entrepôt. Sinon le stock est directement au niveau `id_entrepot`.
+### 6.4 `stock_article_entrepot`
 
-### 4bis.3 `stock_article_entrepot` (vue matérialisée / table dénormalisée)
-
-Snapshot du stock par (article × entrepôt × emplacement) à tout instant. Maintenue par chaque `mouvement_stock`.
+Snapshot dénormalisé (article × entrepôt × emplacement × lot).
 
 | Colonne | Type | Note |
 |---|---|---|
 | `id` | serial PK | |
-| `id_article` | FK articles | |
-| `id_entrepot` | FK entrepots | |
-| `id_emplacement` | FK emplacements | nullable |
-| `id_lot` | FK lots_articles | nullable — traçabilité par lot de fabrication |
-| `quantite_disponible` | numeric(14,3) | dispo pour vente |
-| `quantite_reservee` | numeric(14,3) | promise à des commandes non expédiées |
-| `quantite_en_reception` | numeric(14,3) | attendue mais pas encore validée |
-| `quantite_en_transfert_sortant` | numeric(14,3) | partant vers un autre entrepôt |
-| `quantite_totale` | numeric(14,3) | calculé — `disponible + reservee` |
+| `id_article` | FK | |
+| `id_entrepot` | FK | |
+| `id_emplacement` | FK | nullable |
+| `id_lot` | FK lots_articles | **obligatoire pour MP**, optionnel autres |
+| `quantite_physique` | numeric(14,3) | physiquement présent |
+| `quantite_reservee` | numeric(14,3) | commandes non expédiées (§8) |
+| `quantite_en_colisage` | numeric(14,3) | déjà mis en colis mais BL pas expédié |
+| `quantite_en_reception` | numeric(14,3) | attendue mais pas validée |
+| `quantite_en_transfert_sortant` | numeric(14,3) | partant vers autre entrepôt |
+| `quantite_disponible` | computed | `physique − reservee − en_colisage − en_transfert_sortant` |
+| `quantite_libre` | computed | = `quantite_disponible` (alias legacy) |
 | `date_derniere_maj` | timestamp | |
 
-**Contrainte unique** : `(id_article, id_entrepot, id_emplacement, id_lot)`.
+Contrainte unique : `(id_article, id_entrepot, id_emplacement, id_lot)`.
 
-### 4bis.4 `mouvements_stock`
+### 6.5 `mouvements_stock`
 
-**3 grands types de mouvement** exposés côté UI (regroupent les sous-types) :
+**3 grands types UI** exposés côté écran :
 
-- **Réception** : marchandise ou MP qui **entre** dans un entrepôt depuis l'extérieur (fournisseur) OU depuis l'atelier (production terminée).
-- **Sortie** : marchandise qui **quitte** un entrepôt vers l'extérieur (expédition commande) ou vers l'atelier (consommation OF) ou hors circuit (rebut).
-- **Transfert** : mouvement **entre deux entrepôts** internes — pas de sortie du patrimoine.
+- **Réception** : marchandise / MP qui entre depuis extérieur (fournisseur) ou atelier (production finie)
+- **Sortie** : marchandise qui quitte un entrepôt (expédition commande, consommation OF, rebut)
+- **Transfert** : entre deux entrepôts internes — pas de sortie patrimoine
 
-Chaque grand type éclate en sous-types techniques ci-dessous.
+**10 sous-types techniques** :
 
-**Traçabilité complète** — chaque changement de stock est une ligne, immuable.
+| Type | Sens | Description |
+|---|---|---|
+| `reception_fournisseur` | + | matière première ou marchandise arrivée fournisseur |
+| `entree_fabrication` | + | OF terminé → article entre en stock (avec `id_lot` généré) |
+| `sortie_vente` | − | BL expédié |
+| `sortie_of` | − | MP consommée par un OF |
+| `transfert_entrepot` | ±0 | entre 2 entrepôts (source + dest) |
+| `reservation` | 0 | réservation logique — pas de mouvement physique |
+| `liberation_reservation` | 0 | annule une réservation |
+| `ajustement_positif` | + | correction manuelle (excès inventaire) |
+| `ajustement_negatif` | − | correction manuelle (perte, casse, vol) |
+| `retour_client` | + | marchandise revenue client (peut aller zone rebut) |
+| `mise_au_rebut` | − | article endommagé |
+
+Schéma :
 
 | Colonne | Type | Note |
 |---|---|---|
 | `id_mouvement` | serial PK | |
 | `numero_mouvement` | varchar(30) unique | `MVT-YYYYMMDD-NNNNN` |
-| `type_mouvement` | enum | voir ci-dessous |
+| `type_mouvement` | enum | voir tableau |
 | `id_article` | FK | |
-| `quantite` | numeric(14,3) | positif |
-| `id_lot` | FK lots_articles | nullable |
-| `id_entrepot_source` | FK entrepots | nullable (null pour réception fournisseur) |
-| `id_emplacement_source` | FK emplacements | nullable |
-| `id_entrepot_destination` | FK entrepots | nullable (null pour sortie vente) |
-| `id_emplacement_destination` | FK emplacements | nullable |
-| `id_document_lie` | int | nullable — id du document déclencheur |
-| `type_document_lie` | enum | `bl` / `commande` / `of` / `bon_reception` / `transfert` / `ajustement` / `inventaire` / `retour` |
-| `motif` | varchar(200) | libre pour ajustements |
+| `quantite` | numeric(14,3) | |
+| `id_lot` | FK lots_articles | obligatoire MP |
+| `qr_mp_reel` | varchar(50) | trace bobine (format `CC_XXX_XXX_Lot`) |
+| `id_entrepot_source` | FK | nullable |
+| `id_emplacement_source` | FK | nullable |
+| `id_entrepot_destination` | FK | nullable |
+| `id_emplacement_destination` | FK | nullable |
+| `id_document_lie` | int | id du doc déclencheur |
+| `type_document_lie` | enum | `bl` \| `commande` \| `of` \| `bon_reception` \| `transfert` \| `ajustement` \| `inventaire` \| `retour` |
+| `motif` | varchar(200) | pour ajustements |
 | `date_mouvement` | timestamp | |
 | `effectue_par` | FK utilisateurs | |
-| `valide_par` | FK utilisateurs | nullable, pour transferts nécessitant validation |
-| `statut` | enum | `en_attente` / `valide` / `annule` |
+| `valide_par` | FK utilisateurs | pour transferts |
+| `statut` | enum | `en_attente` \| `valide` \| `annule` |
 
-**Types de mouvement (`type_mouvement`)** :
+Table immuable (INSERT only sauf champ `statut`).
 
-| Type | Sens | Description |
-|---|---|---|
-| `reception_fournisseur` | + | matière première ou marchandise arrivée d'un fournisseur |
-| `entree_fabrication` | + | OF terminé → l'article entre en stock |
-| `sortie_vente` | − | BL expédié → l'article quitte le stock |
-| `transfert_entrepot` | ±0 | passe d'un entrepôt à un autre (2 lignes complémentaires ou 1 avec source+dest) |
-| `reservation` | 0 | pas de sortie physique — bascule `disponible` → `reservee` |
-| `liberation_reservation` | 0 | annule une réservation |
-| `ajustement_positif` | + | correction manuelle (trouvé en trop lors inventaire) |
-| `ajustement_negatif` | − | correction manuelle (perte, casse, vol) |
-| `retour_client` | + | retour marchandise → re-entrée en stock (ou zone rebut) |
-| `mise_au_rebut` | − | article endommagé sorti du stock vendable |
+### 6.6 `lots_articles`
 
-**Règle clé** : chaque mouvement met à jour `stock_article_entrepot` de manière atomique dans une transaction. Impossible de sortir plus que `disponible`.
-
-### 4bis.5 `lots_articles` (traçabilité optionnelle par lot)
+**Obligatoire pour MP** — traçabilité amont totale.
 
 | Colonne | Type | Note |
 |---|---|---|
 | `id_lot` | serial PK | |
-| `numero_lot` | varchar(30) unique | `LOT-YYYYMMDD-NNNN` (généré à la fabrication) |
+| `numero_lot` | varchar(30) unique | `LOT-YYYYMMDD-NNNN` (interne) OU numéro fournisseur |
 | `id_article` | FK articles | |
-| `id_of` | FK ordres_fabrication | OF d'origine (si issu de fabrication interne) |
+| `id_of` | FK ordres_fabrication | si issu fabrication |
 | `date_fabrication` | date | |
 | `date_peremption` | date | pour catégories concernées |
-| `quantite_initiale` | numeric(14,3) | fabriquée |
+| `quantite_initiale` | numeric(14,3) | fabriquée / reçue |
 | `quantite_restante` | numeric(14,3) | encore en stock |
+| `numero_lot_fournisseur` | varchar(50) | pour MP |
+| `id_fournisseur` | FK fournisseurs | pour MP |
+| `date_reception` | date | pour MP |
+| `certificat_conformite_url` | varchar(500) | PDF fournisseur MP |
+| `couleur_hex_mesure` | varchar(7) | spectrocolorimètre pour MP couleur |
+| `poids_bobine_moyen_kg` | numeric | pour MP |
 | `notes` | text | |
 
-### 4bis.6 `reservations_stock`
+### 6.7 `reservations_stock`
 
-Une commande validée réserve du stock jusqu'à expédition (évite double vente).
+Créées automatiquement à la validation d'une commande.
 
 | Colonne | Type | Note |
 |---|---|---|
 | `id_reservation` | serial PK | |
 | `id_commande` | FK commandes | |
-| `id_ligne_commande` | FK commandes_lignes | granularité ligne |
-| `id_article` | FK articles | |
-| `id_entrepot` | FK entrepots | où c'est réservé |
-| `id_lot` | FK lots_articles | nullable |
+| `id_ligne_commande` | FK commandes_lignes | |
+| `id_article` | FK | |
+| `id_entrepot` | FK | où réservé |
+| `id_lot` | FK lots_articles | |
 | `quantite` | numeric(14,3) | |
 | `date_reservation` | timestamp | |
-| `date_expiration` | timestamp | nullable — auto-libération si non expédiée |
-| `statut` | enum | `active` / `expediee` / `annulee` / `expiree` |
+| `date_expiration` | timestamp | nullable — auto-libération |
+| `statut` | enum | `active` \| `expediee` \| `annulee` \| `expiree` |
 
-**Workflow** : Commande passe à `validee` → système crée les réservations dans l'entrepôt principal (ou celui indiqué). Quand BL expédié → réservation → mouvement `sortie_vente`. Si commande annulée → `liberation_reservation`.
+### 6.8 `inventaires`
 
-### 4bis.7 `inventaires` (comptage physique)
+Deux modes :
 
-Comptage périodique pour rapprocher stock théorique / stock réel.
+- **`ajustement_delta`** (défaut, recommandé) : génère mouvements `ajustement_+/−` par écart. Historique préservé.
+- **`reset_absolu`** (option héritée legacy) : remplace le stock théorique par le compté. Perte de l'historique.
 
 | Colonne | Type | Note |
 |---|---|---|
 | `id_inventaire` | serial PK | |
 | `numero_inventaire` | varchar(30) unique | `INV-YYYYMMDD-NN` |
-| `id_entrepot` | FK entrepots | inventaire par entrepôt |
+| `id_entrepot` | FK | |
+| `mode` | enum | `ajustement_delta` \| `reset_absolu` |
 | `date_debut` / `date_fin` | date | |
-| `statut` | enum | `en_preparation` / `en_cours` / `valide` / `annule` |
-| `responsable` | FK utilisateurs | |
+| `statut` | enum | `en_preparation` \| `en_cours` \| `valide` \| `annule` |
+| `responsable_id_utilisateur` | FK | |
 | `notes` | text | |
 
 `inventaire_lignes` :
@@ -752,115 +721,124 @@ Comptage périodique pour rapprocher stock théorique / stock réel.
 | `id_ligne` | serial PK | |
 | `id_inventaire` | FK | |
 | `id_article` | FK | |
-| `id_emplacement` | FK | nullable |
-| `id_lot` | FK | nullable |
-| `quantite_theorique` | numeric(14,3) | ce que dit le système |
-| `quantite_comptee` | numeric(14,3) | ce que le magasinier a compté |
-| `ecart` | numeric(14,3) | calculé |
-| `note` | text | motif d'écart |
+| `id_emplacement` | FK | |
+| `id_lot` | FK | |
+| `quantite_theorique` | numeric(14,3) | |
+| `quantite_comptee` | numeric(14,3) | |
+| `ecart` | computed | |
+| `note` | text | motif écart |
 | `compte_par` | FK utilisateurs | |
 | `date_comptage` | timestamp | |
 
-**Validation** : à la clôture, le système génère automatiquement les `mouvements_stock` de type `ajustement_positif` / `ajustement_negatif` pour aligner le stock théorique sur le compté.
+### 6.9 Alertes stock
 
-### 4bis.8 Écran Stock — navigation demandée
+`article_seuils_alerte` :
 
-Le flux UI est explicite :
+| Colonne | Type | Note |
+|---|---|---|
+| `id` | serial PK | |
+| `id_article` | FK | |
+| `id_entrepot` | FK | seuil par entrepôt |
+| `stock_minimum` | numeric(14,3) | |
+| `stock_alerte_orange` | numeric(14,3) | |
+| `stock_alerte_rouge` | numeric(14,3) | rupture |
 
-```
-1. Liste Entrepôts
-   └─► clic sur un entrepôt
-2. Vue Entrepôt : liste des articles en stock (paginée, recherche, filtres)
-     Colonnes : ref_commerciale · designation · photo · dispo · réservé · en réception · emplacement
-   └─► clic sur un article
-3. Vue Article dans Entrepôt : détail + historique complet
-     - Cartes KPI : dispo / réservé / valeur en stock
-     - Timeline des mouvements (avec type, quantité, source/dest, document lié, utilisateur, date)
-     - Onglet "Par lot" si l'article est traçé par lot
-```
+Job cron quotidien compare `stock_article_entrepot.quantite_disponible` vs seuils → `alertes_stock` + notification responsable entrepôt + admin.
 
-### 4bis.9 Alertes stock
-
-- Chaque article a un `stock_minimum` (par entrepôt via `article_seuils_alerte(id_article, id_entrepot, stock_min)`).
-- Job cron quotidien : compare `stock.quantite_disponible` vs `stock_minimum` → crée `alertes` (à intégrer à un dashboard).
-- Alerte remonte au responsable de l'entrepôt et à l'admin.
-
-### 4bis.10 Endpoints Stock
+### 6.10 Écran Stock — flux UI
 
 ```
-Entrepôts     : /api/entrepots                        GET|POST|PUT|DELETE  (ADMIN)
-                /api/entrepots/:id/articles           — liste articles en stock ici
-                /api/entrepots/:id/statistiques       — KPIs (valeur totale, nb refs, ruptures)
-
-Emplacements  : /api/entrepots/:id/emplacements       GET|POST|PUT|DELETE
-
-Stock         : /api/stock?id_article=&id_entrepot=   — vue courante
-                /api/stock/article/:id                — vue consolidée cet article partout
-                /api/stock/article/:id/mouvements     — historique mouvements
-                /api/stock/valorisation?id_entrepot=  — valeur totale du stock
-
-Mouvements    : /api/mouvements-stock                 GET|POST
-                /api/mouvements-stock/:id/valider     — pour transferts en attente
-                /api/mouvements-stock/:id/annuler     — création mouvement compensatoire
-
-Transferts    : /api/transferts                       POST — crée un transfert (mouvement en_attente)
-                /api/transferts/:id/confirmer         — magasinier destinataire confirme réception
-
-Lots          : /api/lots                             GET|POST|PUT
-                /api/lots/:id                         — détail + articles issus
-
-Réservations  : /api/reservations?id_commande=        GET
-                (créées automatiquement par la validation de commande)
-
-Inventaires   : /api/inventaires                      GET|POST
-                /api/inventaires/:id/lignes           GET|POST|PUT
-                /api/inventaires/:id/valider          POST — génère les ajustements
-
-Alertes       : /api/alertes-stock?niveau=            GET
-                /api/alertes-stock/:id/traiter        POST
+1. Liste Entrepôts (7 seed + créés)
+   └─► clic entrepôt
+2. Vue Entrepôt : liste articles en stock (paginée, filtrable, recherche)
+     Colonnes : ref_commerciale · designation · photo · dispo · réservé · en colisage · emplacement · lot
+   └─► clic article
+3. Vue Article dans Entrepôt : détail + historique
+     - KPI : dispo / réservé / valeur stock
+     - Timeline des mouvements (type, qté, source/dest, doc lié, utilisateur, date)
+     - Onglet "Par lot" (obligatoire pour MP)
+     - Onglet "Alertes" (seuils actifs)
 ```
 
-### 4bis.11 Impacts sur les autres phases
+### 6.11 Endpoints Stock
 
-- **§4.4 articles** : la colonne `stock_total` devient une **vue agrégée** (`SUM(stock_article_entrepot.quantite_disponible) WHERE id_article`). Pas de duplication.
-- **§5.2 statuts commande** : la validation d'une commande crée des `reservations_stock`.
-- **§5.6 colisage** : le scan d'un article dans un colis crée un `mouvement_stock` de type `sortie_vente` depuis `atelier_preparation` (là où le magasinier a préparé la commande après transfert depuis l'entrepôt d'origine).
-- **§6.2 dashboard Magasinier** : le bouton "Demander transfert" crée un `mouvement_stock` de type `transfert_entrepot` avec `statut='en_attente'` — le magasinier de l'entrepôt source valide.
+```
+Entrepôts     GET|POST|PUT|DELETE  /api/entrepots  (ADMIN)
+              GET /api/entrepots/:id/articles      — liste articles ici
+              GET /api/entrepots/:id/statistiques  — KPIs
+
+Emplacements  GET|POST|PUT|DELETE  /api/entrepots/:id/emplacements
+
+Stock         GET /api/stock?id_article=&id_entrepot=
+              GET /api/stock/article/:id           — consolidé
+              GET /api/stock/article/:id/mouvements
+              GET /api/stock/valorisation?id_entrepot=
+
+Mouvements    GET|POST  /api/mouvements-stock
+              POST /api/mouvements-stock/:id/valider     — transferts en attente
+              POST /api/mouvements-stock/:id/annuler     — création mouvement compensatoire
+
+Transferts    POST /api/transferts
+              POST /api/transferts/:id/confirmer
+
+Lots          GET|POST|PUT  /api/lots
+              GET /api/lots/:id                    — détail + articles issus
+
+Réservations  GET /api/reservations?id_commande=
+
+Inventaires   GET|POST  /api/inventaires
+              GET|POST|PUT  /api/inventaires/:id/lignes
+              POST /api/inventaires/:id/valider    — génère ajustements
+
+Alertes       GET /api/alertes-stock?niveau=
+              POST /api/alertes-stock/:id/traiter
+```
+
+### 6.12 Impacts sur les autres phases
+
+- **§5.5 articles** : `stock_total` = vue agrégée `SUM(stock_article_entrepot.quantite_disponible)` — pas dupliqué.
+- **§8.2 commandes** : validation → création `reservations_stock` (bug legacy corrigé : le stock réservé est bien déduit du disponible).
+- **§8.6 colisage** : scan article dans colis crée `mouvement_stock` `sortie_vente` + décrémente `quantite_reservee` et `quantite_en_colisage`.
+- **§7 fabrication** : OF consomme MP (`sortie_of`) et produit PF (`entree_fabrication`) avec `id_lot`.
 
 ---
 
-## 4ter. Fabrication (Phase 2.7)
+## 7. Fabrication (Phase 2.7)
 
-La Plume Artisanale **fabrique** des textiles (foutas, jetés, serviettes, ponchos, sacs) — le cœur métier. Cette phase couvre la nomenclature, la gamme opératoire, l'ordre de fabrication (OF), le suivi temps réel des opérateurs, le contrôle qualité, la sous-traitance et le calcul des coûts réels.
-
-### 4ter.0 Vocabulaire
+### 7.1 Vocabulaire fouta
 
 | Terme | Sens |
 |---|---|
-| **BOM** (Bill of Material) | Nomenclature — liste des matières premières et fournitures nécessaires pour produire un article, avec quantités théoriques. |
-| **Gamme** | Séquence ordonnée des étapes de fabrication (bobinage → chainage → tissage → coupe → frange → contrôle → finition → emballage). |
-| **Poste** | Type de travail (ex "Tissage", "Coupe", "Frange", "Contrôle qualité"). |
-| **Machine** | Équipement physique rattaché à un poste (ex métier `M2301`, bobinoir `BOB-01`). |
-| **OF** (Ordre de Fabrication) | Instruction concrète de produire N unités d'un article, avec date de début, machines assignées, MP réservées. |
-| **Étape OF** | Instance d'une étape de gamme dans un OF concret. |
-| **Ratière** | Sous-mécanisme du métier à tisser qui pilote les fils de trame — chaque modèle a un programme ratière spécifique. |
-| **Sélecteur couleur** | Nombre de couleurs que la machine peut alterner en trame. Une fouta bicolore nécessite au moins un sélecteur 2 couleurs. |
+| **BOM Master** | Nomenclature du produit vendu (article final). Auto-code : `<code_produit><code_dim>(<code_finition>)-<code_nb_couleurs>` |
+| **BOM Composant** | Nomenclature d'un composant fabriqué (souvent = article lui-même si `Type de Fabrication = Unique`) |
+| **Gamme** | Séquence des étapes de fabrication |
+| **Poste** | Type de travail (Bobinage, Tissage, Coupe, Frange…) |
+| **Machine** | Équipement physique |
+| **OF** (Ordre de Fabrication) | Instruction concrète de produire N unités |
+| **Étape OF** | Instance d'une étape de gamme dans un OF |
+| **Ratière** | Sous-mécanisme du métier qui pilote les fils de trame |
+| **Sélecteur couleur** | Positions de fils trame simultanés (S01–S08, legacy 6 max effectif — **contrat 8 pour extension**) |
+| **Ensouple** | Rouleau de chaîne préparée sur ourdissoir, monté sur métier |
+| **Duite** | Un passage de fil de trame — cadence machine = duites/minute |
+| **Métrage** | Longueur de tissu tissé (mètres) |
 
-### 4ter.1 `bom` — Nomenclature par article
+### 7.2 BOM Master / Composants
 
-Chaque `article` (variante PF ou SF) a une BOM qui liste ses MP + fournitures.
+Concept legacy conservé.
 
 `bom` (en-tête) :
 
 | Colonne | Type | Note |
 |---|---|---|
 | `id_bom` | serial PK | |
-| `id_article` | FK articles | l'article produit |
-| `version` | int | pour évolutions BOM (v1 obsolète, v2 courante) |
+| `id_article` | FK articles | article produit |
+| `code_bom_master` | varchar(50) unique | auto : `<code_produit><code_dim>(<code_finition>)-<code_nb_couleurs>` |
+| `version` | int | pour évolutions |
 | `est_active` | bool | 1 seule active par article |
-| `perte_theorique_pct` | numeric(5,2) | perte globale prévue (chutes, casse) |
+| `type_fabrication` | enum | `unique` (auto-création composant) \| `multi_composants` (Pack, Poncho…) |
+| `perte_theorique_pct` | numeric(5,2) | |
 | `notes` | text | |
-| `date_creation` / `cree_par` | | |
+| Champs audit | | |
 
 `bom_lignes` :
 
@@ -868,797 +846,624 @@ Chaque `article` (variante PF ou SF) a une BOM qui liste ses MP + fournitures.
 |---|---|---|
 | `id_ligne_bom` | serial PK | |
 | `id_bom` | FK | |
-| `id_article_composant` | FK articles | MP, SF ou fourniture — pointe vers un article `type_stock IN ('matiere_premiere', 'semi_fini', 'fourniture_*', 'emballage')` |
-| `quantite` | numeric(14,4) | pour 1 unité d'article produit |
-| `unite` | varchar(10) | `kg` / `m` / `pc` / `g` |
-| `id_etape_gamme` | FK gamme_etapes | à quelle étape ce composant est consommé (permet consommation partielle) |
-| `role` | enum | `chaine` / `trame` / `fourniture` / `emballage` |
-| `remplacements_possibles` | int[] | ids d'articles substituables (ex fil blanc NM15 ↔ NM20 en cas de rupture) |
+| `id_article_composant` | FK articles | MP, SF, fourniture ou emballage |
+| `quantite` | numeric(14,4) | pour 1 unité produite |
+| `unite` | varchar(10) | `g`, `kg`, `m`, `pc` (attention : **grammes** dans legacy, kg dans notre nouveau système) |
+| `id_etape_gamme` | FK gamme_etapes | à quelle étape consommé |
+| `role` | enum | `chaine` \| `trame` \| `fourniture` \| `emballage` \| `etiquette` |
+| `numero_selecteur` | int | 1-8 pour rôle `trame` |
+| `remplacements_possibles` | int[] | ids articles substituables |
 
-**Exemple BOM** — Fouta ARTHUR 100/200 blanc/rouge (`AR1020-B02-03`) :
+**Exemple BOM ARTHUR 100/200 blanc/rouge (`AR1020-B02-03`)** :
 
-| Composant | Rôle | Quantité | Étape |
+| Composant | Rôle | Sélecteur | Quantité |
 |---|---|---|---|
-| Fil coton NM15 blanc (`NM15-01.00`) | chaîne | 0.28 kg | Chainage |
-| Fil coton NM15 rouge (`NM15-03.00`) | trame | 0.12 kg | Tissage |
-| Étiquette tissée logo (`ETIQ-TIS-01`) | fourniture | 1 pc | Frange |
-| Sachet kraft M (`EMB-SAK-M`) | emballage | 1 pc | Emballage |
+| Fil coton NM15 blanc (`NM15-01.00`) | chaîne | S01 | 0.28 kg |
+| Fil coton NM15 rouge (`NM15-03.00`) | trame | S02 | 0.12 kg |
+| Étiquette tissée logo | fourniture | – | 1 pc |
+| Sachet kraft M | emballage | – | 1 pc |
 
-### 4ter.2 `gammes` et `gamme_etapes`
+### 7.3 `gammes` et `gamme_etapes`
 
-Une **gamme** = séquence type d'étapes. Souvent 1 gamme par catégorie de produit (Fouta / Jeté / Serviette / Poncho) ; peut être surchargée par modèle.
+Séquence type par catégorie de produit (Fouta, Jeté, Serviette, Poncho, Pack).
 
-`gammes` :
+`gamme_etapes` — colonnes principales : `id_gamme`, `ordre`, `code` (`OURDISSAGE`, `TISSAGE`, `COUPE`, `FRANGE`…), `libelle`, `id_poste`, `duree_standard_sec`, `est_bloquante`, `necessite_ctrl_qualite`, `permet_sous_traitance`.
 
-| Colonne | Type | Note |
+### 7.4 Postes & Machines
+
+**Vocabulaire aligné legacy** :
+
+| Terme legacy | Terme domain | Description |
 |---|---|---|
-| `id_gamme` | serial PK | |
-| `code` | varchar(20) unique | `GAM_FOUTA_STD`, `GAM_JETE_JQ`... |
-| `libelle` | varchar(150) | |
-| `id_categorie` | FK categories_produits | à quelle catégorie applicable |
-| `actif` | bool | |
+| `Largeur de Foyer` | `laize_machine_cm` | largeur utile |
+| `Vibration bielle/min` | `vitesse_max_duite_min` | cadence mécanique |
+| `Type de Programme` | `type_ratiere` | Jacquard, Bonas, Grosse |
 
-`gamme_etapes` :
+`postes_travail` (colonnes : `id_poste`, `code`, `libelle`, `categorie` (`preparation`/`production`/`finition`/`controle`/`logistique`), `id_entrepot`, `capacite_horaire_theorique`, `taux_horaire_mo`, `actif`).
 
-| Colonne | Type | Note |
+**19 postes standard (seed)** :
+
+| Code | Libellé | Catégorie |
 |---|---|---|
-| `id_etape` | serial PK | |
-| `id_gamme` | FK | |
-| `ordre` | int | séquence |
-| `code` | varchar(30) | `BOBIN`, `CHAIN`, `TISSAGE`, `COUPE`, `FRANGE`, `CTRL_Q`, `LAVAGE`, `REPASS`, `EMBALL` |
-| `libelle` | varchar(150) | |
-| `id_poste` | FK postes_travail | poste par défaut |
-| `duree_standard_sec` | int | par unité produite |
-| `est_bloquante` | bool | true = doit être validée avant étape suivante |
-| `necessite_ctrl_qualite` | bool | true = un contrôle QC est requis en fin |
-| `permet_sous_traitance` | bool | peut être externalisée |
-| `sous_type` | enum | pour analyses (`preparation` / `production` / `finition` / `controle` / `logistique`) |
+| PREPARATION_MP | Préparation matière première | preparation |
+| BOBINAGE | Bobinage | preparation |
+| OURDISSAGE | Ourdissage / Chaînage | preparation |
+| ENCOLLAGE | Encollage chaîne | preparation |
+| NOUAGE_CHAINE | Nouage chaîne | preparation |
+| TISSAGE | Tissage | production |
+| COUPE | Coupe | production |
+| POST_COUPE_FRANGE | Post-coupe frange | finition |
+| POST_COUPE_OURLET | Post-coupe ourlet | finition |
+| POST_COUPE_COUTURE | Couture assemblage | finition |
+| ETIQUETAGE | Étiquetage | finition |
+| IMPRESSION_LOGO | Sérigraphie | finition |
+| BRODERIE | Broderie | finition |
+| LAVAGE | Lavage | finition |
+| REPASSAGE | Repassage | finition |
+| CTRL_QUALITE | Contrôle qualité final | controle |
+| PLIAGE | Pliage | logistique |
+| EMBALLAGE_UNIT | Emballage unitaire | logistique |
+| ATELIER_PREPARATION | Atelier préparation commandes | logistique |
+| EXPEDITION | Zone expédition | logistique |
 
-`article_gamme` (assignation) — chaque article référence sa gamme (ou hérite de sa catégorie modèle) :
-
-| Colonne | Type | Note |
-|---|---|---|
-| `id_article` | FK PK | |
-| `id_gamme` | FK | |
-
-### 4ter.3 `postes_travail` et `machines`
-
-`postes_travail` :
-
-| Colonne | Type | Note |
-|---|---|---|
-| `id_poste` | serial PK | |
-| `code` | varchar(20) unique | ex `TISSAGE`, `COUPE`, `FRANGE`, `CTRL_Q` (voir liste ci-dessous) |
-| `libelle` | varchar(150) | |
-| `categorie` | enum | `preparation` / `production` / `finition` / `controle` / `logistique` |
-| `id_entrepot` | FK entrepots | où est physiquement le poste (usine, atelier) |
-| `capacite_horaire_theorique` | numeric(10,2) | unités/h pour dimensionnement planning |
-| `taux_horaire_mo` | numeric(10,3) | main d'œuvre standard TND/h (pour calcul coût §4ter.9) |
-| `actif` | bool | |
-
-#### Liste standard des postes fouta (seed initial)
-
-| Code | Libellé | Catégorie | Sous-type gamme | Rôle métier |
-|---|---|---|---|---|
-| `PREPARATION_MP` | Préparation matière première | preparation | preparation | Piloté par `MAGASINIER_MP`. Sort les bobines chaîne + trame (jusqu'à 8 sélecteurs S01→S08) des entrepôts, scanne les QR bobines, transfère le kit vers le métier. |
-| `BOBINAGE` | Bobinage | preparation | preparation | Prépare les bobines de trame par couleur à partir de MP fil. Sur bobinoir. |
-| `OURDISSAGE` | Ourdissage / Chaînage | preparation | preparation | Prépare la chaîne (assemblage des fils longitudinaux) sur ourdissoir. |
-| `ENCOLLAGE` | Encollage chaîne | preparation | preparation | (Optionnel) Renforce la chaîne avec apprêt pour tissage. |
-| `NOUAGE_CHAINE` | Nouage chaîne | preparation | preparation | Rattache la nouvelle chaîne au métier après changement de rouleau. |
-| `TISSAGE` | Tissage | production | production | Cœur de la production — sur métiers Dornier/Picanol avec ratière. Chaque duite = 1 passage trame. |
-| `COUPE` | Coupe | production | production | Sépare les foutas individuelles du rouleau tissé. Ciseaux industriels ou coupe automatique. |
-| `POST_COUPE_FRANGE` | Post-coupe — Frange | finition | finition | Nouage/tressage/franging des extrémités (spécificité fouta). Peut être manuel ou franging machine. |
-| `POST_COUPE_OURLET` | Post-coupe — Ourlet | finition | finition | Alternative à la frange (bordure cousue) pour certains modèles. Machine à coudre. |
-| `POST_COUPE_COUTURE` | Couture assemblage | finition | finition | Pour ponchos, sacs, packs : assemblage multi-pièces. Peut aussi porter des étiquettes tissées (voir `ETIQUETAGE`). |
-| `ETIQUETAGE` | Étiquetage | finition | finition | Apposition étiquettes tissées (couture), autocollantes (collage), carton papier (accrochage), code-barres/EAN (impression). Peut être fusionné avec `POST_COUPE_COUTURE` ou `POST_COUPE_OURLET` selon organisation atelier. |
-| `IMPRESSION_LOGO` | Impression / Sérigraphie | finition | finition | Personnalisation client (souvent sous-traité). |
-| `BRODERIE` | Broderie | finition | finition | Idem — souvent sous-traité. |
-| `LAVAGE` | Lavage / Blanchissage | finition | finition | Enlève l'apprêt, adoucit. Batch par lot. |
-| `REPASSAGE` | Repassage / Pressage | finition | finition | Pressage à chaud pour finition visuelle. |
-| `CTRL_QUALITE` | Contrôle qualité final | controle | controle | Poste dédié au contrôleur qualité (§6.7). |
-| `PLIAGE` | Pliage | logistique | logistique | Mise en forme avant emballage. |
-| `EMBALLAGE_UNIT` | Emballage unitaire | logistique | logistique | Sachet + étiquette par article. |
-| `ATELIER_PREPARATION` | Atelier de préparation commandes | logistique | logistique | **Distinct du poste production** : zone où le MAGASINIER_PREPARATION (§6.2) rassemble les articles d'une commande et fait le colisage (§5.6). Alimenté par transferts stock depuis les entrepôts. |
-| `EXPEDITION` | Zone expédition | logistique | logistique | Colis fermés en attente enlèvement transporteur. |
-
-**Note importante — distinction entre "Atelier de préparation commandes" et "Ateliers de fabrication"** :
-
-- **Ateliers de fabrication** = les zones physiques où sont installées les machines de production (bobinoirs, ourdissoirs, métiers, coupe, franging, lavage, repassage). Portent des postes de type `preparation` / `production` / `finition`. Sont pilotés par le `CHEF_PRODUCTION` (§6.5) et les opérateurs (§6.6).
-- **Atelier de préparation commandes** = une zone logistique **en aval de la fabrication** où le `MAGASINIER_PREPARATION` (§6.2) reçoit les articles finis + les sortis de stock, les assemble par commande, et fait le colisage. Modélisé comme un `entrepot` de type `atelier_preparation` (§4bis.1) + le poste `ATELIER_PREPARATION` (logistique).
-
-L'article "termine" un OF → entre dans un entrepôt de type `entrepot_principal` ou directement dans `atelier_preparation` si commande client en attente → magasinier prépa fait le colisage → BL → expédition.
-
-
-
-`machines` (étend le concept `postes_travail` avec l'aspect physique) :
+`machines` :
 
 | Colonne | Type | Note |
 |---|---|---|
 | `id_machine` | serial PK | |
 | `code_machine` | varchar(20) unique | `M2301`, `BOB-01`, `COUPE-A` |
-| `libelle` | varchar(200) | ex "Métier Dornier A2301 à ratière" |
-| `id_poste` | FK postes_travail | |
-| `type_machine` | enum | `metier_tisser` / `bobinoir` / `ourdissoir` / `coupe` / `frange` / `couture` / `lavage` / `repassage` / `emballage` / `impression` / `autre` |
+| `libelle` | varchar(200) | |
+| `id_poste` | FK | |
+| `type_machine` | enum | `metier_tisser` \| `bobinoir` \| `ourdissoir` \| `coupe` \| `frange` \| `couture` \| `lavage` \| `repassage` \| `emballage` \| `impression` \| `autre` |
 | `numero_serie` | varchar(50) | |
-| `type_ratiere` | varchar(50) | pour métiers à tisser (`Staubli 2666`, `Bonas`, `Grosse`) |
-| `nb_couleurs_selecteur` | int | 1-8 — nombre de couleurs de trame simultanées |
-| `laize_machine_cm` | numeric(6,2) | largeur utile |
-| `laize_actuelle_cm` | numeric(6,2) | réglage courant (peut différer selon config produit) |
-| `nb_fils_par_cm` | numeric(6,2) | densité chaîne |
+| `type_ratiere` | varchar(50) | `Staubli 2666`, `Bonas`, `Grosse` |
+| `nb_couleurs_selecteur` | int | 1-8 |
+| `laize_machine_cm` | numeric(6,2) | |
+| `laize_actuelle_cm` | numeric(6,2) | |
+| `nb_fils_par_cm` | numeric | densité chaîne |
 | `nb_fils_chaine_total` | int | |
 | `longueur_peigne_cm` | numeric(6,2) | |
-| `type_programme` | varchar(50) | technologie (`AGA-8`, `Bonas`, `Jacquard`) |
-| `vitesse_max_duite_min` | int | duites par minute (cadence max) |
-| `etat` | enum | `en_service` / `en_maintenance` / `en_panne` / `arret` |
-| `id_parc` | FK parcs_machines | Usine / Atelier |
-| `date_derniere_maintenance` | date | |
-| `date_prochaine_maintenance` | date | |
+| `type_programme` | varchar(50) | technologie |
+| `vitesse_max_duite_min` | int | cadence max |
+| `rapport_compteur` | numeric | facteur unité compteur (pièces vs mètres) |
+| `unite_compteur` | enum | `pieces` \| `metres` |
+| `etat` | enum | `en_service` \| `en_maintenance` \| `en_panne` \| `arret` |
+| `id_parc_machines` | FK | Usine, Atelier |
+| `date_derniere_maintenance` / `date_prochaine_maintenance` | date | |
 | `actif` | bool | |
 
-### 4ter.4 `ordres_fabrication` (OF)
+### 7.5 `ordres_fabrication` — schéma commun
 
-#### Ce qu'un OF fige au moment de sa création
+**Deux types distincts** (préfixes différents) :
 
-À la création d'un OF, le système **fige (snapshot) 4 choses** — même si les référentiels (BOM, gamme, prix MP) évoluent ensuite, l'OF reste piloté par ce qui a été gelé au démarrage :
-
-1. **La gamme** — la séquence ordonnée des postes à exécuter (bobinage → tissage → coupe → frange → étiquetage → contrôle → emballage). Copiée dans `of_etapes` avec `duree_estimee_sec`, `id_machine` assigné, `id_poste` correspondant.
-2. **La BOM matières premières** — les articles MP nécessaires avec quantités théoriques. Copiées dans `of_consommations` avec `role='chaine'` / `'trame'`.
-3. **Les fournitures et l'emballage** — étiquettes tissées, étiquettes carton, sachets, cartons, adhésifs… Copiées dans `of_consommations` avec `role='fourniture'` / `'emballage'`.
-4. **Les affectations planning** — machines et opérateurs prévus par étape (§4ter.8 planning).
-
-Cette approche garantit que **l'OF est reproductible et auditable** : on peut recalculer un coût, refaire le même produit avec les mêmes réglages 6 mois plus tard, tracer précisément ce qui a été consommé.
-
-#### Fiche OF — écran chef de production
-
-L'écran de création / consultation d'un OF présente ces 4 blocs distincts en onglets ou sections :
-
-- **Onglet Article** : quel article produire, quantité, priorité, date livraison prévue, commande liée.
-- **Onglet Postes à faire** (= gamme instanciée) : liste ordonnée des étapes, chacune avec machine assignée, poste, durée estimée, opérateur prévu, dépendances. Modifiable avant lancement.
-- **Onglet BOM (matières premières)** : liste des MP nécessaires avec quantité par unité produite + quantité totale + coût théorique. Vérification dispo stock en temps réel.
-- **Onglet Fournitures & emballage** : étiquettes (tissées/carton/EAN), sachets, cartons, adhésifs, hangtags… mêmes colonnes que BOM.
-- **Bandeau récapitulatif** : coût théorique total, date fin prévue calculée, alerte si MP manquante.
-
-`ordres_fabrication` :
+- **OF Commande** — `OF{6chiffres}`, `id_commande` + `id_ligne_commande` renseignés
+- **OF Stock (catalogue)** — `CA{4chiffres}`, `id_commande` NULL, `id_catalogue` renseigné
 
 | Colonne | Type | Note |
 |---|---|---|
 | `id_of` | serial PK | |
-| `numero_of` | varchar(30) unique | `OF-YYYYMMDD-NNNN` |
-| `id_article` | FK articles | article à produire |
-| `id_bom` | FK bom | version BOM utilisée (snapshot) |
-| `id_gamme` | FK gammes | gamme utilisée |
+| `numero_of` | varchar(30) unique | `OF...` ou `CA...` |
+| `type_of` | enum | `commande` \| `stock` \| `complement` \| `rework` \| `prototype` |
+| `id_of_parent` | FK | renseigné pour `complement` (sous-OF `.1`) |
+| `id_article` | FK | article produit |
+| `id_bom` | FK bom | version snapshot |
+| `id_gamme` | FK gammes | gamme snapshot |
+| `id_commande` / `id_ligne_commande` | FK | commande source (OF Commande) |
+| `id_catalogue` | FK catalogues | OF Stock |
 | `quantite_prevue` | numeric(14,3) | |
-| `quantite_produite` | numeric(14,3) | maj au fil du suivi |
-| `quantite_rebut` | numeric(14,3) | pièces non conformes |
-| `id_commande` | FK commandes | commande à l'origine (nullable si stock prévisionnel) |
-| `id_ligne_commande` | FK commandes_lignes | ligne précise |
-| `priorite` | enum | `urgente` / `haute` / `normale` / `basse` |
-| `statut` | enum | `brouillon` / `planifie` / `en_attente_mp` / `en_cours` / `en_pause` / `pret` (fini, en attente entrée stock) / `termine` / `annule` |
-| `date_creation_of` | timestamp | |
-| `date_planification` | date | quand démarrer |
-| `date_debut_reel` | timestamp | premier pointage |
-| `date_fin_prevue` | date | |
-| `date_fin_reel` | timestamp | dernier pointage clôture |
-| `cout_theorique_ht` | numeric(14,3) | somme (BOM × PMP MP + main-d'œuvre standard) |
-| `cout_reel_ht` | numeric(14,3) | calculé à la clôture |
-| `id_lot_produit` | FK lots_articles | lot généré à la clôture (traçabilité descendante) |
-| `chef_production_id_utilisateur` | FK utilisateurs | responsable |
-| `notes_speciales` | text | affichées au magasinier prépa (§6.2) |
-| `est_sous_traite` | bool | tout ou partie externalisé |
-| `id_soustraitant` | FK soustraitants | si sous-traité |
+| `quantite_produite` | numeric(14,3) | maj en direct |
+| `quantite_rebut` | numeric(14,3) | |
+| `qte_1er_choix` / `qte_2e_choix` / `qte_ourlet` / `qte_dechet` | numeric(14,3) | catégorisation qualité |
+| `priorite` | enum | `urgente` \| `haute` \| `normale` \| `basse` |
+| `statut` | enum | voir §7.14 |
+| `etat_preparation_mp` | enum | `Non Préparé` \| `Préparé Partiel` \| `Préparé` \| `Manque Matiere` \| `Pas de Besoin` |
+| `etat_tissage` | enum | `Attente` \| `Planifier` \| `Machine Alimentée` \| `Départ` \| `En cours` \| `Pause` \| `Terminé` \| `Terminé Qte Manquante` |
+| `etat_coupe` | enum | `Non Démarré` \| `En cours` \| `Pause` \| `Terminé` \| `Terminé Qte Manquante` |
+| `id_machine_prevue` | FK | |
+| `temps_production_prevu_sec` | int | |
+| `compteur_machine_affichage` | int | valeur légale à afficher sur métier |
+| `largeur_tissu_cm` / `longueur_tissu_m` | numeric | |
+| `metrage_fil_chaine_m` | numeric | pour ligne chaîne |
+| `duite_par_cm` | numeric | densité tissage |
+| `nb_duites_total_production` | int | |
+| `qr_mp_final` | varchar(50) | code global traçabilité assemblé |
+| `date_creation_of` / `date_planification` / `date_debut_reel` / `date_fin_prevue` / `date_fin_reel` | timestamp | |
+| `cout_theorique_ht` | numeric(14,3) | |
+| `cout_reel_ht` | numeric(14,3) | calculé à clôture |
+| `id_lot_produit` | FK lots_articles | lot généré à la clôture |
+| `chef_production_id_utilisateur` | FK | |
+| `notes_speciales` | text | affichées magasinier prépa (§14.3) |
+| `est_sous_traite` | bool | |
+| `id_soustraitant` | FK soustraitants | |
+| `motif_refus_complement` | text | si complément refusé par tisseur |
+| `ordre_planif_machine` | int | renuméroté par machine |
 
-`of_etapes` (instance de gamme dans l'OF) :
+### 7.6 `of_etapes`
 
 | Colonne | Type | Note |
 |---|---|---|
 | `id_of_etape` | serial PK | |
 | `id_of` | FK | |
-| `id_etape_gamme` | FK gamme_etapes | référence template |
-| `ordre` | int | copie de l'étape gamme (peut être réordonné) |
-| `id_machine` | FK machines | assignation planning |
-| `duree_estimee_sec` | int | |
-| `duree_reelle_sec` | int | calculée à partir des pointages |
-| `date_debut_prevue` | timestamp | |
-| `date_debut_reel` | timestamp | premier pointage |
-| `date_fin_prevue` | timestamp | |
-| `date_fin_reel` | timestamp | |
-| `operateur_principal_id_utilisateur` | FK utilisateurs | |
-| `statut` | enum | `a_faire` / `en_cours` / `en_pause` / `termine` / `bloque_qc` / `annule` |
-| `quantite_produite` | numeric(14,3) | à cette étape (peut être partiel) |
-| `quantite_rebut` | numeric(14,3) | rebuts à cette étape |
-| `commentaire` | text | libre |
+| `id_etape_gamme` | FK | template |
+| `ordre` | int | |
+| `id_machine` | FK | |
+| `duree_estimee_sec` / `duree_reelle_sec` | int | |
+| `date_debut_prevue` / `date_debut_reel` / `date_fin_prevue` / `date_fin_reel` | timestamp | |
+| `operateur_principal_id_utilisateur` | FK | |
+| `statut` | enum | `a_faire` \| `en_cours` \| `en_pause` \| `termine` \| `bloque_qc` \| `annule` |
+| `quantite_produite` / `quantite_rebut` | numeric | |
+| `est_deuxieme_passe` | bool | frange/ourlet/lavage post-tissage |
+| `est_sous_traitee` | bool | |
+| `quantite_approuvee_interne` | numeric | validation qualité interne avant sortie ST |
+| `commentaire` | text | |
 
-`of_consommations` (BOM éclaté effectif — MP **et** fournitures et emballage) :
+### 7.7 `of_consommations` — BOM éclaté effectif
+
+MP + fournitures + emballage.
 
 | Colonne | Type | Note |
 |---|---|---|
 | `id` | serial PK | |
 | `id_of` | FK | |
-| `id_of_etape` | FK | à quelle étape |
-| `id_article_composant` | FK articles | la MP / fourniture / emballage consommé |
-| `role` | enum | `chaine` / `trame` / `fourniture` / `emballage` / `etiquette` |
-| `numero_selecteur` | int | pour les fils trame : 1-8 (S01→S08, aligné avec le sélecteur couleur du métier — voir §4ter.4bis) |
-| `id_lot` | FK lots_articles | lot MP puisé (traçabilité) |
-| `qr_mp_reel` | varchar(50) | QR bobine réellement utilisée (peut différer du prévu) |
-| `quantite_theorique` | numeric(14,4) | issue de la BOM (colonne `Besoin S0X (kg)` du legacy) |
-| `quantite_reelle` | numeric(14,4) | ce que l'opérateur a réellement pris/consommé (colonne `Poids Consommé S0X`) |
-| `ecart_absolu` | numeric(14,4) | calculé (`quantite_reelle - quantite_theorique`) — colonne `Différence S0X` du legacy |
-| `ecart_pct` | numeric(6,2) | calculé |
-| `id_mouvement_stock` | FK mouvements_stock | mouvement `sortie_of` correspondant |
+| `id_of_etape` | FK | étape |
+| `id_article_composant` | FK articles | composant consommé |
+| `role` | enum | `chaine` \| `trame` \| `fourniture` \| `emballage` \| `etiquette` |
+| `numero_selecteur` | int | 1-8 pour trame |
+| `id_lot` | FK lots_articles | lot MP puisé |
+| `qr_mp_reel` | varchar(50) | QR bobine effectivement scannée |
+| `quantite_theorique` | numeric(14,4) | BOM × quantite_prevue |
+| `quantite_reelle` | numeric(14,4) | consommée (Poids Consommé Sxx) |
+| `ecart_absolu` | numeric(14,4) | `reelle - theorique` (Différence Sxx) |
+| `ecart_pct` | numeric(6,2) | |
+| `id_mouvement_stock` | FK | mouvement `sortie_of` |
 | `date_consommation` | timestamp | |
 
-### 4ter.4ter Attribution et préparation matière première
-
-Deux étapes distinctes, dans cet ordre, entre la validation d'un OF et le démarrage du tissage.
-
-#### Attribution MP (automatique + affinage manuel)
-
-Dès qu'un OF passe en `planifie`, le système **attribue** un lot de MP à chaque ligne `of_consommations` :
-
-- Règle par défaut : le **premier lot dispo FIFO** (le plus ancien en stock) qui couvre la quantité théorique.
-- Alternative : lot le plus **proche colorimétriquement** d'un lot déjà utilisé sur un OF antérieur du même modèle (continuité chromatique).
-- Le magasinier MP peut **réattribuer** manuellement un autre lot (par exemple pour vider une bobine presque finie).
-- L'attribution crée une **réservation stock** (§4bis.6) sur le lot choisi, empêchant sa consommation par un autre OF.
-
-Champs concernés : `of_consommations.id_lot`, `qr_mp_reel` (renseigné à la préparation).
-
-#### Préparation MP (physique — Magasinier MP §6.10)
-
-Le magasinier MP prend la liste attribuée et prépare physiquement le kit :
-
-1. Ouvre l'OF → voit la liste des bobines attribuées avec leur emplacement (entrepôt + emplacement).
-2. Pour chaque ligne : va chercher la bobine, la scanne (QR).
-3. Le système vérifie **cohérence** :
-   - Code MP scanné = code MP attendu → OK, coche verte.
-   - Divergence (par ex ECRU au lieu de BLANC) → alerte rouge, refuse tant que corrigé.
-   - Lot différent de celui attribué → demande confirmation (l'attribution devient le lot réellement scanné).
-4. Le kit est **rassemblé physiquement** dans l'atelier de préparation MP (un chariot ou étagère marquée du numéro OF).
-5. Bouton "Kit prêt" → l'OF passe en `etat_preparation_mp = terminee`, le tissage devient débloqué.
-6. Génère un `mouvement_stock` `transfert_entrepot` : entrepôt MP source → entrepôt "poste tissage" (virtuel) du métier assigné.
-
-Le tisseur (§6.6) voit alors sur sa tablette que le kit est prêt, avec les codes S01→S08 réels sur ses sélecteurs.
-
-### 4ter.4quater Complément de fabrication (sous-OF `.1`)
-
-Si à la fin d'un OF, la quantité 1ᵉʳ choix produite est inférieure à la quantité commandée (à cause du rebut, 2ᵉ choix, casse), le Chef d'Atelier peut demander un **complément**. Système hérité du legacy :
-
-- Nouveau **sous-OF** créé avec `numero_of` = OF parent + `.1` (ex `OF-2026-0812.1`).
-- `id_of_parent` FK sur l'OF principal.
-- Statut priorité forcé à `urgente` (le complément passe devant les autres).
-- `ordrePlanification = 0` → apparaît en tête du planning.
-- **Refus possible** par le TISSEUR avec motif obligatoire (cause : MP manquante, machine indisponible, cadence non tenable, autre) → notifie CHEF_PRODUCTION pour arbitrage.
-
-Ajouts sur `ordres_fabrication` :
-
-| Colonne | Type | Note |
-|---|---|---|
-| `id_of_parent` | FK ordres_fabrication | nullable ; renseigné pour un complément |
-| `type_of` | enum | `standard` / `complement` / `rework` / `prototype` |
-| `motif_refus_complement` | text | nullable ; renseigné si tisseur refuse |
-
-### 4ter.4quinquies Catégorisation qualité (1er choix / 2ᵉ choix / Déchet / Ourlet)
-
-Le legacy sépare les catégories finales de production :
-
-| Catégorie | Sens | Impact stock |
-|---|---|---|
-| **1er choix** | Conforme, sellable au prix plein | Entrée stock normal PF |
-| **2ème choix** | Défaut mineur — sellable en second choix (site outlet, dépannage) à prix réduit | Entrée stock PF avec `qualite='second_choix'` |
-| **Ourlet** | Sous-catégorie incluse dans 1er choix (foutas ourletées vs frangées) | Idem 1er choix |
-| **Déchet / Rebut** | Non sellable | `mise_au_rebut` (§4bis.4) |
-
-Extension `controles_qualite` (§4ter.6) :
-
-| Colonne | Type | Note |
-|---|---|---|
-| `qte_premier_choix` | numeric(14,3) | |
-| `qte_second_choix` | numeric(14,3) | |
-| `qte_ourlet` | numeric(14,3) | inclus dans premier choix |
-| `qte_rebut` | numeric(14,3) | |
-| `type_defaut` | enum | `tache` / `couture_irreguliere` / `fil_casse` / `dimension_incorrecte` / `couleur_non_conforme` / `frange_defectueuse` / `autre` |
-| `decision` | enum | `laisser_passer_1c` / `passer_2c` / `rework` / `rebut` |
-
-Un article a une colonne `qualite` (`premier_choix` / `second_choix`) qui influe sur le prix affichable et la vente possible. Les articles second choix ne sont pas exposés au portail client standard mais accessibles via un catalogue "Outlet" (§4.3).
-
-### 4ter.4bis Modèle de BOM/OF hérité — parité fonctionnelle avec le legacy Google Apps
-
-Le projet Google Apps Script existant (fichier source `docs/archive/erp-all-by-fouta-legacy/developpement/BOM 2025-2026.xlsx` — feuille `Base Commandes` avec 84 colonnes) a validé plusieurs concepts métier qu'on **reprend intégralement** :
-
-#### Structure BOM à 8 sélecteurs
-
-Les métiers à tisser Dornier ont un **sélecteur de couleur trame de 1 à 8 positions** (`nb_couleurs_selecteur` sur `machines`). Chaque position = un fil MP disponible pendant le tissage.
-
-Pour un OF, la BOM MP se décompose donc en jusqu'à **8 lignes trame** (S01 → S08) + **1 ligne chaîne** :
-
-| Ligne BOM | Colonne legacy | Modèle nouveau (`of_consommations`) |
-|---|---|---|
-| Chaîne | `Métrage Fil Chaîne (m)` | 1 ligne `role='chaine'`, quantité en mètres puis convertie en kg |
-| Trame S01 | `Code S01`, `QR MP Réel S01`, `Besoin S01 (kg)`, `Poids Consommé S01`, `Différence S01 (kg)` | 1 ligne `role='trame'`, `numero_selecteur=1` |
-| Trame S02 | idem S02 | 1 ligne `role='trame'`, `numero_selecteur=2` |
-| ... | ... | ... |
-| Trame S08 | idem S08 | 1 ligne `role='trame'`, `numero_selecteur=8` |
-| Fournitures | (colonnes libres selon modèle) | N lignes `role='fourniture'` / `'etiquette'` |
-| Emballage | (colonnes libres selon modèle) | N lignes `role='emballage'` |
-
-Totaux BOM (colonnes `Total Besoin (kg)`, `Total Consommé (kg)`, `Différence Totale (kg)`) sont **calculés à la volée** (pas stockés), à partir de la somme des `of_consommations`.
-
-#### Champs tissage spécifiques à ajouter sur `ordres_fabrication`
-
-| Colonne à ajouter | Type | Source legacy |
-|---|---|---|
-| `id_machine_prevue` | FK machines | `Num Machine` |
-| `temps_production_prevu_sec` | int | `Temps de production` (converti) |
-| `compteur_machine_affichage` | int | `Compteur à Afficher` (utile pour l'opérateur sur le métier) |
-| `largeur_tissu_cm` | numeric(6,2) | `Largeur Tissu` |
-| `longueur_tissu_m` | numeric(10,2) | `Longueur Tissu` (m) |
-| `metrage_fil_chaine_m` | numeric(10,2) | `Métrage Fil Chaîne (m)` — pour la ligne chaîne |
-| `duite_par_cm` | numeric(6,2) | `Duite par CM` |
-| `nb_duites_total_production` | int | `Nb Duites Total Production` |
-| `qr_mp_final` | varchar(50) | `QR MP` — code global de traçabilité assemblée |
-
-#### États d'avancement multi-phases
-
-Le legacy suit 3 sous-états séparés (colonnes `Etat Préparation MP`, `Etat Tissage`, `Etat Coupe`). On les modélise en tant que colonnes distinctes sur `ordres_fabrication`, **en complément** du `statut` global :
-
-| Colonne | Enum | Note |
-|---|---|---|
-| `etat_preparation_mp` | `a_faire` / `en_cours` / `terminee` / `bloquee` | statut du travail Magasinier MP (§6.10) |
-| `etat_tissage` | idem | statut du poste tissage |
-| `etat_coupe` | idem | statut du poste coupe |
-
-**Règle** : les 3 états sont dérivés automatiquement des `of_etapes.statut` associés aux postes `BOBINAGE`/`OURDISSAGE` (→ prep MP), `TISSAGE` (→ tissage), `COUPE` (→ coupe). C'est une vue rapide pour dashboards ; la source de vérité reste `of_etapes`.
-
-#### Deuxième fabrication (2ᵉ passe finition)
-
-Le legacy distingue `QTE Fabriquer Coupe` de `QTE Deuxieme Fab` (avec `Deuxieme Approuvee Interne`, `Qte Deu Ext` — externe/sous-traitée). Ce sont typiquement les foutas qui retournent pour **frange + ourlet + lavage** après une première passe (tissage + coupe).
-
-On modélise cela avec :
-
-- Un OF principal (tissage + coupe) → produit un article `type_stock = 'semi_fini'` (SF).
-- Un OF secondaire (frange + finition + emballage) qui **consomme** le SF (via BOM `role='chaine'` ou pivot spécial) → produit le PF final.
-- OU (plus simple pour l'utilisateur) : un OF unique avec plusieurs étapes gamme, dont certaines flaggées `deuxieme_passe = true`. Colonne `est_deuxieme_passe` sur `of_etapes`.
-
-**Choix retenu Phase 2.7** : OF unique avec étapes marquées → moins d'entités à gérer. On pourra migrer vers 2 OF si besoin.
-
-Ajouts sur `of_etapes` :
-
-| Colonne | Type | Note |
-|---|---|---|
-| `est_deuxieme_passe` | bool | true = étape post-coupe (frange/ourlet/lavage) |
-| `est_sous_traitee` | bool | true = externalisée (§4ter.7) |
-| `quantite_approuvee_interne` | numeric(14,3) | equivalent `Deuxieme Approuvee Interne` — validation qualité interne avant sortie externe |
-
-#### Préparation matière première — poste et rôle dédiés
-
-Le **poste `PREPARATION_MP`** (à ajouter à la liste standard §4ter.3) précède le tissage. Il est piloté par un rôle dédié :
-
-- `MAGASINIER_MP` — sort les bobines des entrepôts, prépare le kit MP pour un OF (fils chaîne + fils trame par sélecteur), scanne les QR bobines pour tracer, transfère vers le poste tissage.
-
-Dashboard dédié (§6.10 ci-après).
-
-#### Planification — écran opérationnel
-
-L'écran **Planification** (§4ter.8 Gantt) est la vue centrale du chef de production. Il fait 3 choses :
-
-1. **Assignation machine × créneaux** : les OF (ou étapes tissage) sont posés sur les créneaux de chaque métier.
-2. **Vérification contraintes** : compatibilité laize / nb couleurs / dispo MP.
-3. **Séquencement Prep MP → Tissage → Coupe → 2ᵉ passe** : le système ordonne automatiquement les dépendances (l'étape tissage attend la fin de la prep MP, la coupe attend le tissage, etc.).
-
-
-
-### 4ter.5 Suivi temps réel (pointages opérateurs)
-
-`of_pointages` — chaque tisseur/coupeur scanne son badge (ou saisit sur tablette) début / pause / reprise / fin. Timeline précise du travail.
+### 7.8 `of_pointages` — suivi temps réel
 
 | Colonne | Type | Note |
 |---|---|---|
 | `id_pointage` | serial PK | |
 | `id_of_etape` | FK | |
-| `id_utilisateur` | FK utilisateurs | opérateur |
-| `id_machine` | FK machines | machine utilisée à ce moment |
-| `type_event` | enum | `debut` / `pause` / `reprise` / `fin` / `changement_operateur` / `panne_machine` / `attente_mp` |
-| `horodatage` | timestamp | précis à la seconde |
-| `quantite_intermediaire` | numeric(14,3) | quantité produite lors du pointage (compteur machine si dispo) |
-| `notes` | text | ex "arrêt casse fil trame" |
+| `id_utilisateur` | FK | opérateur |
+| `id_machine` | FK | |
+| `type_event` | enum | `debut` \| `pause` \| `reprise` \| `fin` \| `changement_operateur` \| `panne_machine` \| `attente_mp` \| `casse_fil` \| `nettoyage` \| `maintenance` \| `changement_fil` \| `ensouple` \| `fin_poste` |
+| `horodatage` | timestamp | précis seconde |
+| `quantite_intermediaire` | numeric | compteur machine si dispo |
+| `duree_arret_sec` | int | pour événements de pause |
+| `motif_arret` | varchar(200) | |
+| `notes` | text | |
 
-**Écran opérateur tablette** (§6.6) : liste ses OF assignés, boutons Démarrer / Pause / Reprendre / Terminer. Scanne QR de la MP entrante pour la consommer proprement.
+### 7.9 Contrôle qualité avec catégorisation
 
-### 4ter.6 Contrôle qualité (§4ter.CQ)
-
-Chaque étape peut avoir un contrôle qualité obligatoire (`necessite_ctrl_qualite`). Le contrôleur enregistre ses mesures.
-
-`controles_qualite` (par OF étape ou en fin d'OF) :
+`controles_qualite` :
 
 | Colonne | Type | Note |
 |---|---|---|
 | `id_ctrl` | serial PK | |
 | `id_of` | FK | |
-| `id_of_etape` | FK | nullable si contrôle global final |
-| `id_controleur_utilisateur` | FK utilisateurs | |
+| `id_of_etape` | FK | nullable si global |
+| `id_controleur_utilisateur` | FK | |
 | `date_controle` | timestamp | |
-| `type_controle` | enum | `visuel` / `dimensionnel` / `colorimetrique` / `resistance` / `poids` |
-| `resultat` | enum | `conforme` / `non_conforme_mineur` / `non_conforme_majeur` / `bloquant` |
-| `quantite_controlee` | numeric(14,3) | |
-| `quantite_rebut` | numeric(14,3) | |
-| `defauts_json` | jsonb | ex `{"trous": 2, "tache": 1, "delta_couleur": 3.5}` — libre |
-| `photos_urls` | text[] | preuves photo |
-| `action` | enum | `laisser_passer` / `rework` / `mise_au_rebut` |
+| `type_controle` | enum | `visuel` \| `dimensionnel` \| `colorimetrique` \| `resistance` \| `poids` \| `retour_soustraitance` |
+| `qte_1er_choix` | numeric(14,3) | conforme prix plein |
+| `qte_2e_choix` | numeric(14,3) | défaut mineur — sellable moins cher (catalogue OUTLET) |
+| `qte_ourlet` | numeric(14,3) | inclus dans 1er choix |
+| `qte_rebut` | numeric(14,3) | non sellable |
+| `type_defaut` | enum | `tache` \| `couture_irreguliere` \| `fil_casse` \| `dimension_incorrecte` \| `couleur_non_conforme` \| `frange_defectueuse` \| `autre` |
+| `decision` | enum | `laisser_passer_1c` \| `passer_2c` \| `rework` \| `rebut` |
+| `defauts_json` | jsonb | mesures libres |
+| `photos_urls` | text[] | |
+| `est_bloquant` | bool | si vrai → OF bascule `statut='bloque_qc'` |
 | `commentaire` | text | |
 
-**Règle** : un contrôle `bloquant` bloque l'OF (`statut='bloque_qc'`), notifie le chef de production. Reprise après validation ADMIN/CHEF_PRODUCTION.
+### 7.10 Sous-traitance de fabrication
 
-### 4ter.7 Sous-traitance de fabrication
+Voir §7.11 pour bons de sortie/retour ST — modélisation persistante avec numéros, signatures, litiges, quality control retour.
 
-Une étape (ou tout un OF) peut être externalisée.
+`of_sous_traitance` = pivot entre OF et bons ST (référence §8.7).
 
-Existant : `soustraitants` déjà en périmètre. Étendre :
+### 7.11 Bons sortie/retour Sous-Traitance
 
-| Colonne additionnelle | Type | Note |
-|---|---|---|
-| `specialite` | enum | `broderie` / `sérigraphie` / `laser` / `finition` / `emballage` / `tissage_complementaire` |
-| `capacite_hebdomadaire_pieces` | int | |
-| `delai_moyen_jours` | int | |
-| `taux_qualite_pct` | numeric(5,2) | historique |
-| `id_grille_tarif_ss_traitance` | FK | prix par prestation |
+**Lacune legacy corrigée** : dans le legacy le bon de sortie était juste un HTML imprimé, non persistant. Notre v2.0 le persiste avec numéro, signatures, historique.
 
-`of_sous_traitance` (mouvement sortie/entrée avec un sous-traitant) :
+`bons_sortie_st` :
 
 | Colonne | Type | Note |
 |---|---|---|
-| `id_ss_of` | serial PK | |
-| `id_of` | FK | |
-| `id_of_etape` | FK | quelle étape est sous-traitée |
-| `id_soustraitant` | FK | |
-| `numero_bon_sortie` | varchar(30) | ex `BSST-YYYY-NNN` |
-| `date_sortie` | date | envoi chez le sous-traitant |
-| `quantite_envoyee` | numeric(14,3) | |
-| `date_retour_prevue` | date | |
-| `date_retour_reelle` | date | |
-| `quantite_retournee_conforme` | numeric(14,3) | |
-| `quantite_retournee_rebut` | numeric(14,3) | |
-| `cout_prestation_ht` | numeric(14,3) | |
-| `statut` | enum | `envoye` / `en_cours` / `retour_partiel` / `retourne` / `litige` |
+| `id_bon_sortie` | serial PK | |
+| `numero_bon` | varchar(30) unique | `BSST-{YYYY}-{NNNNN}` |
+| `id_soustraitant` | FK soustraitants | |
+| `date_sortie` | timestamp | |
+| `id_utilisateur_expedition` | FK | magasinier ST |
+| `signature_expediteur_url` | varchar(500) | canvas + photo (hérité legacy) |
+| `signature_receveur_url` | varchar(500) | rempli au retour signé |
+| `photos_urls` | text[] | preuves photos expédition |
+| `date_retour_prevue` | date | **obligatoire** (manquait legacy) |
+| `statut` | enum | `en_preparation` \| `expedie` \| `chez_st` \| `en_retour_partiel` \| `retour_complet` \| `litige` |
+| `notes` | text | |
 
-Interaction stock : la sortie chez le sous-traitant est un `mouvement_stock` `transfert_entrepot` vers l'entrepôt virtuel du sous-traitant (§4bis.1 type `sous_traitant`). Le retour crée un mouvement inverse + un `entree_fabrication`.
+`bons_sortie_st_lignes`, `retours_st`, `retours_st_lignes`, `litiges_st` — voir schéma détaillé sur `docs/legacy-gas-soustraitance.md`.
 
-### 4ter.8 Planning de fabrication
+Chaque retour peut déclencher un `controle_qualite` de type `retour_soustraitance`.
 
-Le CHEF_PRODUCTION dispose d'un **écran de planning** de type Gantt/Kanban :
+### 7.12 Planification atelier
 
-- Colonnes = machines · Lignes = créneaux horaires (jour/semaine).
-- OF planifiés = cartes déplaçables par drag-and-drop → mise à jour `of_etapes.id_machine` + `date_debut_prevue`.
-- Contraintes automatiques vérifiées : capacité machine (nb couleurs, laize compatible), disponibilité MP réservée, dispo opérateur.
-- Filtre par priorité, par date livraison commande liée.
+Écran Gantt drag-drop (§14.15) machines × créneaux. Contraintes auto :
 
-`planning_slots` (dénormalisé pour perf) :
+- Compatibilité laize machine ↔ laize article
+- Nb couleurs OF ≤ nb sélecteurs machine
+- MP disponible aux dates prévues (sinon warning MP manquante)
+- Machine en panne → blocage drop
 
-| Colonne | Type | Note |
-|---|---|---|
-| `id_slot` | serial PK | |
-| `id_machine` | FK | |
-| `id_of_etape` | FK | |
-| `date_debut` / `date_fin` | timestamp | |
-| `statut` | enum | `prevu` / `en_cours` / `termine` / `deplace` |
+`planning_slots` (dénormalisé) : `id_slot`, `id_machine`, `id_of_etape`, `date_debut`, `date_fin`, `statut` (`prevu` / `en_cours` / `termine` / `deplace`).
 
-### 4ter.9 Coûts de fabrication
+### 7.13 Coûts fabrication
 
-À la clôture d'un OF, on calcule le coût réel et on le compare au coût théorique.
-
-**Formule coût réel HT** :
+À la clôture d'un OF :
 
 ```
 cout_reel_ht =
-  SUM(of_consommations_mp.quantite_reelle × mp.prix_moyen_pondere_kg)
-+ SUM(of_pointages temps × poste.taux_horaire_main_oeuvre)
-+ SUM(of_sous_traitance.cout_prestation_ht)
-+ ventilation frais fixes atelier (amortissement machines, énergie, etc.) — clé de répartition par heure machine
+  Σ (of_consommations.quantite_reelle × mp.prix_moyen_pondere_kg)
++ Σ (of_pointages.duree × poste.taux_horaire_mo)
++ Σ (of_sous_traitance.cout_prestation_ht)
++ ventilation frais fixes atelier (amortissement machines, énergie, frais généraux)
 ```
 
-`postes_travail.taux_horaire_main_oeuvre` (config Paramètre Fabrication).
+`of_couts` snapshot : `cout_mp_reel_ht`, `cout_mo_reel_ht`, `cout_ss_traitance_reel_ht`, `cout_frais_fixes_ht`, `cout_total_reel_ht`, `cout_theorique_ht`, `ecart_ht`, `ecart_pct`, `cout_unitaire_reel_ht`.
 
-**Écart** : `cout_reel - cout_theorique` — analyse en dashboard.
+Alimente rétroactivement `articles.prix_reviens` (moyenne mobile ou PMP configurable).
 
-`of_couts` (snapshot à clôture) :
-
-| Colonne | Type | Note |
-|---|---|---|
-| `id_of` | FK PK | |
-| `cout_mp_reel_ht` | numeric(14,3) | |
-| `cout_mo_reel_ht` | numeric(14,3) | main d'œuvre |
-| `cout_ss_traitance_reel_ht` | numeric(14,3) | |
-| `cout_frais_fixes_ht` | numeric(14,3) | |
-| `cout_total_reel_ht` | numeric(14,3) | |
-| `cout_theorique_ht` | numeric(14,3) | |
-| `ecart_ht` | numeric(14,3) | |
-| `ecart_pct` | numeric(6,2) | |
-| `cout_unitaire_reel_ht` | numeric(14,3) | `cout_total / quantite_produite` |
-
-Ce coût unitaire réel alimente rétroactivement `articles.prix_reviens` (moyenne mobile ou PMP configurable).
-
-### 4ter.10 Cycle de vie complet d'un OF
+### 7.14 Cycle de vie complet OF
 
 ```
-CREATION (par CHEF_PRODUCTION ou auto depuis §5.2 commande validée)
+CREATION (par CHEF_PRODUCTION ou auto depuis §8.9 commande validée)
+        │  BOM figée, gamme copiée, of_consommations initialisées
+        ▼
+brouillon → planifie (attribution machine + génération slots Prep MP)
         │
-        │  BOM figée, gamme copiée, etapes créées
         ▼
-BROUILLON → PLANIFIE
-        │
-        │  Vérification MP dispo (via §4bis.6 réservations)
+en_attente_mp (si MP manque)
+        │  Attribution auto FIFO + Préparation MP par Magasinier MP
+        │  scan QR bobines par sélecteur S01–S08
         ▼
-EN_ATTENTE_MP (si manque) ─ MP livrées ► PLANIFIE
-        │
-        │  Démarrage 1er pointage
+Etat Prep MP = Préparé, Etat Tissage = Attente
+        │  Tisseur démarre le métier
         ▼
-EN_COURS
-        │  Étapes séquentielles avec pointages tisseurs/coupeurs
-        │  Consommations MP en temps réel
-        │  Contrôles qualité aux jalons
-        │  Éventuellement sous-traitance (§4ter.7)
+Etat Tissage = Départ → En cours (pointages: pause, panne, casse, changement fil, ensouple…)
+        │  Alerte automatique si compteur passe sous 500m restants
         ▼
-PRET (dernière étape finie, en attente entrée stock)
-        │
-        │  Génération lot produit (id_lot) + mouvement `entree_fabrication`
+Etat Tissage = Terminé
+        │  Rouleau arrive au poste Coupe
         ▼
-TERMINE
-        │
-        │  Calcul cout_reel, mise à jour prix_reviens article
+Etat Coupe = En cours → Terminé (comptages: 1re, 2e, ourlet, déchet)
+        │  Étiquettes lot imprimées (§7.20)
         ▼
-CLÔTURÉ (immutable)
+OF terminé
+        │  Génération lot produit + mouvement entree_fabrication
+        │  Calcul cout_reel + MAJ prix_reviens
+        ▼
+CLÔTURÉ (immuable)
 ```
 
-### 4ter.11 Endpoints Fabrication
+### 7.15 Compléments (sous-OF `.1`)
+
+Si qté 1er choix < qté commandée, le CHEF_ATELIER demande un complément :
+- Sous-OF créé avec `numero_of` = OF parent + `.1` (ex `OF249780.1`)
+- `type_of='complement'`, `id_of_parent` renseigné
+- Priorité forcée `urgente`, `ordre_planif_machine = 0` (tête de file)
+- Refus possible par TISSEUR avec `motif_refus_complement`
+
+### 7.16 Attribution & Préparation MP
+
+**Attribution** (auto) :
+- FIFO sur lots disponibles (le plus ancien d'abord)
+- Ou proximité colorimétrique (continuité chromatique)
+- Réattribuable manuellement par MAGASINIER_MP
+- Crée `reservations_stock` sur lots choisis
+
+**Préparation** (physique — Magasinier MP §14.4) :
+1. Ouvre l'OF → liste bobines attribuées avec emplacement
+2. Scan QR bobine → vérification code cohérent
+3. Rassemble kit dans atelier prep MP
+4. "Kit prêt" → OF passe `etat_preparation_mp = Préparé` → tissage débloqué
+5. Génère `mouvement_stock` `transfert_entrepot` MP → poste tissage
+
+### 7.17 Ourdissage
+
+**Constantes** :
+- Alerte machine à **< 500 m restants** (seuil `OURD_SEUIL_ALERTE`)
+- Plafond ensouple **5000 m** (`OURD_METRAGE_MAX_ENSOUPLE`)
+
+**Formule poids fil chaîne** :
 
 ```
-BOM         : /api/bom                       GET|POST|PUT|DELETE
-              /api/bom/:id/lignes            CRUD
-              /api/bom/:id/activer           POST (rend cette version active)
-              /api/articles/:id/bom          GET (BOM active)
-
-Gammes      : /api/gammes                    GET|POST|PUT|DELETE
-              /api/gammes/:id/etapes         CRUD
-
-Machines    : /api/machines                  GET|POST|PUT|DELETE
-              /api/machines/:id/planning     GET (créneaux)
-              /api/machines/:id/etat         GET (dernière panne, dernier op)
-
-OF          : /api/of                        GET|POST|PUT|DELETE
-              /api/of/:id                    GET (détail complet)
-              /api/of/:id/lancer             POST (planifie → en_cours)
-              /api/of/:id/pause / :id/reprendre / :id/annuler
-              /api/of/:id/terminer           POST (calcule cout, génère lot)
-              /api/of/:id/etapes             CRUD
-              /api/of/:id/consommations      GET|POST (saisie manuelle si scanner HS)
-              /api/of/:id/pointages          GET
-              POST /api/of-etapes/:id/pointer  (opérateur tablette : type_event)
-
-Contrôle Q  : /api/of/:id/controles          GET|POST
-              /api/of-etapes/:id/controles   CRUD
-              /api/controles-qualite/:id/action  POST (laisser_passer / rework / rebut)
-
-Sous-trait  : /api/of/:id/sous-traiter       POST
-              /api/of-sous-traitance         GET|POST|PUT
-              /api/of-sous-traitance/:id/retour  POST
-
-Planning    : /api/planning                  GET (période + filtres)
-              PUT /api/of-etapes/:id/replanifier  (drag-drop)
-
-Coûts       : /api/of/:id/couts              GET
-              /api/rapports/ecarts-cout      GET (dashboard analyse)
+poids_kg = (nb_fils_chaine × metres × 2) / (NM × 1000)
 ```
 
-### 4ter.12 Impacts sur les autres phases
+Où NM = numéro métrique (grosseur), extrait comme dernier entier du code (ex `NM2/50` → 50, défaut 50).
 
-- **§4bis Stock** : OF consomme MP (mouvement `sortie_of`) et produit PF (mouvement `entree_fabrication`) avec `id_lot` généré. `stock_article_entrepot` mis à jour atomiquement.
-- **§5.2 Ventes** : si la commande validée requiert un article non-en-stock, le système propose de créer un OF (workflow existant à réutiliser). L'OF terminé alimente le stock et libère la sortie vente.
-- **§6.2 Magasinier Préparation** : les articles en fabrication apparaissent à l'état `en_fabrication` avec avancement (%) et OF cliquable → détail.
-- **§8 Communications** : chaque changement de statut OF peut déclencher une notification (ex `bloque_qc` → chef de production + admin).
+**Workflow** :
+1. Chef Prod / Ourdisseur ouvre l'onglet Ourdissage
+2. Sur machine en alerte → clic "Préparer Ensouple"
+3. Sélection lot MP, saisie sous-traitant / NM / métrage cible (≤ 5000)
+4. Poids consommé calculé auto côté client
+5. Soumission → sortie MP (Stock → Ourdissage)
+6. Retour physique ensouple → réception avec métrage effectif + machine + date nouage
+7. Consommation progressive à mesure que les OF de la machine avancent
+8. Alerte quand restant < 500 m
+
+**Liaison ensouple ↔ OF** : implicite via `id_machine`. Les OF de cette machine consomment le métrage préparé.
+
+### 7.18 Tissage
+
+**Snapshot temps réel `OFs_Tissage`** (37 colonnes dénormalisées) — pattern architectural clé :
+- Pré-calculé pour dashboards temps réel
+- Contient : numOF, machine, ordre, produit, dimensions, client, qtés (à fab / fabriquée / restante), unité compteur, longueur, compteur, états Prep MP / Tissage / Coupe, Coupe Confirme, vitesse, duites/cm, laize, machines compatibles, notes
+
+**Rafraîchi** par `rafraichirSnapshotOFsTissage` déclenché sur pointages et modifications OF.
+
+**Formules opérationnelles** :
+
+```
+duites_restantes = nb_duites_total × (quantite_restante / quantite_prevue)
+temps_restant_min = arrondi(duites_restantes / vitesse_machine_duite_min)
+metres_restants = longueur_cible − compteur_actuel
+```
+
+Alerte automatique si `metres_restants` passe sous **500 m** tout en étant au-dessus avant → messagerie inter-postes `type=tissage_restant_500m`, destination `planification` (§12).
+
+### 7.19 Coupe
+
+**Journal de pièces** — pas de rouleaux, pas de longueurs, pas de rendement matière.
+
+Ligne coupe = `{numOF, operateur, date, qte_prem, qte_deux, dechet, approuve, ourlet, type, terminal, etat, photoUrl}`.
+
+**Calculs fiche OF** :
+
+```
+total_controle = qte_prem + qte_deux + dechet + ourlet
+qte_acceptee = qte_prem + approuve
+fabrique = qte_prem + approuve
+reste = max(0, qte_a_fab − fabrique)
+surplus = max(0, fabrique − qte_a_fab)
+taux_2eme_choix = qte_deux / qte_prem
+taux_dechet = dechet / qte_prem
+```
+
+**Signalements urgents** vers tissage :
+- `qte_manquante` — coupe finit avec `Terminé Qte Manquante` → demande complément (§7.15)
+- `fab_changee` — article coupé ≠ article planifié
+
+**Fin de coupe** enchaîne :
+1. `maj_surplus_deuxieme_of` (surplus + qte_deux stockés)
+2. `etat_coupe = Terminé`
+3. Optionnel `etat_tissage = Terminé` (demander clôture tissage)
+4. Impression étiquettes lot (§7.20)
+
+### 7.20 Étiquettes lot
+
+**Composant réutilisable** (déjà existant legacy `EtiquettesSuiviOF.html`) :
+
+- **Format A4 : 2 × 4 = 8 étiquettes/page**, marge 4 mm
+- Génération QR via **QRious v4.0.2** (lib JS) + fallback `api.qrserver.com`
+- **5 pièces / étiquette** par défaut, configurable via ScriptProperty `ETIQ_PIECES_PAR_LOT`
+
+**Structure étiquette** :
+- Bandeau : identifiant lot (numOF + suffixe), modèle vertical, QR central, quantité, ref commerciale
+- Barre statut : séq · type (Standard/Urgent/Prioritaire/Surplus/2ᵉ choix couleurs dédiées) · cumul/total
+- Corps : cases Contrôle Qualité, Num Client, Num Cmd, Modèle, Ref Com, Dim, ligne jaune Person
+- Pied : libellé produit
+
+**Suffixes numSuivi** :
+- `-1, -2, ...` : standard
+- `-SUR01, -SUR02` : surplus
+- `-DEU01, -DEU02` : 2ᵉ choix
+
+**Quand imprimées** :
+- Fin de coupe (modal `coupeFinEtiquettesModal`) : surplus + 2ᵉ choix
+- Fin de fabrication (modal `coupeSaisieFinModal`) : standard + surplus + 2ᵉ choix
+- Depuis la planification (`planImprimerEtiquettesFab`) : pré-impression standard
+
+### 7.21 Formules opérationnelles récap
+
+| Concept | Formule |
+|---|---|
+| Poids fil chaîne (kg) | `(nb_fils × metres × 2) / (NM × 1000)` |
+| Duites restantes | `nb_duites × (qte_restante / qte_prevue)` |
+| Temps restant tissage (min) | `duites_restantes / vitesse_machine_duite_min` |
+| Mètres tissés OF | `qte_coupe_totale × longueur_tissage` |
+| Métrage restant machine | `Σ ensouples − Σ OFs consommés` |
+| Alerte tissage | `metres_restants < 500` |
+| Plafond ensouple | `metrage ≤ 5000` |
+| Total coupe | `qte_prem + qte_deux + dechet + ourlet` |
+| Qte acceptée | `qte_prem + approuvee` |
+| Besoin sélecteur (kg) | `bom_ligne.quantite × of.quantite_prevue` (arrondi 3 déc.) |
+| Écart consommation | `poids_reel − poids_theorique` |
+| Progression OF (%) | `round(etapes_done / 3 × 100)` — 3 étapes clés (Prep MP, Tissage, Coupe) |
+| Coût réel OF | `Σ MP réelles + Σ MO pointages + Σ ST + frais fixes ventilés` |
+
+### 7.22 Endpoints Fabrication
+
+```
+BOM         GET|POST|PUT|DELETE  /api/bom
+            GET  /api/articles/:id/bom           — BOM active
+
+Gammes      GET|POST|PUT|DELETE  /api/gammes
+            GET|POST|PUT|DELETE  /api/gammes/:id/etapes
+
+Machines    GET|POST|PUT|DELETE  /api/machines
+            GET  /api/machines/:id/planning      — créneaux
+            GET  /api/machines/:id/etat          — état + dernier op
+
+OF          GET|POST|PUT|DELETE  /api/of
+            GET  /api/of/:id                     — détail complet
+            POST /api/of/:id/lancer              — brouillon → planifie
+            POST /api/of/:id/attribuer-machine   — assigne machine + génère slots MP
+            POST /api/of/:id/alimenter-machine   — MAJ slots MP (Magasinier MP)
+            POST /api/of/:id/retour-mp
+            POST /api/of/:id/reordonner-planif
+            POST /api/of/:id/terminer            — calcul cout + génère lot
+            GET|POST  /api/of/:id/etapes
+            GET|POST  /api/of/:id/consommations
+            GET       /api/of/:id/pointages
+            POST      /api/of-etapes/:id/pointer
+
+Contrôle Q  GET|POST  /api/of/:id/controles
+            POST      /api/controles-qualite/:id/action
+
+Sous-trait  POST      /api/of/:id/sous-traiter
+            GET|POST|PUT  /api/bons-sortie-st
+            POST      /api/bons-sortie-st/:id/expedier
+            POST      /api/bons-sortie-st/:id/retour
+            GET       /api/litiges-st
+
+Planning    GET       /api/planning              — période + filtres
+            PUT       /api/of-etapes/:id/replanifier   — drag-drop
+            GET       /api/of-tissage-snapshot   — temps réel
+
+Ourdissage  GET       /api/ourdissage
+            POST      /api/ourdissage/ordre       — créer ordre préparation
+            POST      /api/ourdissage/:id/receptionner
+            PUT       /api/ourdissage/:id/metrage
+
+Étiquettes  POST      /api/etiquettes/generer     — génère PDF étiquettes lot
+
+Coûts       GET       /api/of/:id/couts
+            GET       /api/rapports/ecarts-cout
+```
 
 ---
 
-## 5. Ventes (Phase 3)
+## 8. Ventes (Phase 3)
 
-### 5.1 Documents et transitions
+### 8.1 Documents et transitions
 
 ```
-Devis ─(accepté)─▶ Commande ─(préparée)─▶ Liste colisage ─▶ Bon de livraison ─(livré)─▶ Facture ─(payée)─▶ ✓
-                        │                                                                 │
-                        └─▶ Palette (regroupement)                                        ├─▶ Avoir
-                                                                                          └─▶ Bon de retour
+Devis ─(accepté)─▶ Commande ─(préparée)─▶ Liste colisage ─▶ Bon livraison ─(livré)─▶ Facture ─(payée)─▶ ✓
+                        │                                                                   │
+                        └─▶ Palette (regroupement)                                          ├─▶ Avoir
+                                                                                            └─▶ Bon de retour
 ```
 
-### 5.2 Statuts par document
+### 8.2 Statuts par document
 
-- **Devis** : `brouillon` → `envoye` → `accepte` / `refuse` / `expire` / `transforme`
-- **Commande** : `en_attente` → `validee` → `en_preparation` → `pretes_a_expedier` → `expediee` → `livree_partiel` → `livree` / `annulee`
-- **BL** : `brouillon` → `en_preparation` → `pret` → `expedie` → `livre` / `retour_partiel`
-- **Colis** : `en_preparation` → `emballe` → `pese` → `expedie` → `livre` / `perdu` / `retour`
+- **Devis** : `brouillon` → `envoye` → `accepte` \| `refuse` \| `expire` \| `transforme`
+- **Commande** : `en_attente` → `validee` → `en_preparation` → `pretes_a_expedier` → `expediee` → `livree_partiel` → `livree` \| `annulee`
+- **BL** : `brouillon` → `en_preparation` → `pret` → `expedie` → `livre` \| `retour_partiel`
+- **Colis** : `en_preparation` → `emballe` → `pese` → `expedie` → `livre` \| `perdu` \| `retour`
 - **Palette** : `en_composition` → `fermee` → `expediee` → `arrivee_hub_marseille` → `redistribuee`
-- **Facture** : `brouillon` → `emise` → `payee_partiel` → `payee` / `annulee`
-- **Avoir** : `brouillon` → `emis` → `applique` / `annule`
-- **Bon de retour** : `brouillon` → `en_traitement` → `traite` / `refuse`
+- **Facture** : `brouillon` → `emise` → `payee_partiel` → `payee` \| `annulee`
+- **Avoir** : `brouillon` → `emis` → `applique` \| `annule`
+- **Bon retour** : `brouillon` → `en_traitement` → `traite` \| `refuse`
 
-### 5.2bis Transformation d'une ligne de commande en OF
-
-À la validation d'une commande, le système analyse **chaque ligne** et propose une action.
-
-#### Étape 1 — analyse stock automatique (côté backend)
-
-Pour chaque ligne `id_article + quantite_commandee` :
-
-1. Lit `stock_article_entrepot` : quelle quantité disponible immédiatement dans les entrepôts autorisés (typiquement `entrepot_principal`) ?
-2. Lit `ordres_fabrication` en cours pour cet article : quelle quantité arrive bientôt ?
-3. Calcule `qte_a_fabriquer = quantite_commandee - qte_reservable_stock - qte_of_en_cours_disponible`.
-4. Retourne pour chaque ligne un **plan proposé** :
-   - `qte_depuis_stock` (à réserver immédiatement)
-   - `qte_depuis_of_existants` (à réserver sur OF non encore engagés)
-   - `qte_a_fabriquer` (nouveau OF à créer)
-
-#### Étape 2 — écran "Aperçu OF" (côté commercial ou ADMIN)
-
-Une modale présente le plan par ligne :
-
-| Ligne | Article | Qté cmdée | Qté stock | Qté OF existant | Qté à fabriquer | Action |
-|---|---|---|---|---|---|---|
-| 1 | `AR1020-B02-03` | 100 | 40 (réservable) | 20 (OF-2026-0812) | 40 | Créer OF |
-| 2 | `AR1020-B04-01` | 50 | 50 | 0 | 0 | Tout en stock ✓ |
-| 3 | `IB2020-B06-01` | 30 | 0 | 0 | 30 | Créer OF |
-
-L'utilisateur peut :
-
-- **Ajuster** la répartition (par ex forcer 20 unités de plus depuis stock si dispo, ou tout mettre en OF neuf pour date meilleure).
-- **Regrouper** plusieurs lignes du même article dans **un seul OF** (batching) — utile si 3 clients commandent le même article la même semaine.
-- **Choisir la priorité** de l'OF (`normale` / `haute` / `urgente`) — souvent héritée de la commande, mais surchargeable.
-- **Choisir la date de fabrication prévue** (auto-calculée à partir de `date_livraison_prevue` de la commande − buffer transport + délai fab).
-
-#### Étape 3 — validation → création des OF
-
-Au clic "Valider le plan", le système :
-
-1. Crée les **réservations stock** (§4bis.6) sur les quantités venant du stock ou des OF existants.
-2. Crée les **nouveaux OF** en statut `brouillon` avec :
-   - `id_commande`, `id_ligne_commande` (rétro-lien).
-   - `id_article`, `quantite_prevue`.
-   - `id_bom` = BOM active de l'article (snapshot §4ter.4).
-   - `id_gamme` = gamme active de l'article.
-   - `priorite`, `date_fin_prevue` calculée.
-   - Etapes copiées, BOM et fournitures snapshotées dans `of_consommations`.
-3. Retourne au chef de production, qui planifie (§4ter.8) puis lance (`brouillon` → `planifie` → `en_attente_mp`).
-
-#### Étape 4 — pilotage ligne par ligne côté commande (drill-down)
-
-Sur la fiche commande, chaque ligne affiche **son état de fabrication** en direct :
-
-- ✓ En stock (dispo, prêt à expédier).
-- ⏳ Réservé sur OF `OF-XXXX` (avancement 45 %).
-- 🏭 Nouveau OF `OF-YYYY` (statut `en_attente_mp`, avancement 0 %).
-- ⚠️ Retard prévu (OF en retard vs date livraison) → alerte au commercial.
-
-**Drill-down** — la ligne est cliquable :
-
-- 1er clic → carte détaillée : liste des OF couvrant la ligne, avancement de chacun sous forme de barre (0-100 %), étape en cours (`Prep MP` / `Tissage` / `Coupe` / `Frange` / `Contrôle` / `Emballage`), date fin prévue, écarts avec date livraison client.
-- 2ème clic sur un OF → fiche OF complète (§4ter.4) avec toutes les étapes, le kit MP, les pointages, les contrôles qualité, l'affectation machine.
-
-Le commercial voit ainsi **de la commande jusqu'à la ligne, jusqu'au poste de travail**, sans avoir besoin de contacter l'atelier.
-
-**Règles** :
-
-- 1 ligne commande peut être couverte par **plusieurs OF** (si batching partiel) OU 1 OF unique.
-- 1 OF peut couvrir **plusieurs lignes** de commandes différentes (batching multi-clients) — le PF produit est ensuite réparti à l'expédition selon les réservations.
-- L'annulation d'une commande **ne** supprime **pas** un OF en cours (perte fabrication) — la production continue et le PF entre en stock disponible.
-
-### 5.3 Livraison croisée (client A commande, client B reçoit)
+### 8.3 Livraison croisée (client A commande, client B reçoit)
 
 Sur `commandes` et `bons_livraison` :
+- `id_client` = qui commande / qui est facturé
+- `id_adresse_facturation` = adresse facturation
+- `id_client_livraison` = qui reçoit (nullable, défaut = id_client)
+- `id_adresse_livraison` = adresse chez id_client_livraison
 
-- `id_client` = qui commande / qui est facturé (par défaut).
-- `id_adresse_facturation` = adresse de facturation.
-- `id_client_livraison` = qui reçoit (nullable, défaut = `id_client`).
-- `id_adresse_livraison` = adresse chez `id_client_livraison`.
+BL affiche "Livré à : <nom_livraison> — <adresse>".
+Facture ne concerne QUE `id_client`.
 
-Affichage BL : "Livré à : <nom_client_livraison> — <adresse_livraison>" bien visible.
-Affichage facture : ne concerne QUE `id_client`.
+### 8.4 Lignes de document
 
-### 5.4 Lignes de document
-
-Toutes les tables `<doc>_lignes` :
+Toutes les `<doc>_lignes` (devis, commandes, BL, factures, avoirs, retours) :
 
 | Colonne | Type | Note |
 |---|---|---|
-| `id_article` | FK | requis |
-| `designation_snapshot` | varchar(300) | copie à l'instant t (immuable après validation) |
+| `id_article` | FK | |
+| `designation_snapshot` | varchar(300) | copie immuable après validation |
 | `quantite` | numeric(14,3) | |
 | `prix_unitaire_ht` | numeric(14,3) | après grille tarifaire |
-| `remise_pct` | numeric(5,2) | ligne spécifique |
+| `remise_pct` | numeric(5,2) | ligne |
 | `taux_tva` | numeric(5,2) | |
-| `montant_ht` | numeric(14,3) | calculé |
-| `montant_tva` | numeric(14,3) | |
-| `montant_ttc` | numeric(14,3) | |
+| `montant_ht` / `montant_tva` / `montant_ttc` | numeric(14,3) | calculés |
 
-### 5.5 Frais de port
+### 8.5 Frais de port
 
-Chaque en-tête de document (`devis`, `commandes`, `factures`, `avoirs`) porte les frais de port **hors HT article** — important car les commissions se calculent sur le HT hors port.
+En-tête de document :
 
 | Colonne | Type | Note |
 |---|---|---|
-| `frais_port_ht` | numeric(14,3) | montant HT du transport |
-| `taux_tva_port` | numeric(5,2) | TVA appliquée au port |
-| `frais_port_ttc` | numeric(14,3) | calculé |
-| `id_transporteur` | FK transporteurs | transporteur prévu (voir §5.7) |
-| `mode_transport` | enum | `routier` / `maritime` / `aerien` / `express` |
-| `type_conditionnement` | enum | `colis` / `palette` / `groupage` |
-| `montant_ht_total` | numeric(14,3) | somme lignes HT (base commission) |
-| `montant_ttc_total` | numeric(14,3) | `montant_ht_total + frais_port_ht + toutes TVA` |
+| `frais_port_ht` | numeric(14,3) | |
+| `taux_tva_port` | numeric(5,2) | |
+| `frais_port_ttc` | numeric(14,3) | |
+| `id_transporteur` | FK transporteurs | |
+| `mode_transport` | enum | `routier` \| `maritime` \| `aerien` \| `express` |
+| `type_conditionnement` | enum | `colis` \| `palette` \| `groupage` |
+| `montant_ht_total` | numeric(14,3) | Σ lignes HT (base commission) |
+| `montant_ttc_total` | numeric(14,3) | |
+| `timbre_fiscal_dt` | numeric | 1 DT (facture Tunisie) |
 
-Table `tarifs_transport` (grille configurable, ADMIN) :
+`tarifs_transport` (grille configurable ADMIN) :
 
 | Colonne | Type | Note |
 |---|---|---|
 | `id_tarif_transport` | serial PK | |
 | `id_transporteur` | FK | |
-| `mode` | enum | `routier`... |
-| `zone` | enum | `tunisie_france` / `france_domicile` / `europe` / ... |
-| `poids_min_kg` / `poids_max_kg` | numeric(10,3) | palier de poids |
+| `mode` | enum | |
+| `zone` | enum | `tunisie_france` \| `france_domicile` \| `europe` \| `international` |
+| `poids_min_kg` / `poids_max_kg` | numeric | palier poids |
 | `prix_ht` | numeric(14,3) | |
 | `actif` | bool | |
 
-### 5.6 Liste de colisage
+### 8.6 Liste de colisage
 
-Chaque BL a une **liste de colisage** = les colis (ou palettes) qui composent physiquement l'envoi.
+Chaque BL a une liste de colisage.
 
 `colis` :
 
 | Colonne | Type | Note |
 |---|---|---|
 | `id_colis` | serial PK | |
-| `numero_colis` | varchar(30) unique | **format `C<3 derniers chiffres id_client>-<3 derniers chiffres id_commande>-<NNN>`** (ex `C234-567-001`) |
+| `numero_colis` | varchar(30) unique | `C{3 der. chiff. client}-{3 der. chiff. commande}-{NNN}` (ex `C234-567-001`) |
 | `id_bl` | FK bons_livraison | |
-| `id_palette` | FK palettes | nullable — colis peut être groupé dans une palette |
-| `id_client_final` | FK comptes | destinataire final (peut différer de bl.id_client_livraison en cas de dispatch Marseille) |
-| `poids_kg` | numeric(10,3) | pesée à l'expédition |
+| `id_palette` | FK palettes | nullable |
+| `id_client_final` | FK comptes | destinataire final |
+| `poids_kg` | numeric(10,3) | pesée expédition |
 | `dimensions_cm` | varchar(50) | LxlxH |
-| `photo_url` | varchar(500) | photo obligatoire du colis (contenu ou emballage) |
-| `numero_suivi_transporteur` | varchar(80) | tracking GLS / Chronopost / etc. |
-| `id_transporteur` | FK transporteurs | |
-| `statut` | enum | voir §5.2 |
-| `date_expedition` | timestamp | |
-| `date_livraison` | timestamp | |
+| `photo_url` | varchar(500) | **obligatoire** (photo colis) |
+| `numero_suivi_transporteur` | varchar(80) | tracking GLS / Chronopost |
+| `id_transporteur` | FK | |
+| `statut` | enum | |
+| `date_expedition` / `date_livraison` | timestamp | |
 
-`colis_articles` (contenu d'un colis, saisi par scan) :
+`colis_articles` (scan) :
 
 | Colonne | Type | Note |
 |---|---|---|
 | `id` | serial PK | |
 | `id_colis` | FK | |
-| `id_article` | FK | article scanné |
+| `id_article` | FK | |
+| `id_lot` | FK lots_articles | |
 | `quantite` | numeric(14,3) | |
-| `id_ligne_bl` | FK | rapprochement automatique colis ↔ ligne BL |
+| `id_ligne_bl` | FK | rapprochement |
 | `scanne_par` | FK utilisateurs | |
 | `scanne_le` | timestamp | |
 
-**Workflow magasinier** :
-1. Ouvre une commande à préparer.
-2. Crée un colis (numéro auto), sélectionne un article, **scanne** son code, saisit la quantité, prend une photo.
-3. Répète jusqu'à couverture des lignes commande.
-4. Ferme le colis (poids/dimensions). Le système marque la couverture.
-5. Peut regrouper plusieurs colis d'un même envoi dans une **palette** (§5.7).
+**Workflow magasinier prépa** :
+1. Ouvre commande → mag prépa liste articles à préparer
+2. Crée un colis (numéro auto)
+3. Sélectionne un article, **scan** son code, saisit qté, prend **photo obligatoire**
+4. Répète jusqu'à couverture des lignes
+5. Ferme colis (poids/dimensions)
+6. Regroupe colis d'un envoi en palette si besoin
 
-### 5.7 Palettes & Transporteurs
-
-**Cas d'usage typique** : un client français commande, mais fait livrer ses propres clients en France/Europe. Envoi groupé sur palette Tunisie→Marseille, puis redistribution en colis depuis Marseille.
+### 8.7 Palettes & Transporteurs
 
 `palettes` :
 
 | Colonne | Type | Note |
 |---|---|---|
 | `id_palette` | serial PK | |
-| `numero_palette` | varchar(30) unique | `PAL-YYYY-NNNN` |
-| `id_transporteur_amont` | FK transporteurs | Vectorys, Dachser, Germanetti (TN → Marseille) |
+| `numero_palette` | varchar(30) unique | `PAL{YY}-{seq}` (SEQ annuel) |
+| `id_transporteur_amont` | FK | Vectorys / Dachser / Germanetti (TN → Marseille) |
 | `numero_suivi_amont` | varchar(80) | |
 | `hub_arrivee` | varchar(100) | `Marseille` |
-| `date_expedition` | date | |
-| `date_arrivee_hub` | date | |
-| `statut` | enum | voir §5.2 |
+| `date_expedition` / `date_arrivee_hub` | date | |
+| `statut` | enum | |
 | `poids_kg` | numeric(10,3) | |
 
 `transporteurs` :
@@ -1668,648 +1473,924 @@ Chaque BL a une **liste de colisage** = les colis (ou palettes) qui composent ph
 | `id_transporteur` | serial PK | |
 | `code` | varchar(30) unique | `GLS`, `DHL`, `UPS`, `COLISSIMO`, `BESSON`, `MAZET`, `VECTORYS`, `DACHSER`, `GERMANETTI` |
 | `libelle` | varchar(100) | |
-| `mode` | enum | `routier` / `maritime` / `aerien` / `express` |
-| `type` | enum | `colis` / `palette` / `groupage` |
-| `zone_geographique` | enum | `tunisie_france` / `france_domicile` / `europe` / `international` |
-| `api_url_suivi` | varchar(300) | endpoint API de tracking |
-| `api_auth_type` | enum | `none` / `api_key` / `oauth` |
-| `api_credentials_json` | jsonb | secret chiffré |
-| `format_num_suivi` | varchar(50) | regex de validation |
+| `mode` | enum | `routier` \| `maritime` \| `aerien` \| `express` |
+| `type` | enum | `colis` \| `palette` \| `groupage` |
+| `zone_geographique` | enum | `tunisie_france` \| `france_domicile` \| `europe` \| `international` |
+| `api_url_suivi` | varchar(300) | |
+| `api_auth_type` | enum | `none` \| `api_key` \| `oauth` |
+| `api_credentials_json` | jsonb (chiffré) | |
+| `format_num_suivi` | varchar(50) | regex |
 | `actif` | bool | |
 
-**Suivi transporteur** : job planifié `node-cron` qui interroge périodiquement l'API de chaque transporteur pour les colis/palettes en cours et met à jour `statut` + `date_livraison`. Endpoint manuel `POST /api/colis/:id/refresh-tracking` pour forcer.
+**Seed transporteurs** : VECTORYS / DACHSER / GERMANETTI (tunisie_france groupage) · GLS (principal) / DHL / UPS / COLISSIMO (france_domicile colis) · BESSON / MAZET (france_domicile palette).
 
-**Transporteurs pré-remplis** (seed initial) :
+**Suivi automatique** : job cron interroge périodiquement API transporteurs pour colis/palettes en cours → MAJ statut + date_livraison.
 
-| Code | Mode | Type | Zone |
-|---|---|---|---|
-| VECTORYS | routier | groupage | tunisie_france |
-| DACHSER | routier | groupage | tunisie_france |
-| GERMANETTI | routier | groupage | tunisie_france |
-| GLS | routier | colis | france_domicile (principal) |
-| DHL | express | colis | france_domicile |
-| UPS | express | colis | france_domicile |
-| COLISSIMO | routier | colis | france_domicile |
-| BESSON | routier | palette | france_domicile |
-| MAZET | routier | palette | france_domicile |
+### 8.8 Transformation ligne commande → OF
 
-### 5.8 Endpoints Ventes
+À la validation d'une commande, système analyse chaque ligne :
 
-```
-Devis         : /api/devis                 GET|POST|PUT|DELETE
-                /api/devis/:id/envoyer /:id/transformer /:id/pdf
+1. `qte_stock` (réservable immédiatement) + `qte_of_existants` + `qte_a_fabriquer`
+2. Écran "Aperçu OF" : plan par ligne, ajustable, regroupement multi-lignes, priorité, date fab
+3. Validation → création `reservations_stock` + nouveaux OF en `brouillon`
+4. Le chef prod planifie ensuite (§7.12)
 
-Commande      : /api/commandes             GET|POST|PUT|DELETE
-                /api/commandes/:id/valider /:id/generer-bl /:id/pdf
+Drill-down commercial : commande → ligne → OF → étape → poste → machine.
 
-BL            : /api/bl                    GET|POST|PUT|DELETE
-                /api/bl/:id/expedier /:id/livrer /:id/generer-facture /:id/pdf
-
-Colisage      : /api/colis                 GET|POST|PUT|DELETE
-                /api/colis/:id/ajouter-article  (scan)
-                /api/colis/:id/photo            (upload)
-                /api/colis/:id/refresh-tracking
-
-Palettes      : /api/palettes              GET|POST|PUT|DELETE
-                /api/palettes/:id/ajouter-colis
-                /api/palettes/:id/fermer /:id/expedier
-
-Transporteurs : /api/transporteurs         GET|POST|PUT|DELETE  (ADMIN)
-
-Frais port    : /api/tarifs-transport      GET|POST|PUT|DELETE  (ADMIN)
-                (grille : mode × zone × poids → tarif)
-
-Facture       : /api/factures              GET|POST|PUT|DELETE  (POST/PUT/DELETE ADMIN)
-                /api/factures/:id/emettre /:id/payer /:id/pdf
-
-Avoir         : /api/avoirs                ADMIN only pour POST/PUT/DELETE
-
-Bon de retour : /api/retours               GET|POST|PUT|DELETE
-                /api/retours/:id/traiter /:id/generer-avoir
-```
-
-### 5.9 Facturation — règle stricte
+### 8.9 Facturation — règles strictes
 
 - **Seul un ADMIN** peut :
-  - passer un devis à `accepte` définitif
-  - émettre une facture (`brouillon` → `emise`)
-  - émettre un avoir
-  - marquer une commission comme versée (§6)
-  - enregistrer un paiement client (§5.10)
-- **COMMERCIAL** : voit ses factures + paiements + échéances en lecture seule pour suivi.
+  - Passer un devis à `accepte`
+  - Émettre une facture (`brouillon` → `emise`)
+  - Émettre un avoir
+  - Marquer une commission versée
+- **COMMERCIAL** voit ses factures + paiements + échéances en lecture seule pour suivi
 
-### 5.10 Paiements & Échéances
+**Facturation multi-BL** : plusieurs BL du **même client** peuvent être regroupés dans une facture unique (`facturer_bl_selection_en_une_facture`).
 
-Chaque facture peut être payée en une ou plusieurs fois (échéances). Le système suit qui a payé quoi, quand, ce qui reste, et déclenche des relances automatiques.
+**Timbre fiscal** : 1 DT ajouté automatiquement sur factures Tunisie (§13.1).
+
+### 8.10 Paiements & Échéances
 
 `echeances` (échéances prévues d'une facture) :
 
 | Colonne | Type | Note |
 |---|---|---|
 | `id_echeance` | serial PK | |
-| `id_facture` | FK factures | |
-| `numero_echeance` | int | 1, 2, 3... pour une facture multi-échéances |
-| `date_echeance` | date | date à laquelle le paiement est dû |
-| `montant_du` | numeric(14,3) | montant TTC prévu pour cette échéance |
-| `mode_paiement_prevu` | enum | `virement` / `cheque` / `especes` / `traite` / `carte` |
-| `statut` | enum | `a_payer` / `paye_partiel` / `paye` / `en_retard` / `annule` |
-| `montant_paye` | numeric(14,3) | somme des paiements associés (dénormalisé) |
+| `id_facture` | FK | |
+| `numero_echeance` | int | 1, 2, 3… |
+| `date_echeance` | date | |
+| `montant_du` | numeric(14,3) | TTC prévu |
+| `mode_paiement_prevu` | enum | `virement` \| `cheque` \| `especes` \| `traite` \| `carte` |
+| `statut` | enum | `a_payer` \| `paye_partiel` \| `paye` \| `en_retard` \| `annule` |
+| `montant_paye` | numeric(14,3) | Σ paiements associés |
 | `date_derniere_relance` | timestamp | |
 | `nb_relances` | int | |
 | `note` | text | |
 
-**Génération automatique** : à l'émission d'une facture, on crée les échéances selon les conditions de paiement du client (`conditions_paiement` — table configurable en Paramètre Vente). Ex : "30 % à la commande, 70 % à 30 jours" → 2 échéances.
+Génération auto à l'émission facture selon `conditions_paiement` client (config Paramètre Vente).
 
-`paiements` (paiements réels reçus) :
+`paiements` :
 
 | Colonne | Type | Note |
 |---|---|---|
 | `id_paiement` | serial PK | |
-| `id_client` | FK comptes | qui a payé |
-| `date_paiement` | date | date d'encaissement |
-| `montant` | numeric(14,3) | montant TTC reçu |
-| `mode_paiement` | enum | `virement` / `cheque` / `especes` / `traite` / `carte` |
-| `reference_paiement` | varchar(100) | n° chèque, n° virement, n° traite |
-| `id_bancaire` | FK societe_bancaires | compte crédité (voir §11) |
+| `id_client` | FK | |
+| `date_paiement` | date | |
+| `montant` | numeric(14,3) | TTC reçu |
+| `mode_paiement` | enum | |
+| `reference_paiement` | varchar(100) | n° chèque, virement, traite |
+| `id_bancaire` | FK societe_bancaires | compte crédité (§16) |
 | `note` | text | |
-| `piece_jointe_url` | varchar(500) | scan chèque, avis de virement |
-| `enregistre_par` | FK utilisateurs | ADMIN qui a saisi |
+| `piece_jointe_url` | varchar(500) | scan preuve |
+| `enregistre_par` | FK | ADMIN |
 
-`paiement_echeances` (répartition d'un paiement sur des échéances — un paiement peut couvrir plusieurs échéances OU une échéance peut nécessiter plusieurs paiements partiels) :
+`paiement_echeances` (imputation N-N).
 
-| Colonne | Type | Note |
-|---|---|---|
-| `id` | serial PK | |
-| `id_paiement` | FK | |
-| `id_echeance` | FK | |
-| `montant_impute` | numeric(14,3) | portion du paiement allouée à cette échéance |
+`relances` : historique auto/manuel avec niveaux (`rappel` / `relance` / `mise_en_demeure`), canal, template, réponse client.
 
-**Relances** :
+Job cron quotidien : échéances en retard → relance auto selon politique.
 
-`relances` (historique) :
-
-| Colonne | Type | Note |
-|---|---|---|
-| `id_relance` | serial PK | |
-| `id_echeance` | FK | |
-| `niveau` | enum | `rappel` (0-7j retard) / `relance` (8-30j) / `mise_en_demeure` (>30j) |
-| `canal` | enum | `email` / `whatsapp` / `courrier` |
-| `template_utilise` | varchar(50) | référence template |
-| `envoye_le` | timestamp | |
-| `envoye_par` | FK utilisateurs | ou 'auto' si job planifié |
-| `contenu_snapshot` | text | contenu envoyé |
-| `reponse_client` | text | si retour |
-
-**Job cron** (`node-cron`) tourne quotidiennement, sélectionne les échéances en retard non payées, applique la politique de relance configurée en Paramètre Vente (délais + templates), envoie l'email (ou WhatsApp), crée la ligne `relances`, crée une `interaction`.
-
-**Vue "État de compte client"** (accessible par commercial pour SES clients, par admin partout) :
-
-- Liste factures : émise, date, montant total, montant payé, montant restant, statut échéances.
-- Filtrable : `impayees_seulement`, `en_retard`, `payees`, `periode`.
-- Bouton "Enregistrer paiement" (ADMIN) → modal saisie paiement + répartition auto/manuelle sur échéances.
-- Bouton "Relancer maintenant" (ADMIN & COMMERCIAL sur ses clients) → choix template + canal + envoi immédiat.
-
-**Endpoints** :
+### 8.11 Endpoints Ventes
 
 ```
-GET  /api/echeances?statut=en_retard&id_client=          — liste
-GET  /api/factures/:id/echeances                          — échéances d'une facture
+Devis         : /api/devis         GET|POST|PUT|DELETE
+                POST /api/devis/:id/envoyer /:id/transformer /:id/pdf
 
-POST /api/paiements                                       — enregistrer un paiement (ADMIN)
-GET  /api/paiements?id_client=&periode=                   — liste
-POST /api/paiements/:id/imputer                           — répartir sur échéances
+Commandes     : /api/commandes     GET|POST|PUT|DELETE
+                POST /api/commandes/:id/valider    — crée réservations + analyse OF
+                POST /api/commandes/:id/generer-of — création OF depuis lignes
+                POST /api/commandes/:id/generer-bl
+                POST /api/commandes/:id/pdf
 
-POST /api/echeances/:id/relancer                          — envoyer relance manuelle
-GET  /api/relances?id_echeance=                           — historique
+BL            : /api/bl            GET|POST|PUT|DELETE
+                POST /api/bl/:id/expedier /:id/livrer /:id/generer-facture /:id/pdf
 
-GET  /api/clients/:id/etat-compte                         — vue consolidée (impayés, prévus, historique)
+Colisage      : /api/colis         GET|POST|PUT|DELETE
+                POST /api/colis/:id/ajouter-article (scan)
+                POST /api/colis/:id/photo (upload)
+                POST /api/colis/:id/refresh-tracking
+
+Palettes      : /api/palettes      GET|POST|PUT|DELETE
+                POST /api/palettes/:id/ajouter-colis
+                POST /api/palettes/:id/fermer /:id/expedier
+
+Transporteurs : /api/transporteurs GET|POST|PUT|DELETE (ADMIN)
+                /api/tarifs-transport (grille poids × zone × mode)
+
+Facture       : /api/factures      GET|POST|PUT|DELETE (POST/PUT/DELETE ADMIN)
+                POST /api/factures/:id/emettre /:id/payer /:id/pdf
+                POST /api/factures/regrouper-bl
+
+Avoir         : /api/avoirs        ADMIN only pour POST/PUT/DELETE
+
+Bon retour    : /api/retours       GET|POST|PUT|DELETE
+                POST /api/retours/:id/traiter /:id/generer-avoir
+
+Paiements     : POST /api/paiements
+                GET  /api/paiements?id_client=&periode=
+                POST /api/paiements/:id/imputer
+
+Échéances     : GET  /api/echeances?statut=en_retard&id_client=
+                GET  /api/factures/:id/echeances
+                POST /api/echeances/:id/relancer
+
+État compte   : GET  /api/clients/:id/etat-compte
 ```
 
 ---
 
-## 6. Dashboards
+## 9. Achats & Fournisseurs (Phase 3.2)
 
-### 6.1 Dashboard Commercial (`COMMERCIAL`)
-
-Vue de SES clients uniquement (filtre backend `WHERE id_commercial = <user_id>`).
-
-**Sections** :
-
-- KPI : nb clients actifs, nb devis en cours, CA du mois (devis acceptés), pipeline (devis envoyés non répondus).
-- Liste devis en attente (par le client).
-- Liste commandes en préparation / expédiées.
-- Pipeline visuel (funnel : lead → prospect → client).
-- Actions rapides : "Nouveau client", "Nouveau contact", "Nouveau devis" (pré-filtré sur ses clients), "Nouvelle interaction".
-
-**Compte de commissions** — onglet dédié :
-
-- **Taux de commission** paramétrable par utilisateur (colonne `utilisateurs.taux_commission_pct`) et surchargeable par grille tarifaire du client (table `commercial_grilles_commission`).
-- Base de calcul = **HT hors frais de port** de chaque facture émise sur ses clients.
-- **Commission prévue** = Σ (facture.montant_ht_total × taux) sur toutes ses factures **émises** (payées ou non).
-- **Commission réelle** = Σ (facture.montant_ht_total × taux) sur ses factures **payées**.
-- **Commission déjà versée** = Σ des versements enregistrés (table `commissions_versements`).
-- **Commission restant à payer** = Commission réelle − Commission déjà versée.
-- Vue "État de compte" : ligne par facture avec statut paiement + statut commission versée.
-- Vue "Clients payés / non payés" : liste + relance rapide.
-
-Table `commissions_versements` :
+### 9.1 `fournisseurs`
 
 | Colonne | Type | Note |
 |---|---|---|
-| `id_versement` | serial PK | |
-| `id_commercial` | FK utilisateurs | |
+| `id_fournisseur` | serial PK | |
+| `code_fournisseur` | varchar(20) unique | `FRN-{YYYY}-{NNNN}` |
+| `raison_sociale` | varchar(200) | |
+| `type_fournisseur` | enum | `matiere_premiere` \| `fourniture_fabrication` \| `fourniture_bureau` \| `emballage` \| `piece_rechange` \| `service` \| `sous_traitant` \| `mixte` |
+| `pays` | char(2) | |
+| `matricule_fiscal` / `numero_tva_intracom` / `siret` | | selon pays |
+| `adresses` | via table `fournisseur_adresses` | |
+| `contacts` | via table `fournisseur_contacts` | |
+| `id_bancaire_defaut` | FK fournisseur_bancaires | |
+| `conditions_paiement` | varchar(100) | ex `30j fin de mois` |
+| `delai_moyen_livraison_jours` | int | |
+| `notation` | int (1-5) | qualité + délai + prix combinés |
+| `actif` | bool | |
+
+### 9.2 `demandes_achat`
+
+Émise par le magasinier stock, magasinier MP ou mécanicien lorsqu'un seuil alerte est atteint.
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_demande_achat` | serial PK | |
+| `numero_demande` | varchar(30) unique | `DA-{YYYYMM}{SEQ3}` |
+| `demandee_par` | FK utilisateurs | |
+| `date_demande` | date | |
+| `motif` | text | rupture stock, réappro, urgent maintenance |
+| `id_article` | FK | |
+| `quantite_demandee` | numeric(14,3) | |
+| `date_besoin` | date | |
+| `id_fournisseur_suggere` | FK | souvent fournisseur défaut de l'article |
+| `statut` | enum | `en_attente` \| `approuvee` \| `transformee_bc` \| `refusee` \| `annulee` |
+| `id_bc` | FK bons_commande_fournisseur | si transformée |
+| `approuvee_par` | FK utilisateurs | ADMIN |
+
+### 9.3 `bons_commande_fournisseur` (BC)
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_bc` | serial PK | |
+| `numero_bc` | varchar(30) unique | `BC-{YYYYMM}{SEQ3}` |
+| `id_fournisseur` | FK | |
+| `id_adresse_livraison` | FK entrepots | où sera livré |
+| `date_commande` | date | |
+| `date_livraison_prevue` | date | |
+| `mode_transport` | enum | |
+| `id_transporteur_prevu` | FK | |
+| `frais_port_ht` | numeric(14,3) | |
+| `taux_tva_port` | numeric(5,2) | |
+| `conditions_paiement` | varchar(100) | héritée fournisseur |
+| `montant_ht` / `montant_tva` / `montant_ttc` | numeric | Σ lignes |
+| `statut` | enum | `brouillon` \| `envoye` \| `confirme` \| `partiel` \| `livre` \| `annule` |
+| `cree_par` | FK | |
+| `notes` | text | |
+
+`bc_lignes` : `id_ligne_bc`, `id_bc`, `id_article`, `designation_snapshot`, `quantite_commandee`, `quantite_recue` (cumulée), `prix_unitaire_ht`, `remise_pct`, `taux_tva`, `montant_ht`.
+
+### 9.4 `receptions_fournisseur` (BL entrant)
+
+Ce que le fournisseur livre effectivement.
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_reception` | serial PK | |
+| `numero_reception` | varchar(30) unique | `REC-{YYYYMM}{SEQ3}` |
+| `id_bc` | FK | (peut être NULL si réception hors BC) |
+| `id_fournisseur` | FK | |
+| `id_entrepot_reception` | FK | où réceptionné |
+| `date_reception` | date | |
+| `numero_bl_fournisseur` | varchar(50) | référence fournisseur |
+| `receptionne_par` | FK utilisateurs | magasinier |
+| `signature_receptionnaire_url` | varchar(500) | signature canvas |
+| `photos_urls` | text[] | preuves réception |
+| `statut` | enum | `en_cours` \| `valide` \| `litige` |
+| `notes` | text | |
+
+`reception_lignes` :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_ligne_reception` | serial PK | |
+| `id_reception` | FK | |
+| `id_ligne_bc` | FK | rapprochement BC |
+| `id_article` | FK | |
+| `quantite_recue` | numeric(14,3) | effective |
+| `quantite_conforme` | numeric(14,3) | après contrôle qualité entrant |
+| `quantite_rebut` | numeric(14,3) | |
+| `id_lot` | FK lots_articles | lot créé automatiquement pour MP |
+| `numero_lot_fournisseur` | varchar(50) | pour MP |
+| `date_peremption` | date | |
+| `notes_qualite` | text | |
+
+**Impact stock** : validation réception crée `mouvement_stock` `reception_fournisseur` avec `id_lot` généré (obligatoire MP).
+
+### 9.5 `factures_fournisseur` (FF)
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_facture_fournisseur` | serial PK | |
+| `numero_ff_interne` | varchar(30) unique | `FF-{YYYYMM}{SEQ4}` |
+| `numero_facture_fournisseur` | varchar(50) | numéro fournisseur |
+| `id_fournisseur` | FK | |
+| `date_facture` | date | date émission fournisseur |
+| `date_reception_facture` | date | quand nous l'avons reçue |
+| `date_echeance` | date | |
+| `montant_ht` / `montant_tva` / `montant_ttc` | numeric | |
+| `devise` | char(3) | pour import EUR |
+| `taux_change` | numeric | vers TND si import |
+| `montant_ht_tnd` | numeric(14,3) | conversion |
+| `statut` | enum | `en_attente_paiement` \| `payee_partiel` \| `payee` \| `en_litige` \| `annulee` |
+| `pdf_facture_url` | varchar(500) | scan ou PDF fournisseur |
+| `id_ecriture` | FK ecritures_comptables | comptabilisation |
+| `notes` | text | |
+
+`ff_lignes` : mêmes colonnes que BC lignes + rapprochement avec `reception_lignes` correspondantes.
+
+### 9.6 Rapprochement BC ↔ réception ↔ FF
+
+Écran de rapprochement (comptable + magasinier) :
+
+- **3 vues** : BC prévus / receptions effectuées / factures reçues
+- **Rapprochement 3-way** : quantité BC = quantité reçue = quantité facturée
+- **Écarts** : alerte automatique si > 2 % → passe en `litige`
+- Facture ne peut passer à `payee` que si `receptions_valides` couvrent le montant
+
+### 9.7 Paiements fournisseurs
+
+Similaire aux paiements clients mais inversés.
+
+`paiements_fournisseurs` :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_paiement_fournisseur` | serial PK | |
+| `id_fournisseur` | FK | |
+| `id_facture_fournisseur` | FK | nullable si acompte |
+| `date_paiement` | date | |
 | `montant` | numeric(14,3) | |
-| `date_versement` | date | |
-| `mode_paiement` | enum | `virement` / `especes` / `cheque` |
-| `factures_couvertes` | int[] | ids factures incluses |
-| `note` | text | |
-| `verse_par` | FK utilisateurs | ADMIN qui a validé |
+| `mode_paiement` | enum | |
+| `reference_paiement` | varchar(100) | n° chèque, virement… |
+| `id_bancaire_source` | FK societe_bancaires | notre compte débité |
+| `piece_jointe_url` | varchar(500) | |
+| `valide_par` | FK | ADMIN |
+| `id_ecriture` | FK ecritures_comptables | comptabilisation |
 
-### 6.2 Dashboard Magasinier Préparation (`MAGASINIER_PREPARATION`)
+### 9.8 Achats de services
 
-**Périmètre visible** :
+Un fournisseur peut vendre non seulement des biens mais aussi des **services** : sous-traitance broderie/sérigraphie/laser, transport, entretien machines, honoraires (comptable, avocat, consultant), formations, hébergement web, licences logiciel, télécoms…
 
-- Uniquement les commandes `validee`, `en_preparation`, `pretes_a_expedier`.
-- **Ne voit pas** les commandes `livree`, `annulee`, `solde`.
-- **Ne voit jamais** les prix, montants, commissions.
+`fournisseurs.type_fournisseur` inclut la valeur **`service`** ou **`mixte`** (bien + service).
 
-**Colonnes visibles** :
+Les factures de services suivent le même flux que les achats de biens (§9.5) avec quelques particularités :
 
-- Num client + num commande + num commande client (référence commande côté client)
-- Date d'envoi visée = date livraison client − 1 semaine (calculé auto, mis en évidence si proche/dépassée)
-- **Priorité** (`urgente` / `haute` / `normale`) — commandes urgentes en tête
-- **Notes spéciales** / instructions saisies au devis/commande
-- Articles avec leur **état** par ligne :
-  - `en_stock_disponible` — quantité dispo dans un entrepôt
-  - `en_stock_partiel` — dispo partielle, complément à fabriquer
-  - `en_fabrication` — OF lancé, avec sous-état (`planifie`, `en_cours`, `pret`, etc.)
-  - `manquant` — ni stock ni OF
-- Click "voir plus" sur une ligne → détail : quel entrepôt, quel emplacement, quel OF, avancement.
-- **Bouton "Demander transfert"** si l'article est dans un autre entrepôt → crée un `mouvement_stock_transfert` de l'entrepôt vers l'atelier de préparation, workflow de confirmation.
+- **Pas de réception physique** — la case "Réception" est skippée pour les services purs.
+- **Compte comptable** ciblé automatiquement : classe 61/62 (services extérieurs) au lieu de 601 (achats MP).
+- **TVA récupérable** normale sur les services professionnels (à l'exception des restaurants, hôtels…).
+- **Rapprochement** simplifié : BC de service → Facture directement, pas de BL.
 
-**Actions** :
-
-- "Commencer préparation" → commande `validee` → `en_preparation`, s'assigne au magasinier.
-- Écran de colisage (§5.6) accessible directement depuis chaque commande en cours.
-- "Marquer prêt à expédier" → commande `pretes_a_expedier`, BL brouillon généré, palette optionnelle.
-
-### 6.3 Dashboard Magasinier Stock (`MAGASINIER_STOCK`)
-
-**Périmètre** : gestion des flux entrants, sortants, transferts, inventaires sur les 5 catégories (PF / SF / MP / fournitures fab / fournitures bureau / emballage).
-
-**Vue d'ensemble** :
-
-- KPI en tête : valeur totale du stock · nb articles en rupture · nb alertes stock bas · mouvements aujourd'hui.
-- **3 onglets d'action** correspondant aux 3 grands types de mouvement :
-  1. **Réceptions** — bordereaux fournisseurs à saisir, OF terminés à valider en stock, retours clients à réintégrer.
-  2. **Sorties** — commandes en préparation qui vont sortir, OF planifiés qui vont consommer MP, rebuts.
-  3. **Transferts** — demandes de transfert en attente de validation (envoyées par le Magasinier Préparation §6.2), transferts partis à confirmer réception.
-- Filtres par catégorie (PF/SF/MP/…), par entrepôt, par période.
-
-**Écrans détaillés accessibles depuis le dashboard** :
-
-- Liste des entrepôts (§4bis.8 workflow).
-- Écran Réception fournisseur : saisie d'un bordereau → génère les mouvements `reception_fournisseur`.
-- Écran Sortie : liste des BL prêts à expédier, validation crée les `sortie_vente`.
-- Écran Transfert : liste des demandes → validation crée le mouvement en `en_attente`, la contre-partie confirme réception.
-- Écran Inventaire : lance un comptage, saisit les quantités comptées, clôture (génère ajustements).
-- Écran Alertes stock : liste articles sous seuil minimum, action rapide "Créer bon de réception fournisseur".
-
-**Ne voit pas** : prix de vente client, marges, commissions, factures. Voit les **prix de reviens** et la valorisation stock.
-
-### 6.5 Dashboard Chef de Production (`CHEF_PRODUCTION`)
-
-**Périmètre** : pilotage de l'atelier de fabrication.
-
-- KPI en tête : nb OF en cours · OF en retard · OF bloqués QC · TRS moyen atelier · charge machines (%) · MP en rupture bloquant OF.
-- **Planning Gantt** interactif (§4ter.8) : drag-drop des OF sur les machines.
-- Liste OF à planifier (issus des commandes validées).
-- Liste OF en cours avec avancement + alertes (retard, blocage QC).
-- Vue machines : état temps réel, panne, opérateur courant.
-- Actions rapides : "Créer OF", "Sous-traiter étape", "Débloquer OF" (après revue QC).
-- Ne voit pas les prix de vente ni les commissions. Voit les coûts fabrication.
-
-### 6.6 Dashboard Tisseur (`TISSEUR`) — tablette
-
-- Header : nom opérateur, machine assignée (`Num Machine`), poste = TISSAGE.
-- **Kit MP reçu** : liste des 8 sélecteurs S01→S08 avec le fil monté (QR bobine scannée par le Magasinier MP §6.10). Alerte visuelle si un sélecteur est vide ou incompatible.
-- Liste "Mes OF" en attente de tissage — triée par priorité + date planifiée.
-- **OF en cours** — grande carte centrale :
-  - Article + quantité prévue, quantité produite en direct.
-  - Compteur de duites (auto depuis machine si connectée, sinon saisie manuelle par batch).
-  - Cadence temps réel vs cadence prévue.
-  - Temps écoulé, temps restant estimé.
-  - Boutons pointage : `Démarrer` / `Pause` (motif : casse fil / attente MP / pause opérateur / autre) / `Reprendre` / `Terminer`.
-  - Bouton "Signaler défaut" → capture rapide photo + type de défaut → déclenche contrôle QC.
-- Historique de la journée : nb OF terminés, duites totales, cadence moyenne, temps arrêt.
-
-### 6.6bis Dashboard Coupeur (`COUPEUR`, `POST_COUPE`) — tablette
-
-- Header : nom opérateur, poste = COUPE ou POST_COUPE.
-- **File d'attente** : liste des OF sortis du tissage (`etat_tissage = terminee`) en attente coupe.
-- **OF en cours** : rouleau à couper, largeur/longueur tissu, nombre de foutas à découper, dimensions cible.
-- Scan QR du rouleau entrant → renseigne automatiquement la matière et le lot.
-- Compteur pièces coupées, saisie rebuts éventuels.
-- Boutons pointage identiques au Tisseur.
-- Si **`POST_COUPE`** (frange/ourlet/couture) : liste les étapes finition à faire par article (par sous-lot), scan QR sortant vers étape suivante (lavage, contrôle qualité).
-
-**Tisseur et Coupeur** ne voient jamais : prix, clients, montants commande. Voient uniquement leurs OF, articles, MP, sélecteurs, quantités, machines.
-
-### 6.7 Dashboard Contrôleur Qualité (`CONTROLEUR_QUALITE`)
-
-- KPI : contrôles du jour · taux conformité · défauts fréquents (top 5) · OF bloqués en attente contrôle.
-- Liste des étapes OF terminées nécessitant un contrôle (`necessite_ctrl_qualite`).
-- Écran de saisie contrôle (§4ter.6) : type, mesures, photos, action (laisser passer / rework / rebut).
-- Historique contrôles avec filtre par article / machine / opérateur / défaut.
-- Peut bloquer un OF (`bloque_qc`) — notifie chef production.
-
-### 6.8 Dashboard Mécanicien / Maintenance (`MECANICIEN`)
-
-Suivi **curatif** (pannes) et **préventif** (entretien planifié) des machines et équipements.
-
-**Vue Machines** :
-
-- Cartes machines avec état (en_service, en_panne, en_maintenance), dernière intervention, prochaine échéance.
-- Bouton "Signaler panne" → change `machines.etat` en `en_panne`, journalise arrêt, notifie chef production + chef atelier, bloque les OF en cours sur cette machine.
-- Bouton "Démarrer intervention" → passe en `en_maintenance`, journalise.
-- Bouton "Machine remise en service" → repasse en `en_service`, débloque les OF.
-
-**Maintenance préventive (plan d'entretien)** — nouveau bloc :
-
-`plan_maintenance` (récurrences par machine) :
+Table `contrats_services` (optionnel — pour contrats récurrents type entretien, maintenance annuelle) :
 
 | Colonne | Type | Note |
 |---|---|---|
-| `id_plan` | serial PK | |
-| `id_machine` | FK | |
-| `type_intervention` | enum | `graissage` / `nettoyage` / `changement_courroie` / `verification_electrique` / `revision_generale` / `changement_pieces_usure` / `autre` |
-| `frequence_type` | enum | `heures_production` / `nb_duites` / `calendrier` |
-| `frequence_valeur` | int | ex 500 h ou 10 000 000 duites ou 90 jours |
-| `duree_estimee_min` | int | |
-| `pieces_necessaires` | jsonb | `[{code_piece, quantite}]` |
-| `procedure_url` | varchar(500) | PDF procédure |
-| `dernier_execute` | timestamp | |
-| `prochain_du` | timestamp | calculé — auto-alerte quand ≤ 7j |
+| `id_contrat_service` | serial PK | |
+| `id_fournisseur` | FK | |
+| `libelle` | varchar(200) | ex "Maintenance annuelle métiers Dornier" |
+| `date_debut` / `date_fin` | date | période contractuelle |
+| `montant_annuel_ht` | numeric(14,3) | |
+| `periodicite_facturation` | enum | `mensuelle` \| `trimestrielle` \| `annuelle` \| `a_la_demande` |
+| `id_compte_comptable_charge` | FK | |
+| `numero_contrat` | varchar(100) | référence fournisseur |
+| `pdf_contrat_url` | varchar(500) | |
+| `renouvellement_auto` | bool | |
+| `date_prochaine_facturation_prevue` | date | |
+| `actif` | bool | |
 
-`interventions_maintenance` :
+### 9.9 Achats espèces non comptabilisés (fond de dépenses courantes)
+
+Certains **petits achats** au comptant (café, papeterie de dépannage, transport local occasionnel, pourboires magasinier, petites pièces urgentes chez le quincaillier du coin) sont réglés en espèces **sans facture formelle** — ils n'entrent PAS dans le circuit comptable classique mais doivent être tracés pour justifier la sortie de caisse.
+
+Deux traitements possibles :
+
+**A) Non comptabilisés (hors circuit fiscal)** :
+
+`depenses_courantes_espece` — journal informel séparé de la compta officielle :
 
 | Colonne | Type | Note |
 |---|---|---|
-| `id_intervention` | serial PK | |
-| `id_machine` | FK | |
-| `id_plan` | FK plan_maintenance | nullable — si intervention curative hors plan |
-| `type` | enum | `preventive` / `curative` / `revision` / `installation` |
-| `date_debut` / `date_fin` | timestamp | |
-| `id_mecanicien` | FK utilisateurs | |
-| `description_panne` | text | si curatif |
-| `actions_effectuees` | text | ce qui a été fait |
-| `pieces_consommees` | jsonb | pour valorisation |
-| `cout_intervention` | numeric(14,3) | pièces + MO |
-| `photos_urls` | text[] | avant/après |
-| `duree_arret_machine_min` | int | pour calcul MTBF/MTTR |
-| `statut` | enum | `planifiee` / `en_cours` / `terminee` / `annulee` |
+| `id_depense` | serial PK | |
+| `date_depense` | date | |
+| `id_caisse` | FK caisses | |
+| `montant` | numeric(14,3) | |
+| `categorie` | enum | `pourboire` \| `transport_local` \| `petite_fourniture` \| `restauration_atelier` \| `divers` |
+| `description` | text | "3 baguettes + 2 café ouvriers" |
+| `photo_ticket_url` | varchar(500) | photo du ticket ou reçu si dispo |
+| `saisi_par` | FK utilisateurs | |
+| `valide_par` | FK utilisateurs | ADMIN pour au-delà d'un seuil |
 
-**Sections dashboard** :
+**Impact caisse** : ces dépenses créent bien un `mouvement_caisse` type `frais` (§10.4) qui décrémente le solde physique, MAIS ne génèrent PAS d'écriture comptable (`id_ecriture = NULL`).
 
-- KPI : MTBF (Mean Time Between Failures) par machine, MTTR (Mean Time To Repair), taux disponibilité, coût maintenance mensuel.
-- **Alertes préventives** : liste des `plan_maintenance` dont `prochain_du` est ≤ 7 jours — action rapide "Planifier".
-- **Interventions à faire** : file d'attente (panne signalée, maintenance planifiée).
-- **Historique** : filtre par machine, par type, par période, par mécanicien.
-- Graph "Pannes récurrentes" : top 5 causes de pannes par machine (utile pour identifier problèmes chroniques).
-- **Stock pièces détachées** : lien vers §4bis stock (fournitures fabrication) pour les pièces usure (courroies, aiguilles, cames, etc.) avec seuils alerte.
+**Reporting mensuel** : liste ces dépenses par catégorie, montant total. Sert pour transparence interne, pas pour le fisc.
+
+**B) Comptabilisés a posteriori** :
+
+Si le comptable décide de régulariser un mois de dépenses courantes en fin de mois (pour cohérence bilan), il peut :
+1. Sélectionner un lot de `depenses_courantes_espece` du mois
+2. Bouton "Comptabiliser en bloc" → génère UNE écriture globale (par exemple débit compte 6252 "Petites dépenses" / crédit 531 "Caisse") avec libellé récapitulatif
+3. Les dépenses concernées se voient renseigner `id_ecriture` — passent de "non comptabilisé" à "comptabilisé en bloc"
+
+Écran comptable filtre : `non_comptabilise` / `comptabilise_bloc` / `comptabilise_individuel`.
+
+**Règle** : par défaut les achats > 100 DT au comptant doivent générer une facture ET une écriture. Le seuil est configurable en Paramètre Comptabilité.
+
+### 9.10 Endpoints Achats
+
+```
+Fournisseurs    : /api/fournisseurs           GET|POST|PUT|DELETE
+                  /api/fournisseurs/:id/etat-compte
+                  /api/fournisseurs/:id/statistiques
+
+Demandes achat  : /api/demandes-achat         GET|POST|PUT
+                  POST /api/demandes-achat/:id/approuver
+                  POST /api/demandes-achat/:id/transformer-bc
+
+Bons commande   : /api/bc                     GET|POST|PUT|DELETE
+                  POST /api/bc/:id/envoyer     — envoi email/WA
+                  POST /api/bc/:id/confirmer
+                  POST /api/bc/:id/pdf
+
+Réceptions      : /api/receptions             GET|POST|PUT
+                  POST /api/receptions/:id/valider     — génère mouvement stock
+                  POST /api/receptions/:id/photo
+
+Factures fourn  : /api/factures-fournisseur   GET|POST|PUT|DELETE (ADMIN)
+                  POST /api/ff/:id/comptabiliser        — génère écritures
+                  POST /api/ff/:id/payer
+
+Paiements       : /api/paiements-fournisseurs GET|POST
+
+Rapprochement   : /api/rapprochement/bc-rec-ff/:id_bc
+
+Contrats service: /api/contrats-services      GET|POST|PUT|DELETE
+                  GET  /api/contrats-services/echeances-proches?jours=7
+
+Dépenses espèce : /api/depenses-espece        GET|POST|PUT|DELETE
+                  POST /api/depenses-espece/comptabiliser-bloc   — sélection + génère 1 écriture
+                  GET  /api/depenses-espece/rapport?periode=&categorie=
+```
+
+---
+
+## 10. Comptabilité (Phase 4)
+
+### 10.1 Plan de comptes (SYSCOA simplifié adapté Tunisie)
+
+`comptes_comptables` :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_compte_comptable` | serial PK | |
+| `numero_compte` | varchar(20) unique | numérotation SYSCOA |
+| `libelle` | varchar(200) | |
+| `type_compte` | enum | `actif` \| `passif` \| `charges` \| `produits` |
+| `classe` | int | 1-8 SYSCOA |
+| `sous_type` | enum | ex `capitaux_propres`, `dettes_fournisseurs`, `banque`, `caisse`, `ventes`, `achats`, `charges_externes` |
+| `est_analytique` | bool | pour comptes de résultat |
+| `est_tva` | bool | tag pour comptes TVA collectée/déductible |
+| `actif` | bool | |
+
+**Plan par défaut (seed)** — 8 classes SYSCOA :
+
+- Classe 1 : Capitaux — 10 Capital, 12 Résultat, 13 Subventions, 16 Emprunts
+- Classe 2 : Immobilisations — 21 Immo incorp, 22 Immo corp (dont 2131 Bâtiments, 2154 Matériel industriel), 26 Titres
+- Classe 3 : Stocks — 31 MP, 32 Autres appro, 33 SF, 35 PF, 37 Marchandises
+- Classe 4 : Tiers — 40 Fournisseurs, 41 Clients, 42 Personnel, 43 État, 44 État TVA (44551 collectée / 44561 déductible)
+- Classe 5 : Financiers — 51 Banques (5111 CTA TND, 5112 CTA EUR…), 53 Caisse, 58 Virements internes
+- Classe 6 : Charges — 60 Achats (601 MP, 607 marchandises), 61 Services extérieurs (611 sous-traitance, 613 locations = **loyer**, 6161 assurance), 62 Autres services (621 transport, 622 personnel intérimaire, 625 déplacements, 626 postes/télécom, **6281 électricité**, 6282 eau), 63 Impôts et taxes, 64 Charges de personnel (641 rémunérations, 645 charges sociales), 65 Autres charges, 67 Charges financières, 68 Amortissements et provisions
+- Classe 7 : Produits — 70 Ventes (701 PF, 706 prestations), 74 Subventions, 76 Produits financiers, 78 Reprises amortissements
+
+### 10.2 `ecritures_comptables` — journal
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_ecriture` | serial PK | |
+| `numero_ecriture` | varchar(30) unique | `EC-{YYYY}{SEQ6}` |
+| `date_ecriture` | date | |
+| `date_piece` | date | date document source |
+| `libelle` | varchar(300) | |
+| `id_journal` | FK journaux | code journal |
+| `id_piece_source` | int | id doc source |
+| `type_piece_source` | enum | `facture` \| `avoir` \| `paiement` \| `facture_fournisseur` \| `paiement_fournisseur` \| `salaire` \| `manuel` |
+| `montant_total` | numeric(14,3) | |
+| `statut` | enum | `brouillon` \| `validee` \| `cloturee` |
+| `saisi_par` / `valide_par` | FK | |
+
+`ecritures_lignes` :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_ligne` | serial PK | |
+| `id_ecriture` | FK | |
+| `id_compte_comptable` | FK | |
+| `libelle` | varchar(200) | |
+| `debit` | numeric(14,3) | |
+| `credit` | numeric(14,3) | (soit débit soit crédit non nul par ligne) |
+| `id_tiers` | int | id_client ou id_fournisseur si compte de tiers |
+| `type_tiers` | enum | `client` \| `fournisseur` \| `personnel` |
+
+**Contrainte** : Σ débits = Σ crédits par écriture.
+
+`journaux` — codes standard : `VE` (ventes), `AC` (achats), `BQ1` (banque TND), `BQ2` (banque EUR), `CA` (caisse), `OD` (opérations diverses), `PA` (paie).
+
+### 10.3 TVA
+
+**TVA collectée** (comptes `44551`) — à la vente. Automatiquement générée par les factures clients selon `taux_tva`.
+
+**TVA déductible** (comptes `44561`) — sur achats et charges. Automatiquement générée par factures fournisseurs.
+
+**Déclaration mensuelle TVA** : écran comptable qui agrège par période :
+
+- Σ TVA collectée (comptes 44551 pour la période)
+- Σ TVA déductible (44561)
+- TVA due = collectée − déductible
+- Génère une déclaration PDF (formulaire tunisien standard)
+
+`declarations_tva` :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_declaration` | serial PK | |
+| `periode` | varchar(7) | `2026-09` |
+| `date_declaration` | date | |
+| `tva_collectee` | numeric(14,3) | |
+| `tva_deductible` | numeric(14,3) | |
+| `tva_due` | numeric(14,3) | |
+| `date_paiement` | date | quand payée au Trésor |
+| `statut` | enum | `en_preparation` \| `soumise` \| `payee` |
+| `pdf_url` | varchar(500) | |
+
+### 10.4 Fond de caisse
+
+Suivi de la trésorerie liquide (billets/pièces).
+
+`caisses` (une ou plusieurs caisses possibles — siège, showroom, magasin) :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_caisse` | serial PK | |
+| `code` | varchar(20) unique | `CAISSE_SIEGE`, `CAISSE_SHOWROOM` |
+| `libelle` | varchar(100) | |
+| `id_compte_comptable` | FK | compte 531 ou 532 |
+| `solde_theorique` | numeric(14,3) | maintenu par mouvements |
+| `responsable_id_utilisateur` | FK | |
+| `actif` | bool | |
+
+`mouvements_caisse` :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_mouvement_caisse` | serial PK | |
+| `id_caisse` | FK | |
+| `date_mouvement` | timestamp | |
+| `type_mouvement` | enum | `encaissement_client` \| `decaissement_fournisseur` \| `salaire_liquide` \| `frais` \| `versement_banque` \| `retrait_banque` \| `ajustement_+` \| `ajustement_-` |
+| `montant` | numeric(14,3) | signé selon type |
+| `motif` | text | |
+| `id_paiement` / `id_paiement_fournisseur` | FK | si lié à un paiement |
+| `piece_jointe_url` | varchar(500) | reçu, ticket |
+| `id_ecriture` | FK | comptabilisation |
+| `saisi_par` | FK | |
+
+**Clôture caisse quotidienne** : comptage physique le soir → génère un ajustement si écart.
+
+### 10.5 Rapprochement bancaire
+
+`releves_bancaires` (import PDF ou CSV du relevé banque) :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_releve` | serial PK | |
+| `id_bancaire` | FK societe_bancaires | |
+| `periode` | varchar(7) | `2026-09` |
+| `solde_debut` / `solde_fin` | numeric(14,3) | selon banque |
+| `date_import` | date | |
+| `fichier_import_url` | varchar(500) | |
+
+`lignes_releve_bancaire` (une ligne = une écriture banque) :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_ligne_releve` | serial PK | |
+| `id_releve` | FK | |
+| `date_operation` | date | |
+| `libelle_bancaire` | varchar(300) | |
+| `montant_debit` / `montant_credit` | numeric(14,3) | |
+| `reference_operation` | varchar(100) | |
+| `id_ecriture_rapprochee` | FK ecritures_comptables | nullable — lien après matching |
+| `statut` | enum | `non_rapprochee` \| `rapprochee` \| `en_litige` |
+| `notes` | text | |
+
+**Écran rapprochement** : liste des lignes non rapprochées côté banque et côté compta → matching manuel ou auto (par montant + date + référence).
+
+### 10.6 Charges d'exploitation (loyer, électricité, eau, internet…)
+
+Les charges récurrentes (loyer, électricité, eau, internet, ménage, assurances…) sont gérées comme des **factures fournisseurs récurrentes**.
+
+`abonnements_recurrents` — pour automatiser :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_abonnement` | serial PK | |
+| `libelle` | varchar(200) | `Loyer usine Sfax`, `STEG électricité usine`, `Sonede eau siège`, `Ooredoo internet`, `Assurance civile pro`… |
+| `id_fournisseur` | FK | STEG, Sonede, propriétaire, Ooredoo, assureur… |
+| `id_compte_comptable_charge` | FK | 613 loyer / 6281 électricité / 6282 eau / 626 télécom / 616 assurance |
+| `montant_ht_habituel` | numeric | pour anticipation |
+| `taux_tva` | numeric | |
+| `periodicite` | enum | `mensuelle` \| `bimestrielle` \| `trimestrielle` \| `annuelle` |
+| `date_prochaine_echeance` | date | |
+| `mode_paiement` | enum | `virement_permanent` \| `prelevement_auto` \| `cheque` \| `especes` |
+| `actif` | bool | |
+
+Job cron mensuel : alerte comptable des échéances abonnements dans les 7 jours.
+
+Chaque paiement d'un abonnement crée une facture fournisseur classique (§9.5).
+
+### 10.7 Immobilisations & amortissements
+
+`immobilisations` — biens durables (machines Dornier, bâtiment, véhicules, matériel bureau).
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_immobilisation` | serial PK | |
+| `numero_immo` | varchar(30) unique | `IMMO-{YYYY}{SEQ3}` |
+| `libelle` | varchar(200) | ex "Métier Dornier M2301" |
+| `id_compte_comptable_immo` | FK | classe 2 (21xx / 22xx) |
+| `id_compte_comptable_amort` | FK | 281x / 282x |
+| `id_compte_comptable_dotation` | FK | 6811x |
+| `date_acquisition` | date | |
+| `valeur_acquisition_ht` | numeric(14,3) | |
+| `taux_amortissement_pct` | numeric(5,2) | ex 10 % (10 ans) |
+| `duree_amortissement_annees` | int | |
+| `methode` | enum | `lineaire` \| `degressif` |
+| `date_mise_en_service` | date | |
+| `date_fin_amortissement` | date | calc |
+| `valeur_residuelle` | numeric | |
+| `id_machine` | FK machines | nullable — pour machines |
+| `id_entrepot` | FK | localisation |
+| `numero_serie` | varchar(100) | |
+| `fournisseur_origine_id` | FK | |
+| `id_facture_fournisseur` | FK | facture d'acquisition |
+| `actif` | bool | |
+
+Job annuel : génère automatiquement la dotation aux amortissements (écriture comptable `681x → 281x`) à la clôture d'exercice.
+
+### 10.8 Compte de résultat & bilan
+
+**Compte de résultat** (classes 6 et 7) :
+
+- Chiffre d'affaires (70)
+- − Achats consommés (60 corrigé de la variation de stock)
+- − Services extérieurs (61 + 62 : sous-traitance, loyer, transport, électricité, télécom, assurance, entretien)
+- − Impôts et taxes (63)
+- − Charges de personnel (64)
+- − Autres charges (65)
+- **= Résultat d'exploitation**
+- − Charges financières (67)
+- + Produits financiers (76)
+- − Dotations amortissements (68)
+- **= Résultat net**
+
+**Bilan** (classes 1 à 5) :
+
+- **Actif** : Immobilisations nettes (classe 2 − amortissements) + Stocks (classe 3) + Créances clients (411) + Trésorerie (51, 53)
+- **Passif** : Capitaux propres (10, 12) + Dettes financières (16) + Dettes fournisseurs (401) + Dettes fiscales (44) + Dettes sociales (42)
+
+Écran comptable **édition** : sélection période → génère PDF résultat + bilan.
+
+### 10.9 Clôture d'exercice
+
+Exercice = 1er janvier → 31 décembre.
+
+Procédure de clôture (ADMIN + COMPTABLE) :
+
+1. Validation de toutes les écritures brouillon
+2. Génération dotations aux amortissements (§10.7)
+3. Génération écritures de variation de stock (compte 6031/6091 vs 31/32/33/35/37 par différence entre stocks début et fin d'exercice)
+4. Calcul du résultat (produits − charges) → écriture `120 Résultat` au bilan
+5. Génération PDF bilan + compte de résultat + annexes
+6. Verrouillage : `statut='cloturee'` sur toutes les écritures de l'exercice — plus modifiables
+7. Report à nouveau : reprise des soldes classe 1 et 2 sur l'exercice suivant
+
+### 10.10 Endpoints Comptabilité
+
+```
+Plan comptes  : /api/comptes-comptables     GET|POST|PUT|DELETE (ADMIN)
+
+Écritures     : /api/ecritures              GET|POST|PUT (ADMIN, COMPTABLE)
+                POST /api/ecritures/:id/valider
+                POST /api/ecritures/:id/annuler   — création écriture inverse
+
+Journaux      : /api/journaux                GET|POST|PUT
+                GET  /api/journaux/:code/ecritures?periode=
+
+TVA           : GET  /api/tva/declaration?periode=
+                POST /api/tva/declaration/:periode/generer
+                POST /api/tva/declaration/:periode/payer
+
+Caisses       : /api/caisses                 GET|POST|PUT|DELETE
+                /api/caisses/:id/mouvements   GET|POST
+                POST /api/caisses/:id/cloturer-jour
+
+Rapprochement : POST /api/releves-bancaires  — import PDF/CSV
+                GET  /api/releves-bancaires/:id/lignes-non-rapprochees
+                POST /api/rapprochement/matcher
+
+Abonnements   : /api/abonnements-recurrents  GET|POST|PUT|DELETE
+                GET  /api/abonnements/echeances-proches?jours=7
+
+Immobilisations : /api/immobilisations      GET|POST|PUT|DELETE
+                  POST /api/immobilisations/generer-dotations-annuelles
+
+Rapports      : GET /api/rapports/compte-resultat?exercice=
+                GET /api/rapports/bilan?exercice=
+                GET /api/rapports/grand-livre?compte=&periode=
+                GET /api/rapports/balance?periode=
+                GET /api/rapports/journal?journal=&periode=
+
+Clôture       : POST /api/exercices/:annee/cloturer   (ADMIN)
+                POST /api/exercices/:annee/rouvrir
+```
+
+---
+
+## 11. Communications
+
+### 11.1 Transactionnel — envoi document
+
+Bouton "Envoyer" sur chaque document (devis, commande, BL, facture, avoir, BR, BC fournisseur) :
+
+- Canal : `email` \| `whatsapp` \| `telegram`
+- Expéditeur : **utilisateur connecté** (§11.2)
+- Destinataire : contact principal (éditable)
+- Template avec variables (`<client_nom>`, `<numero_doc>`, `<montant>`, `<echeance>`)
+- PJ : PDF du document
+
+Backend : `communicationService.envoyer({user_id, doc_type, doc_id, canal, ...})`.
+
+Chaque envoi crée une `interaction` avec `id_utilisateur = <expéditeur>`.
+
+### 11.2 Configuration email/WhatsApp par utilisateur
+
+Chaque utilisateur peut brancher son SMTP + WhatsApp Business perso pour envoyer depuis son adresse/numéro.
+
+`utilisateur_config_email` et `utilisateur_config_whatsapp` — voir schéma dans domain v1.2.
+
+**Fallback** : si utilisateur non configuré → config société par défaut.
+
+### 11.3 Marketing — campagnes de masse
+
+`campagnes_marketing`, `segments_clients` — envoi email/WhatsApp/Telegram groupé avec templates approuvés, stats (envoyés/ouverts/clics), opt-in obligatoire.
+
+### 11.4 Comptes marketing externes
+
+`comptes_marketing_externes` : sites web, Facebook, Instagram, TikTok, LinkedIn, Google Ads, Meta Ads, GA4, Search Console, Mailchimp, SendGrid. Connecteurs OAuth + sync stats/leads.
+
+### 11.5 Consentement légal
+
+- Opt-in obligatoire (`consent_marketing_*` sur `comptes`).
+- Lien désinscription obligatoire dans chaque email marketing.
+- WhatsApp Business : templates approuvés Meta hors fenêtre 24h.
+
+---
+
+## 12. Messagerie inter-postes
+
+Système existant dans le legacy (`Hub > Messages_Postes`) — à répliquer.
+
+`messages_postes` :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_message` | serial PK | |
+| `date_envoi` | timestamp | |
+| `categorie` | enum | `demande` \| `alerte` \| `pret` \| `info` |
+| `type` | varchar(50) | ex `tissage_restant_500m`, `demande_mp`, `coupe_qte_manquante`, `coupe_fab_changee`, `planning_urgent` |
+| `source` | enum | `planification` \| `magasinier` \| `tissage` \| `coupe` \| `ourdissage` \| `export` \| `mag_st` \| `admin` \| `systeme` |
+| `destination` | enum | `planification` \| `magasinier` \| `tissage` \| `coupe` \| `ourdissage` \| `export` \| `mag_st` \| `admin` \| `tous` |
+| `id_of` | FK | |
+| `ref_fab` | varchar(80) | |
+| `message` | text | |
+| `details_json` | jsonb | payload structuré |
+| `lu` | bool | |
+| `date_lecture` | timestamp | |
+
+**Alertes automatiques (déclencheurs)** :
+
+| Événement | Type | Source → Destination |
+|---|---|---|
+| Compteur tissage passe sous 500 m restants | `tissage_restant_500m` | `tissage` → `planification` |
+| MP manque en cours tissage | `demande_mp` | `tissage` → `magasinier` |
+| Coupe finit avec qté manquante | `coupe_qte_manquante` | `coupe` → `tissage` |
+| Coupe détecte article différent du planifié | `coupe_fab_changee` | `coupe` → `tissage` |
+| OF marqué urgent par ADMIN | `planning_urgent` | `admin` → `tous` |
+| Machine tombe en panne | `machine_panne` | `mecanicien` → `planification` |
+| Alerte stock bas | `stock_bas` | `systeme` → `magasinier` |
+| Litige ST ouvert | `litige_st` | `mag_st` → `admin` |
 
 Endpoints :
 
 ```
-GET|POST|PUT  /api/plan-maintenance
-GET  /api/plan-maintenance/dus?jours_avant=7   — alertes préventives
-GET|POST|PUT  /api/interventions-maintenance
-POST /api/machines/:id/signaler-panne
-POST /api/machines/:id/demarrer-intervention
-POST /api/machines/:id/remettre-en-service
-GET  /api/maintenance/kpi?id_machine=&periode=  — MTBF/MTTR/dispo
+GET  /api/messages-postes?destination=<poste>&lu=false
+POST /api/messages-postes
+POST /api/messages-postes/:id/marquer-lu
+POST /api/alertes/envoyer-urgente
 ```
-
-### 6.10 Dashboard Magasinier MP (`MAGASINIER_MP`)
-
-Prépare les kits matières premières pour chaque OF, en amont du tissage.
-
-**Sections** :
-
-- Liste des OF à l'état `en_attente_mp` ou `planifie` — triés par date de tissage prévue.
-- Pour chaque OF : liste des fils requis avec `numero_selecteur` (S01 → S08) + code MP + quantité prévue en kg + entrepôt source + numéro de lot suggéré.
-- Bouton "Préparer le kit" → passe l'OF en `etat_preparation_mp = en_cours`, réserve les bobines.
-- **Scan QR bobine** : le magasinier scanne chaque bobine physique → renseigne `of_consommations.qr_mp_reel` et `id_lot`. Contrôle automatique : cohérence code MP scanné vs code MP prévu, alerte si divergence (par ex ECRU au lieu de BLANC).
-- Bouton "Kit prêt — transférer vers atelier tissage" → génère `mouvement_stock` `transfert_entrepot` vers l'entrepôt du poste tissage. Passe l'OF en `etat_preparation_mp = terminee`, débloque l'étape tissage.
-- Vue "Bobines en préparation" : ce qui est en cours de sortie, où c'est physiquement dans l'atelier prep MP.
-- Vue "Alertes MP" : ruptures, écart lot suggéré vs stock réel, quantités insuffisantes → génère automatiquement une demande d'achat vers le Magasinier Stock ou fournisseur.
-
-**Ne voit pas** : prix de vente, clients, commissions. Voit prix de reviens MP pour valorisation.
-
-### 6.11 Dashboard Chef d'Atelier (`CHEF_ATELIER`)
-
-Pilotage terrain d'un atelier physique (usine ou atelier de finition), plus opérationnel que le Chef Production (qui pilote la stratégie et le Gantt global).
-
-**Sections** (structure issue du legacy `chef_atelier_dashboard v11.tsx`) :
-
-- **Onglet Par Opération** : 6 opérations de finition (Frange, Pliage, Étiquetage, Couture, Repassage, Emballage) avec compteurs `en_attente / en_cours / termine` par opération. Vue synthétique de la charge par poste finition.
-- **Onglet Par Commande** — drill-down arborescent :
-  ```
-  Commande CM-FTxxxx
-    └─ Article ARxxxx-Byy-zz
-         └─ Suivi (numSuivi = lot coupe, ex OF244984-1)
-              └─ Matrice Opérations (qte_sortie / qte_retour / qte_en_cours)
-  ```
-  Un `numSuivi` regroupe typiquement 5 pièces par étiquette lot coupe.
-- **Onglet Alertes** :
-  - Demandes magasinier (transferts en attente validation, ruptures signalées).
-  - Dates envoi client proches (< J-3).
-  - OF en retard.
-- **Onglet Maintenance** : demandes envoyées au mécanicien avec statut/priorité/équipement.
-- **Onglet Analyse 2ème choix** : taux par sous-traitant + répartition types défauts (voir §4ter.6 étendu ci-dessous).
-
-**Actions** :
-
-- Scanner un `numSuivi` et l'affecter à une opération.
-- Déclarer 2ème choix (qté + type défaut + décision : rework / rebut / vendre en second choix).
-- Demander un **complément de fabrication** au tisseur si `qte_1er_choix < qte_commandee` — génère un sous-OF `.1` (voir §4ter.4quater).
-- Envoyer une demande de maintenance au mécanicien.
-- Imprimer les feuilles de tournée par opération.
-
-### 6.12 Dashboard Magasinier Sous-Traitants (`MAGASINIER_SOUSTRAITANTS`)
-
-Gestion des flux matière/produits vers/depuis les sous-traitants (broderie, sérigraphie, laser, franging externe, etc.).
-
-**Sections** :
-
-- **KPI** : nb OF en sous-traitance actuellement, quantité sortie totale, quantité retournée conforme/rebut, taux conformité global.
-- **File d'attente sortie** : lignes `of_sous_traitance` à statut `envoye` → à préparer physiquement.
-- **En cours chez sous-traitant** : liste avec délai restant, alerte si date retour dépassée.
-- **Retours à traiter** : marchandise revenue, à contrôler → saisie `quantite_retournee_conforme` + `quantite_retournee_rebut` + décision.
-- **Analyse performance ST** :
-  - Taux 2ème choix par sous-traitant (seuils 5 % vert / 7 % orange / >7 % rouge).
-  - Délai moyen respecté vs promis.
-  - Coût moyen par prestation type.
-  - Répartition types défauts par ST (aide à la sanction / rupture contrat).
-- **Litiges** : liste des dossiers ouverts (rebut anormal, perte, retard chronique).
-
-**Actions** :
-
-- Préparer bon de sortie sous-traitant (article + quantité + date retour prévue + prix accord).
-- Réceptionner retour → contrôle rapide → validation ou litige.
-- Ouvrir un litige (formulaire : type, quantité, coût, preuves photos).
-- Facturation ST (pré-remplir facture fournisseur — voir Phase Achats).
-
-**Ne voit pas** : prix de vente client, commissions. Voit : prix de reviens MP consommée, coût prestation ST.
-
-### 6.13 Écran Planification & Suivis (module central — accessible CHEF_PRODUCTION + ADMIN)
-
-Écran de planification opérationnelle — distinct des dashboards role (c'est un **outil de pilotage** partagé).
-
-**Vue principale — Gantt drag-and-drop** :
-
-- Axe horizontal : jours ouvrés (semaine par défaut, zoom mois possible).
-- Axe vertical : machines (M2301, M2302…), regroupées par atelier/parc.
-- Blocs = OF planifiés, colorés par priorité (rouge = urgent, orange = haut, gris = normal). Complément tissage = jaune vif avec pastille `.1`.
-- **Contraintes vérifiées à chaque drag** :
-  - Compatibilité laize machine ↔ laize article.
-  - Nb couleurs OF ≤ nb sélecteurs machine.
-  - MP disponible aux dates prévues (sinon warning "MP manquante à J+2, attribuer transferts ?").
-  - Machine en panne → blocage drop, message d'erreur.
-- Au moment du drop → modal **Attribution QR MP** : cases à cocher pour chaque sélecteur × entrepôt où sont les bobines suggérées → l'utilisateur valide → attribution `of_consommations.id_lot` réservée.
-
-**Panneau latéral gauche — File d'attente** :
-
-- OF à planifier (statut `brouillon` ou `planifie` sans machine assignée).
-- Trié par : priorité DESC, date livraison ASC.
-- Filtres : article, catégorie, priorité, période.
-
-**Panneau bas — Suivis temps réel** :
-
-- Onglet "OF en cours" : temps écoulé vs prévu, cadence temps réel, progression étape courante.
-- Onglet "OF en retard" : pourquoi (arrêt machine, attente MP, blocage QC…).
-- Onglet "Incidents ouverts" : liste incidents déclarés par tisseurs, en attente résolution.
-
-**Actions rapides** :
-
-- Créer OF (bouton).
-- Déplacer OF (drag).
-- Réaffecter opérateur (dropdown).
-- Notifier magasinier MP qu'un OF est planifié (auto sinon manuel).
-
-### 6.9 Dashboard Admin
-
-Vue globale : tous les KPIs, tous les documents, gestion des utilisateurs, grilles tarifaires, commissions, paramètres société.
-
-**L'admin voit tout** — pas d'onglets Commercial / Magasinier Prépa / Magasinier Stock / Chef Production / Ateliers / QC / Mécanicien séparés dans son menu (il accède à ces vues via une bascule "Voir en tant que…" si besoin d'audit).
 
 ---
 
-## 7. Conformité fiscale par pays
+## 13. Conformité fiscale par pays
 
-### 7.1 Tunisie (`TN`) — pays par défaut
+### 13.1 Tunisie (`TN`) — pays par défaut
 
-- Requis : `matricule_fiscal` sur toute société.
-- TVA : 19 % (standard), 13 %, 7 %, 0 %.
-- Factures : numérotation continue annuelle `FAC-YYYY-NNNNNN`.
-- Timbre fiscal : 1 TND à générer.
+- Requis société : `matricule_fiscal`
+- TVA : 19 % standard, 13 %, 7 %, 0 %
+- Timbre fiscal : **1 DT** par facture
+- Numérotation factures : continue annuelle `FA-{YYYYMM}{SEQ4}`
 
-### 7.2 France (`FR`)
+### 13.2 France (`FR`)
 
-- Requis pour société : `siret` (14 chiffres) ET `numero_tva_intracom` (`FR` + 11 chiffres).
-- Particulier : pas de champ fiscal requis.
-- TVA : 20 % standard, 10 %, 5,5 %, 2,1 %.
-- B2B intra-UE (client FR société avec TVA valide) : **facturation HT sans TVA** + mention "Autoliquidation — Art. 283-2 du CGI".
-- B2C FR : TVA française appliquée.
+- Requis société : `siret` (14 ch.) + `numero_tva_intracom` (`FR` + 11 ch.)
+- Particulier : rien
+- TVA : 20 %, 10 %, 5.5 %, 2.1 %
+- B2B UE avec TVA valide : HT sans TVA + mention "Autoliquidation — Art. 283-2 CGI"
+- B2C FR : TVA française
 
-### 7.3 Autres UE
+### 13.3 Autres UE
 
-- Requis pour société : `numero_tva_intracom`.
-- Validation format côté frontend, validation VIES optionnelle (Phase 3+).
-- B2B avec TVA intracom valide : HT sans TVA + mention "Reverse charge — Art. 138 EU VAT Directive".
+- Requis société : `numero_tva_intracom`
+- B2B intracom valide : HT sans TVA + "Reverse charge — Art. 138 EU VAT Directive"
 
-### 7.4 Export hors UE
+### 13.4 Export hors UE
 
-- Sans TVA. Mention "Exportation exonérée".
-- Documents douaniers hors périmètre Phase 3.
+- Sans TVA. "Exportation exonérée"
 
-### 7.5 Règle automatique
+### 13.5 Règle automatique
 
-La règle TVA est **dérivée** de `pays` + `type_compte` + `numero_tva_intracom`. Fonction `computeTvaRule(compte, article)` centralise cette logique.
+`computeTvaRule(compte, article)` — dérivée de `pays` + `type_compte` + `numero_tva_intracom`.
 
 ---
 
-## 8. Communications (transactionnel + marketing)
+## 14. Dashboards
 
-### 8.1 Transactionnel — envoi de document
+### 14.1 Admin
 
-Chaque document a un bouton **"Envoyer"** ouvrant un modal :
+Vue globale : tous KPIs, tous documents, gestion utilisateurs, grilles tarifaires, commissions, paramètres société. L'admin voit tout — pas d'onglets séparés.
 
-- Canal : `email` / `whatsapp` / `telegram`
-- Expéditeur : **l'utilisateur connecté** (chaque utilisateur a sa propre config email/WhatsApp — voir §8.4)
-- Destinataire : contact `est_principal=true`, éditable
-- Message : template avec variables (`<client_nom>`, `<numero_doc>`, `<montant>`, `<echeance>`)
-- PJ : PDF du document
+### 14.2 Commercial (`COMMERCIAL`)
 
-Backend : service `communicationService.envoyer({user_id, doc_type, doc_id, canal, ...})` — récupère la config perso de l'utilisateur puis :
+Vue SES clients uniquement.
 
-- Email → SMTP perso de l'utilisateur (ou SMTP société par défaut si non configuré).
-- WhatsApp → **compte WhatsApp Business perso de l'utilisateur** (chacun peut avoir son numéro), avec template approuvé Meta. Fallback : lien `wa.me/<num>?text=<msg>` qui ouvre le WhatsApp du commercial.
-- Telegram → Bot API officiel (partagé société).
+- KPI : clients actifs, devis en cours, CA mois, pipeline
+- Liste devis en attente, commandes en préparation
+- Pipeline funnel
+- **Compte de commissions** :
+  - Taux paramétrable par utilisateur + surchargeable par grille tarifaire
+  - Base : HT hors frais de port
+  - Prévue / Réelle / Versée / Restant à payer
+- Actions : Nouveau client, contact, devis, interaction
 
-Chaque envoi crée une `interaction` avec `id_utilisateur = <expéditeur>`.
+### 14.3 Magasinier Préparation (`MAGASINIER_PREPARATION`)
 
-### 8.4 Configuration email/WhatsApp par utilisateur
+- Commandes `validee`/`en_preparation`/`pretes_a_expedier` uniquement
+- Colonnes : num client + commande + commande client + date envoi visée + priorité + notes + articles par état (en stock, en fabrication, manquant)
+- Bouton "Demander transfert" → workflow §6.5
+- Écran colisage direct (§8.6)
+- Pas de prix visible
 
-Chaque utilisateur peut brancher son propre compte email et son propre WhatsApp Business — les documents partent alors de son adresse et son numéro, pas d'un compte générique société.
+### 14.4 Magasinier MP (`MAGASINIER_MP`)
 
-`utilisateur_config_email` :
+- File OF en attente préparation MP (triés date tissage)
+- Pour chaque OF : liste 8 sélecteurs S01–S08 avec code MP + qté + entrepôt source + lot suggéré
+- Bouton "Préparer kit" → réserve bobines
+- Scan QR bobines, contrôle cohérence
+- Bouton "Kit prêt" → transfert stock, débloque tissage
+- Alertes MP : ruptures, écart lot, quantités insuffisantes → génère demande achat
 
-| Colonne | Type | Note |
-|---|---|---|
-| `id_utilisateur` | FK PK | 1-1 |
-| `email_expediteur` | varchar(150) | ex `salima@laplume.tn` |
-| `nom_expediteur` | varchar(100) | ex "Salima — La Plume" |
-| `smtp_host` | varchar(150) | ex `smtp.gmail.com` |
-| `smtp_port` | int | |
-| `smtp_user` | varchar(150) | |
-| `smtp_password_encrypted` | text | chiffré |
-| `smtp_secure` | bool | TLS |
-| `signature_html` | text | signature auto en pied de mail |
-| `actif` | bool | |
-| `date_dernier_test` | timestamp | dernier test de connexion réussi |
+### 14.5 Magasinier Stock (`MAGASINIER_STOCK`)
 
-`utilisateur_config_whatsapp` :
+- KPI valeur stock, ruptures, alertes, mouvements du jour
+- 3 onglets : Réceptions / Sorties / Transferts
+- Écrans Réception fournisseur, Sortie, Transfert, Inventaire, Alertes
+- Voit prix reviens, pas prix vente
 
-| Colonne | Type | Note |
-|---|---|---|
-| `id_utilisateur` | FK PK | 1-1 |
-| `mode` | enum | `business_api` (Meta officiel) / `lien_wa_me` (fallback simple) |
-| `numero_whatsapp` | varchar(30) | E.164 |
-| `wa_phone_id` | varchar(100) | Meta Business — id du numéro |
-| `wa_token_encrypted` | text | Meta Business — token API |
-| `wa_business_account_id` | varchar(100) | |
-| `template_defaut` | varchar(80) | template Meta approuvé par défaut |
-| `actif` | bool | |
-| `date_dernier_test` | timestamp | |
+### 14.6 Magasinier Sous-Traitants (`MAGASINIER_SOUSTRAITANTS`)
 
-**Fallback** : si un utilisateur n'a pas configuré son email ou son WhatsApp, on utilise la config société (§11) — ADMIN décide via `parametres_societe.smtp_defaut` et `parametres_societe.whatsapp_defaut`.
+- KPI : nb OF en ST, sorties, retours, conformité
+- File d'attente sortie, en cours chez ST, retours à traiter
+- Performance ST : taux 2ème choix (seuils 5/7 %), délai, coût
+- Litiges
+- Bons sortie persistants avec signature obligatoire (§7.11)
 
-Écran "Mon compte" pour chaque utilisateur (accessible depuis avatar en haut à droite) permet de renseigner ces credentials.
+### 14.7 Chef de Production (`CHEF_PRODUCTION`)
 
-### 8.2 Marketing — campagnes de masse
+- KPI atelier : OF en cours, en retard, bloqués QC, TRS, charge machines, MP rupture
+- Planning Gantt interactif (§14.15)
+- Liste OF à planifier, en cours, bloqués QC
+- Vue machines temps réel
+- Actions : Créer OF, sous-traiter étape, débloquer OF
 
-`campagnes_marketing` :
+### 14.8 Chef d'Atelier (`CHEF_ATELIER`)
 
-| Colonne | Type | Note |
-|---|---|---|
-| `id_campagne` | serial PK | |
-| `nom` | varchar(200) | |
-| `type` | enum | `newsletter` / `lancement_produit` / `promo` / `relance` |
-| `canal` | enum | `email` / `whatsapp` / `telegram` / `multi` |
-| `sujet` | varchar(200) | si email |
-| `contenu_html` | text | template |
-| `id_segment` | FK segments_clients | |
-| `date_planifiee` | timestamp | |
-| `statut` | enum | `brouillon` / `planifiee` / `en_cours` / `envoyee` / `annulee` |
-| `stats_envoyes` / `stats_ouverts` / `stats_clics` | int | |
+Opérationnel terrain (issu du legacy `chef_atelier_dashboard v11.tsx`).
 
-`segments_clients` : requête sauvegardée (statut, pays, grille tarif, tag, dernière commande...).
+- **Par Opération** : compteurs par poste finition (Frange, Pliage, Étiquetage, Couture, Repassage, Emballage, Ourlet)
+- **Par Commande** : arbo commande → article → numSuivi → matrice opérations (qteSortie/qteRetour/qteEnCours)
+- **Alertes** : demandes magasinier, dates envoi proches, OF en retard
+- **Maintenance** : demandes mécanicien
+- **Analyse 2ème choix** : taux par ST + répartition types défauts
 
-**Légal** :
+Actions : Scanner numSuivi, Déclarer 2ème (qté + défaut + décision), Demander complément, Demande maintenance.
 
-- Opt-in obligatoire (`consent_marketing_*` sur `comptes`).
-- Lien de désinscription obligatoire dans chaque email.
-- WhatsApp Business : templates approuvés uniquement hors fenêtre 24 h.
+### 14.9 Tisseur (`TISSEUR`) — tablette
 
-### 8.3 Comptes marketing externes (sites, réseaux sociaux, publicité)
+- Kit MP reçu (8 sélecteurs)
+- Mes OF triés par priorité + date planifiée
+- OF en cours : compteur duites machine, cadence temps réel vs prévue
+- Boutons pointage : Démarrer / Pause (motif : casse fil / attente MP / autre) / Reprendre / Terminer
+- Signaler défaut (photo + type)
+- Historique jour : OF terminés, duites totales, cadence moyenne
+- **Rendement** temps + production + 1er/2e choix + valeur perte
 
-Pour piloter les campagnes multi-canal et récupérer les stats (impressions, clics, leads), on connecte les comptes externes.
+### 14.10 Coupeur (`COUPEUR`) — tablette
 
-`comptes_marketing_externes` :
+- File OF sortis tissage (etat_tissage = terminee)
+- OF en cours : rouleau à couper, largeur/longueur, nombre foutas
+- Scan QR rouleau → matière + lot auto
+- Compteur pièces coupées, saisie rebuts
+- Boutons pointage identiques Tisseur
 
-| Colonne | Type | Note |
-|---|---|---|
-| `id_compte_externe` | serial PK | |
-| `type` | enum | `site_web` / `facebook_page` / `instagram` / `tiktok` / `linkedin` / `youtube` / `pinterest` / `google_business` / `google_ads` / `meta_ads` / `tiktok_ads` / `google_analytics` / `google_search_console` / `mailchimp` / `sendgrid` |
-| `libelle` | varchar(150) | ex "Page FB All By Fouta" |
-| `url` | varchar(500) | url publique du compte / site |
-| `identifiant_externe` | varchar(200) | ID Facebook page, ID GA4, tag GTM... |
-| `oauth_token_encrypted` | text | pour APIs qui l'exigent |
-| `api_key_encrypted` | text | pour clés simples |
-| `refresh_token_encrypted` | text | |
-| `date_expiration_token` | timestamp | |
-| `metadata_json` | jsonb | infos spécifiques au type (property_id, ad_account_id...) |
-| `actif` | bool | |
-| `date_derniere_sync` | timestamp | |
+### 14.11 Ourdisseur (`OURDISSEUR`) — tablette
 
-**Cas d'usage** :
+- Vue machines : ensouples préparées vs consommées, alerte < 500 m
+- Bouton "Préparer ensouple" → sélection lot MP + saisie sous-traitant + NM + métrage (≤5000)
+- Poids calculé auto : `(nb_fils × metres × 2)/(NM × 1000)` kg
+- Bouton "Réceptionner ensouple" (retour physique)
+- Correction métrage effectif
 
-- **Sites web** : lien vers catalogue synchronisé (§4.3) — traçage des ventes issues du site.
-- **Réseaux sociaux** (Facebook, Instagram, TikTok, LinkedIn) : publication de campagnes de lancement produit + récupération des leads (formulaires Facebook Lead Ads → alimentent `leads` §2.4).
-- **Google Ads / Meta Ads / TikTok Ads** : lancement, budget, remontée des stats de campagne dans `campagnes_marketing.stats_*`.
-- **Google Analytics / Search Console** : suivi trafic sites vers pages produit, mesure du SEO article (§4.5).
-- **Mailchimp / SendGrid** : envoi de campagnes email de masse via ESP dédié (recommandé au-delà de ~500 destinataires — dépasse SMTP).
+### 14.12 Contrôleur Qualité (`CONTROLEUR_QUALITE`)
 
-**Endpoints** :
+- KPI : contrôles jour, taux conformité, top 5 défauts fréquents, OF bloqués
+- File étapes OF nécessitant contrôle
+- Écran saisie : type, mesures, photos, catégorisation 1er/2e/ourlet/déchet, décision
+- Historique filtres par article / machine / opérateur / défaut
 
-```
-GET|POST|PUT|DELETE  /api/comptes-marketing-externes/:id?  (ADMIN)
-POST /api/comptes-marketing-externes/:id/oauth-connect     — lance flow OAuth
-POST /api/comptes-marketing-externes/:id/test              — test connexion
-POST /api/comptes-marketing-externes/:id/sync              — pull stats / leads
-```
+### 14.13 Mécanicien (`MECANICIEN`)
 
-**Job de synchronisation** planifié : quotidien pour stats ads, temps réel (webhook) pour leads Facebook.
+Curatif + préventif.
+
+- Cartes machines (état, dernière intervention, prochaine échéance)
+- Bouton "Signaler panne" → notifie chef prod, bloque OF
+- Bouton "Démarrer intervention"
+- Plan maintenance préventive : `plan_maintenance` + `interventions_maintenance` (pièces consommées, coût, MTBF/MTTR)
+- Stock pièces détachées (lien §6.1 catégorie `piece_rechange`)
+
+### 14.14 Comptable (`COMPTABLE`)
+
+- KPI : CA du mois, trésorerie, TVA due, factures fournisseur à payer, échéances client à recevoir
+- Journal du jour
+- Écran rapprochement bancaire
+- Écran déclaration TVA en cours de préparation
+- Alertes échéances abonnements récurrents
+- Boutons : nouvelle écriture, valider écriture, imprimer bilan/compte de résultat
+
+### 14.15 Écran Planification & Suivis (module central)
+
+- Gantt drag-drop machines × créneaux
+- Contraintes auto (laize, nb couleurs, MP dispo)
+- Modal Attribution QR MP au drop
+- Panneau latéral : file d'attente OF à planifier
+- Panneau bas : OF en cours / en retard / incidents
 
 ---
 
-## 9. Menu — ce qui reste visible
+## 15. Menu
 
 ```
 Accueil
 ├─ CRM & Clients
-│    ├─ Comptes (clients + prospects)
+│    ├─ Comptes
 │    ├─ Leads
 │    ├─ Contacts
 │    └─ Interactions
@@ -2318,35 +2399,28 @@ Accueil
 │    ├─ Articles (variantes)
 │    ├─ Catalogues
 │    └─ SEO produits web
-├─ Fabrication                     (Phase 2.7)
-│    ├─ BOM (nomenclatures)
-│    ├─ Gammes
-│    ├─ Postes de travail
-│    ├─ Machines
-│    │    └─ Maintenance
-│    ├─ Ordres de fabrication (OF)
-│    ├─ Planning atelier            (Gantt)
-│    ├─ Suivi temps réel
-│    ├─ Contrôle qualité
-│    ├─ Sous-traitance
-│    └─ Analyse des coûts
 ├─ Stock
 │    ├─ Entrepôts
-│    ├─ Vue par catégorie
-│    │    ├─ Produits finis
-│    │    ├─ Produits semi-finis
-│    │    ├─ Matières premières
-│    │    ├─ Fournitures fabrication
-│    │    ├─ Fournitures bureau
-│    │    └─ Emballage
-│    ├─ Mouvements
-│    │    ├─ Réceptions
-│    │    ├─ Sorties
-│    │    └─ Transferts
+│    ├─ Vue par catégorie (PF / SF / MP / Fournitures Fab / Bureau / Emballage / Pièces rechange)
+│    ├─ Mouvements (Réceptions / Sorties / Transferts)
 │    ├─ Réservations
 │    ├─ Lots & traçabilité
 │    ├─ Inventaires
 │    └─ Alertes stock
+├─ Fabrication
+│    ├─ BOM (nomenclatures)
+│    ├─ Gammes
+│    ├─ Postes de travail
+│    ├─ Machines + Maintenance
+│    ├─ Ordres de fabrication (OF)
+│    ├─ OF Stock catalogue (CA)
+│    ├─ Ourdissage
+│    ├─ Préparation MP
+│    ├─ Planning atelier (Gantt)
+│    ├─ Suivi temps réel
+│    ├─ Contrôle qualité
+│    ├─ Sous-traitance (bons sortie/retour, litiges)
+│    └─ Analyse des coûts
 ├─ Ventes
 │    ├─ Devis
 │    ├─ Commandes
@@ -2354,248 +2428,172 @@ Accueil
 │    ├─ Liste de colisage
 │    ├─ Palettes
 │    ├─ Suivi transporteurs
-│    ├─ Factures                  ← ADMIN only
-│    ├─ Paiements & Échéances     ← ADMIN (saisie) / COMMERCIAL (suivi ses clients)
-│    ├─ Relances                  ← ADMIN + COMMERCIAL (ses clients)
-│    ├─ Avoirs                    ← ADMIN only
+│    ├─ Factures                       ← ADMIN
+│    ├─ Paiements & Échéances          ← ADMIN saisie / COMMERCIAL suivi
+│    ├─ Relances                       ← ADMIN + COMMERCIAL
+│    ├─ Avoirs                         ← ADMIN
 │    └─ Bons de retour
-├─ Marketing                       ← ADMIN
+├─ Achats & Fournisseurs
+│    ├─ Fournisseurs
+│    ├─ Demandes d'achat
+│    ├─ Bons de commande
+│    ├─ Réceptions fournisseur
+│    ├─ Factures fournisseur           ← ADMIN
+│    ├─ Contrats de services           (maintenance, honoraires, télécoms…)
+│    ├─ Dépenses espèces courantes     (non comptabilisées ou comptabilisées en bloc)
+│    ├─ Paiements fournisseurs         ← ADMIN
+│    └─ Rapprochement BC ↔ BL ↔ FF
+├─ Comptabilité                        ← ADMIN + COMPTABLE
+│    ├─ Plan de comptes
+│    ├─ Journal & écritures
+│    ├─ Rapprochement bancaire
+│    ├─ Fond de caisse
+│    ├─ Abonnements récurrents
+│    ├─ Immobilisations & amortissements
+│    ├─ TVA (déclarations)
+│    ├─ Rapports (Résultat, Bilan, Grand livre, Balance)
+│    └─ Clôture d'exercice
+├─ Marketing                            ← ADMIN
 │    ├─ Campagnes
 │    ├─ Segments
-│    ├─ Comptes externes           (sites, réseaux sociaux, ads)
+│    ├─ Comptes externes (sites, RS, ads)
 │    └─ Stats & performance
+├─ Messagerie inter-postes             (tous rôles, filtre par poste)
 ├─ Dashboards
-│    ├─ Admin                      (ADMIN uniquement)
-│    ├─ Commercial                 (COMMERCIAL uniquement)
-│    ├─ Magasinier Préparation     (MAGASINIER_PREPARATION uniquement)
-│    ├─ Magasinier Stock           (MAGASINIER_STOCK uniquement)
-│    ├─ Chef Production            (CHEF_PRODUCTION uniquement)
-│    ├─ Tisseur / Coupeur          (tablette — TISSEUR / COUPEUR)
-│    ├─ Contrôle Qualité           (CONTROLEUR_QUALITE uniquement)
-│    └─ Mécanicien / Maintenance   (MECANICIEN uniquement)
-├─ Mon compte                      (tous rôles — sa config perso)
+│    ├─ Admin                         (ADMIN)
+│    ├─ Commercial                    (COMMERCIAL)
+│    ├─ Magasinier Préparation
+│    ├─ Magasinier MP
+│    ├─ Magasinier Stock
+│    ├─ Magasinier Sous-Traitants
+│    ├─ Chef Production
+│    ├─ Chef Atelier
+│    ├─ Tisseur / Coupeur / Ourdisseur   (tablette)
+│    ├─ Contrôle Qualité
+│    ├─ Mécanicien / Maintenance
+│    ├─ Comptable
+│    └─ Planification & Suivis        (outil partagé)
+├─ Mon compte                          (tous)
 │    ├─ Profil
-│    ├─ Paramètre Email            (SMTP perso — §8.4)
-│    └─ Paramètre WhatsApp         (WA Business perso — §8.4)
-└─ Paramètres                      ← ADMIN
-     ├─ Paramètre Société          (§11)
-     ├─ Paramètre CRM              (sources leads, canaux, statuts)
-     ├─ Paramètre Produits         (dimensions, couleurs, finitions, tissages — CRUD)
-     ├─ Paramètre Vente            (grilles tarifaires, tarifs transport, conditions paiement, échéances, relances)
-     ├─ Paramètre Stock             (entrepôts, seuils alerte, types stock, valorisation PMP/FIFO)
-     ├─ Paramètre Fabrication      (gammes types, postes, taux horaires MO, frais fixes atelier, règles ratière)
-     ├─ Paramètre Transporteurs    (transporteurs + credentials API)
-     ├─ Paramètre Commissions      (taux par commercial, grilles)
-     ├─ Paramètre Communication    (templates email/WhatsApp/Telegram, SMTP société défaut, WA Business société défaut, bot Telegram)
-     ├─ Paramètre Marketing        (comptes externes — sites, RS, ads — §8.3)
+│    ├─ Paramètre Email                (SMTP perso)
+│    └─ Paramètre WhatsApp             (WA Business perso)
+└─ Paramètres                          ← ADMIN
+     ├─ Paramètre Société             (§16)
+     ├─ Paramètre CRM
+     ├─ Paramètre Produits            (dimensions, couleurs, finitions, tissages, NM, compositions)
+     ├─ Paramètre Vente               (grilles tarifaires, conditions paiement, échéances, relances)
+     ├─ Paramètre Achats & Fournisseurs
+     ├─ Paramètre Comptabilité        (plan comptes, journaux, exercices, TVA)
+     ├─ Paramètre Stock               (entrepôts, seuils alerte, PMP/FIFO)
+     ├─ Paramètre Fabrication         (gammes types, postes, taux horaires MO, frais fixes)
+     ├─ Paramètre Transporteurs
+     ├─ Paramètre Commissions
+     ├─ Paramètre Communication
+     ├─ Paramètre Marketing
      ├─ Paramètre Pays & TVA
      └─ Paramètre Utilisateurs & rôles
 ```
 
-Tout le reste (RH, sous-traitants, maintenance, planning, Gantt, IA, e-commerce direct, dashboards atelier, tablettes, TimeMoto, portail client) : **masqué**.
+Tout ce qui n'apparaît pas → **masqué**.
 
 ---
 
-## 10. Ordre d'exécution
+## 16. Paramètre Société
 
-1. **Contrat validé** (ce document).
-2. **Cadre technique** : renommer `id_modeles` → `id_modele`, normaliser l'enveloppe API, masquer le menu hors périmètre.
-3. **Phase 1** — CRM & Clients (comptes, contacts, adresses, leads, interactions, grilles tarif).
-4. **Phase 2** — Modèles & articles (variant matrix, détection doublons, image article, EAN, poids/dim) + Catalogues + SEO web + Photos multi.
-5. **Phase 2.5** — Stock & Entrepôts : entrepôts, catégories (PF/SF/MP/fournitures/emballage), mouvements (réception/sortie/transfert), lots, réservations, inventaires, alertes, Dashboard Magasinier Stock.
-6. **Phase 2.7** — Fabrication : BOM, gammes, postes, machines, OF, suivi opérateurs (tablette), contrôle qualité, sous-traitance, planning Gantt, coûts, Dashboards Chef Prod / Tisseur / Coupeur / QC / Mécanicien.
-7. **Phase 3** — Ventes core : Devis → Commande (avec réservation stock + création OF si non-en-stock) → BL → Facture. Livraison croisée. RBAC. Envoi transactionnel.
-8. **Phase 3.1** — Liste de colisage + Palettes + Transporteurs + Suivi API.
-9. **Phase 3.5** — Dashboard Commercial (avec commissions) + Dashboard Magasinier Préparation.
-10. **Phase 4** — Marketing (campagnes + segments).
-11. Rouverture progressive des autres modules si besoin métier.
-
-À chaque phase :
-
-- Écran fonctionne bout-en-bout dans le navigateur avant de passer à la suivante.
-- Tests curl documentés dans `docs/tests.md`.
-- Changelog mis à jour.
-
----
-
-## 11. Paramètre Société
-
-Les informations société apparaissent sur **tous les documents** (devis, factures, BL, avoirs...), alimentent l'en-tête PDF, le site web et les templates emails.
-
-`parametres_societe` (ligne unique — enregistrement singleton) :
+`parametres_societe` (singleton) — informations sur documents.
 
 | Colonne | Type | Note |
 |---|---|---|
-| `id_societe` | serial PK | 1 par défaut (multi-société hors périmètre Phase 1) |
+| `id_societe` | serial PK | 1 par défaut |
 | `raison_sociale` | varchar(200) | |
-| `forme_juridique` | varchar(50) | `SARL`, `SA`, `SUARL`, `EI`... |
+| `forme_juridique` | varchar(50) | SARL, SUARL, SA, EI |
 | `capital_social` | numeric(14,3) | |
 | `devise_capital` | char(3) | |
-| `matricule_fiscal` | varchar(50) | Tunisie |
-| `code_tva` | varchar(30) | numéro TVA |
-| `rc` | varchar(50) | Registre du commerce |
-| `logo_url` | varchar(500) | logo pour PDF / site |
+| `matricule_fiscal` | varchar(50) | |
+| `code_tva` | varchar(30) | |
+| `rc` | varchar(50) | Registre Commerce |
+| `logo_url` | varchar(500) | |
 | `site_web` | varchar(200) | |
 | `email_contact` | varchar(150) | |
-| `telephone_contact` | varchar(30) | |
-| `whatsapp_contact` | varchar(30) | |
-| `mentions_legales_pdf` | text | pied de page des PDF |
-| `conditions_generales_vente` | text | CGV (annexe des devis/factures) |
+| `telephone_contact` / `whatsapp_contact` | varchar(30) | |
+| `smtp_defaut_*` | | fallback si utilisateur non configuré |
+| `whatsapp_defaut_*` | | fallback |
+| `mentions_legales_pdf` | text | pied documents |
+| `conditions_generales_vente` | text | annexe |
 
-`societe_adresses` (plusieurs adresses possibles) :
+`societe_adresses` (multi) : type (`siege_social` / `usine` / `depot` / `bureau_commercial`), adresse complète, `est_principale`.
 
-| Colonne | Type | Note |
-|---|---|---|
-| `id_adresse` | serial PK | |
-| `type` | enum | `siege_social` / `usine` / `depot` / `bureau_commercial` |
-| `libelle` | varchar(100) | |
-| `rue` / `complement` / `code_postal` / `ville` / `region` / `pays` | | |
-| `est_principale` | bool | 1 seule principale (affichée sur documents) |
-
-`societe_bancaires` (plusieurs comptes possibles) :
-
-| Colonne | Type | Note |
-|---|---|---|
-| `id_bancaire` | serial PK | |
-| `libelle` | varchar(100) | "Compte principal TND", "Compte export EUR"... |
-| `banque` | varchar(150) | |
-| `agence` | varchar(150) | |
-| `rib` | varchar(30) | |
-| `iban` | varchar(40) | |
-| `bic_swift` | varchar(15) | |
-| `devise` | char(3) | |
-| `est_defaut` | bool | compte affiché par défaut sur factures |
-| `actif` | bool | |
+`societe_bancaires` (multi comptes) : libellé, banque, agence, RIB, IBAN, BIC, devise, `est_defaut`.
 
 Endpoints :
 
 ```
-GET  /api/parametres/societe            — singleton + adresses + bancaires
-PUT  /api/parametres/societe            — MAJ singleton
+GET  /api/parametres/societe        — singleton + adresses + bancaires
+PUT  /api/parametres/societe
 GET|POST|PUT|DELETE  /api/parametres/societe/adresses/:id
 GET|POST|PUT|DELETE  /api/parametres/societe/bancaires/:id
-POST /api/parametres/societe/logo       — upload logo (multipart)
+POST /api/parametres/societe/logo   — upload multipart
 ```
+
+---
+
+## 17. Ordre d'exécution
+
+1. **Validation contrat** (ce document).
+2. **Cadre technique** :
+   - Rename `id_modeles` → `id_modele` en DB + code
+   - Uniformisation enveloppe API (§2.2)
+   - Masquage menu hors périmètre
+   - Suppression doublons backend (`stock`/`entrepots`, `mrp`/`production`/`of`, `sale`/`purchase`, `quality`/`qualite-avancee`, `articles-catalogue`/`articles-generes`)
+   - Suppression doublons frontend (4 pages articles → 1, 5 pages stock → 1, 4 pages paramètres → 1)
+3. **Phase 1 — CRM & Comptes** (§3) + Tarification (§4)
+4. **Phase 2 — Produits** (§5) : modèles, articles avec 3 refs, photos multi, catalogues, SEO
+5. **Phase 2.5 — Stock** (§6) : entrepôts, mouvements, lots (MP obligatoire), réservations, inventaires, alertes
+6. **Phase 2.7 — Fabrication** (§7) : BOM, gammes, machines, OF Commande + OF Stock CA, ourdissage, tissage, coupe, contrôle qualité 1er/2e/ourlet/déchet, sous-traitance persistante, planning Gantt, coûts, tablettes ateliers
+7. **Phase 3 — Ventes** (§8) : Devis → Commande → BL → Facture, colisage, palettes, transporteurs, paiements & échéances, relances
+8. **Phase 3.2 — Achats & Fournisseurs** (§9)
+9. **Phase 4 — Comptabilité** (§10) : plan comptes, journal, TVA, caisse, rapprochement, immobilisations
+10. **Phase 4 bis — Marketing** (§11.3-11.4)
+11. **Phase 5 — Réouverture progressive** des autres modules si besoin métier (RH étendu, POS, e-commerce…)
+
+À chaque phase :
+- Écran fonctionne bout-en-bout dans navigateur avant passage suivante
+- Tests curl documentés dans `docs/tests.md`
+- Changelog mis à jour
 
 ---
 
 ## Changelog
 
-- `2026-09-22` — v1.0. Création du document. Périmètre CRM + Produits + Ventes fixé.
-- `2026-09-23` — v1.10. Enrichissement dashboards + qualité + pièces rechange :
-  - §1.4 : ajout des rôles `CHEF_ATELIER`, `MAGASINIER_SOUSTRAITANTS`.
-  - §4bis.0 : ajout catégorie **`piece_rechange`** (courroies, cames ratière, roulements, cartes électroniques, aiguilles Dornier, cordes satin).
-  - §4ter.3 : poste `PREPARATION_MP` ajouté à la liste standard (piloté par MAGASINIER_MP).
-  - §4ter.4quater **nouveau** : concept de **complément de fabrication** (sous-OF `.1`) — quand qté 1er choix < qté commandée, création auto d'un sous-OF avec priorité urgente et ordre planification 0. Peut être refusé par le TISSEUR avec motif. Colonnes ajoutées sur `ordres_fabrication` : `id_of_parent`, `type_of`, `motif_refus_complement`.
-  - §4ter.4quinquies **nouveau** : catégorisation **qualité 1er choix / 2ème choix / Ourlet / Déchet**. Extension `controles_qualite` avec `qte_premier_choix`, `qte_second_choix`, `qte_ourlet`, `qte_rebut`, `type_defaut` (tache/couture/fil_casse/dimension/couleur/frange/autre), `decision`. Colonne `qualite` sur `articles` (premier_choix / second_choix) — les seconds choix exposés uniquement sur catalogue "Outlet".
-  - §4ter.4ter **nouveau** : Attribution MP (auto FIFO ou proximité colorimétrique + réattribution manuelle) puis Préparation MP physique (scan QR bobines, vérification cohérence, transfert vers poste tissage). 
-  - §5.2bis **nouveau** : transformation ligne commande → OF. Analyse stock automatique, écran "Aperçu OF" avec plan par ligne (qte_stock / qte_of_existants / qte_a_fabriquer), regroupement multi-lignes, choix priorité et date. Drill-down commercial de la commande vers l'OF vers le poste de travail.
-  - §6.6 Tisseur enrichi : kit MP reçu (8 sélecteurs), compteur duites machine, boutons pointage détaillé (Pause avec motif).
-  - §6.6bis **nouveau** : Dashboard Coupeur / Post-Coupe distinct.
-  - §6.8 Mécanicien **complètement réécrit** : plan de maintenance préventive (fréquence heures/duites/calendrier, pièces nécessaires, procédure PDF), interventions curatives/préventives avec pièces consommées et coût, KPI MTBF/MTTR/dispo, lien stock pièces détachées.
-  - §6.10 **nouveau** : Dashboard Magasinier MP — file OF, scan QR bobines par sélecteur, contrôle cohérence, transfert vers tissage, alertes rupture MP.
-  - §6.11 **nouveau** : Dashboard Chef d'Atelier — onglets Par Opération / Par Commande (drill-down commande→article→numSuivi→matrice opérations) / Alertes / Maintenance / Analyse 2ème choix.
-  - §6.12 **nouveau** : Dashboard Magasinier Sous-Traitants — sorties, en cours ST, retours, analyse perf ST (taux 2ème choix, délai, coût), litiges.
-  - §6.13 **nouveau** : Écran Planification & Suivis (Gantt drag-drop machines×créneaux, contraintes auto laize/couleurs/MP, modal Attribution QR MP au drop, panneaux latéral file d'attente + bas OF en cours/retard/incidents).
-- `2026-09-23` — v1.9. Parité BOM legacy Google Apps + Préparation MP :
-  - §4ter.4 : "Fiche OF" clarifiée — l'OF fige 4 choses au démarrage : gamme (postes) + BOM MP + fournitures/emballage + affectations planning. Écran chef prod à 4 onglets (Article, Postes à faire, BOM MP, Fournitures & emballage).
-  - §4ter.4 : `of_consommations_mp` renommé `of_consommations` — couvre MP + fournitures + emballage + étiquettes via `role` enum (chaîne / trame / fourniture / emballage / etiquette). Ajout `numero_selecteur` (1-8) pour aligner sur les sélecteurs machine.
-  - §4ter.4bis **nouvelle section** : parité fonctionnelle avec le fichier legacy `BOM 2025-2026.xlsx` feuille `Base Commandes` (84 colonnes). Structure à 8 sélecteurs (S01→S08) documentée. Mapping colonne legacy ↔ colonne nouvelle. Champs tissage ajoutés sur `ordres_fabrication` : `id_machine_prevue`, `temps_production_prevu_sec`, `compteur_machine_affichage`, `largeur_tissu_cm`, `longueur_tissu_m`, `metrage_fil_chaine_m`, `duite_par_cm`, `nb_duites_total_production`, `qr_mp_final`. États multi-phase séparés : `etat_preparation_mp`, `etat_tissage`, `etat_coupe`.
-  - §4ter.4bis : concept "2ème fabrication" — étape post-tissage (frange/ourlet/lavage), soit modélisée sur un OF unique via flag `est_deuxieme_passe` sur `of_etapes`, soit via un OF secondaire consommant un SF (à trancher).
-  - §4ter.4bis : poste `PREPARATION_MP` ajouté à la liste standard §4ter.3 + rôle dédié `MAGASINIER_MP` (§1.4) — prépare les kits MP par sélecteur avant tissage.
-  - §4ter.4bis : rôle Planification clarifié — assignation machine × créneaux, vérification contraintes (laize, nb couleurs, MP dispo), séquencement automatique Prep MP → Tissage → Coupe → 2ᵉ passe.
-- `2026-09-23` — v1.8. Ajout poste Étiquetage :
-  - §4ter.3 : ajout du poste `ETIQUETAGE` (finition) — étiquettes tissées cousues, autocollantes, carton papier, code-barres/EAN. Note : peut être fusionné avec Couture ou Ourlet selon organisation.
-- `2026-09-23` — v1.7. Postes atelier explicités :
-  - §4ter.3 : colonnes `categorie` + `taux_horaire_mo` ajoutées à `postes_travail`.
-  - §4ter.3 : **liste standard de 18 postes fouta** (seed initial) — Bobinage, Ourdissage, Encollage, Nouage chaîne, Tissage, Coupe, Post-coupe Frange/Ourlet/Couture, Impression, Broderie, Lavage, Repassage, Contrôle qualité, Pliage, Emballage unitaire, Atelier préparation commandes, Expédition — chacun avec catégorie + sous-type gamme + rôle métier.
-  - §4ter.3 : **clarification** de la distinction entre "Ateliers de fabrication" (machines production, pilotés par CHEF_PRODUCTION + opérateurs) et "Atelier de préparation commandes" (zone logistique aval, entrepôt type `atelier_preparation`, piloté par MAGASINIER_PREPARATION).
-- `2026-09-23` — v1.6. Phase 2.7 Fabrication :
-  - §1.4 nouveaux rôles : `CHEF_PRODUCTION`, `TISSEUR`, `COUPEUR`, `CONTROLEUR_QUALITE`, `MECANICIEN`.
-  - §4ter **nouveau chapitre complet** — 12 sous-sections :
-    - 4ter.0 Vocabulaire (BOM, gamme, poste, machine, OF, étape, ratière, sélecteur couleur).
-    - 4ter.1 `bom` + `bom_lignes` (nomenclature versionnée par article, avec rôles chaîne/trame/fourniture/emballage et remplacements possibles).
-    - 4ter.2 `gammes` + `gamme_etapes` (séquence type par catégorie, config bloquante/QC/sous-traitance).
-    - 4ter.3 `postes_travail` + `machines` (Dornier, ratière, sélecteur couleur, laize, nb fils, cadence, état).
-    - 4ter.4 `ordres_fabrication` + `of_etapes` + `of_consommations_mp` (BOM figée + gamme copiée, cout théorique/réel, lot produit).
-    - 4ter.5 `of_pointages` (suivi temps réel opérateurs avec type_event début/pause/reprise/fin/panne + machine + quantité).
-    - 4ter.6 `controles_qualite` (par étape ou global, mesures json, photos, action laisser passer/rework/rebut, blocage OF).
-    - 4ter.7 Sous-traitance (extension `soustraitants` + `of_sous_traitance` avec bons de sortie/retour + interaction stock via entrepôt virtuel sous-traitant).
-    - 4ter.8 Planning atelier (Gantt drag-drop, contraintes machine, `planning_slots`).
-    - 4ter.9 Coûts (formule MP+MO+ST+frais fixes, `of_couts` snapshot, alimente rétroactivement `articles.prix_reviens`).
-    - 4ter.10 Cycle de vie OF (BROUILLON → PLANIFIE → EN_ATTENTE_MP → EN_COURS → PRET → TERMINE → CLÔTURÉ).
-    - 4ter.11 Endpoints (BOM, gammes, machines, OF, contrôles, sous-traitance, planning, coûts).
-    - 4ter.12 Impacts sur autres phases (mouvements stock, création OF depuis commande, magasinier prépa voit avancement, notifications blocage).
-  - §6.5 nouveau Dashboard **Chef de Production** : KPI atelier, planning Gantt, OF à planifier / en cours / bloqués.
-  - §6.6 nouveaux Dashboards **Opérateurs (Tisseur / Coupeur)** — tablette : mes OF, scan QR MP, boutons pointage, saisie défauts.
-  - §6.7 nouveau Dashboard **Contrôleur Qualité** : contrôles à faire, saisie mesures + photos + action, historique défauts.
-  - §6.8 nouveau Dashboard **Mécanicien / Maintenance** : état machines, alertes préventives, interventions, MTBF/MTTR.
-  - §6.9 Dashboard Admin renuméroté.
-  - §9 menu : nouvelle branche "Fabrication" (BOM, Gammes, Postes, Machines+Maintenance, OF, Planning, Suivi temps réel, Contrôle qualité, Sous-traitance, Analyse coûts) + Dashboards ateliers (Chef Prod / Tisseur-Coupeur / QC / Mécanicien) + Paramètre Fabrication.
-  - §10 ordre d'exécution : Phase 2.7 insérée entre Stock (2.5) et Ventes (3).
-- `2026-09-23` — v1.5. Unification MP dans le modèle Modèle → Articles :
-  - §4bis.0.1 **réécrit** — les MP réutilisent les tables `modeles` + `articles`. Pas de table `matieres_premieres` séparée.
-  - `modeles.type_produit` ajouté (`produit_fini` / `semi_fini` / `matiere_premiere` / `fourniture_fabrication` / `fourniture_bureau` / `emballage`).
-  - `modeles.format_ref_commerciale` + `.format_ref_fabrication` — template configurable par modèle (défaut par type_produit).
-  - Types d'attributs élargis : ajout `numero_metrique`, `composition`, `torsion`, `grammage` avec leurs tables `parametres_*` dédiées.
-  - Format ref MP : `<CODE_NUM_METRIQUE>-<CODE_COULEUR><SUFFIXE>` (ex `NM15-01.00`) — issu du BOM existant.
-  - Colonnes `articles` additionnelles utiles MP : `qr_code`, `id_fournisseur_defaut`, `prix_moyen_pondere_kg`.
-  - §4bis.0.2 **nouveau** — **lot obligatoire** pour tout article MP en stock. Champs additionnels sur `lots_articles` (numéro lot fournisseur, id_fournisseur, date_reception, certificat_conformite, couleur mesurée, poids bobine). Chaque `stock_article_entrepot` d'un MP a `id_lot NOT NULL`. Mouvements MP portent obligatoirement `id_lot`. Écran vue par lot dans Dashboard Magasinier Stock.
-- `2026-09-23` — v1.4. Ajout Phase 2.5 Stock & Entrepôts :
-  - §4bis **nouveau chapitre** complet :
-    - 4bis.0 : 5 catégories de stock — Produits finis, Semi-finis, Matières premières (schéma dédié §4bis.0.1 avec numéro métrique + code fabrication issu du BOM Excel), Fournitures fabrication, Fournitures bureau, Emballage.
-    - 4bis.1 `entrepots` : type (usine / principal / atelier_preparation / magasin_vente / hub_transit / sous_traitant).
-    - 4bis.2 `emplacements` (subdivision facultative).
-    - 4bis.3 `stock_article_entrepot` : dénormalisé (dispo / réservé / en réception / total).
-    - 4bis.4 `mouvements_stock` : 3 grands types UI (Réception, Sortie, Transfert) + 10 sous-types (reception_fournisseur, entree_fabrication, sortie_vente, transfert_entrepot, reservation, liberation_reservation, ajustement_+/−, retour_client, mise_au_rebut). Immuable, transactionnel.
-    - 4bis.5 `lots_articles` : traçabilité par lot fabrication.
-    - 4bis.6 `reservations_stock` : commande validée → réservation auto → sortie à l'expédition.
-    - 4bis.7 `inventaires` + `inventaire_lignes` : comptage + génération ajustements à clôture.
-    - 4bis.8 **workflow UI demandé** : Entrepôts → Vue Entrepôt → Vue Article → historique mouvements + par lot.
-    - 4bis.9 alertes stock bas (job cron).
-    - 4bis.10 endpoints complets.
-    - 4bis.11 impacts sur §4.4 (`stock_total` = vue agrégée), §5.2 (réservation auto), §5.6 (scan colisage crée mouvement), §6.2 (transfert magasinier prépa).
-  - §1.4 nouveau rôle `MAGASINIER_STOCK` (distinct de MAGASINIER_PREPARATION).
-  - §6.3 **nouveau Dashboard Magasinier Stock** : KPI stock, 3 onglets Réceptions / Sorties / Transferts, filtres par catégorie et entrepôt, écran inventaire, alertes. Ne voit pas les prix de vente ni commissions mais voit prix de reviens et valorisation.
-  - §6.4 renuméroté Dashboard Admin.
-  - §9 menu réorganisé : nouvelle branche "Stock" avec sous-menus (Entrepôts, Vue par catégorie, Mouvements ×3, Réservations, Lots, Inventaires, Alertes) + branche "Dashboards" enrichie de Magasinier Stock. Ajout "Paramètre Stock".
-  - §10 ordre d'exécution : Phase 2.5 insérée entre Produits et Ventes.
-- `2026-09-23` — v1.3. 3ème passe retours utilisateur :
-  - §4.4 : **règles de génération des refs réécrites d'après les 1531 articles réels** (`docs/references/references_articles.csv`) :
-    - `ref_commerciale` : `<CODE_MODELE><DIM4>-<LETTRE_NB_COULEURS><COULEUR2>-<NUANCE2>[-<CODES_ADD>]` (ex `AR1020-B02-03`, `BA1020-C15-01-25`, `EPU0919-19`).
-    - `ref_fabrication` : idem + tiret après lettre nb couleurs + codes couleurs de trame étendus (ex `AR1020-B-02-03`, `ST2020-S-15-07-17-06-18-03`).
-    - Dimension = largeur+longueur en 2 chiffres chacun (`100/200` → `1020`, `90/190` → `0919`). Non-numérique : code alpha (ADU, KID).
-    - Lettres nombre couleurs : B(2) T(3) Q(4) C(5) S(6). Absente si uni.
-    - `code_article` = `ref_commerciale`, non modifiable après création.
-    - Surcharge manuelle ADMIN autorisée pour ref_commerciale/ref_fabrication (utile cas matières spéciales `LuAr`, `lin`).
-  - §4.4 : **EAN-13 + EAN-8** — auto-généré (préfixe GS1 société + compteur + check digit), modifiable manuellement. Config dans `parametres_ean`.
-  - §4.4 : **poids et dimensions physiques** de l'article fini (`poids_net_g`, `poids_brut_g`, `longueur_cm`, `largeur_cm`, `hauteur_cm`, `volume_cm3`, `fragile`) → alimente calcul frais port, pesée colis auto, choix transporteur, poids volumétrique.
-  - §4.2bis **nouvelle section** — table `photos` polymorphique pour 1-N photos par modele/article/catalogue avec `est_principale` + ordre + redimensionnement auto.
-  - §4.1 / §4.3 / §4.4 : `image_url` remplacé par `image_url_principale` (dénormalisée depuis §4.2bis).
-  - §4.3 : ajout `description` sur catalogue.
-- `2026-09-23` — v1.2. 2ème passe retours utilisateur :
-  - §4.4 : **3 références** définies (code_article technique / ref_fabrication atelier / ref_commerciale client) + règles de génération auto + surchargeable ADMIN.
-  - §4.6 : endpoints CRUD explicites pour chaque type d'attribut (dimensions, couleurs, finitions, tissages, nombres-couleurs, personnalisations) — ADMIN peut ajouter/modifier les attributs.
-  - §5.6 : format numero_colis corrigé avec tiret → `C<3chif>-<3chif>-<NNN>` (ex `C234-567-001`).
-  - §5.10 **nouvelle section** Paiements & Échéances : tables `echeances`, `paiements`, `paiement_echeances`, `relances`. Job cron relances auto. Vue "État de compte client" filtrable. Endpoints paiements/relances/état-compte.
-  - §6.1 : taux commission — par utilisateur ET surchargeable par grille tarifaire (double niveau).
-  - §8.1 : envoi document part depuis **l'utilisateur connecté** (son email, son WhatsApp).
-  - §8.3 **nouvelle section** Comptes marketing externes : sites, Facebook, Instagram, TikTok, LinkedIn, Google Ads, Meta Ads, GA, Search Console, Mailchimp, SendGrid — connecteurs OAuth + sync stats/leads.
-  - §8.4 **nouvelle section** Configuration email/WhatsApp par utilisateur — tables `utilisateur_config_email`, `utilisateur_config_whatsapp`. Fallback config société.
-  - §9 menu : ajout "Paiements & Échéances", "Relances", "Comptes externes marketing", "Stats & performance", "Mon compte" (config perso). "Paramètre Marketing" ajouté au bloc paramètres.
-- `2026-09-23` — v1.1. Intégration des retours utilisateur :
-  - Périmètre Phase 3 : ajout **Liste de colisage** + **Transporteur & suivi**.
-  - §3.1 : précision — grilles tarifaires extensibles et attribuables par client.
-  - §4.1 : **suppression** des colonnes `prix_reviens_base` / `prix_vente_base` du modèle (les prix vivent sur `articles`).
-  - §4.3 : **nouvelle section** `catalogues` + `article_catalogues` (regroupement + sync web type Shopify/WooCommerce, ex ALL BY FOUTA).
-  - §4.4 : ajout `image_url` par article.
-  - §4.5 : **nouvelle section** `article_seo` pour référencement web.
-  - §5.5 : **nouvelle section** frais de port (ligne à part, hors HT article — base de commission).
-  - §5.6 : **nouvelle section** liste de colisage (numéro `C<3chif_client><3chif_cmd>-<NNN>`, scan article, photo colis).
-  - §5.7 : **nouvelle section** palettes + transporteurs (Vectorys, Dachser, Germanetti, GLS, Besson, Mazet, Colissimo…) + suivi API.
-  - §5.8 : endpoints ventes complétés (colisage, palettes, transporteurs, tarifs transport).
-  - §6.1 : Dashboard Commercial enrichi — création client/contact, compte de commissions (prévue / réelle / versée / restant), taux paramétrable.
-  - §6.2 : renommé "Magasinier Préparation" ; champs visibles précisés (num client, dates, priorité, notes, état articles) ; workflow transfert entrepôt ; ne voit pas soldée/livrée ni prix.
-  - §6.3 : Admin ne voit pas Dashboard Commercial / Magasinier en tant qu'onglets séparés dans son menu.
-  - §9 : menu Paramètres réorganisé, chaque section nommée `Paramètre <domaine>` (uniformisation).
-  - §11 : **nouvelle section** Paramètre Société (multi-adresses, multi-comptes bancaires, logo, capital, CGV…).
+- `2026-09-23` — **v2.0.1** : ajouts sur Achats & Comptabilité :
+  - §9.8 **Achats de services** — type_fournisseur `service`/`mixte`, pas de réception physique, compte 61/62, table `contrats_services` pour récurrents (maintenance, télécoms, honoraires).
+  - §9.9 **Achats espèces non comptabilisés** — nouvelle table `depenses_courantes_espece` (journal informel : pourboires, café ouvriers, dépannage). Décrémente la caisse (mouvement type `frais`) mais pas d'écriture comptable par défaut. Option "Comptabiliser en bloc" en fin de mois génère UNE écriture globale. Seuil configurable (défaut 100 DT) au-dessus duquel une facture + écriture sont obligatoires.
+  - Menu §15 : "Contrats de services" et "Dépenses espèces courantes" ajoutés au bloc Achats.
+- `2026-09-23` — **v2.0** : refonte complète.
+  - Restructuration en 17 sections claires, numérotation propre.
+  - **Nouveauté majeure** : Phase 3.2 Achats & Fournisseurs (§9) et Phase 4 Comptabilité (§10) complètes — plan SYSCOA simplifié, journal, TVA, caisse, rapprochement bancaire, abonnements récurrents (loyer, électricité, eau, internet, assurance), immobilisations & amortissements, bilan, compte de résultat, clôture d'exercice.
+  - **Rôle `COMPTABLE`** ajouté.
+  - **Intégration exhaustive du legacy** (17 modules `.gs` analysés) :
+    - Numérotation officielle alignée (DV, CMD, FA sur 4 chiffres, BL, AV, BR, OF sur 6 chiffres, CA sur 4 chiffres OF Stock, colis `C{XXX}-{YYY}-{NNN}`, palette `PAL{YY}-{seq}`, étiquettes `-SUR`/`-DEU`)
+    - Constantes fixées : TVA 19 %, timbre 1 DT, alerte tissage 500 m, plafond ensouple 5000 m, 5 pièces/étiquette défaut
+    - États OF précis (`OF_ETATS`) : Prep MP (`Non Préparé` / `Préparé Partiel` / `Préparé` / `Pas de Besoin` / `Manque Matiere`), Tissage (`Attente` / `Planifier` / `Machine Alimentée` / `Départ` / `En cours` / `Pause` / `Terminé` / `Terminé Qte Manquante`), Coupe (`Non Démarré` / `En cours` / `Pause` / `Terminé` / `Terminé Qte Manquante`)
+    - Formules calcul MP chaîne : `(nb_fils × m × 2) / (NM × 1000)`
+    - Snapshot temps réel `OFs_Tissage` (37 colonnes) — pattern architectural retenu
+    - Journal coupe (`total = 1re + 2e + déchet + ourlet`, `qte_acceptee = 1re + approuvee`)
+    - Étiquettes lot A4 2×4 = 8/page, QRious v4.0.2 + fallback
+    - BOM Master + Composants avec auto-création si `Type de Fabrication = Unique`
+    - Sélecteurs S01–S08 (legacy 6, contrat 8 pour extension)
+    - Lettre `U` (uni) ajoutée aux nomenclatures nb couleurs (U/B/T/Q/C/S/Sept/Huit)
+    - Vocab machines aligné : `Largeur de Foyer`, `Vibration bielle/min`, `Type de Programme`
+    - Format QR MP `CC_XXX_XXX_Lot` conservé pour compat physique
+    - Ourdissage : formule poids, seuil 500 m, plafond 5000 m, liaison implicite ensouple ↔ OF via machine
+  - **Messagerie inter-postes** (§12) complète — remplace `Hub > Messages_Postes` avec 8 postes source/destination, 4 catégories, alertes automatiques
+  - **OF Stock CA** (§7.5) distinct des OF Commande — préfixe `CA{4chiffres}`
+  - **Complément de fabrication** (sous-OF `.1`) modélisé avec `id_of_parent`, refus tisseur possible
+  - **Catégorisation qualité** 1er choix / 2e choix / Ourlet / Déchet dans `controles_qualite` avec `type_defaut` (tache, couture, fil cassé, dimension, couleur, frange, autre)
+  - **Sous-traitance persistante** (§7.11) — bons sortie/retour avec signature obligatoire, numéros, litiges (lacune legacy comblée)
+  - **Stock réservé maintenant déduit du disponible** (bug legacy corrigé) — `quantite_reservee` + `quantite_en_colisage` séparés
+  - **Bugs legacy corrigés** listés en §2.6
+  - Suppression du concept "grilles tarifaires optionnelles" — les grilles sont désormais une entité de base (§4), la vente sans grille utilise une grille défaut `PART` (Particulier).
+
+Historique v1.0–1.10 conservé sur git (branches et commits antérieurs). Voir aussi : `docs/coverage-matrix.md`, `docs/legacy-*.md` pour les analyses détaillées ayant nourri cette v2.0.
