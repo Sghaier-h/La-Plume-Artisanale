@@ -1,6 +1,6 @@
 # La Plume Artisanale — Contrat de domaine
 
-Version : 1.1 · Statut : brouillon en validation
+Version : 1.2 · Statut : brouillon en validation
 
 Ce document est la **source de vérité** pour le vocabulaire, les entités, les endpoints et les règles métier du projet.
 
@@ -279,12 +279,22 @@ Un **catalogue** est un regroupement d'articles publiable (interne, ou synchroni
 
 Une combinaison unique d'attributs d'un modèle = un article sellable. Table actuelle `articles_catalogue` → **renommer** en `articles`.
 
+**3 références par article** :
+
+- `code_article` — **identifiant technique système**, unique, jamais affiché client. Ex : `AR1020-D005-C002-F001-T003` (concaténation des ids). Sert de clé interne pour scan, jointures.
+- `ref_fabrication` — **référence atelier**, imprimée sur les OF, cartes de production. Format : `<code_modele>-<code_dimension>-<code_tissage>-<code_finition>-<code_nb_couleurs>`. Ex : `AR-1020-JQ-FR-2C` (dimension 100×200, tissage Jacquard, finition franges, 2 couleurs). L'atelier lit ça facilement.
+- `ref_commerciale` — **référence catalogue vente**, visible sur devis/facture/site web. Format : `<code_modele>-<code_couleur><suffixe>`. Ex : `AR1020-BLC01` (ARTHUR 100×200 blanc). Concise, marketing-friendly. Peut être surchargée manuellement par l'ADMIN.
+
+Toutes les 3 générées automatiquement à la création, modifiables uniquement par ADMIN si besoin (attention aux impacts sur documents antérieurs — snapshot obligatoire dans les lignes).
+
 | Colonne | Type | Note |
 |---|---|---|
 | `id_article` | serial PK | |
 | `id_modele` | FK modeles | requis |
-| `code_article` | varchar(50) unique | auto `<code_modele>-<D>-<C>-<F>` (ex `AR1020-B02-03`) |
-| `designation` | varchar(300) | auto : `<libelle_modele> <dimension> <couleur>` |
+| `code_article` | varchar(80) unique | technique, auto — `<code_modele>-D<id>-C<id>-F<id>-T<id>-N<id>` |
+| `ref_fabrication` | varchar(80) unique | auto — pour l'atelier (voir ci-dessus) |
+| `ref_commerciale` | varchar(80) unique | auto puis surchargeable ADMIN — pour clients |
+| `designation` | varchar(300) | auto : `<libelle_modele> <dimension> <couleur> <finition>` |
 | `image_url` | varchar(500) | photo spécifique de la variante |
 | `id_dimension` | FK parametres_dimensions | |
 | `id_couleur` | FK parametres_couleurs | |
@@ -340,6 +350,14 @@ GET    /api/articles/:id/seo?id_catalogue=    — récup SEO
 PUT    /api/articles/:id/seo                  — MAJ SEO
 
 GET    /api/parametres/attributs              — bundle {dimensions, couleurs, finitions, tissages, personnalisations, nombres_couleurs}
+
+Attributs (CRUD ADMIN pour chaque type) :
+GET|POST|PUT|DELETE  /api/parametres/dimensions/:id?
+GET|POST|PUT|DELETE  /api/parametres/couleurs/:id?
+GET|POST|PUT|DELETE  /api/parametres/finitions/:id?
+GET|POST|PUT|DELETE  /api/parametres/tissages/:id?
+GET|POST|PUT|DELETE  /api/parametres/nombres-couleurs/:id?
+GET|POST|PUT|DELETE  /api/parametres/personnalisations/:id?
 ```
 
 ---
@@ -430,7 +448,7 @@ Chaque BL a une **liste de colisage** = les colis (ou palettes) qui composent ph
 | Colonne | Type | Note |
 |---|---|---|
 | `id_colis` | serial PK | |
-| `numero_colis` | varchar(30) unique | **format `C<3 derniers chiffres id_client><3 derniers chiffres id_commande>-<NNN>`** (ex `C123456-001`) |
+| `numero_colis` | varchar(30) unique | **format `C<3 derniers chiffres id_client>-<3 derniers chiffres id_commande>-<NNN>`** (ex `C234-567-001`) |
 | `id_bl` | FK bons_livraison | |
 | `id_palette` | FK palettes | nullable — colis peut être groupé dans une palette |
 | `id_client_final` | FK comptes | destinataire final (peut différer de bl.id_client_livraison en cas de dispatch Marseille) |
@@ -554,7 +572,95 @@ Bon de retour : /api/retours               GET|POST|PUT|DELETE
   - émettre une facture (`brouillon` → `emise`)
   - émettre un avoir
   - marquer une commission comme versée (§6)
-- **COMMERCIAL** : voit ses factures en lecture seule pour suivi paiement.
+  - enregistrer un paiement client (§5.10)
+- **COMMERCIAL** : voit ses factures + paiements + échéances en lecture seule pour suivi.
+
+### 5.10 Paiements & Échéances
+
+Chaque facture peut être payée en une ou plusieurs fois (échéances). Le système suit qui a payé quoi, quand, ce qui reste, et déclenche des relances automatiques.
+
+`echeances` (échéances prévues d'une facture) :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_echeance` | serial PK | |
+| `id_facture` | FK factures | |
+| `numero_echeance` | int | 1, 2, 3... pour une facture multi-échéances |
+| `date_echeance` | date | date à laquelle le paiement est dû |
+| `montant_du` | numeric(14,3) | montant TTC prévu pour cette échéance |
+| `mode_paiement_prevu` | enum | `virement` / `cheque` / `especes` / `traite` / `carte` |
+| `statut` | enum | `a_payer` / `paye_partiel` / `paye` / `en_retard` / `annule` |
+| `montant_paye` | numeric(14,3) | somme des paiements associés (dénormalisé) |
+| `date_derniere_relance` | timestamp | |
+| `nb_relances` | int | |
+| `note` | text | |
+
+**Génération automatique** : à l'émission d'une facture, on crée les échéances selon les conditions de paiement du client (`conditions_paiement` — table configurable en Paramètre Vente). Ex : "30 % à la commande, 70 % à 30 jours" → 2 échéances.
+
+`paiements` (paiements réels reçus) :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_paiement` | serial PK | |
+| `id_client` | FK comptes | qui a payé |
+| `date_paiement` | date | date d'encaissement |
+| `montant` | numeric(14,3) | montant TTC reçu |
+| `mode_paiement` | enum | `virement` / `cheque` / `especes` / `traite` / `carte` |
+| `reference_paiement` | varchar(100) | n° chèque, n° virement, n° traite |
+| `id_bancaire` | FK societe_bancaires | compte crédité (voir §11) |
+| `note` | text | |
+| `piece_jointe_url` | varchar(500) | scan chèque, avis de virement |
+| `enregistre_par` | FK utilisateurs | ADMIN qui a saisi |
+
+`paiement_echeances` (répartition d'un paiement sur des échéances — un paiement peut couvrir plusieurs échéances OU une échéance peut nécessiter plusieurs paiements partiels) :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id` | serial PK | |
+| `id_paiement` | FK | |
+| `id_echeance` | FK | |
+| `montant_impute` | numeric(14,3) | portion du paiement allouée à cette échéance |
+
+**Relances** :
+
+`relances` (historique) :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_relance` | serial PK | |
+| `id_echeance` | FK | |
+| `niveau` | enum | `rappel` (0-7j retard) / `relance` (8-30j) / `mise_en_demeure` (>30j) |
+| `canal` | enum | `email` / `whatsapp` / `courrier` |
+| `template_utilise` | varchar(50) | référence template |
+| `envoye_le` | timestamp | |
+| `envoye_par` | FK utilisateurs | ou 'auto' si job planifié |
+| `contenu_snapshot` | text | contenu envoyé |
+| `reponse_client` | text | si retour |
+
+**Job cron** (`node-cron`) tourne quotidiennement, sélectionne les échéances en retard non payées, applique la politique de relance configurée en Paramètre Vente (délais + templates), envoie l'email (ou WhatsApp), crée la ligne `relances`, crée une `interaction`.
+
+**Vue "État de compte client"** (accessible par commercial pour SES clients, par admin partout) :
+
+- Liste factures : émise, date, montant total, montant payé, montant restant, statut échéances.
+- Filtrable : `impayees_seulement`, `en_retard`, `payees`, `periode`.
+- Bouton "Enregistrer paiement" (ADMIN) → modal saisie paiement + répartition auto/manuelle sur échéances.
+- Bouton "Relancer maintenant" (ADMIN & COMMERCIAL sur ses clients) → choix template + canal + envoi immédiat.
+
+**Endpoints** :
+
+```
+GET  /api/echeances?statut=en_retard&id_client=          — liste
+GET  /api/factures/:id/echeances                          — échéances d'une facture
+
+POST /api/paiements                                       — enregistrer un paiement (ADMIN)
+GET  /api/paiements?id_client=&periode=                   — liste
+POST /api/paiements/:id/imputer                           — répartir sur échéances
+
+POST /api/echeances/:id/relancer                          — envoyer relance manuelle
+GET  /api/relances?id_echeance=                           — historique
+
+GET  /api/clients/:id/etat-compte                         — vue consolidée (impayés, prévus, historique)
+```
 
 ---
 
@@ -673,17 +779,56 @@ La règle TVA est **dérivée** de `pays` + `type_compte` + `numero_tva_intracom
 Chaque document a un bouton **"Envoyer"** ouvrant un modal :
 
 - Canal : `email` / `whatsapp` / `telegram`
+- Expéditeur : **l'utilisateur connecté** (chaque utilisateur a sa propre config email/WhatsApp — voir §8.4)
 - Destinataire : contact `est_principal=true`, éditable
 - Message : template avec variables (`<client_nom>`, `<numero_doc>`, `<montant>`, `<echeance>`)
 - PJ : PDF du document
 
-Backend : service `communicationService.envoyer(...)` :
+Backend : service `communicationService.envoyer({user_id, doc_type, doc_id, canal, ...})` — récupère la config perso de l'utilisateur puis :
 
-- Email → SMTP.
-- WhatsApp → **Business API officielle** avec template approuvé. Fallback : lien `wa.me/<num>?text=<msg>`.
-- Telegram → Bot API officiel.
+- Email → SMTP perso de l'utilisateur (ou SMTP société par défaut si non configuré).
+- WhatsApp → **compte WhatsApp Business perso de l'utilisateur** (chacun peut avoir son numéro), avec template approuvé Meta. Fallback : lien `wa.me/<num>?text=<msg>` qui ouvre le WhatsApp du commercial.
+- Telegram → Bot API officiel (partagé société).
 
-Chaque envoi crée une `interaction`.
+Chaque envoi crée une `interaction` avec `id_utilisateur = <expéditeur>`.
+
+### 8.4 Configuration email/WhatsApp par utilisateur
+
+Chaque utilisateur peut brancher son propre compte email et son propre WhatsApp Business — les documents partent alors de son adresse et son numéro, pas d'un compte générique société.
+
+`utilisateur_config_email` :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_utilisateur` | FK PK | 1-1 |
+| `email_expediteur` | varchar(150) | ex `salima@laplume.tn` |
+| `nom_expediteur` | varchar(100) | ex "Salima — La Plume" |
+| `smtp_host` | varchar(150) | ex `smtp.gmail.com` |
+| `smtp_port` | int | |
+| `smtp_user` | varchar(150) | |
+| `smtp_password_encrypted` | text | chiffré |
+| `smtp_secure` | bool | TLS |
+| `signature_html` | text | signature auto en pied de mail |
+| `actif` | bool | |
+| `date_dernier_test` | timestamp | dernier test de connexion réussi |
+
+`utilisateur_config_whatsapp` :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_utilisateur` | FK PK | 1-1 |
+| `mode` | enum | `business_api` (Meta officiel) / `lien_wa_me` (fallback simple) |
+| `numero_whatsapp` | varchar(30) | E.164 |
+| `wa_phone_id` | varchar(100) | Meta Business — id du numéro |
+| `wa_token_encrypted` | text | Meta Business — token API |
+| `wa_business_account_id` | varchar(100) | |
+| `template_defaut` | varchar(80) | template Meta approuvé par défaut |
+| `actif` | bool | |
+| `date_dernier_test` | timestamp | |
+
+**Fallback** : si un utilisateur n'a pas configuré son email ou son WhatsApp, on utilise la config société (§11) — ADMIN décide via `parametres_societe.smtp_defaut` et `parametres_societe.whatsapp_defaut`.
+
+Écran "Mon compte" pour chaque utilisateur (accessible depuis avatar en haut à droite) permet de renseigner ces credentials.
 
 ### 8.2 Marketing — campagnes de masse
 
@@ -710,6 +855,46 @@ Chaque envoi crée une `interaction`.
 - Lien de désinscription obligatoire dans chaque email.
 - WhatsApp Business : templates approuvés uniquement hors fenêtre 24 h.
 
+### 8.3 Comptes marketing externes (sites, réseaux sociaux, publicité)
+
+Pour piloter les campagnes multi-canal et récupérer les stats (impressions, clics, leads), on connecte les comptes externes.
+
+`comptes_marketing_externes` :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_compte_externe` | serial PK | |
+| `type` | enum | `site_web` / `facebook_page` / `instagram` / `tiktok` / `linkedin` / `youtube` / `pinterest` / `google_business` / `google_ads` / `meta_ads` / `tiktok_ads` / `google_analytics` / `google_search_console` / `mailchimp` / `sendgrid` |
+| `libelle` | varchar(150) | ex "Page FB All By Fouta" |
+| `url` | varchar(500) | url publique du compte / site |
+| `identifiant_externe` | varchar(200) | ID Facebook page, ID GA4, tag GTM... |
+| `oauth_token_encrypted` | text | pour APIs qui l'exigent |
+| `api_key_encrypted` | text | pour clés simples |
+| `refresh_token_encrypted` | text | |
+| `date_expiration_token` | timestamp | |
+| `metadata_json` | jsonb | infos spécifiques au type (property_id, ad_account_id...) |
+| `actif` | bool | |
+| `date_derniere_sync` | timestamp | |
+
+**Cas d'usage** :
+
+- **Sites web** : lien vers catalogue synchronisé (§4.3) — traçage des ventes issues du site.
+- **Réseaux sociaux** (Facebook, Instagram, TikTok, LinkedIn) : publication de campagnes de lancement produit + récupération des leads (formulaires Facebook Lead Ads → alimentent `leads` §2.4).
+- **Google Ads / Meta Ads / TikTok Ads** : lancement, budget, remontée des stats de campagne dans `campagnes_marketing.stats_*`.
+- **Google Analytics / Search Console** : suivi trafic sites vers pages produit, mesure du SEO article (§4.5).
+- **Mailchimp / SendGrid** : envoi de campagnes email de masse via ESP dédié (recommandé au-delà de ~500 destinataires — dépasse SMTP).
+
+**Endpoints** :
+
+```
+GET|POST|PUT|DELETE  /api/comptes-marketing-externes/:id?  (ADMIN)
+POST /api/comptes-marketing-externes/:id/oauth-connect     — lance flow OAuth
+POST /api/comptes-marketing-externes/:id/test              — test connexion
+POST /api/comptes-marketing-externes/:id/sync              — pull stats / leads
+```
+
+**Job de synchronisation** planifié : quotidien pour stats ads, temps réel (webhook) pour leads Facebook.
+
 ---
 
 ## 9. Menu — ce qui reste visible
@@ -734,23 +919,32 @@ Accueil
 │    ├─ Palettes
 │    ├─ Suivi transporteurs
 │    ├─ Factures                  ← ADMIN only
+│    ├─ Paiements & Échéances     ← ADMIN (saisie) / COMMERCIAL (suivi ses clients)
+│    ├─ Relances                  ← ADMIN + COMMERCIAL (ses clients)
 │    ├─ Avoirs                    ← ADMIN only
 │    └─ Bons de retour
 ├─ Marketing                       ← ADMIN
 │    ├─ Campagnes
-│    └─ Segments
+│    ├─ Segments
+│    ├─ Comptes externes           (sites, réseaux sociaux, ads)
+│    └─ Stats & performance
 ├─ Dashboards
 │    ├─ Admin                      (ADMIN uniquement)
 │    ├─ Commercial                 (COMMERCIAL uniquement)
 │    └─ Magasinier Préparation     (MAGASINIER_PREPARATION uniquement)
+├─ Mon compte                      (tous rôles — sa config perso)
+│    ├─ Profil
+│    ├─ Paramètre Email            (SMTP perso — §8.4)
+│    └─ Paramètre WhatsApp         (WA Business perso — §8.4)
 └─ Paramètres                      ← ADMIN
      ├─ Paramètre Société          (§11)
      ├─ Paramètre CRM              (sources leads, canaux, statuts)
-     ├─ Paramètre Produits         (dimensions, couleurs, finitions, tissages, ...)
-     ├─ Paramètre Vente            (grilles tarifaires, tarifs transport, conditions paiement)
+     ├─ Paramètre Produits         (dimensions, couleurs, finitions, tissages — CRUD)
+     ├─ Paramètre Vente            (grilles tarifaires, tarifs transport, conditions paiement, échéances, relances)
      ├─ Paramètre Transporteurs    (transporteurs + credentials API)
      ├─ Paramètre Commissions      (taux par commercial, grilles)
-     ├─ Paramètre Communication    (templates email/WhatsApp/Telegram, SMTP, WA Business, bot Telegram)
+     ├─ Paramètre Communication    (templates email/WhatsApp/Telegram, SMTP société défaut, WA Business société défaut, bot Telegram)
+     ├─ Paramètre Marketing        (comptes externes — sites, RS, ads — §8.3)
      ├─ Paramètre Pays & TVA
      └─ Paramètre Utilisateurs & rôles
 ```
@@ -843,6 +1037,16 @@ POST /api/parametres/societe/logo       — upload logo (multipart)
 ## Changelog
 
 - `2026-09-22` — v1.0. Création du document. Périmètre CRM + Produits + Ventes fixé.
+- `2026-09-23` — v1.2. 2ème passe retours utilisateur :
+  - §4.4 : **3 références** définies (code_article technique / ref_fabrication atelier / ref_commerciale client) + règles de génération auto + surchargeable ADMIN.
+  - §4.6 : endpoints CRUD explicites pour chaque type d'attribut (dimensions, couleurs, finitions, tissages, nombres-couleurs, personnalisations) — ADMIN peut ajouter/modifier les attributs.
+  - §5.6 : format numero_colis corrigé avec tiret → `C<3chif>-<3chif>-<NNN>` (ex `C234-567-001`).
+  - §5.10 **nouvelle section** Paiements & Échéances : tables `echeances`, `paiements`, `paiement_echeances`, `relances`. Job cron relances auto. Vue "État de compte client" filtrable. Endpoints paiements/relances/état-compte.
+  - §6.1 : taux commission — par utilisateur ET surchargeable par grille tarifaire (double niveau).
+  - §8.1 : envoi document part depuis **l'utilisateur connecté** (son email, son WhatsApp).
+  - §8.3 **nouvelle section** Comptes marketing externes : sites, Facebook, Instagram, TikTok, LinkedIn, Google Ads, Meta Ads, GA, Search Console, Mailchimp, SendGrid — connecteurs OAuth + sync stats/leads.
+  - §8.4 **nouvelle section** Configuration email/WhatsApp par utilisateur — tables `utilisateur_config_email`, `utilisateur_config_whatsapp`. Fallback config société.
+  - §9 menu : ajout "Paiements & Échéances", "Relances", "Comptes externes marketing", "Stats & performance", "Mon compte" (config perso). "Paramètre Marketing" ajouté au bloc paramètres.
 - `2026-09-23` — v1.1. Intégration des retours utilisateur :
   - Périmètre Phase 3 : ajout **Liste de colisage** + **Transporteur & suivi**.
   - §3.1 : précision — grilles tarifaires extensibles et attribuables par client.
