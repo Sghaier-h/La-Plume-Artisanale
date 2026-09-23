@@ -1,6 +1,6 @@
 # La Plume Artisanale — Contrat de domaine
 
-Version : 1.6 · Statut : brouillon en validation
+Version : 1.7 · Statut : brouillon en validation
 
 Ce document est la **source de vérité** pour le vocabulaire, les entités, les endpoints et les règles métier du projet.
 
@@ -924,11 +924,45 @@ Une **gamme** = séquence type d'étapes. Souvent 1 gamme par catégorie de prod
 | Colonne | Type | Note |
 |---|---|---|
 | `id_poste` | serial PK | |
-| `code` | varchar(20) unique | `TISSAGE`, `COUPE`, `FRANGE`, `CTRL_Q`... |
+| `code` | varchar(20) unique | ex `TISSAGE`, `COUPE`, `FRANGE`, `CTRL_Q` (voir liste ci-dessous) |
 | `libelle` | varchar(150) | |
+| `categorie` | enum | `preparation` / `production` / `finition` / `controle` / `logistique` |
 | `id_entrepot` | FK entrepots | où est physiquement le poste (usine, atelier) |
 | `capacite_horaire_theorique` | numeric(10,2) | unités/h pour dimensionnement planning |
+| `taux_horaire_mo` | numeric(10,3) | main d'œuvre standard TND/h (pour calcul coût §4ter.9) |
 | `actif` | bool | |
+
+#### Liste standard des postes fouta (seed initial)
+
+| Code | Libellé | Catégorie | Sous-type gamme | Rôle métier |
+|---|---|---|---|---|
+| `BOBINAGE` | Bobinage | preparation | preparation | Prépare les bobines de trame par couleur à partir de MP fil. Sur bobinoir. |
+| `OURDISSAGE` | Ourdissage / Chaînage | preparation | preparation | Prépare la chaîne (assemblage des fils longitudinaux) sur ourdissoir. |
+| `ENCOLLAGE` | Encollage chaîne | preparation | preparation | (Optionnel) Renforce la chaîne avec apprêt pour tissage. |
+| `NOUAGE_CHAINE` | Nouage chaîne | preparation | preparation | Rattache la nouvelle chaîne au métier après changement de rouleau. |
+| `TISSAGE` | Tissage | production | production | Cœur de la production — sur métiers Dornier/Picanol avec ratière. Chaque duite = 1 passage trame. |
+| `COUPE` | Coupe | production | production | Sépare les foutas individuelles du rouleau tissé. Ciseaux industriels ou coupe automatique. |
+| `POST_COUPE_FRANGE` | Post-coupe — Frange | finition | finition | Nouage/tressage/franging des extrémités (spécificité fouta). Peut être manuel ou franging machine. |
+| `POST_COUPE_OURLET` | Post-coupe — Ourlet | finition | finition | Alternative à la frange (bordure cousue) pour certains modèles. Machine à coudre. |
+| `POST_COUPE_COUTURE` | Couture assemblage | finition | finition | Pour ponchos, sacs, packs : assemblage multi-pièces. |
+| `IMPRESSION_LOGO` | Impression / Sérigraphie | finition | finition | Personnalisation client (souvent sous-traité). |
+| `BRODERIE` | Broderie | finition | finition | Idem — souvent sous-traité. |
+| `LAVAGE` | Lavage / Blanchissage | finition | finition | Enlève l'apprêt, adoucit. Batch par lot. |
+| `REPASSAGE` | Repassage / Pressage | finition | finition | Pressage à chaud pour finition visuelle. |
+| `CTRL_QUALITE` | Contrôle qualité final | controle | controle | Poste dédié au contrôleur qualité (§6.7). |
+| `PLIAGE` | Pliage | logistique | logistique | Mise en forme avant emballage. |
+| `EMBALLAGE_UNIT` | Emballage unitaire | logistique | logistique | Sachet + étiquette par article. |
+| `ATELIER_PREPARATION` | Atelier de préparation commandes | logistique | logistique | **Distinct du poste production** : zone où le MAGASINIER_PREPARATION (§6.2) rassemble les articles d'une commande et fait le colisage (§5.6). Alimenté par transferts stock depuis les entrepôts. |
+| `EXPEDITION` | Zone expédition | logistique | logistique | Colis fermés en attente enlèvement transporteur. |
+
+**Note importante — distinction entre "Atelier de préparation commandes" et "Ateliers de fabrication"** :
+
+- **Ateliers de fabrication** = les zones physiques où sont installées les machines de production (bobinoirs, ourdissoirs, métiers, coupe, franging, lavage, repassage). Portent des postes de type `preparation` / `production` / `finition`. Sont pilotés par le `CHEF_PRODUCTION` (§6.5) et les opérateurs (§6.6).
+- **Atelier de préparation commandes** = une zone logistique **en aval de la fabrication** où le `MAGASINIER_PREPARATION` (§6.2) reçoit les articles finis + les sortis de stock, les assemble par commande, et fait le colisage. Modélisé comme un `entrepot` de type `atelier_preparation` (§4bis.1) + le poste `ATELIER_PREPARATION` (logistique).
+
+L'article "termine" un OF → entre dans un entrepôt de type `entrepot_principal` ou directement dans `atelier_preparation` si commande client en attente → magasinier prépa fait le colisage → BL → expédition.
+
+
 
 `machines` (étend le concept `postes_travail` avec l'aspect physique) :
 
@@ -2014,6 +2048,10 @@ POST /api/parametres/societe/logo       — upload logo (multipart)
 ## Changelog
 
 - `2026-09-22` — v1.0. Création du document. Périmètre CRM + Produits + Ventes fixé.
+- `2026-09-23` — v1.7. Postes atelier explicités :
+  - §4ter.3 : colonnes `categorie` + `taux_horaire_mo` ajoutées à `postes_travail`.
+  - §4ter.3 : **liste standard de 18 postes fouta** (seed initial) — Bobinage, Ourdissage, Encollage, Nouage chaîne, Tissage, Coupe, Post-coupe Frange/Ourlet/Couture, Impression, Broderie, Lavage, Repassage, Contrôle qualité, Pliage, Emballage unitaire, Atelier préparation commandes, Expédition — chacun avec catégorie + sous-type gamme + rôle métier.
+  - §4ter.3 : **clarification** de la distinction entre "Ateliers de fabrication" (machines production, pilotés par CHEF_PRODUCTION + opérateurs) et "Atelier de préparation commandes" (zone logistique aval, entrepôt type `atelier_preparation`, piloté par MAGASINIER_PREPARATION).
 - `2026-09-23` — v1.6. Phase 2.7 Fabrication :
   - §1.4 nouveaux rôles : `CHEF_PRODUCTION`, `TISSEUR`, `COUPEUR`, `CONTROLEUR_QUALITE`, `MECANICIEN`.
   - §4ter **nouveau chapitre complet** — 12 sous-sections :
