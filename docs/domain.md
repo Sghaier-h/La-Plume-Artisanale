@@ -1,6 +1,6 @@
 # La Plume Artisanale — Contrat de domaine
 
-Version : 1.8 · Statut : brouillon en validation
+Version : 1.10 · Statut : brouillon en validation
 
 Ce document est la **source de vérité** pour le vocabulaire, les entités, les endpoints et les règles métier du projet.
 
@@ -64,6 +64,9 @@ Rôles Phase 1 :
 - `TISSEUR` — opérateur sur métier à tisser. Voit ses OF assignés, pointe début/fin d'étape, saisit défauts. Dashboard atelier tablette dédié (§6.6). Ne voit ni prix ni clients.
 - `COUPEUR` / `POST_COUPE` — opérateur coupe & finition (frange, ourlet). Même logique que TISSEUR sur son poste. Dashboard tablette (§6.6).
 - `CONTROLEUR_QUALITE` — enregistre les contrôles qualité par étape et par OF. Dashboard dédié (§6.7). Peut bloquer un OF.
+- `MAGASINIER_MP` — prépare les kits matières premières (fils chaîne + fils par sélecteur trame S01→S08) pour chaque OF, avant que le tissage puisse démarrer. Scan QR bobine, transfert vers poste tissage. Dashboard dédié (§6.10).
+- `CHEF_ATELIER` — pilotage terrain d'un atelier physique (usine, ateliers spécialisés). Voit l'état de toutes les machines de son atelier, l'avancement des OF en cours, réaffecte opérateurs. Distinct de `CHEF_PRODUCTION` qui pilote la stratégie globale. Dashboard dédié (§6.11).
+- `MAGASINIER_SOUSTRAITANTS` — pilote la sortie/retour marchandise vers les sous-traitants (broderie, sérigraphie, laser, franging externe). Voit les OF sous-traités, prépare les bons de sortie, réceptionne, contrôle qualité au retour. Dashboard dédié (§6.12).
 - `MECANICIEN` — maintenance machines. Voit toutes les machines, leur état, planifie interventions. Dashboard dédié (§6.8).
 
 Filtrage backend obligatoire — jamais côté frontend seul.
@@ -501,6 +504,7 @@ Le stock porte sur **4 catégories distinctes** — chacune avec ses écrans, se
 | **Produits semi-finis (SF)** | Étape intermédiaire de fabrication | Tissu tissé non coupé, fouta non frangée | `articles.type_stock='semi_fini'` |
 | **Matières premières (MP)** | Fil, coton, chimie — entrantes fournisseur. **Même architecture modèle-parent + variantes que les PF** (voir §4bis.0.1) | Modèle `Fil coton blanc` → variantes NM15 · NM20 · NM25 (grosseurs) × composition 100% coton / 80-20 / etc. | `articles.type_stock='matiere_premiere'` avec attributs dédiés |
 | **Fournitures fabrication** | Consommables ateliers (non incorporés au produit) | Aiguilles, huile machine, ciseaux, navettes | `articles.type_stock='fourniture_fabrication'` |
+| **Pièces de rechange** | Composants machines pour maintenance | Courroies métier, cames ratière, roulements, cartes électroniques, aiguilles Dornier, cordes satin | `articles.type_stock='piece_rechange'` |
 | **Fournitures bureau** | Consommables bureau | Papier, cartouches, stylos | `articles.type_stock='fourniture_bureau'` |
 | **Emballage** | Boîtes, sachets, étiquettes | Cartons GLS taille M, sachets kraft | `articles.type_stock='emballage'` |
 
@@ -508,7 +512,7 @@ Ajout colonne sur `articles` :
 
 | Colonne | Type | Note |
 |---|---|---|
-| `type_stock` | enum | `produit_fini` / `semi_fini` / `matiere_premiere` / `fourniture_fabrication` / `fourniture_bureau` / `emballage` |
+| `type_stock` | enum | `produit_fini` / `semi_fini` / `matiere_premiere` / `fourniture_fabrication` / `fourniture_bureau` / `emballage` / `piece_rechange` |
 | `categorie_analytique` | varchar(50) | pour valorisation comptable |
 
 #### 4bis.0.1 Matière première — même architecture Modèle → Articles que les PF
@@ -936,6 +940,7 @@ Une **gamme** = séquence type d'étapes. Souvent 1 gamme par catégorie de prod
 
 | Code | Libellé | Catégorie | Sous-type gamme | Rôle métier |
 |---|---|---|---|---|
+| `PREPARATION_MP` | Préparation matière première | preparation | preparation | Piloté par `MAGASINIER_MP`. Sort les bobines chaîne + trame (jusqu'à 8 sélecteurs S01→S08) des entrepôts, scanne les QR bobines, transfère le kit vers le métier. |
 | `BOBINAGE` | Bobinage | preparation | preparation | Prépare les bobines de trame par couleur à partir de MP fil. Sur bobinoir. |
 | `OURDISSAGE` | Ourdissage / Chaînage | preparation | preparation | Prépare la chaîne (assemblage des fils longitudinaux) sur ourdissoir. |
 | `ENCOLLAGE` | Encollage chaîne | preparation | preparation | (Optionnel) Renforce la chaîne avec apprêt pour tissage. |
@@ -992,6 +997,27 @@ L'article "termine" un OF → entre dans un entrepôt de type `entrepot_principa
 
 ### 4ter.4 `ordres_fabrication` (OF)
 
+#### Ce qu'un OF fige au moment de sa création
+
+À la création d'un OF, le système **fige (snapshot) 4 choses** — même si les référentiels (BOM, gamme, prix MP) évoluent ensuite, l'OF reste piloté par ce qui a été gelé au démarrage :
+
+1. **La gamme** — la séquence ordonnée des postes à exécuter (bobinage → tissage → coupe → frange → étiquetage → contrôle → emballage). Copiée dans `of_etapes` avec `duree_estimee_sec`, `id_machine` assigné, `id_poste` correspondant.
+2. **La BOM matières premières** — les articles MP nécessaires avec quantités théoriques. Copiées dans `of_consommations` avec `role='chaine'` / `'trame'`.
+3. **Les fournitures et l'emballage** — étiquettes tissées, étiquettes carton, sachets, cartons, adhésifs… Copiées dans `of_consommations` avec `role='fourniture'` / `'emballage'`.
+4. **Les affectations planning** — machines et opérateurs prévus par étape (§4ter.8 planning).
+
+Cette approche garantit que **l'OF est reproductible et auditable** : on peut recalculer un coût, refaire le même produit avec les mêmes réglages 6 mois plus tard, tracer précisément ce qui a été consommé.
+
+#### Fiche OF — écran chef de production
+
+L'écran de création / consultation d'un OF présente ces 4 blocs distincts en onglets ou sections :
+
+- **Onglet Article** : quel article produire, quantité, priorité, date livraison prévue, commande liée.
+- **Onglet Postes à faire** (= gamme instanciée) : liste ordonnée des étapes, chacune avec machine assignée, poste, durée estimée, opérateur prévu, dépendances. Modifiable avant lancement.
+- **Onglet BOM (matières premières)** : liste des MP nécessaires avec quantité par unité produite + quantité totale + coût théorique. Vérification dispo stock en temps réel.
+- **Onglet Fournitures & emballage** : étiquettes (tissées/carton/EAN), sachets, cartons, adhésifs, hangtags… mêmes colonnes que BOM.
+- **Bandeau récapitulatif** : coût théorique total, date fin prévue calculée, alerte si MP manquante.
+
 `ordres_fabrication` :
 
 | Colonne | Type | Note |
@@ -1042,20 +1068,183 @@ L'article "termine" un OF → entre dans un entrepôt de type `entrepot_principa
 | `quantite_rebut` | numeric(14,3) | rebuts à cette étape |
 | `commentaire` | text | libre |
 
-`of_consommations_mp` (BOM éclaté effectif — ce qui a **réellement** été consommé) :
+`of_consommations` (BOM éclaté effectif — MP **et** fournitures et emballage) :
 
 | Colonne | Type | Note |
 |---|---|---|
 | `id` | serial PK | |
 | `id_of` | FK | |
 | `id_of_etape` | FK | à quelle étape |
-| `id_article_composant` | FK articles | la MP consommée |
+| `id_article_composant` | FK articles | la MP / fourniture / emballage consommé |
+| `role` | enum | `chaine` / `trame` / `fourniture` / `emballage` / `etiquette` |
+| `numero_selecteur` | int | pour les fils trame : 1-8 (S01→S08, aligné avec le sélecteur couleur du métier — voir §4ter.4bis) |
 | `id_lot` | FK lots_articles | lot MP puisé (traçabilité) |
-| `quantite_theorique` | numeric(14,4) | issue de la BOM |
-| `quantite_reelle` | numeric(14,4) | ce que l'opérateur a réellement pris |
+| `qr_mp_reel` | varchar(50) | QR bobine réellement utilisée (peut différer du prévu) |
+| `quantite_theorique` | numeric(14,4) | issue de la BOM (colonne `Besoin S0X (kg)` du legacy) |
+| `quantite_reelle` | numeric(14,4) | ce que l'opérateur a réellement pris/consommé (colonne `Poids Consommé S0X`) |
+| `ecart_absolu` | numeric(14,4) | calculé (`quantite_reelle - quantite_theorique`) — colonne `Différence S0X` du legacy |
 | `ecart_pct` | numeric(6,2) | calculé |
 | `id_mouvement_stock` | FK mouvements_stock | mouvement `sortie_of` correspondant |
 | `date_consommation` | timestamp | |
+
+### 4ter.4ter Attribution et préparation matière première
+
+Deux étapes distinctes, dans cet ordre, entre la validation d'un OF et le démarrage du tissage.
+
+#### Attribution MP (automatique + affinage manuel)
+
+Dès qu'un OF passe en `planifie`, le système **attribue** un lot de MP à chaque ligne `of_consommations` :
+
+- Règle par défaut : le **premier lot dispo FIFO** (le plus ancien en stock) qui couvre la quantité théorique.
+- Alternative : lot le plus **proche colorimétriquement** d'un lot déjà utilisé sur un OF antérieur du même modèle (continuité chromatique).
+- Le magasinier MP peut **réattribuer** manuellement un autre lot (par exemple pour vider une bobine presque finie).
+- L'attribution crée une **réservation stock** (§4bis.6) sur le lot choisi, empêchant sa consommation par un autre OF.
+
+Champs concernés : `of_consommations.id_lot`, `qr_mp_reel` (renseigné à la préparation).
+
+#### Préparation MP (physique — Magasinier MP §6.10)
+
+Le magasinier MP prend la liste attribuée et prépare physiquement le kit :
+
+1. Ouvre l'OF → voit la liste des bobines attribuées avec leur emplacement (entrepôt + emplacement).
+2. Pour chaque ligne : va chercher la bobine, la scanne (QR).
+3. Le système vérifie **cohérence** :
+   - Code MP scanné = code MP attendu → OK, coche verte.
+   - Divergence (par ex ECRU au lieu de BLANC) → alerte rouge, refuse tant que corrigé.
+   - Lot différent de celui attribué → demande confirmation (l'attribution devient le lot réellement scanné).
+4. Le kit est **rassemblé physiquement** dans l'atelier de préparation MP (un chariot ou étagère marquée du numéro OF).
+5. Bouton "Kit prêt" → l'OF passe en `etat_preparation_mp = terminee`, le tissage devient débloqué.
+6. Génère un `mouvement_stock` `transfert_entrepot` : entrepôt MP source → entrepôt "poste tissage" (virtuel) du métier assigné.
+
+Le tisseur (§6.6) voit alors sur sa tablette que le kit est prêt, avec les codes S01→S08 réels sur ses sélecteurs.
+
+### 4ter.4quater Complément de fabrication (sous-OF `.1`)
+
+Si à la fin d'un OF, la quantité 1ᵉʳ choix produite est inférieure à la quantité commandée (à cause du rebut, 2ᵉ choix, casse), le Chef d'Atelier peut demander un **complément**. Système hérité du legacy :
+
+- Nouveau **sous-OF** créé avec `numero_of` = OF parent + `.1` (ex `OF-2026-0812.1`).
+- `id_of_parent` FK sur l'OF principal.
+- Statut priorité forcé à `urgente` (le complément passe devant les autres).
+- `ordrePlanification = 0` → apparaît en tête du planning.
+- **Refus possible** par le TISSEUR avec motif obligatoire (cause : MP manquante, machine indisponible, cadence non tenable, autre) → notifie CHEF_PRODUCTION pour arbitrage.
+
+Ajouts sur `ordres_fabrication` :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_of_parent` | FK ordres_fabrication | nullable ; renseigné pour un complément |
+| `type_of` | enum | `standard` / `complement` / `rework` / `prototype` |
+| `motif_refus_complement` | text | nullable ; renseigné si tisseur refuse |
+
+### 4ter.4quinquies Catégorisation qualité (1er choix / 2ᵉ choix / Déchet / Ourlet)
+
+Le legacy sépare les catégories finales de production :
+
+| Catégorie | Sens | Impact stock |
+|---|---|---|
+| **1er choix** | Conforme, sellable au prix plein | Entrée stock normal PF |
+| **2ème choix** | Défaut mineur — sellable en second choix (site outlet, dépannage) à prix réduit | Entrée stock PF avec `qualite='second_choix'` |
+| **Ourlet** | Sous-catégorie incluse dans 1er choix (foutas ourletées vs frangées) | Idem 1er choix |
+| **Déchet / Rebut** | Non sellable | `mise_au_rebut` (§4bis.4) |
+
+Extension `controles_qualite` (§4ter.6) :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `qte_premier_choix` | numeric(14,3) | |
+| `qte_second_choix` | numeric(14,3) | |
+| `qte_ourlet` | numeric(14,3) | inclus dans premier choix |
+| `qte_rebut` | numeric(14,3) | |
+| `type_defaut` | enum | `tache` / `couture_irreguliere` / `fil_casse` / `dimension_incorrecte` / `couleur_non_conforme` / `frange_defectueuse` / `autre` |
+| `decision` | enum | `laisser_passer_1c` / `passer_2c` / `rework` / `rebut` |
+
+Un article a une colonne `qualite` (`premier_choix` / `second_choix`) qui influe sur le prix affichable et la vente possible. Les articles second choix ne sont pas exposés au portail client standard mais accessibles via un catalogue "Outlet" (§4.3).
+
+### 4ter.4bis Modèle de BOM/OF hérité — parité fonctionnelle avec le legacy Google Apps
+
+Le projet Google Apps Script existant (fichier source `docs/archive/erp-all-by-fouta-legacy/developpement/BOM 2025-2026.xlsx` — feuille `Base Commandes` avec 84 colonnes) a validé plusieurs concepts métier qu'on **reprend intégralement** :
+
+#### Structure BOM à 8 sélecteurs
+
+Les métiers à tisser Dornier ont un **sélecteur de couleur trame de 1 à 8 positions** (`nb_couleurs_selecteur` sur `machines`). Chaque position = un fil MP disponible pendant le tissage.
+
+Pour un OF, la BOM MP se décompose donc en jusqu'à **8 lignes trame** (S01 → S08) + **1 ligne chaîne** :
+
+| Ligne BOM | Colonne legacy | Modèle nouveau (`of_consommations`) |
+|---|---|---|
+| Chaîne | `Métrage Fil Chaîne (m)` | 1 ligne `role='chaine'`, quantité en mètres puis convertie en kg |
+| Trame S01 | `Code S01`, `QR MP Réel S01`, `Besoin S01 (kg)`, `Poids Consommé S01`, `Différence S01 (kg)` | 1 ligne `role='trame'`, `numero_selecteur=1` |
+| Trame S02 | idem S02 | 1 ligne `role='trame'`, `numero_selecteur=2` |
+| ... | ... | ... |
+| Trame S08 | idem S08 | 1 ligne `role='trame'`, `numero_selecteur=8` |
+| Fournitures | (colonnes libres selon modèle) | N lignes `role='fourniture'` / `'etiquette'` |
+| Emballage | (colonnes libres selon modèle) | N lignes `role='emballage'` |
+
+Totaux BOM (colonnes `Total Besoin (kg)`, `Total Consommé (kg)`, `Différence Totale (kg)`) sont **calculés à la volée** (pas stockés), à partir de la somme des `of_consommations`.
+
+#### Champs tissage spécifiques à ajouter sur `ordres_fabrication`
+
+| Colonne à ajouter | Type | Source legacy |
+|---|---|---|
+| `id_machine_prevue` | FK machines | `Num Machine` |
+| `temps_production_prevu_sec` | int | `Temps de production` (converti) |
+| `compteur_machine_affichage` | int | `Compteur à Afficher` (utile pour l'opérateur sur le métier) |
+| `largeur_tissu_cm` | numeric(6,2) | `Largeur Tissu` |
+| `longueur_tissu_m` | numeric(10,2) | `Longueur Tissu` (m) |
+| `metrage_fil_chaine_m` | numeric(10,2) | `Métrage Fil Chaîne (m)` — pour la ligne chaîne |
+| `duite_par_cm` | numeric(6,2) | `Duite par CM` |
+| `nb_duites_total_production` | int | `Nb Duites Total Production` |
+| `qr_mp_final` | varchar(50) | `QR MP` — code global de traçabilité assemblée |
+
+#### États d'avancement multi-phases
+
+Le legacy suit 3 sous-états séparés (colonnes `Etat Préparation MP`, `Etat Tissage`, `Etat Coupe`). On les modélise en tant que colonnes distinctes sur `ordres_fabrication`, **en complément** du `statut` global :
+
+| Colonne | Enum | Note |
+|---|---|---|
+| `etat_preparation_mp` | `a_faire` / `en_cours` / `terminee` / `bloquee` | statut du travail Magasinier MP (§6.10) |
+| `etat_tissage` | idem | statut du poste tissage |
+| `etat_coupe` | idem | statut du poste coupe |
+
+**Règle** : les 3 états sont dérivés automatiquement des `of_etapes.statut` associés aux postes `BOBINAGE`/`OURDISSAGE` (→ prep MP), `TISSAGE` (→ tissage), `COUPE` (→ coupe). C'est une vue rapide pour dashboards ; la source de vérité reste `of_etapes`.
+
+#### Deuxième fabrication (2ᵉ passe finition)
+
+Le legacy distingue `QTE Fabriquer Coupe` de `QTE Deuxieme Fab` (avec `Deuxieme Approuvee Interne`, `Qte Deu Ext` — externe/sous-traitée). Ce sont typiquement les foutas qui retournent pour **frange + ourlet + lavage** après une première passe (tissage + coupe).
+
+On modélise cela avec :
+
+- Un OF principal (tissage + coupe) → produit un article `type_stock = 'semi_fini'` (SF).
+- Un OF secondaire (frange + finition + emballage) qui **consomme** le SF (via BOM `role='chaine'` ou pivot spécial) → produit le PF final.
+- OU (plus simple pour l'utilisateur) : un OF unique avec plusieurs étapes gamme, dont certaines flaggées `deuxieme_passe = true`. Colonne `est_deuxieme_passe` sur `of_etapes`.
+
+**Choix retenu Phase 2.7** : OF unique avec étapes marquées → moins d'entités à gérer. On pourra migrer vers 2 OF si besoin.
+
+Ajouts sur `of_etapes` :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `est_deuxieme_passe` | bool | true = étape post-coupe (frange/ourlet/lavage) |
+| `est_sous_traitee` | bool | true = externalisée (§4ter.7) |
+| `quantite_approuvee_interne` | numeric(14,3) | equivalent `Deuxieme Approuvee Interne` — validation qualité interne avant sortie externe |
+
+#### Préparation matière première — poste et rôle dédiés
+
+Le **poste `PREPARATION_MP`** (à ajouter à la liste standard §4ter.3) précède le tissage. Il est piloté par un rôle dédié :
+
+- `MAGASINIER_MP` — sort les bobines des entrepôts, prépare le kit MP pour un OF (fils chaîne + fils trame par sélecteur), scanne les QR bobines pour tracer, transfère vers le poste tissage.
+
+Dashboard dédié (§6.10 ci-après).
+
+#### Planification — écran opérationnel
+
+L'écran **Planification** (§4ter.8 Gantt) est la vue centrale du chef de production. Il fait 3 choses :
+
+1. **Assignation machine × créneaux** : les OF (ou étapes tissage) sont posés sur les créneaux de chaque métier.
+2. **Vérification contraintes** : compatibilité laize / nb couleurs / dispo MP.
+3. **Séquencement Prep MP → Tissage → Coupe → 2ᵉ passe** : le système ordonne automatiquement les dépendances (l'étape tissage attend la fin de la prep MP, la coupe attend le tissage, etc.).
+
+
 
 ### 4ter.5 Suivi temps réel (pointages opérateurs)
 
@@ -1288,6 +1477,75 @@ Devis ─(accepté)─▶ Commande ─(préparée)─▶ Liste colisage ─▶ B
 - **Facture** : `brouillon` → `emise` → `payee_partiel` → `payee` / `annulee`
 - **Avoir** : `brouillon` → `emis` → `applique` / `annule`
 - **Bon de retour** : `brouillon` → `en_traitement` → `traite` / `refuse`
+
+### 5.2bis Transformation d'une ligne de commande en OF
+
+À la validation d'une commande, le système analyse **chaque ligne** et propose une action.
+
+#### Étape 1 — analyse stock automatique (côté backend)
+
+Pour chaque ligne `id_article + quantite_commandee` :
+
+1. Lit `stock_article_entrepot` : quelle quantité disponible immédiatement dans les entrepôts autorisés (typiquement `entrepot_principal`) ?
+2. Lit `ordres_fabrication` en cours pour cet article : quelle quantité arrive bientôt ?
+3. Calcule `qte_a_fabriquer = quantite_commandee - qte_reservable_stock - qte_of_en_cours_disponible`.
+4. Retourne pour chaque ligne un **plan proposé** :
+   - `qte_depuis_stock` (à réserver immédiatement)
+   - `qte_depuis_of_existants` (à réserver sur OF non encore engagés)
+   - `qte_a_fabriquer` (nouveau OF à créer)
+
+#### Étape 2 — écran "Aperçu OF" (côté commercial ou ADMIN)
+
+Une modale présente le plan par ligne :
+
+| Ligne | Article | Qté cmdée | Qté stock | Qté OF existant | Qté à fabriquer | Action |
+|---|---|---|---|---|---|---|
+| 1 | `AR1020-B02-03` | 100 | 40 (réservable) | 20 (OF-2026-0812) | 40 | Créer OF |
+| 2 | `AR1020-B04-01` | 50 | 50 | 0 | 0 | Tout en stock ✓ |
+| 3 | `IB2020-B06-01` | 30 | 0 | 0 | 30 | Créer OF |
+
+L'utilisateur peut :
+
+- **Ajuster** la répartition (par ex forcer 20 unités de plus depuis stock si dispo, ou tout mettre en OF neuf pour date meilleure).
+- **Regrouper** plusieurs lignes du même article dans **un seul OF** (batching) — utile si 3 clients commandent le même article la même semaine.
+- **Choisir la priorité** de l'OF (`normale` / `haute` / `urgente`) — souvent héritée de la commande, mais surchargeable.
+- **Choisir la date de fabrication prévue** (auto-calculée à partir de `date_livraison_prevue` de la commande − buffer transport + délai fab).
+
+#### Étape 3 — validation → création des OF
+
+Au clic "Valider le plan", le système :
+
+1. Crée les **réservations stock** (§4bis.6) sur les quantités venant du stock ou des OF existants.
+2. Crée les **nouveaux OF** en statut `brouillon` avec :
+   - `id_commande`, `id_ligne_commande` (rétro-lien).
+   - `id_article`, `quantite_prevue`.
+   - `id_bom` = BOM active de l'article (snapshot §4ter.4).
+   - `id_gamme` = gamme active de l'article.
+   - `priorite`, `date_fin_prevue` calculée.
+   - Etapes copiées, BOM et fournitures snapshotées dans `of_consommations`.
+3. Retourne au chef de production, qui planifie (§4ter.8) puis lance (`brouillon` → `planifie` → `en_attente_mp`).
+
+#### Étape 4 — pilotage ligne par ligne côté commande (drill-down)
+
+Sur la fiche commande, chaque ligne affiche **son état de fabrication** en direct :
+
+- ✓ En stock (dispo, prêt à expédier).
+- ⏳ Réservé sur OF `OF-XXXX` (avancement 45 %).
+- 🏭 Nouveau OF `OF-YYYY` (statut `en_attente_mp`, avancement 0 %).
+- ⚠️ Retard prévu (OF en retard vs date livraison) → alerte au commercial.
+
+**Drill-down** — la ligne est cliquable :
+
+- 1er clic → carte détaillée : liste des OF couvrant la ligne, avancement de chacun sous forme de barre (0-100 %), étape en cours (`Prep MP` / `Tissage` / `Coupe` / `Frange` / `Contrôle` / `Emballage`), date fin prévue, écarts avec date livraison client.
+- 2ème clic sur un OF → fiche OF complète (§4ter.4) avec toutes les étapes, le kit MP, les pointages, les contrôles qualité, l'affectation machine.
+
+Le commercial voit ainsi **de la commande jusqu'à la ligne, jusqu'au poste de travail**, sans avoir besoin de contacter l'atelier.
+
+**Règles** :
+
+- 1 ligne commande peut être couverte par **plusieurs OF** (si batching partiel) OU 1 OF unique.
+- 1 OF peut couvrir **plusieurs lignes** de commandes différentes (batching multi-clients) — le PF produit est ensuite réparti à l'expédition selon les réservations.
+- L'annulation d'une commande **ne** supprime **pas** un OF en cours (perte fabrication) — la production continue et le PF entre en stock disponible.
 
 ### 5.3 Livraison croisée (client A commande, client B reçoit)
 
@@ -1671,21 +1929,31 @@ Table `commissions_versements` :
 - Actions rapides : "Créer OF", "Sous-traiter étape", "Débloquer OF" (après revue QC).
 - Ne voit pas les prix de vente ni les commissions. Voit les coûts fabrication.
 
-### 6.6 Dashboards opérateurs atelier (Tisseur, Coupeur, Post-Coupe) — tablettes
+### 6.6 Dashboard Tisseur (`TISSEUR`) — tablette
 
-Un même écran responsive optimisé tablette, adapté au rôle.
+- Header : nom opérateur, machine assignée (`Num Machine`), poste = TISSAGE.
+- **Kit MP reçu** : liste des 8 sélecteurs S01→S08 avec le fil monté (QR bobine scannée par le Magasinier MP §6.10). Alerte visuelle si un sélecteur est vide ou incompatible.
+- Liste "Mes OF" en attente de tissage — triée par priorité + date planifiée.
+- **OF en cours** — grande carte centrale :
+  - Article + quantité prévue, quantité produite en direct.
+  - Compteur de duites (auto depuis machine si connectée, sinon saisie manuelle par batch).
+  - Cadence temps réel vs cadence prévue.
+  - Temps écoulé, temps restant estimé.
+  - Boutons pointage : `Démarrer` / `Pause` (motif : casse fil / attente MP / pause opérateur / autre) / `Reprendre` / `Terminer`.
+  - Bouton "Signaler défaut" → capture rapide photo + type de défaut → déclenche contrôle QC.
+- Historique de la journée : nb OF terminés, duites totales, cadence moyenne, temps arrêt.
 
-**Écran opérateur** :
+### 6.6bis Dashboard Coupeur (`COUPEUR`, `POST_COUPE`) — tablette
 
-- Header : nom opérateur, machine assignée, poste.
-- Liste "Mes OF" — OF assignés triés par priorité + date début prévue.
-- Chaque OF : article + qté, étape courante, temps écoulé, bouton actif (Démarrer / Pause / Reprendre / Terminer).
-- Scan QR MP entrante → consommation `of_consommations_mp` alimentée avec `id_lot`.
-- Bouton "Signaler défaut" → saisie rapide `defauts_json` + photo → contrôle QC déclenché.
-- Compteur de duites / pièces produites (auto depuis machine si connectée, sinon saisie manuelle).
-- Historique de la journée : temps de production, temps arrêt, cadence moyenne.
+- Header : nom opérateur, poste = COUPE ou POST_COUPE.
+- **File d'attente** : liste des OF sortis du tissage (`etat_tissage = terminee`) en attente coupe.
+- **OF en cours** : rouleau à couper, largeur/longueur tissu, nombre de foutas à découper, dimensions cible.
+- Scan QR du rouleau entrant → renseigne automatiquement la matière et le lot.
+- Compteur pièces coupées, saisie rebuts éventuels.
+- Boutons pointage identiques au Tisseur.
+- Si **`POST_COUPE`** (frange/ourlet/couture) : liste les étapes finition à faire par article (par sous-lot), scan QR sortant vers étape suivante (lavage, contrôle qualité).
 
-**Ne voit pas** : prix, clients, montants commande. Voit uniquement ce qui est nécessaire à sa tâche.
+**Tisseur et Coupeur** ne voient jamais : prix, clients, montants commande. Voient uniquement leurs OF, articles, MP, sélecteurs, quantités, machines.
 
 ### 6.7 Dashboard Contrôleur Qualité (`CONTROLEUR_QUALITE`)
 
@@ -1697,12 +1965,177 @@ Un même écran responsive optimisé tablette, adapté au rôle.
 
 ### 6.8 Dashboard Mécanicien / Maintenance (`MECANICIEN`)
 
-- Vue machines : état (en_service, en_panne, en_maintenance) avec dernières interventions.
-- Alertes maintenance préventive (date_prochaine_maintenance approche).
-- Historique interventions (`interventions_maintenance` — table existante à réutiliser).
-- Bouton "Signaler panne" → change `machines.etat`, notifie chef production, journalise arrêt.
-- Bouton "Démarrer intervention" → passe en maintenance, journalise.
-- KPI : MTBF, MTTR, taux de disponibilité par machine.
+Suivi **curatif** (pannes) et **préventif** (entretien planifié) des machines et équipements.
+
+**Vue Machines** :
+
+- Cartes machines avec état (en_service, en_panne, en_maintenance), dernière intervention, prochaine échéance.
+- Bouton "Signaler panne" → change `machines.etat` en `en_panne`, journalise arrêt, notifie chef production + chef atelier, bloque les OF en cours sur cette machine.
+- Bouton "Démarrer intervention" → passe en `en_maintenance`, journalise.
+- Bouton "Machine remise en service" → repasse en `en_service`, débloque les OF.
+
+**Maintenance préventive (plan d'entretien)** — nouveau bloc :
+
+`plan_maintenance` (récurrences par machine) :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_plan` | serial PK | |
+| `id_machine` | FK | |
+| `type_intervention` | enum | `graissage` / `nettoyage` / `changement_courroie` / `verification_electrique` / `revision_generale` / `changement_pieces_usure` / `autre` |
+| `frequence_type` | enum | `heures_production` / `nb_duites` / `calendrier` |
+| `frequence_valeur` | int | ex 500 h ou 10 000 000 duites ou 90 jours |
+| `duree_estimee_min` | int | |
+| `pieces_necessaires` | jsonb | `[{code_piece, quantite}]` |
+| `procedure_url` | varchar(500) | PDF procédure |
+| `dernier_execute` | timestamp | |
+| `prochain_du` | timestamp | calculé — auto-alerte quand ≤ 7j |
+
+`interventions_maintenance` :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_intervention` | serial PK | |
+| `id_machine` | FK | |
+| `id_plan` | FK plan_maintenance | nullable — si intervention curative hors plan |
+| `type` | enum | `preventive` / `curative` / `revision` / `installation` |
+| `date_debut` / `date_fin` | timestamp | |
+| `id_mecanicien` | FK utilisateurs | |
+| `description_panne` | text | si curatif |
+| `actions_effectuees` | text | ce qui a été fait |
+| `pieces_consommees` | jsonb | pour valorisation |
+| `cout_intervention` | numeric(14,3) | pièces + MO |
+| `photos_urls` | text[] | avant/après |
+| `duree_arret_machine_min` | int | pour calcul MTBF/MTTR |
+| `statut` | enum | `planifiee` / `en_cours` / `terminee` / `annulee` |
+
+**Sections dashboard** :
+
+- KPI : MTBF (Mean Time Between Failures) par machine, MTTR (Mean Time To Repair), taux disponibilité, coût maintenance mensuel.
+- **Alertes préventives** : liste des `plan_maintenance` dont `prochain_du` est ≤ 7 jours — action rapide "Planifier".
+- **Interventions à faire** : file d'attente (panne signalée, maintenance planifiée).
+- **Historique** : filtre par machine, par type, par période, par mécanicien.
+- Graph "Pannes récurrentes" : top 5 causes de pannes par machine (utile pour identifier problèmes chroniques).
+- **Stock pièces détachées** : lien vers §4bis stock (fournitures fabrication) pour les pièces usure (courroies, aiguilles, cames, etc.) avec seuils alerte.
+
+Endpoints :
+
+```
+GET|POST|PUT  /api/plan-maintenance
+GET  /api/plan-maintenance/dus?jours_avant=7   — alertes préventives
+GET|POST|PUT  /api/interventions-maintenance
+POST /api/machines/:id/signaler-panne
+POST /api/machines/:id/demarrer-intervention
+POST /api/machines/:id/remettre-en-service
+GET  /api/maintenance/kpi?id_machine=&periode=  — MTBF/MTTR/dispo
+```
+
+### 6.10 Dashboard Magasinier MP (`MAGASINIER_MP`)
+
+Prépare les kits matières premières pour chaque OF, en amont du tissage.
+
+**Sections** :
+
+- Liste des OF à l'état `en_attente_mp` ou `planifie` — triés par date de tissage prévue.
+- Pour chaque OF : liste des fils requis avec `numero_selecteur` (S01 → S08) + code MP + quantité prévue en kg + entrepôt source + numéro de lot suggéré.
+- Bouton "Préparer le kit" → passe l'OF en `etat_preparation_mp = en_cours`, réserve les bobines.
+- **Scan QR bobine** : le magasinier scanne chaque bobine physique → renseigne `of_consommations.qr_mp_reel` et `id_lot`. Contrôle automatique : cohérence code MP scanné vs code MP prévu, alerte si divergence (par ex ECRU au lieu de BLANC).
+- Bouton "Kit prêt — transférer vers atelier tissage" → génère `mouvement_stock` `transfert_entrepot` vers l'entrepôt du poste tissage. Passe l'OF en `etat_preparation_mp = terminee`, débloque l'étape tissage.
+- Vue "Bobines en préparation" : ce qui est en cours de sortie, où c'est physiquement dans l'atelier prep MP.
+- Vue "Alertes MP" : ruptures, écart lot suggéré vs stock réel, quantités insuffisantes → génère automatiquement une demande d'achat vers le Magasinier Stock ou fournisseur.
+
+**Ne voit pas** : prix de vente, clients, commissions. Voit prix de reviens MP pour valorisation.
+
+### 6.11 Dashboard Chef d'Atelier (`CHEF_ATELIER`)
+
+Pilotage terrain d'un atelier physique (usine ou atelier de finition), plus opérationnel que le Chef Production (qui pilote la stratégie et le Gantt global).
+
+**Sections** (structure issue du legacy `chef_atelier_dashboard v11.tsx`) :
+
+- **Onglet Par Opération** : 6 opérations de finition (Frange, Pliage, Étiquetage, Couture, Repassage, Emballage) avec compteurs `en_attente / en_cours / termine` par opération. Vue synthétique de la charge par poste finition.
+- **Onglet Par Commande** — drill-down arborescent :
+  ```
+  Commande CM-FTxxxx
+    └─ Article ARxxxx-Byy-zz
+         └─ Suivi (numSuivi = lot coupe, ex OF244984-1)
+              └─ Matrice Opérations (qte_sortie / qte_retour / qte_en_cours)
+  ```
+  Un `numSuivi` regroupe typiquement 5 pièces par étiquette lot coupe.
+- **Onglet Alertes** :
+  - Demandes magasinier (transferts en attente validation, ruptures signalées).
+  - Dates envoi client proches (< J-3).
+  - OF en retard.
+- **Onglet Maintenance** : demandes envoyées au mécanicien avec statut/priorité/équipement.
+- **Onglet Analyse 2ème choix** : taux par sous-traitant + répartition types défauts (voir §4ter.6 étendu ci-dessous).
+
+**Actions** :
+
+- Scanner un `numSuivi` et l'affecter à une opération.
+- Déclarer 2ème choix (qté + type défaut + décision : rework / rebut / vendre en second choix).
+- Demander un **complément de fabrication** au tisseur si `qte_1er_choix < qte_commandee` — génère un sous-OF `.1` (voir §4ter.4quater).
+- Envoyer une demande de maintenance au mécanicien.
+- Imprimer les feuilles de tournée par opération.
+
+### 6.12 Dashboard Magasinier Sous-Traitants (`MAGASINIER_SOUSTRAITANTS`)
+
+Gestion des flux matière/produits vers/depuis les sous-traitants (broderie, sérigraphie, laser, franging externe, etc.).
+
+**Sections** :
+
+- **KPI** : nb OF en sous-traitance actuellement, quantité sortie totale, quantité retournée conforme/rebut, taux conformité global.
+- **File d'attente sortie** : lignes `of_sous_traitance` à statut `envoye` → à préparer physiquement.
+- **En cours chez sous-traitant** : liste avec délai restant, alerte si date retour dépassée.
+- **Retours à traiter** : marchandise revenue, à contrôler → saisie `quantite_retournee_conforme` + `quantite_retournee_rebut` + décision.
+- **Analyse performance ST** :
+  - Taux 2ème choix par sous-traitant (seuils 5 % vert / 7 % orange / >7 % rouge).
+  - Délai moyen respecté vs promis.
+  - Coût moyen par prestation type.
+  - Répartition types défauts par ST (aide à la sanction / rupture contrat).
+- **Litiges** : liste des dossiers ouverts (rebut anormal, perte, retard chronique).
+
+**Actions** :
+
+- Préparer bon de sortie sous-traitant (article + quantité + date retour prévue + prix accord).
+- Réceptionner retour → contrôle rapide → validation ou litige.
+- Ouvrir un litige (formulaire : type, quantité, coût, preuves photos).
+- Facturation ST (pré-remplir facture fournisseur — voir Phase Achats).
+
+**Ne voit pas** : prix de vente client, commissions. Voit : prix de reviens MP consommée, coût prestation ST.
+
+### 6.13 Écran Planification & Suivis (module central — accessible CHEF_PRODUCTION + ADMIN)
+
+Écran de planification opérationnelle — distinct des dashboards role (c'est un **outil de pilotage** partagé).
+
+**Vue principale — Gantt drag-and-drop** :
+
+- Axe horizontal : jours ouvrés (semaine par défaut, zoom mois possible).
+- Axe vertical : machines (M2301, M2302…), regroupées par atelier/parc.
+- Blocs = OF planifiés, colorés par priorité (rouge = urgent, orange = haut, gris = normal). Complément tissage = jaune vif avec pastille `.1`.
+- **Contraintes vérifiées à chaque drag** :
+  - Compatibilité laize machine ↔ laize article.
+  - Nb couleurs OF ≤ nb sélecteurs machine.
+  - MP disponible aux dates prévues (sinon warning "MP manquante à J+2, attribuer transferts ?").
+  - Machine en panne → blocage drop, message d'erreur.
+- Au moment du drop → modal **Attribution QR MP** : cases à cocher pour chaque sélecteur × entrepôt où sont les bobines suggérées → l'utilisateur valide → attribution `of_consommations.id_lot` réservée.
+
+**Panneau latéral gauche — File d'attente** :
+
+- OF à planifier (statut `brouillon` ou `planifie` sans machine assignée).
+- Trié par : priorité DESC, date livraison ASC.
+- Filtres : article, catégorie, priorité, période.
+
+**Panneau bas — Suivis temps réel** :
+
+- Onglet "OF en cours" : temps écoulé vs prévu, cadence temps réel, progression étape courante.
+- Onglet "OF en retard" : pourquoi (arrêt machine, attente MP, blocage QC…).
+- Onglet "Incidents ouverts" : liste incidents déclarés par tisseurs, en attente résolution.
+
+**Actions rapides** :
+
+- Créer OF (bouton).
+- Déplacer OF (drag).
+- Réaffecter opérateur (dropdown).
+- Notifier magasinier MP qu'un OF est planifié (auto sinon manuel).
 
 ### 6.9 Dashboard Admin
 
@@ -2049,6 +2482,28 @@ POST /api/parametres/societe/logo       — upload logo (multipart)
 ## Changelog
 
 - `2026-09-22` — v1.0. Création du document. Périmètre CRM + Produits + Ventes fixé.
+- `2026-09-23` — v1.10. Enrichissement dashboards + qualité + pièces rechange :
+  - §1.4 : ajout des rôles `CHEF_ATELIER`, `MAGASINIER_SOUSTRAITANTS`.
+  - §4bis.0 : ajout catégorie **`piece_rechange`** (courroies, cames ratière, roulements, cartes électroniques, aiguilles Dornier, cordes satin).
+  - §4ter.3 : poste `PREPARATION_MP` ajouté à la liste standard (piloté par MAGASINIER_MP).
+  - §4ter.4quater **nouveau** : concept de **complément de fabrication** (sous-OF `.1`) — quand qté 1er choix < qté commandée, création auto d'un sous-OF avec priorité urgente et ordre planification 0. Peut être refusé par le TISSEUR avec motif. Colonnes ajoutées sur `ordres_fabrication` : `id_of_parent`, `type_of`, `motif_refus_complement`.
+  - §4ter.4quinquies **nouveau** : catégorisation **qualité 1er choix / 2ème choix / Ourlet / Déchet**. Extension `controles_qualite` avec `qte_premier_choix`, `qte_second_choix`, `qte_ourlet`, `qte_rebut`, `type_defaut` (tache/couture/fil_casse/dimension/couleur/frange/autre), `decision`. Colonne `qualite` sur `articles` (premier_choix / second_choix) — les seconds choix exposés uniquement sur catalogue "Outlet".
+  - §4ter.4ter **nouveau** : Attribution MP (auto FIFO ou proximité colorimétrique + réattribution manuelle) puis Préparation MP physique (scan QR bobines, vérification cohérence, transfert vers poste tissage). 
+  - §5.2bis **nouveau** : transformation ligne commande → OF. Analyse stock automatique, écran "Aperçu OF" avec plan par ligne (qte_stock / qte_of_existants / qte_a_fabriquer), regroupement multi-lignes, choix priorité et date. Drill-down commercial de la commande vers l'OF vers le poste de travail.
+  - §6.6 Tisseur enrichi : kit MP reçu (8 sélecteurs), compteur duites machine, boutons pointage détaillé (Pause avec motif).
+  - §6.6bis **nouveau** : Dashboard Coupeur / Post-Coupe distinct.
+  - §6.8 Mécanicien **complètement réécrit** : plan de maintenance préventive (fréquence heures/duites/calendrier, pièces nécessaires, procédure PDF), interventions curatives/préventives avec pièces consommées et coût, KPI MTBF/MTTR/dispo, lien stock pièces détachées.
+  - §6.10 **nouveau** : Dashboard Magasinier MP — file OF, scan QR bobines par sélecteur, contrôle cohérence, transfert vers tissage, alertes rupture MP.
+  - §6.11 **nouveau** : Dashboard Chef d'Atelier — onglets Par Opération / Par Commande (drill-down commande→article→numSuivi→matrice opérations) / Alertes / Maintenance / Analyse 2ème choix.
+  - §6.12 **nouveau** : Dashboard Magasinier Sous-Traitants — sorties, en cours ST, retours, analyse perf ST (taux 2ème choix, délai, coût), litiges.
+  - §6.13 **nouveau** : Écran Planification & Suivis (Gantt drag-drop machines×créneaux, contraintes auto laize/couleurs/MP, modal Attribution QR MP au drop, panneaux latéral file d'attente + bas OF en cours/retard/incidents).
+- `2026-09-23` — v1.9. Parité BOM legacy Google Apps + Préparation MP :
+  - §4ter.4 : "Fiche OF" clarifiée — l'OF fige 4 choses au démarrage : gamme (postes) + BOM MP + fournitures/emballage + affectations planning. Écran chef prod à 4 onglets (Article, Postes à faire, BOM MP, Fournitures & emballage).
+  - §4ter.4 : `of_consommations_mp` renommé `of_consommations` — couvre MP + fournitures + emballage + étiquettes via `role` enum (chaîne / trame / fourniture / emballage / etiquette). Ajout `numero_selecteur` (1-8) pour aligner sur les sélecteurs machine.
+  - §4ter.4bis **nouvelle section** : parité fonctionnelle avec le fichier legacy `BOM 2025-2026.xlsx` feuille `Base Commandes` (84 colonnes). Structure à 8 sélecteurs (S01→S08) documentée. Mapping colonne legacy ↔ colonne nouvelle. Champs tissage ajoutés sur `ordres_fabrication` : `id_machine_prevue`, `temps_production_prevu_sec`, `compteur_machine_affichage`, `largeur_tissu_cm`, `longueur_tissu_m`, `metrage_fil_chaine_m`, `duite_par_cm`, `nb_duites_total_production`, `qr_mp_final`. États multi-phase séparés : `etat_preparation_mp`, `etat_tissage`, `etat_coupe`.
+  - §4ter.4bis : concept "2ème fabrication" — étape post-tissage (frange/ourlet/lavage), soit modélisée sur un OF unique via flag `est_deuxieme_passe` sur `of_etapes`, soit via un OF secondaire consommant un SF (à trancher).
+  - §4ter.4bis : poste `PREPARATION_MP` ajouté à la liste standard §4ter.3 + rôle dédié `MAGASINIER_MP` (§1.4) — prépare les kits MP par sélecteur avant tissage.
+  - §4ter.4bis : rôle Planification clarifié — assignation machine × créneaux, vérification contraintes (laize, nb couleurs, MP dispo), séquencement automatique Prep MP → Tissage → Coupe → 2ᵉ passe.
 - `2026-09-23` — v1.8. Ajout poste Étiquetage :
   - §4ter.3 : ajout du poste `ETIQUETAGE` (finition) — étiquettes tissées cousues, autocollantes, carton papier, code-barres/EAN. Note : peut être fusionné avec Couture ou Ourlet selon organisation.
 - `2026-09-23` — v1.7. Postes atelier explicités :
