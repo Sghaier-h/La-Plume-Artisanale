@@ -1,6 +1,6 @@
 # La Plume Artisanale — Contrat de domaine
 
-Version : 1.3 · Statut : brouillon en validation
+Version : 1.4 · Statut : brouillon en validation
 
 Ce document est la **source de vérité** pour le vocabulaire, les entités, les endpoints et les règles métier du projet.
 
@@ -10,6 +10,7 @@ Périmètre validé pour la remise à plat :
 
 - **Phase 1** — CRM + Clients
 - **Phase 2** — Produits (Modèle → Articles) + Catalogues web
+- **Phase 2.5** — **Stock & Entrepôts** : entrepôts, stock par article/entrepôt, mouvements, réservations, inventaires
 - **Phase 3** — Ventes : Devis · Commande · Bon de livraison · **Liste de colisage · Transporteur & suivi** · Facture · Avoir · Bon de retour
 - **Phase 3.5** — Dashboard Magasinier Préparation + Dashboard Commercial (avec commissions)
 
@@ -57,6 +58,7 @@ Rôles Phase 1 :
 - `ADMIN` — voit tout, peut tout. Seul rôle habilité à **créer/valider une facture, un avoir, une commission versée**.
 - `COMMERCIAL` — voit uniquement **ses** comptes (`id_commercial = <lui>`) et leurs documents. Peut créer/modifier **client, contact, devis, commande, BL**. Ne peut pas créer de facture ni d'avoir. Voit son propre compte de commission.
 - `MAGASINIER_PREPARATION` — voit toutes les commandes à préparer, gère colisage + palettes. Dashboard dédié. Ne voit pas les prix.
+- `MAGASINIER_STOCK` — gère les entrepôts (réceptions, sorties, transferts, inventaires) pour PF, SF, MP et fournitures. Dashboard dédié. Ne voit pas les prix de vente ni les commissions.
 
 Filtrage backend obligatoire — jamais côté frontend seul.
 
@@ -479,6 +481,290 @@ GET|POST|PUT|DELETE  /api/parametres/personnalisations/:id?
 
 ---
 
+## 4bis. Stock & Entrepôts (Phase 2.5)
+
+Chaque article physique existe **quelque part** : dans un entrepôt, à un emplacement précis, avec un statut (disponible, réservé, en préparation). Toute évolution du stock passe par un **mouvement** — traçabilité complète.
+
+### 4bis.0 Catégories de stock
+
+Le stock porte sur **4 catégories distinctes** — chacune avec ses écrans, ses règles et ses paramètres, mais toutes suivent le même moteur de mouvements :
+
+| Catégorie | Description | Exemples | Table source |
+|---|---|---|---|
+| **Produits finis (PF)** | Articles sellables prêts à expédier | `AR1020-B02-03` — Fouta ARTHUR blanc/rayé | `articles.type_stock='produit_fini'` |
+| **Produits semi-finis (SF)** | Étape intermédiaire de fabrication | Tissu tissé non coupé, fouta non frangée | `articles.type_stock='semi_fini'` |
+| **Matières premières (MP)** | Fil, coton, chimie — entrantes fournisseur | `NM15-01.00 BLANC` (fil coton numéro métrique 15, couleur 01) | `matieres_premieres` — colonnes propres (voir §4bis.0.1) |
+| **Fournitures fabrication** | Consommables ateliers (non incorporés au produit) | Aiguilles, huile machine, ciseaux, navettes | `articles.type_stock='fourniture_fabrication'` |
+| **Fournitures bureau** | Consommables bureau | Papier, cartouches, stylos | `articles.type_stock='fourniture_bureau'` |
+| **Emballage** | Boîtes, sachets, étiquettes | Cartons GLS taille M, sachets kraft | `articles.type_stock='emballage'` |
+
+Ajout colonne sur `articles` :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `type_stock` | enum | `produit_fini` / `semi_fini` / `fourniture_fabrication` / `fourniture_bureau` / `emballage` (les MP ont leur propre table §4bis.0.1) |
+| `categorie_analytique` | varchar(50) | pour valorisation comptable |
+
+#### 4bis.0.1 `matieres_premieres` (schéma dédié — issu du BOM Excel existant)
+
+Les MP suivent une nomenclature différente des produits finis. Table propre :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_mp` | serial PK | |
+| `code_fabrication_mp` | varchar(30) unique | ex `NM15-01.00` |
+| `numero_metrique` | varchar(10) | `NM05`, `NM15`, `NM20`... — grosseur du fil |
+| `id_couleur` | FK parametres_couleurs | même table que les couleurs articles |
+| `code_couleur` | varchar(10) | dénormalisé pour perf (`C01`, `C02`, `C15`) |
+| `libelle_couleur` | varchar(100) | dénormalisé (`BLANC`, `ECRU`, `NAVY`) |
+| `qr_mp` | varchar(50) | QR code étiquette bobine |
+| `numero_lot_fournisseur` | varchar(50) | traçabilité amont |
+| `id_fournisseur_defaut` | FK fournisseurs | achat récurrent |
+| `stock_minimum_kg` | numeric(10,3) | seuil alerte |
+| `prix_moyen_pondere_kg` | numeric(14,3) | PMP pour valorisation |
+| `actif` | bool | |
+
+**Mouvements MP** utilisent le même mécanisme que §4bis.4 (`mouvements_stock` avec `type_article='mp'` OU une table jumelle `mouvements_mp` — cf choix impl §4bis.4bis).
+
+**Consommation MP → OF** : chaque OF planifie une sortie MP (BOM éclaté). L'exécution de l'OF crée les mouvements `sortie_of` (MP) et `entree_fabrication` (article PF/SF produit).
+
+### 4bis.1 `entrepots`
+
+Un entrepôt = un lieu physique de stockage.
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_entrepot` | serial PK | |
+| `code` | varchar(20) unique | `USINE`, `E1`, `E2`, `E3`, `ATELIER_PREP`, `MAGASIN_TUNIS`, `HUB_MARSEILLE`... |
+| `libelle` | varchar(150) | |
+| `type` | enum | `usine` / `entrepot_principal` / `entrepot_secondaire` / `atelier_preparation` / `magasin_vente` / `hub_transit` / `sous_traitant` |
+| `id_societe_adresse` | FK societe_adresses | l'adresse physique de l'entrepôt (§11) |
+| `responsable_id_utilisateur` | FK utilisateurs | qui gère cet entrepôt |
+| `capacite_m3` | numeric(10,2) | volume total (info) |
+| `permet_vente` | bool | true = stock d'ici peut être vendu directement |
+| `actif` | bool | |
+
+**Types d'entrepôts métier** :
+- `usine` — sortie de production, dépôt matière première
+- `entrepot_principal` — stock disponible pour vente
+- `atelier_preparation` — pool temporaire pour préparation commandes (magasinier §6.2)
+- `magasin_vente` — point de vente physique
+- `hub_transit` — plateforme intermédiaire (ex Marseille) pour redistribution
+- `sous_traitant` — stock déposé chez un sous-traitant
+
+### 4bis.2 `emplacements` (optionnel — subdivisions d'entrepôt)
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_emplacement` | serial PK | |
+| `id_entrepot` | FK entrepots | |
+| `code` | varchar(30) unique par entrepôt | ex `A-01-02` (Allée A, Rack 01, Niveau 02) |
+| `libelle` | varchar(150) | |
+| `capacite_max_articles` | int | |
+| `actif` | bool | |
+
+Facultatif — utile pour grand entrepôt. Sinon le stock est directement au niveau `id_entrepot`.
+
+### 4bis.3 `stock_article_entrepot` (vue matérialisée / table dénormalisée)
+
+Snapshot du stock par (article × entrepôt × emplacement) à tout instant. Maintenue par chaque `mouvement_stock`.
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id` | serial PK | |
+| `id_article` | FK articles | |
+| `id_entrepot` | FK entrepots | |
+| `id_emplacement` | FK emplacements | nullable |
+| `id_lot` | FK lots_articles | nullable — traçabilité par lot de fabrication |
+| `quantite_disponible` | numeric(14,3) | dispo pour vente |
+| `quantite_reservee` | numeric(14,3) | promise à des commandes non expédiées |
+| `quantite_en_reception` | numeric(14,3) | attendue mais pas encore validée |
+| `quantite_en_transfert_sortant` | numeric(14,3) | partant vers un autre entrepôt |
+| `quantite_totale` | numeric(14,3) | calculé — `disponible + reservee` |
+| `date_derniere_maj` | timestamp | |
+
+**Contrainte unique** : `(id_article, id_entrepot, id_emplacement, id_lot)`.
+
+### 4bis.4 `mouvements_stock`
+
+**3 grands types de mouvement** exposés côté UI (regroupent les sous-types) :
+
+- **Réception** : marchandise ou MP qui **entre** dans un entrepôt depuis l'extérieur (fournisseur) OU depuis l'atelier (production terminée).
+- **Sortie** : marchandise qui **quitte** un entrepôt vers l'extérieur (expédition commande) ou vers l'atelier (consommation OF) ou hors circuit (rebut).
+- **Transfert** : mouvement **entre deux entrepôts** internes — pas de sortie du patrimoine.
+
+Chaque grand type éclate en sous-types techniques ci-dessous.
+
+**Traçabilité complète** — chaque changement de stock est une ligne, immuable.
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_mouvement` | serial PK | |
+| `numero_mouvement` | varchar(30) unique | `MVT-YYYYMMDD-NNNNN` |
+| `type_mouvement` | enum | voir ci-dessous |
+| `id_article` | FK | |
+| `quantite` | numeric(14,3) | positif |
+| `id_lot` | FK lots_articles | nullable |
+| `id_entrepot_source` | FK entrepots | nullable (null pour réception fournisseur) |
+| `id_emplacement_source` | FK emplacements | nullable |
+| `id_entrepot_destination` | FK entrepots | nullable (null pour sortie vente) |
+| `id_emplacement_destination` | FK emplacements | nullable |
+| `id_document_lie` | int | nullable — id du document déclencheur |
+| `type_document_lie` | enum | `bl` / `commande` / `of` / `bon_reception` / `transfert` / `ajustement` / `inventaire` / `retour` |
+| `motif` | varchar(200) | libre pour ajustements |
+| `date_mouvement` | timestamp | |
+| `effectue_par` | FK utilisateurs | |
+| `valide_par` | FK utilisateurs | nullable, pour transferts nécessitant validation |
+| `statut` | enum | `en_attente` / `valide` / `annule` |
+
+**Types de mouvement (`type_mouvement`)** :
+
+| Type | Sens | Description |
+|---|---|---|
+| `reception_fournisseur` | + | matière première ou marchandise arrivée d'un fournisseur |
+| `entree_fabrication` | + | OF terminé → l'article entre en stock |
+| `sortie_vente` | − | BL expédié → l'article quitte le stock |
+| `transfert_entrepot` | ±0 | passe d'un entrepôt à un autre (2 lignes complémentaires ou 1 avec source+dest) |
+| `reservation` | 0 | pas de sortie physique — bascule `disponible` → `reservee` |
+| `liberation_reservation` | 0 | annule une réservation |
+| `ajustement_positif` | + | correction manuelle (trouvé en trop lors inventaire) |
+| `ajustement_negatif` | − | correction manuelle (perte, casse, vol) |
+| `retour_client` | + | retour marchandise → re-entrée en stock (ou zone rebut) |
+| `mise_au_rebut` | − | article endommagé sorti du stock vendable |
+
+**Règle clé** : chaque mouvement met à jour `stock_article_entrepot` de manière atomique dans une transaction. Impossible de sortir plus que `disponible`.
+
+### 4bis.5 `lots_articles` (traçabilité optionnelle par lot)
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_lot` | serial PK | |
+| `numero_lot` | varchar(30) unique | `LOT-YYYYMMDD-NNNN` (généré à la fabrication) |
+| `id_article` | FK articles | |
+| `id_of` | FK ordres_fabrication | OF d'origine (si issu de fabrication interne) |
+| `date_fabrication` | date | |
+| `date_peremption` | date | pour catégories concernées |
+| `quantite_initiale` | numeric(14,3) | fabriquée |
+| `quantite_restante` | numeric(14,3) | encore en stock |
+| `notes` | text | |
+
+### 4bis.6 `reservations_stock`
+
+Une commande validée réserve du stock jusqu'à expédition (évite double vente).
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_reservation` | serial PK | |
+| `id_commande` | FK commandes | |
+| `id_ligne_commande` | FK commandes_lignes | granularité ligne |
+| `id_article` | FK articles | |
+| `id_entrepot` | FK entrepots | où c'est réservé |
+| `id_lot` | FK lots_articles | nullable |
+| `quantite` | numeric(14,3) | |
+| `date_reservation` | timestamp | |
+| `date_expiration` | timestamp | nullable — auto-libération si non expédiée |
+| `statut` | enum | `active` / `expediee` / `annulee` / `expiree` |
+
+**Workflow** : Commande passe à `validee` → système crée les réservations dans l'entrepôt principal (ou celui indiqué). Quand BL expédié → réservation → mouvement `sortie_vente`. Si commande annulée → `liberation_reservation`.
+
+### 4bis.7 `inventaires` (comptage physique)
+
+Comptage périodique pour rapprocher stock théorique / stock réel.
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_inventaire` | serial PK | |
+| `numero_inventaire` | varchar(30) unique | `INV-YYYYMMDD-NN` |
+| `id_entrepot` | FK entrepots | inventaire par entrepôt |
+| `date_debut` / `date_fin` | date | |
+| `statut` | enum | `en_preparation` / `en_cours` / `valide` / `annule` |
+| `responsable` | FK utilisateurs | |
+| `notes` | text | |
+
+`inventaire_lignes` :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_ligne` | serial PK | |
+| `id_inventaire` | FK | |
+| `id_article` | FK | |
+| `id_emplacement` | FK | nullable |
+| `id_lot` | FK | nullable |
+| `quantite_theorique` | numeric(14,3) | ce que dit le système |
+| `quantite_comptee` | numeric(14,3) | ce que le magasinier a compté |
+| `ecart` | numeric(14,3) | calculé |
+| `note` | text | motif d'écart |
+| `compte_par` | FK utilisateurs | |
+| `date_comptage` | timestamp | |
+
+**Validation** : à la clôture, le système génère automatiquement les `mouvements_stock` de type `ajustement_positif` / `ajustement_negatif` pour aligner le stock théorique sur le compté.
+
+### 4bis.8 Écran Stock — navigation demandée
+
+Le flux UI est explicite :
+
+```
+1. Liste Entrepôts
+   └─► clic sur un entrepôt
+2. Vue Entrepôt : liste des articles en stock (paginée, recherche, filtres)
+     Colonnes : ref_commerciale · designation · photo · dispo · réservé · en réception · emplacement
+   └─► clic sur un article
+3. Vue Article dans Entrepôt : détail + historique complet
+     - Cartes KPI : dispo / réservé / valeur en stock
+     - Timeline des mouvements (avec type, quantité, source/dest, document lié, utilisateur, date)
+     - Onglet "Par lot" si l'article est traçé par lot
+```
+
+### 4bis.9 Alertes stock
+
+- Chaque article a un `stock_minimum` (par entrepôt via `article_seuils_alerte(id_article, id_entrepot, stock_min)`).
+- Job cron quotidien : compare `stock.quantite_disponible` vs `stock_minimum` → crée `alertes` (à intégrer à un dashboard).
+- Alerte remonte au responsable de l'entrepôt et à l'admin.
+
+### 4bis.10 Endpoints Stock
+
+```
+Entrepôts     : /api/entrepots                        GET|POST|PUT|DELETE  (ADMIN)
+                /api/entrepots/:id/articles           — liste articles en stock ici
+                /api/entrepots/:id/statistiques       — KPIs (valeur totale, nb refs, ruptures)
+
+Emplacements  : /api/entrepots/:id/emplacements       GET|POST|PUT|DELETE
+
+Stock         : /api/stock?id_article=&id_entrepot=   — vue courante
+                /api/stock/article/:id                — vue consolidée cet article partout
+                /api/stock/article/:id/mouvements     — historique mouvements
+                /api/stock/valorisation?id_entrepot=  — valeur totale du stock
+
+Mouvements    : /api/mouvements-stock                 GET|POST
+                /api/mouvements-stock/:id/valider     — pour transferts en attente
+                /api/mouvements-stock/:id/annuler     — création mouvement compensatoire
+
+Transferts    : /api/transferts                       POST — crée un transfert (mouvement en_attente)
+                /api/transferts/:id/confirmer         — magasinier destinataire confirme réception
+
+Lots          : /api/lots                             GET|POST|PUT
+                /api/lots/:id                         — détail + articles issus
+
+Réservations  : /api/reservations?id_commande=        GET
+                (créées automatiquement par la validation de commande)
+
+Inventaires   : /api/inventaires                      GET|POST
+                /api/inventaires/:id/lignes           GET|POST|PUT
+                /api/inventaires/:id/valider          POST — génère les ajustements
+
+Alertes       : /api/alertes-stock?niveau=            GET
+                /api/alertes-stock/:id/traiter        POST
+```
+
+### 4bis.11 Impacts sur les autres phases
+
+- **§4.4 articles** : la colonne `stock_total` devient une **vue agrégée** (`SUM(stock_article_entrepot.quantite_disponible) WHERE id_article`). Pas de duplication.
+- **§5.2 statuts commande** : la validation d'une commande crée des `reservations_stock`.
+- **§5.6 colisage** : le scan d'un article dans un colis crée un `mouvement_stock` de type `sortie_vente` depuis `atelier_preparation` (là où le magasinier a préparé la commande après transfert depuis l'entrepôt d'origine).
+- **§6.2 dashboard Magasinier** : le bouton "Demander transfert" crée un `mouvement_stock` de type `transfert_entrepot` avec `statut='en_attente'` — le magasinier de l'entrepôt source valide.
+
+---
+
 ## 5. Ventes (Phase 3)
 
 ### 5.1 Documents et transitions
@@ -847,11 +1133,35 @@ Table `commissions_versements` :
 - Écran de colisage (§5.6) accessible directement depuis chaque commande en cours.
 - "Marquer prêt à expédier" → commande `pretes_a_expedier`, BL brouillon généré, palette optionnelle.
 
-### 6.3 Dashboard Admin
+### 6.3 Dashboard Magasinier Stock (`MAGASINIER_STOCK`)
+
+**Périmètre** : gestion des flux entrants, sortants, transferts, inventaires sur les 5 catégories (PF / SF / MP / fournitures fab / fournitures bureau / emballage).
+
+**Vue d'ensemble** :
+
+- KPI en tête : valeur totale du stock · nb articles en rupture · nb alertes stock bas · mouvements aujourd'hui.
+- **3 onglets d'action** correspondant aux 3 grands types de mouvement :
+  1. **Réceptions** — bordereaux fournisseurs à saisir, OF terminés à valider en stock, retours clients à réintégrer.
+  2. **Sorties** — commandes en préparation qui vont sortir, OF planifiés qui vont consommer MP, rebuts.
+  3. **Transferts** — demandes de transfert en attente de validation (envoyées par le Magasinier Préparation §6.2), transferts partis à confirmer réception.
+- Filtres par catégorie (PF/SF/MP/…), par entrepôt, par période.
+
+**Écrans détaillés accessibles depuis le dashboard** :
+
+- Liste des entrepôts (§4bis.8 workflow).
+- Écran Réception fournisseur : saisie d'un bordereau → génère les mouvements `reception_fournisseur`.
+- Écran Sortie : liste des BL prêts à expédier, validation crée les `sortie_vente`.
+- Écran Transfert : liste des demandes → validation crée le mouvement en `en_attente`, la contre-partie confirme réception.
+- Écran Inventaire : lance un comptage, saisit les quantités comptées, clôture (génère ajustements).
+- Écran Alertes stock : liste articles sous seuil minimum, action rapide "Créer bon de réception fournisseur".
+
+**Ne voit pas** : prix de vente client, marges, commissions, factures. Voit les **prix de reviens** et la valorisation stock.
+
+### 6.4 Dashboard Admin
 
 Vue globale : tous les KPIs, tous les documents, gestion des utilisateurs, grilles tarifaires, commissions, paramètres société.
 
-**L'admin voit tout** — pas d'onglets "Commercial" ou "Magasinier" séparés dans son menu (il accède à ces vues via une bascule "Voir en tant que…" si besoin d'audit).
+**L'admin voit tout** — pas d'onglets "Commercial" / "Magasinier Préparation" / "Magasinier Stock" séparés dans son menu (il accède à ces vues via une bascule "Voir en tant que…" si besoin d'audit).
 
 ---
 
@@ -1028,6 +1338,23 @@ Accueil
 │    ├─ Articles (variantes)
 │    ├─ Catalogues
 │    └─ SEO produits web
+├─ Stock
+│    ├─ Entrepôts
+│    ├─ Vue par catégorie
+│    │    ├─ Produits finis
+│    │    ├─ Produits semi-finis
+│    │    ├─ Matières premières
+│    │    ├─ Fournitures fabrication
+│    │    ├─ Fournitures bureau
+│    │    └─ Emballage
+│    ├─ Mouvements
+│    │    ├─ Réceptions
+│    │    ├─ Sorties
+│    │    └─ Transferts
+│    ├─ Réservations
+│    ├─ Lots & traçabilité
+│    ├─ Inventaires
+│    └─ Alertes stock
 ├─ Ventes
 │    ├─ Devis
 │    ├─ Commandes
@@ -1048,7 +1375,8 @@ Accueil
 ├─ Dashboards
 │    ├─ Admin                      (ADMIN uniquement)
 │    ├─ Commercial                 (COMMERCIAL uniquement)
-│    └─ Magasinier Préparation     (MAGASINIER_PREPARATION uniquement)
+│    ├─ Magasinier Préparation     (MAGASINIER_PREPARATION uniquement)
+│    └─ Magasinier Stock           (MAGASINIER_STOCK uniquement)
 ├─ Mon compte                      (tous rôles — sa config perso)
 │    ├─ Profil
 │    ├─ Paramètre Email            (SMTP perso — §8.4)
@@ -1058,6 +1386,7 @@ Accueil
      ├─ Paramètre CRM              (sources leads, canaux, statuts)
      ├─ Paramètre Produits         (dimensions, couleurs, finitions, tissages — CRUD)
      ├─ Paramètre Vente            (grilles tarifaires, tarifs transport, conditions paiement, échéances, relances)
+     ├─ Paramètre Stock             (entrepôts, seuils alerte, types stock, valorisation PMP/FIFO)
      ├─ Paramètre Transporteurs    (transporteurs + credentials API)
      ├─ Paramètre Commissions      (taux par commercial, grilles)
      ├─ Paramètre Communication    (templates email/WhatsApp/Telegram, SMTP société défaut, WA Business société défaut, bot Telegram)
@@ -1075,12 +1404,13 @@ Tout le reste (RH, sous-traitants, maintenance, planning, Gantt, IA, e-commerce 
 1. **Contrat validé** (ce document).
 2. **Cadre technique** : renommer `id_modeles` → `id_modele`, normaliser l'enveloppe API, masquer le menu hors périmètre.
 3. **Phase 1** — CRM & Clients (comptes, contacts, adresses, leads, interactions, grilles tarif).
-4. **Phase 2** — Modèles & articles (variant matrix, détection doublons, image article) + Catalogues + SEO web.
-5. **Phase 3** — Ventes core : Devis → Commande → BL → Facture. Livraison croisée. RBAC. Envoi transactionnel.
-6. **Phase 3.1** — Liste de colisage + Palettes + Transporteurs + Suivi API.
-7. **Phase 3.5** — Dashboard Commercial (avec commissions) + Dashboard Magasinier Préparation.
-8. **Phase 4** — Marketing (campagnes + segments).
-9. Rouverture progressive des autres modules si besoin métier.
+4. **Phase 2** — Modèles & articles (variant matrix, détection doublons, image article, EAN, poids/dim) + Catalogues + SEO web + Photos multi.
+5. **Phase 2.5** — Stock & Entrepôts : entrepôts, catégories (PF/SF/MP/fournitures/emballage), mouvements (réception/sortie/transfert), lots, réservations, inventaires, alertes, Dashboard Magasinier Stock.
+6. **Phase 3** — Ventes core : Devis → Commande (avec réservation stock) → BL → Facture. Livraison croisée. RBAC. Envoi transactionnel.
+7. **Phase 3.1** — Liste de colisage + Palettes + Transporteurs + Suivi API.
+8. **Phase 3.5** — Dashboard Commercial (avec commissions) + Dashboard Magasinier Préparation.
+9. **Phase 4** — Marketing (campagnes + segments).
+10. Rouverture progressive des autres modules si besoin métier.
 
 À chaque phase :
 
@@ -1154,6 +1484,25 @@ POST /api/parametres/societe/logo       — upload logo (multipart)
 ## Changelog
 
 - `2026-09-22` — v1.0. Création du document. Périmètre CRM + Produits + Ventes fixé.
+- `2026-09-23` — v1.4. Ajout Phase 2.5 Stock & Entrepôts :
+  - §4bis **nouveau chapitre** complet :
+    - 4bis.0 : 5 catégories de stock — Produits finis, Semi-finis, Matières premières (schéma dédié §4bis.0.1 avec numéro métrique + code fabrication issu du BOM Excel), Fournitures fabrication, Fournitures bureau, Emballage.
+    - 4bis.1 `entrepots` : type (usine / principal / atelier_preparation / magasin_vente / hub_transit / sous_traitant).
+    - 4bis.2 `emplacements` (subdivision facultative).
+    - 4bis.3 `stock_article_entrepot` : dénormalisé (dispo / réservé / en réception / total).
+    - 4bis.4 `mouvements_stock` : 3 grands types UI (Réception, Sortie, Transfert) + 10 sous-types (reception_fournisseur, entree_fabrication, sortie_vente, transfert_entrepot, reservation, liberation_reservation, ajustement_+/−, retour_client, mise_au_rebut). Immuable, transactionnel.
+    - 4bis.5 `lots_articles` : traçabilité par lot fabrication.
+    - 4bis.6 `reservations_stock` : commande validée → réservation auto → sortie à l'expédition.
+    - 4bis.7 `inventaires` + `inventaire_lignes` : comptage + génération ajustements à clôture.
+    - 4bis.8 **workflow UI demandé** : Entrepôts → Vue Entrepôt → Vue Article → historique mouvements + par lot.
+    - 4bis.9 alertes stock bas (job cron).
+    - 4bis.10 endpoints complets.
+    - 4bis.11 impacts sur §4.4 (`stock_total` = vue agrégée), §5.2 (réservation auto), §5.6 (scan colisage crée mouvement), §6.2 (transfert magasinier prépa).
+  - §1.4 nouveau rôle `MAGASINIER_STOCK` (distinct de MAGASINIER_PREPARATION).
+  - §6.3 **nouveau Dashboard Magasinier Stock** : KPI stock, 3 onglets Réceptions / Sorties / Transferts, filtres par catégorie et entrepôt, écran inventaire, alertes. Ne voit pas les prix de vente ni commissions mais voit prix de reviens et valorisation.
+  - §6.4 renuméroté Dashboard Admin.
+  - §9 menu réorganisé : nouvelle branche "Stock" avec sous-menus (Entrepôts, Vue par catégorie, Mouvements ×3, Réservations, Lots, Inventaires, Alertes) + branche "Dashboards" enrichie de Magasinier Stock. Ajout "Paramètre Stock".
+  - §10 ordre d'exécution : Phase 2.5 insérée entre Produits et Ventes.
 - `2026-09-23` — v1.3. 3ème passe retours utilisateur :
   - §4.4 : **règles de génération des refs réécrites d'après les 1531 articles réels** (`docs/references/references_articles.csv`) :
     - `ref_commerciale` : `<CODE_MODELE><DIM4>-<LETTRE_NB_COULEURS><COULEUR2>-<NUANCE2>[-<CODES_ADD>]` (ex `AR1020-B02-03`, `BA1020-C15-01-25`, `EPU0919-19`).
