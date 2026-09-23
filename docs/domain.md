@@ -1,6 +1,6 @@
 # La Plume Artisanale — Contrat de domaine
 
-Version : 1.4 · Statut : brouillon en validation
+Version : 1.5 · Statut : brouillon en validation
 
 Ce document est la **source de vérité** pour le vocabulaire, les entités, les endpoints et les règles métier du projet.
 
@@ -493,7 +493,7 @@ Le stock porte sur **4 catégories distinctes** — chacune avec ses écrans, se
 |---|---|---|---|
 | **Produits finis (PF)** | Articles sellables prêts à expédier | `AR1020-B02-03` — Fouta ARTHUR blanc/rayé | `articles.type_stock='produit_fini'` |
 | **Produits semi-finis (SF)** | Étape intermédiaire de fabrication | Tissu tissé non coupé, fouta non frangée | `articles.type_stock='semi_fini'` |
-| **Matières premières (MP)** | Fil, coton, chimie — entrantes fournisseur | `NM15-01.00 BLANC` (fil coton numéro métrique 15, couleur 01) | `matieres_premieres` — colonnes propres (voir §4bis.0.1) |
+| **Matières premières (MP)** | Fil, coton, chimie — entrantes fournisseur. **Même architecture modèle-parent + variantes que les PF** (voir §4bis.0.1) | Modèle `Fil coton blanc` → variantes NM15 · NM20 · NM25 (grosseurs) × composition 100% coton / 80-20 / etc. | `articles.type_stock='matiere_premiere'` avec attributs dédiés |
 | **Fournitures fabrication** | Consommables ateliers (non incorporés au produit) | Aiguilles, huile machine, ciseaux, navettes | `articles.type_stock='fourniture_fabrication'` |
 | **Fournitures bureau** | Consommables bureau | Papier, cartouches, stylos | `articles.type_stock='fourniture_bureau'` |
 | **Emballage** | Boîtes, sachets, étiquettes | Cartons GLS taille M, sachets kraft | `articles.type_stock='emballage'` |
@@ -502,31 +502,85 @@ Ajout colonne sur `articles` :
 
 | Colonne | Type | Note |
 |---|---|---|
-| `type_stock` | enum | `produit_fini` / `semi_fini` / `fourniture_fabrication` / `fourniture_bureau` / `emballage` (les MP ont leur propre table §4bis.0.1) |
+| `type_stock` | enum | `produit_fini` / `semi_fini` / `matiere_premiere` / `fourniture_fabrication` / `fourniture_bureau` / `emballage` |
 | `categorie_analytique` | varchar(50) | pour valorisation comptable |
 
-#### 4bis.0.1 `matieres_premieres` (schéma dédié — issu du BOM Excel existant)
+#### 4bis.0.1 Matière première — même architecture Modèle → Articles que les PF
 
-Les MP suivent une nomenclature différente des produits finis. Table propre :
+**Décision** : les MP réutilisent les tables `modeles` + `articles` (§4.1 / §4.4). Pas de table séparée. La distinction se fait par `modeles.type_produit = 'matiere_premiere'` et `articles.type_stock = 'matiere_premiere'`. On profite alors du même moteur de refs, EAN, poids/dimensions, photos, catalogues, stock, mouvements.
+
+**Modèle MP** = un couple (matière + couleur) décrit à haut niveau — ex `Fil coton blanc`, `Fil polyester ecru`, `Fil lin naturel`.
+
+**Article MP** (variante concrète) = une combinaison précise d'attributs — ex `Fil coton blanc en NM15 en 100% coton`, `Fil coton blanc en NM20 en 80/20 coton-polyester`.
+
+**Ajout colonne sur `modeles`** :
 
 | Colonne | Type | Note |
 |---|---|---|
-| `id_mp` | serial PK | |
-| `code_fabrication_mp` | varchar(30) unique | ex `NM15-01.00` |
-| `numero_metrique` | varchar(10) | `NM05`, `NM15`, `NM20`... — grosseur du fil |
-| `id_couleur` | FK parametres_couleurs | même table que les couleurs articles |
-| `code_couleur` | varchar(10) | dénormalisé pour perf (`C01`, `C02`, `C15`) |
-| `libelle_couleur` | varchar(100) | dénormalisé (`BLANC`, `ECRU`, `NAVY`) |
-| `qr_mp` | varchar(50) | QR code étiquette bobine |
-| `numero_lot_fournisseur` | varchar(50) | traçabilité amont |
-| `id_fournisseur_defaut` | FK fournisseurs | achat récurrent |
-| `stock_minimum_kg` | numeric(10,3) | seuil alerte |
-| `prix_moyen_pondere_kg` | numeric(14,3) | PMP pour valorisation |
-| `actif` | bool | |
+| `type_produit` | enum | `produit_fini` / `semi_fini` / `matiere_premiere` / `fourniture_fabrication` / `fourniture_bureau` / `emballage` |
+| `format_ref_commerciale` | varchar(200) | template de génération spécifique au type (défaut hérité — voir §4.4) |
+| `format_ref_fabrication` | varchar(200) | idem pour ref_fabrication |
 
-**Mouvements MP** utilisent le même mécanisme que §4bis.4 (`mouvements_stock` avec `type_article='mp'` OU une table jumelle `mouvements_mp` — cf choix impl §4bis.4bis).
+**Types d'attributs élargis** pour supporter les MP — §4.2 `modele_attributs.type_attribut` :
 
-**Consommation MP → OF** : chaque OF planifie une sortie MP (BOM éclaté). L'exécution de l'OF crée les mouvements `sortie_of` (MP) et `entree_fabrication` (article PF/SF produit).
+| Type attribut | Utilisé par | Table paramètre |
+|---|---|---|
+| `dimension` | PF, SF | `parametres_dimensions` |
+| `couleur` | PF, SF, MP | `parametres_couleurs` (partagée) |
+| `finition` | PF | `parametres_finitions` |
+| `tissage` | PF | `parametres_tissages` |
+| `nombre_couleurs` | PF | `parametres_nombre_couleurs` |
+| `personnalisation` | PF | `parametres_personnalisations` |
+| **`numero_metrique`** | **MP** (fils) | **`parametres_numeros_metriques`** (NM05, NM10, NM15, NM20, NM25, NM30, NM40...) — grosseur/finesse du fil |
+| **`composition`** | **MP, PF si étiquetage** | **`parametres_compositions`** (100% coton, 100% polyester, 80/20 CO/PES, 70/30, 100% lin, 100% viscose, lurex, mélanges spéciaux) |
+| **`torsion`** | **MP** (fils) | **`parametres_torsions`** (S, Z, faible, forte) — sens et intensité |
+| **`grammage`** | **MP** (tissus, non-tissés) | **`parametres_grammages`** (g/m²) |
+
+Chaque table paramètre a la même structure minimale : `id, code, libelle, actif, ordre_affichage` + colonnes spécifiques (ex `parametres_numeros_metriques.nombre_metres_par_kg` pour conversion poids/longueur).
+
+**Format des refs MP** (par convention issue du BOM existant `NM15-01.00`) :
+
+- `ref_commerciale` MP = `<CODE_NUM_METRIQUE>-<CODE_COULEUR><SUFFIXE>` — ex `NM15-01.00` (fil NM15 blanc pur), `NM20-15.03` (fil NM20 lagon rayé)
+- `ref_fabrication` MP = même chose (le format court est déjà lisible atelier).
+- Le champ `format_ref_commerciale` sur `modeles` permet de configurer le template par modèle. Défaut par `type_produit` :
+  - PF : cf §4.4 (`<CODE_MODELE><DIM4>-<LETTRE><C2>-<N2>`)
+  - MP : `<CODE_NUM_METRIQUE>-<CODE_COULEUR><SUFFIXE>`
+  - Fournitures : `<CODE_MODELE>-<CODE_VARIANTE>` (générique)
+
+**Consommation MP → OF** : le BOM d'un OF liste les articles MP nécessaires (id + quantité en kg ou mètres). L'exécution génère `mouvements_stock` `sortie_of` (sur les MP) puis `entree_fabrication` (sur l'article PF/SF produit).
+
+**Champs additionnels sur `articles` (utiles surtout aux MP)** :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `qr_code` | varchar(50) | QR code étiquette bobine/rouleau (généré à réception, imprimé) |
+| `id_fournisseur_defaut` | FK fournisseurs | achat récurrent pour ce référencement |
+| `prix_moyen_pondere_kg` | numeric(14,3) | PMP pour valorisation stock (mis à jour à chaque réception fournisseur) |
+
+#### 4bis.0.2 Lot obligatoire pour MP (traçabilité amont)
+
+**Chaque quantité de MP en stock est attachée à un `id_lot`** — pas d'exception. La règle est stricte car la traçabilité amont (numéro de lot fournisseur, date fabrication, certificat conformité) est exigée pour :
+
+- Rappels fournisseur (batch défectueux).
+- Reproductibilité couleur (deux lots de "blanc" peuvent avoir un delta chromatique — l'atelier doit savoir quel lot il consomme).
+- Traçabilité aval : sur un OF terminé, on peut remonter aux lots MP consommés → au fournisseur → à sa date de livraison.
+
+Extension de §4bis.5 `lots_articles` pour MP :
+
+| Colonne additionnelle MP | Type | Note |
+|---|---|---|
+| `numero_lot_fournisseur` | varchar(50) | tel qu'indiqué sur le bordereau amont |
+| `id_fournisseur` | FK fournisseurs | de qui vient ce lot |
+| `date_reception` | date | |
+| `certificat_conformite_url` | varchar(500) | PDF fournisseur |
+| `couleur_hex_mesure` | varchar(7) | mesure spectro colorimétrique (contrôle nuance) |
+| `poids_bobine_moyen_kg` | numeric(10,3) | pour reconditionnement |
+
+**Contrainte** : pour un `article` de `type_stock='matiere_premiere'`, chaque ligne de `stock_article_entrepot` a `id_lot NOT NULL` — le stock est granulaire au niveau lot.
+
+**Mouvements MP** : identiques aux PF (`mouvements_stock`), mais chaque mouvement porte obligatoirement `id_lot`.
+
+**Écran "vue par lot"** dans le Dashboard Magasinier Stock : liste des lots MP par article + fournisseur, quantité restante, date réception, traçabilité descendante (quels OF ont consommé ce lot).
 
 ### 4bis.1 `entrepots`
 
@@ -1484,6 +1538,14 @@ POST /api/parametres/societe/logo       — upload logo (multipart)
 ## Changelog
 
 - `2026-09-22` — v1.0. Création du document. Périmètre CRM + Produits + Ventes fixé.
+- `2026-09-23` — v1.5. Unification MP dans le modèle Modèle → Articles :
+  - §4bis.0.1 **réécrit** — les MP réutilisent les tables `modeles` + `articles`. Pas de table `matieres_premieres` séparée.
+  - `modeles.type_produit` ajouté (`produit_fini` / `semi_fini` / `matiere_premiere` / `fourniture_fabrication` / `fourniture_bureau` / `emballage`).
+  - `modeles.format_ref_commerciale` + `.format_ref_fabrication` — template configurable par modèle (défaut par type_produit).
+  - Types d'attributs élargis : ajout `numero_metrique`, `composition`, `torsion`, `grammage` avec leurs tables `parametres_*` dédiées.
+  - Format ref MP : `<CODE_NUM_METRIQUE>-<CODE_COULEUR><SUFFIXE>` (ex `NM15-01.00`) — issu du BOM existant.
+  - Colonnes `articles` additionnelles utiles MP : `qr_code`, `id_fournisseur_defaut`, `prix_moyen_pondere_kg`.
+  - §4bis.0.2 **nouveau** — **lot obligatoire** pour tout article MP en stock. Champs additionnels sur `lots_articles` (numéro lot fournisseur, id_fournisseur, date_reception, certificat_conformite, couleur mesurée, poids bobine). Chaque `stock_article_entrepot` d'un MP a `id_lot NOT NULL`. Mouvements MP portent obligatoirement `id_lot`. Écran vue par lot dans Dashboard Magasinier Stock.
 - `2026-09-23` — v1.4. Ajout Phase 2.5 Stock & Entrepôts :
   - §4bis **nouveau chapitre** complet :
     - 4bis.0 : 5 catégories de stock — Produits finis, Semi-finis, Matières premières (schéma dédié §4bis.0.1 avec numéro métrique + code fabrication issu du BOM Excel), Fournitures fabrication, Fournitures bureau, Emballage.
