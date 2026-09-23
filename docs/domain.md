@@ -1,6 +1,6 @@
 # La Plume Artisanale — Contrat de domaine
 
-Version : 1.7 · Statut : brouillon en validation
+Version : 1.8 · Statut : brouillon en validation
 
 Ce document est la **source de vérité** pour le vocabulaire, les entités, les endpoints et les règles métier du projet.
 
@@ -944,7 +944,8 @@ Une **gamme** = séquence type d'étapes. Souvent 1 gamme par catégorie de prod
 | `COUPE` | Coupe | production | production | Sépare les foutas individuelles du rouleau tissé. Ciseaux industriels ou coupe automatique. |
 | `POST_COUPE_FRANGE` | Post-coupe — Frange | finition | finition | Nouage/tressage/franging des extrémités (spécificité fouta). Peut être manuel ou franging machine. |
 | `POST_COUPE_OURLET` | Post-coupe — Ourlet | finition | finition | Alternative à la frange (bordure cousue) pour certains modèles. Machine à coudre. |
-| `POST_COUPE_COUTURE` | Couture assemblage | finition | finition | Pour ponchos, sacs, packs : assemblage multi-pièces. |
+| `POST_COUPE_COUTURE` | Couture assemblage | finition | finition | Pour ponchos, sacs, packs : assemblage multi-pièces. Peut aussi porter des étiquettes tissées (voir `ETIQUETAGE`). |
+| `ETIQUETAGE` | Étiquetage | finition | finition | Apposition étiquettes tissées (couture), autocollantes (collage), carton papier (accrochage), code-barres/EAN (impression). Peut être fusionné avec `POST_COUPE_COUTURE` ou `POST_COUPE_OURLET` selon organisation atelier. |
 | `IMPRESSION_LOGO` | Impression / Sérigraphie | finition | finition | Personnalisation client (souvent sous-traité). |
 | `BRODERIE` | Broderie | finition | finition | Idem — souvent sous-traité. |
 | `LAVAGE` | Lavage / Blanchissage | finition | finition | Enlève l'apprêt, adoucit. Batch par lot. |
@@ -2048,6 +2049,8 @@ POST /api/parametres/societe/logo       — upload logo (multipart)
 ## Changelog
 
 - `2026-09-22` — v1.0. Création du document. Périmètre CRM + Produits + Ventes fixé.
+- `2026-09-23` — v1.8. Ajout poste Étiquetage :
+  - §4ter.3 : ajout du poste `ETIQUETAGE` (finition) — étiquettes tissées cousues, autocollantes, carton papier, code-barres/EAN. Note : peut être fusionné avec Couture ou Ourlet selon organisation.
 - `2026-09-23` — v1.7. Postes atelier explicités :
   - §4ter.3 : colonnes `categorie` + `taux_horaire_mo` ajoutées à `postes_travail`.
   - §4ter.3 : **liste standard de 18 postes fouta** (seed initial) — Bobinage, Ourdissage, Encollage, Nouage chaîne, Tissage, Coupe, Post-coupe Frange/Ourlet/Couture, Impression, Broderie, Lavage, Repassage, Contrôle qualité, Pliage, Emballage unitaire, Atelier préparation commandes, Expédition — chacun avec catégorie + sous-type gamme + rôle métier.
