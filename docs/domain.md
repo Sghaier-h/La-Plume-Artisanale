@@ -1,6 +1,6 @@
 # La Plume Artisanale — Contrat de domaine
 
-Version : 1.2 · Statut : brouillon en validation
+Version : 1.3 · Statut : brouillon en validation
 
 Ce document est la **source de vérité** pour le vocabulaire, les entités, les endpoints et les règles métier du projet.
 
@@ -233,7 +233,7 @@ Le produit **parent**. Ex : "ARTHUR", "IBIZA". Porte les attributs disponibles p
 | `code_modele` | varchar(30) unique | `AR`, `IB` — préfixe des articles |
 | `libelle` | varchar(200) | |
 | `description` | text | |
-| `image_url` | varchar(500) | photo générique du modèle |
+| `image_url_principale` | varchar(500) | photo principale (miniature liste) — dérivée de `modele_photos` |
 | `id_categorie` | FK categories_produits | ex Fouta, Serviette, Écharpe |
 | `actif` | bool | |
 
@@ -248,6 +248,41 @@ Table pivot : quels attributs sont autorisés pour ce modèle.
 | `type_attribut` | enum | `dimension` / `couleur` / `finition` / `tissage` / `nombre_couleurs` / `personnalisation` |
 | `id_valeur` | int | FK vers `parametres_<type>` |
 
+### 4.2bis Photos (modèles, articles, catalogues)
+
+Chaque modèle, chaque article et chaque catalogue peut porter **plusieurs photos** (typiquement 2 à 5), avec un ordre d'affichage et un flag `est_principale` pour la miniature.
+
+Une seule table pivot polymorphique `photos` :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_photo` | serial PK | |
+| `type_entite` | enum | `modele` / `article` / `catalogue` |
+| `id_entite` | int | FK logique (id_modele / id_article / id_catalogue) |
+| `url` | varchar(500) | chemin fichier (S3 ou disque local) |
+| `libelle` | varchar(150) | alt text |
+| `ordre` | int | ordre d'affichage (0 = principale par convention) |
+| `est_principale` | bool | 1 seule par entité — sert de miniature |
+| `taille_octets` | int | pour quotas |
+| `mime_type` | varchar(50) | `image/jpeg`, `image/png`, `image/webp` |
+| `date_upload` | timestamp | |
+| `upload_par` | FK utilisateurs | |
+
+**Règles** :
+- Miniature `image_url_principale` sur `modeles.image_url_principale`, `articles.image_url_principale` et `catalogues.image_url_principale` est **calculée** à partir de `photos WHERE est_principale = true` — dénormalisée pour perf. Trigger DB ou hook applicatif la maintient à jour.
+- Upload via multipart : redimensionnement auto (thumbnail 200×200, medium 800×800, full original).
+- Formats acceptés : JPEG, PNG, WebP. Max 5 MB par photo.
+- Nombre max recommandé : **5 photos** par entité (3 par défaut à l'UI).
+
+Endpoints :
+
+```
+GET  /api/photos?type_entite=article&id_entite=42
+POST /api/photos                                — upload (multipart)
+PUT  /api/photos/:id                            — MAJ (libelle, ordre, est_principale)
+DELETE /api/photos/:id
+```
+
 ### 4.3 `catalogues` et `article_catalogues`
 
 Un **catalogue** est un regroupement d'articles publiable (interne, ou synchronisable vers un site web — ex : le catalogue *ALL BY FOUTA* se synchronise vers `allbyfouta.com`).
@@ -259,6 +294,8 @@ Un **catalogue** est un regroupement d'articles publiable (interne, ou synchroni
 | `id_catalogue` | serial PK | |
 | `code` | varchar(50) unique | `ALLBYFOUTA`, `PRO`, `EXPORT_FR` |
 | `libelle` | varchar(200) | |
+| `image_url_principale` | varchar(500) | photo principale (couverture catalogue) — dérivée de `photos` §4.2bis |
+| `description` | text | pitch marketing / positionnement |
 | `url_site` | varchar(500) | URL du site cible si synchronisable |
 | `type_sync` | enum | `interne` / `shopify` / `woocommerce` / `custom_api` |
 | `credentials_json` | jsonb | clés API du site (chiffré) |
@@ -279,13 +316,78 @@ Un **catalogue** est un regroupement d'articles publiable (interne, ou synchroni
 
 Une combinaison unique d'attributs d'un modèle = un article sellable. Table actuelle `articles_catalogue` → **renommer** en `articles`.
 
-**3 références par article** :
+#### Règles de génération des références (issues de l'existant, `docs/references/references_articles.csv` — 1531 articles)
 
-- `code_article` — **identifiant technique système**, unique, jamais affiché client. Ex : `AR1020-D005-C002-F001-T003` (concaténation des ids). Sert de clé interne pour scan, jointures.
-- `ref_fabrication` — **référence atelier**, imprimée sur les OF, cartes de production. Format : `<code_modele>-<code_dimension>-<code_tissage>-<code_finition>-<code_nb_couleurs>`. Ex : `AR-1020-JQ-FR-2C` (dimension 100×200, tissage Jacquard, finition franges, 2 couleurs). L'atelier lit ça facilement.
-- `ref_commerciale` — **référence catalogue vente**, visible sur devis/facture/site web. Format : `<code_modele>-<code_couleur><suffixe>`. Ex : `AR1020-BLC01` (ARTHUR 100×200 blanc). Concise, marketing-friendly. Peut être surchargée manuellement par l'ADMIN.
+Trois références coexistent — définies pour **coller aux codes déjà utilisés en production** :
 
-Toutes les 3 générées automatiquement à la création, modifiables uniquement par ADMIN si besoin (attention aux impacts sur documents antérieurs — snapshot obligatoire dans les lignes).
+**A. `code_article`** — clé interne système
+- = `ref_commerciale` (même valeur). Sert de clé de scan et jointures.
+
+**B. `ref_commerciale`** — visible sur devis, facture, site web, rayonnage.
+
+Format : `<CODE_MODELE><CODE_DIMENSION>-<LETTRE_NB_COULEURS><CODE_COULEUR_BASE>-<SUFFIXE_NUANCE>[-<CODES_ADDITIONNELS>]`
+
+| Segment | Règle | Exemples |
+|---|---|---|
+| `CODE_MODELE` | 2-7 lettres majuscules — colonne `modeles.code_modele` | `AR` (ARTHUR), `ANA` (ARTISANAT), `EPU` (EPONGE UNI), `PACKCHI` (PACK CHIC) |
+| `CODE_DIMENSION` | Largeur + longueur chacun sur **2 chiffres**, padding 0. Si dimension non numérique → code alpha court (ADU, KID). Séparateur `/` supprimé. | `100/200 CM` → `1020` · `240/260 CM` → `2426` · `90/190 CM` → `0919` · `50/70 CM` → `0507` · `ADULT` → `ADU` |
+| `LETTRE_NB_COULEURS` | Lettre = nombre de couleurs. **Absente** si uni. | `B` (bicolore) · `T` (tricolore) · `Q` (quadricolore) · `C` (5 couleurs / cinq) · `S` (6 couleurs / six) |
+| `CODE_COULEUR_BASE` | 2 chiffres — id de la couleur principale (`parametres_couleurs.code_commercial` → 01–99) | `02`, `15`, `26` |
+| `SUFFIXE_NUANCE` | 2 chiffres — nuance ou rayure. `01` = couleur pleine, autres = variantes rayées | `01`, `03`, `17` |
+| `CODES_ADDITIONNELS` | 2-3 codes couleur supplémentaires (2 chiffres chacun), un par couleur secondaire | présents pour `Q`, `C`, `S` |
+
+Exemples réels :
+- `AR1020-B02-03` = ARTHUR 100×200 CM, bicolore, base 02, nuance 03
+- `EPU0919-19` = EPONGE UNI 90×190 CM, uni, couleur 19 (pas de lettre nb couleurs, pas de suffixe séparé — motif "modele+dim+couleur")
+- `BA1020-C15-01-25` = BASQUE 100×200 CM, 5 couleurs, base 15 + 01 + 25
+- `INS1824-Q19-02-03` = INSPIRATION 180×240 CM, quadricolore, 19+02+03
+- `ST2020-S15-07-17` = ST TROPEZ 200×200 CM, 6 couleurs, 15+07+17
+- `LIL1020-B11-LuAr` = LILI LUREX bicolore, matière spéciale (Lurex Argenté) → suffixe alpha spécial autorisé pour matières particulières
+
+**C. `ref_fabrication`** — visible sur OF, cartes atelier, ordres de tissage.
+
+Format identique à ref_commerciale **avec un tiret séparateur inséré après la lettre de nombre de couleurs** ET **codes couleurs additionnels étendus** pour donner toutes les nuances nécessaires à l'atelier de tissage.
+
+| ref_commerciale | ref_fabrication |
+|---|---|
+| `AR1020-B02-03` | `AR1020-B-02-03` |
+| `BA1020-C15-01-25` | `BA1020-C-15-01-25-10-23` |
+| `ST2020-S15-07-17` | `ST2020-S-15-07-17-06-18-03` |
+| `EPU0919-19` | `EPU0919-19` (pas de lettre nb couleurs → identique) |
+
+**Règle de calcul** :
+
+- Insertion d'un tiret entre `LETTRE_NB_COULEURS` et `CODE_COULEUR_BASE`.
+- Ajout des codes couleurs de trame/rayure supplémentaires stockés dans `article_couleurs_tissage` (voir table pivot §4.4bis) — une entrée par nuance/rayure additionnelle.
+
+#### Génération automatique + surcharge manuelle
+
+- À la création d'un article, le backend calcule les 3 refs à partir des ids d'attributs sélectionnés + config d'ordre stockée en `parametres_generation_refs`.
+- L'ADMIN peut surcharger manuellement `ref_commerciale` et `ref_fabrication` (utile pour cas spéciaux type Lurex `LuAr`).
+- `code_article` = clé technique, non modifiable après création (impacts sur les scans).
+- `ref_commerciale` modification → propagation snapshot dans documents en cours de brouillon uniquement, jamais sur documents validés (les `designation_snapshot` protègent l'historique).
+
+#### EAN — code-barres retail
+
+Chaque article a un **code EAN-13** pour scanner en caisse / rayon boutique / site e-commerce.
+
+- **Auto-généré** à la création selon `parametres_ean` (préfixe GS1 société + compteur incrémental interne + chiffre de contrôle EAN-13 calculé).
+- **Modifiable manuellement** par ADMIN (utile si l'article vient d'un fournisseur avec son propre EAN).
+- Colonne dédiée `ean_13`, unique.
+- Un article peut aussi avoir un **EAN-8** court (colonne `ean_8`) pour très petits emballages.
+
+`parametres_ean` (singleton config) :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id` | serial PK | |
+| `prefixe_gs1` | varchar(3) | ex `619` (Tunisie), `327` (France) — attribué par GS1 |
+| `code_entreprise` | varchar(6) | attribué par GS1 après souscription — total prefixe+code = 9 chiffres |
+| `compteur_actuel` | int | incrément interne 000000-999999 (3-4 chiffres selon longueur code entreprise) |
+| `format_ean_defaut` | enum | `ean_13` / `ean_8` |
+| `auto_generer` | bool | true = calcul auto à la création |
+
+**Calcul chiffre de contrôle EAN-13** : algo standard (poids 1/3 alternés, complément à 10) — implémenté côté backend.
 
 | Colonne | Type | Note |
 |---|---|---|
@@ -295,18 +397,33 @@ Toutes les 3 générées automatiquement à la création, modifiables uniquement
 | `ref_fabrication` | varchar(80) unique | auto — pour l'atelier (voir ci-dessus) |
 | `ref_commerciale` | varchar(80) unique | auto puis surchargeable ADMIN — pour clients |
 | `designation` | varchar(300) | auto : `<libelle_modele> <dimension> <couleur> <finition>` |
-| `image_url` | varchar(500) | photo spécifique de la variante |
+| `image_url_principale` | varchar(500) | photo principale de la variante — dérivée de `article_photos` |
 | `id_dimension` | FK parametres_dimensions | |
 | `id_couleur` | FK parametres_couleurs | |
 | `id_finition` | FK parametres_finitions | |
 | `id_tissage` | FK parametres_tissages | |
 | `id_nombre_couleurs` | FK parametres_nombre_couleurs | |
 | `id_personnalisation` | FK parametres_personnalisations | |
+| `ean_13` | varchar(13) unique | code EAN-13, auto ou manuel (voir plus haut) |
+| `ean_8` | varchar(8) unique | code EAN-8 court optionnel |
 | `prix_reviens` | numeric(14,3) | coût de production de la variante |
 | `prix_vente_ht` | numeric(14,3) | prix de base HT (surcharge par grille tarifaire) |
 | `unite_vente` | varchar(10) | `pc`, `paire`, `kg` |
+| **`poids_net_g`** | numeric(10,2) | poids **net** de l'article fini en grammes (sans emballage) |
+| **`poids_brut_g`** | numeric(10,2) | poids **brut** avec emballage standard (utilisé pour calcul frais port) |
+| **`longueur_cm`** | numeric(8,2) | dimension physique — longueur emballée |
+| **`largeur_cm`** | numeric(8,2) | dimension physique — largeur emballée |
+| **`hauteur_cm`** | numeric(8,2) | dimension physique — épaisseur emballée |
+| **`volume_cm3`** | numeric(12,2) | volume calculé (colonne générée : L×l×H) |
+| **`fragile`** | bool | true = manutention spéciale, majoration transport |
 | `stock_total` | numeric(14,3) | maintenu par mouvements stock |
 | `actif` | bool | |
+
+Les 4 champs poids/dimensions **alimentent** :
+- **Calcul frais de port** : `sum(ligne.qte × article.poids_brut_g)` → poids total commande → lookup `tarifs_transport` (§5.5).
+- **Pesée automatique du colis** : quand le magasinier ajoute un article scanné à un colis (§5.6), `colis.poids_kg` peut être pré-rempli à partir de `sum(article.poids_brut_g)` (le magasinier confirme/ajuste au moment de la pesée réelle).
+- **Choix du transporteur** : palette vs colis selon poids seuil (ex `>30 kg` → palette).
+- **Facturation transport** au client (poids taxable = max(poids_brut, poids_volumétrique où poids_vol = volume_cm3 / 5000)).
 
 **Contrainte unique** : `(id_modele, id_dimension, id_couleur, id_finition, id_tissage, id_nombre_couleurs, id_personnalisation)`. C'est ce qui permet la détection "cet article existe déjà".
 
@@ -1037,6 +1154,19 @@ POST /api/parametres/societe/logo       — upload logo (multipart)
 ## Changelog
 
 - `2026-09-22` — v1.0. Création du document. Périmètre CRM + Produits + Ventes fixé.
+- `2026-09-23` — v1.3. 3ème passe retours utilisateur :
+  - §4.4 : **règles de génération des refs réécrites d'après les 1531 articles réels** (`docs/references/references_articles.csv`) :
+    - `ref_commerciale` : `<CODE_MODELE><DIM4>-<LETTRE_NB_COULEURS><COULEUR2>-<NUANCE2>[-<CODES_ADD>]` (ex `AR1020-B02-03`, `BA1020-C15-01-25`, `EPU0919-19`).
+    - `ref_fabrication` : idem + tiret après lettre nb couleurs + codes couleurs de trame étendus (ex `AR1020-B-02-03`, `ST2020-S-15-07-17-06-18-03`).
+    - Dimension = largeur+longueur en 2 chiffres chacun (`100/200` → `1020`, `90/190` → `0919`). Non-numérique : code alpha (ADU, KID).
+    - Lettres nombre couleurs : B(2) T(3) Q(4) C(5) S(6). Absente si uni.
+    - `code_article` = `ref_commerciale`, non modifiable après création.
+    - Surcharge manuelle ADMIN autorisée pour ref_commerciale/ref_fabrication (utile cas matières spéciales `LuAr`, `lin`).
+  - §4.4 : **EAN-13 + EAN-8** — auto-généré (préfixe GS1 société + compteur + check digit), modifiable manuellement. Config dans `parametres_ean`.
+  - §4.4 : **poids et dimensions physiques** de l'article fini (`poids_net_g`, `poids_brut_g`, `longueur_cm`, `largeur_cm`, `hauteur_cm`, `volume_cm3`, `fragile`) → alimente calcul frais port, pesée colis auto, choix transporteur, poids volumétrique.
+  - §4.2bis **nouvelle section** — table `photos` polymorphique pour 1-N photos par modele/article/catalogue avec `est_principale` + ordre + redimensionnement auto.
+  - §4.1 / §4.3 / §4.4 : `image_url` remplacé par `image_url_principale` (dénormalisée depuis §4.2bis).
+  - §4.3 : ajout `description` sur catalogue.
 - `2026-09-23` — v1.2. 2ème passe retours utilisateur :
   - §4.4 : **3 références** définies (code_article technique / ref_fabrication atelier / ref_commerciale client) + règles de génération auto + surchargeable ADMIN.
   - §4.6 : endpoints CRUD explicites pour chaque type d'attribut (dimensions, couleurs, finitions, tissages, nombres-couleurs, personnalisations) — ADMIN peut ajouter/modifier les attributs.
