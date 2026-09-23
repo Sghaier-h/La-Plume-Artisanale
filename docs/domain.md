@@ -3287,6 +3287,93 @@ POST /api/parametres/societe/logo   — upload multipart
 
 ---
 
+## 16bis. Paramétrage numérotations documents
+
+Toute pièce du système (OF, CA, devis, commande, BL, facture, avoir, BC achat, réception, colis, palette, écriture, client, fournisseur, article) suit une **règle de numérotation paramétrable** par société — un seul point de configuration.
+
+### 16bis.1 Table `parametres_numerotation`
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_num` | serial PK | |
+| `id_societe` | int FK | multi-sociétés (LP / AF / FT) |
+| `code_document` | varchar(20) | `OF`, `CA`, `DEV`, `CMD`, `BL`, `FA`, `AVO`, `BC`, `REC`, `COL`, `PAL`, `ECR`, `CLI`, `FOU`, `ART` |
+| `prefixe` | varchar(10) | ex : `OF`, `FA-`, `DV-`, `PAL` |
+| `suffixe` | varchar(10) | vide par défaut |
+| `format_annee` | enum | `aucune` / `AA` (26) / `AAAA` (2026) |
+| `format_mois` | enum | `aucun` / `MM` (09) |
+| `separateur` | varchar(3) | `-` / `/` / vide |
+| `longueur_sequence` | int | 3, 4, 5, 6, 8 — zéro padding auto |
+| `sequence_courante` | int | dernière valeur émise |
+| `reset_sequence` | enum | `jamais` / `annuel` / `mensuel` |
+| `annee_reset` / `mois_reset` | int | pour reset auto |
+| `template` | varchar(100) | ex : `{prefixe}{AAAA}{sep}{seq:6}` — override si présent |
+| `visible_menu_params` | bool | true → éditable via écran paramètres |
+| `verrouille` | bool | true → non modifiable si des pièces existent déjà |
+| `updated_at` | timestamptz | audit |
+| `updated_by` | int FK users | audit |
+
+Contrainte : `UNIQUE (id_societe, code_document)`.
+
+### 16bis.2 Formats par défaut (seed initial LP)
+
+| Code | Format généré | Exemple | Longueur seq | Reset |
+|---|---|---|---|---|
+| `OF`  | `OF{seq:6}`                 | `OF249780`         | 6 | jamais |
+| `CA`  | `CA{seq:4}`                 | `CA0087`           | 4 | jamais (stock catalogue) |
+| `DEV` | `DV-{AAAA}{MM}{seq:4}`      | `DV-2026090023`    | 4 | mensuel |
+| `CMD` | `CMD-{AAAA}{seq:5}`         | `CMD-202600142`    | 5 | annuel |
+| `BL`  | `BL-{AAAA}{MM}{seq:4}`      | `BL-2026090005`    | 4 | mensuel |
+| `FA`  | `FA-{AAAA}{MM}{seq:5}`      | `FA-20260900123`   | 5 | mensuel (série TVA fiscale) |
+| `AVO` | `AV-{AAAA}{MM}{seq:4}`      | `AV-2026090002`    | 4 | mensuel |
+| `BC`  | `BC-{AAAA}{seq:4}`          | `BC-20260087`      | 4 | annuel |
+| `REC` | `REC-{AAAA}{MM}{seq:3}`     | `REC-202609012`    | 3 | mensuel |
+| `COL` | `C{seq:3}-{parent}-{ordre:3}` | `C042-BL0005-001` | 3 | par BL (voir §8) |
+| `PAL` | `PAL{AA}-{seq:3}`           | `PAL26-042`        | 3 | annuel |
+| `ECR` | `{JOURNAL}-{AAAA}{seq:5}`   | `VE-202600523`     | 5 | annuel (par journal) |
+| `CLI` | `CL{seq:4}`                 | `CL0184`           | 4 | jamais |
+| `FOU` | `FO{seq:4}`                 | `FO0027`           | 4 | jamais |
+| `ART` | `AR{seq:4}` (stock catalogue seulement) | `AR0512` | 4 | jamais |
+
+Les articles catalogue produit fini utilisent aussi la **référence composée** définie §5 (`{MODELE}{DIM}-{SEL}-{TAILLE}-{COULEUR}`), en parallèle du numéro `AR` interne.
+
+### 16bis.3 Service `NumeroSequenceService`
+
+```
+POST /api/numerotation/next
+  body : { code_document, id_societe }
+  → { numero: "OF249781", sequence: 249781 }
+```
+
+- Transaction avec `SELECT ... FOR UPDATE` sur la ligne → jamais de doublon en concurrence.
+- Reset automatique si `reset_sequence = annuel` ou `mensuel` et changement d'année/mois détecté.
+- Émission tracée dans `audit_numerotation` (id_num, ancienne_seq, nouvelle_seq, contexte, user).
+
+### 16bis.4 Écran paramètres (menu Paramètres → Numérotations)
+
+Grille éditable :
+- Colonne "Aperçu" affichant en temps réel `render(template)` avec `sequence_courante + 1`.
+- Bouton "Réinitialiser" (grisé si `verrouille = true`).
+- Alerte rouge si l'utilisateur tente de modifier un préfixe alors que `sequence_courante > 0` — impose une confirmation forte + trace audit.
+
+### 16bis.5 Endpoints
+
+```
+GET   /api/parametres/numerotation
+GET   /api/parametres/numerotation/:code
+PUT   /api/parametres/numerotation/:code       — modifier préfixe/format/longueur
+POST  /api/parametres/numerotation/:code/reset — réinit séquence (admin only)
+POST  /api/parametres/numerotation/:code/apercu — simuler le prochain numéro
+```
+
+RBAC : lecture `admin` + `direction`, écriture `admin` uniquement.
+
+### 16bis.6 Compatibilité multi-sociétés
+
+Chaque société (LP, AF, FT — cf. §2.9 sociétés) possède sa propre ligne par `code_document`. Le sélecteur société en haut d'écran (cf. userbar) filtre automatiquement les numérotations émises.
+
+---
+
 ## 17. Ordre d'exécution
 
 1. **Validation contrat** (ce document).
