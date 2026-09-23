@@ -78,7 +78,7 @@ const main = async () => {
 
   await q('articles has id_modele?',
     `SELECT column_name FROM information_schema.columns
-      WHERE table_name = 'articles' AND column_name IN ('id_modele','id_modeles','code_modele')`);
+      WHERE table_name = 'articles' AND column_name IN ('id_modele','id_modele','code_modele')`);
 
   await q('articles_catalogue exists?',
     `SELECT column_name, data_type FROM information_schema.columns

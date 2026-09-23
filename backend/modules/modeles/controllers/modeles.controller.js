@@ -69,7 +69,7 @@ export const getModeles = async (req, res) => {
     }
 
     const sql = `
-      SELECT m.*, m.id_modeles AS id
+      SELECT m.*, m.id_modele AS id
       FROM modeles m
       WHERE ${where.join(' AND ')}
       ORDER BY m.code_modele NULLS LAST, m.created_at DESC
@@ -101,7 +101,7 @@ export const getModelesStatsCategories = async (req, res) => {
 export const getModeleByCode = async (req, res) => {
   try {
     const r = await pool.query(
-      `SELECT *, id_modeles AS id FROM modeles WHERE code_modele = $1 LIMIT 1`,
+      `SELECT *, id_modele AS id FROM modeles WHERE code_modele = $1 LIMIT 1`,
       [req.params.code]
     );
     if (!r.rows[0]) return sendError(res, 'Modèle introuvable', 404);
@@ -115,7 +115,7 @@ export const getModeleByCode = async (req, res) => {
 export const getModelesById = async (req, res) => {
   try {
     const r = await pool.query(
-      `SELECT *, id_modeles AS id FROM modeles WHERE id_modeles = $1 LIMIT 1`,
+      `SELECT *, id_modele AS id FROM modeles WHERE id_modele = $1 LIMIT 1`,
       [req.params.id]
     );
     if (!r.rows[0]) return sendError(res, 'Modèle introuvable', 404);
@@ -163,7 +163,7 @@ export const updateModeles = async (req, res) => {
     const setClause = fields.map((f, i) => `${f} = $${i + 1}`).join(', ');
     const r = await pool.query(
       `UPDATE modeles SET ${setClause}, updated_at = NOW(), updated_by = $${values.length + 1}
-       WHERE id_modeles = $${values.length + 2} RETURNING *`,
+       WHERE id_modele = $${values.length + 2} RETURNING *`,
       [...values, userId, req.params.id]
     );
     if (!r.rows[0]) return sendError(res, 'Modèle introuvable', 404);
@@ -200,7 +200,7 @@ export const uploadPhoto = async (req, res) => {
 
     const r = await pool.query(
       `UPDATE modeles SET image_url = $1, updated_at = NOW(), updated_by = $2
-       WHERE id_modeles = $3 RETURNING *`,
+       WHERE id_modele = $3 RETURNING *`,
       [image_url, userId, id]
     );
     if (!r.rows[0]) return sendError(res, 'Modèle introuvable', 404);
@@ -256,9 +256,9 @@ const fetchStockMap = async (ids) => {
 // ─── Helper: charge modèle + variantes + référentiels ────────────────────
 const loadVariantes = async (modeleId) => {
   const mRes = await pool.query(
-    `SELECT id_modeles, code_modele, libelle, categorie, image_url,
+    `SELECT id_modele, code_modele, libelle, categorie, image_url,
             dimensions_std, composition, prix_base
-       FROM modeles WHERE id_modeles = $1 LIMIT 1`,
+       FROM modeles WHERE id_modele = $1 LIMIT 1`,
     [modeleId]
   );
   const modele = mRes.rows[0];
@@ -394,11 +394,11 @@ export const deleteModeles = async (req, res) => {
     const userId = authorId(req) || 1;
     const r = await pool.query(
       `UPDATE modeles SET active = false, updated_at = NOW(), updated_by = $2
-       WHERE id_modeles = $1 RETURNING id_modeles`,
+       WHERE id_modele = $1 RETURNING id_modele`,
       [req.params.id, userId]
     );
     if (!r.rows[0]) return sendError(res, 'Modèle introuvable', 404);
-    return sendSuccess(res, { id: r.rows[0].id_modeles }, 'Modèle désactivé');
+    return sendSuccess(res, { id: r.rows[0].id_modele }, 'Modèle désactivé');
   } catch (error) {
     return handleError(res, error, 'deleteModeles');
   }

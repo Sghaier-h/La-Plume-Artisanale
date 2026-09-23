@@ -8,7 +8,6 @@ import { modelesService, articlesCatalogueService } from '../services/api';
 
 // ─── Types ────────────────────────────────────────────────────────────────
 interface Modele {
-  id_modeles?: number;
   id_modele?: number;
   code_modele?: string;
   libelle?: string;
@@ -100,7 +99,7 @@ const ModeleDetails: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  const modeleId = (modele?.id_modeles ?? modele?.id_modele ?? (id ? parseInt(id, 10) : undefined));
+  const modeleId = (modele?.id_modele ?? modele?.id_modele ?? (id ? parseInt(id, 10) : undefined));
 
   const loadAll = async () => {
     if (!id) return;

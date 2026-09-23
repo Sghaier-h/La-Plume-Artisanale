@@ -19,7 +19,7 @@ interface ArticlePickerProps {
 }
 
 interface Modele {
-  id_modeles: number;
+  id_modele: number;
   code_modele?: string;
   libelle?: string;
   categorie?: string;
@@ -242,8 +242,8 @@ const ArticlePicker: React.FC<ArticlePickerProps> = ({ isOpen, onClose, onSelect
                 }}>
                   {filteredModeles.map((m) => (
                     <button
-                      key={m.id_modeles}
-                      onClick={() => { setSelectedModeleId(m.id_modeles); setStep(2); }}
+                      key={m.id_modele}
+                      onClick={() => { setSelectedModeleId(m.id_modele); setStep(2); }}
                       style={{
                         display: 'flex', flexDirection: 'column', gap: 10,
                         padding: 14, textAlign: 'left', cursor: 'pointer',
