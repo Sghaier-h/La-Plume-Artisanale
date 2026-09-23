@@ -1,6 +1,6 @@
 # La Plume Artisanale — Contrat de domaine
 
-Version : **2.0** · Statut : brouillon en validation · Refonte complète intégrant toutes les analyses legacy.
+Version : **2.1** · Statut : brouillon en validation · Refonte complète intégrant toutes les analyses legacy + RH + IA agents autonomes.
 
 Ce document est la **source de vérité** pour le vocabulaire, les entités, les endpoints et les règles métier du projet. Il remplace intégralement les versions 1.x.
 
@@ -21,6 +21,8 @@ Toute modification postérieure (ajout de champ, changement de règle, renommage
 9. [Achats & Fournisseurs](#9-achats--fournisseurs-phase-32)
 10. [Comptabilité](#10-comptabilité-phase-4)
 11. [Communications](#11-communications)
+11bis. [Ressources Humaines](#11bis-ressources-humaines-phase-4bis)
+11ter. [IA & Agents autonomes](#11ter-ia--agents-autonomes-phase-5)
 12. [Messagerie inter-postes](#12-messagerie-inter-postes)
 13. [Conformité fiscale par pays](#13-conformité-fiscale-par-pays)
 14. [Dashboards](#14-dashboards)
@@ -112,6 +114,8 @@ Erreur :
 | `CONTROLEUR_QUALITE` | Contrôle qualité par étape et global. |
 | `MECANICIEN` | Maintenance machines curative et préventive. |
 | `COMPTABLE` | Écritures, TVA, rapprochement, bilan. Ne modifie pas les factures émises. |
+| `RH_MANAGER` | RH complet : embauches, contrats, congés, sanctions, bulletins de paie, formations, dashboard RH. |
+| `RH_ASSISTANT` | Saisie pointage, congés, demandes formations. Ne voit pas les salaires ni sanctions. |
 
 **Règle** : filtrage backend obligatoire. Le frontend n'est jamais autorité.
 
@@ -2175,6 +2179,396 @@ Chaque utilisateur peut brancher son SMTP + WhatsApp Business perso pour envoyer
 
 ---
 
+## 11bis. Ressources Humaines (Phase 4bis)
+
+Périmètre : gestion complète du personnel — embauches, contrats, pointage, congés, sanctions, primes, bulletins de paie, formations, structure organisationnelle. Intègre TimeMoto (déjà installé) pour le pointage physique.
+
+### 11bis.1 `employes`
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_employe` | serial PK | |
+| `matricule` | varchar(20) unique | `EMP-{YYYY}-{NNNN}` |
+| `id_utilisateur` | FK utilisateurs | lien avec compte de login (si employé utilise l'ERP) |
+| `nom` / `prenom` | varchar(100) | |
+| `cin` | varchar(20) | numéro CIN unique |
+| `date_naissance` | date | |
+| `lieu_naissance` | varchar(150) | |
+| `sexe` | enum | `M` \| `F` |
+| `nationalite` | varchar(100) | |
+| `situation_familiale` | enum | `celibataire` \| `marie` \| `divorce` \| `veuf` |
+| `nb_enfants` | int | pour déduction IRPP |
+| `adresse` | text | |
+| `telephone` / `whatsapp` / `email_perso` | varchar(30-150) | |
+| `photo_url` | varchar(500) | |
+| `id_fonction` | FK fonctions | |
+| `id_service` | FK services | |
+| `id_manager_employe` | FK employes | hiérarchie |
+| `date_embauche` | date | |
+| `date_sortie` | date | nullable |
+| `motif_sortie` | varchar(200) | démission, licenciement, fin CDD, retraite |
+| `numero_cnss` | varchar(30) | matricule CNSS |
+| `numero_carte_soin` | varchar(30) | |
+| `iban_paie` | varchar(40) | virement salaire |
+| `banque_paie` | varchar(150) | |
+| `contact_urgence_nom` / `contact_urgence_tel` | | |
+| `notes` | text | |
+| `actif` | bool | |
+
+### 11bis.2 `contrats_travail`
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_contrat` | serial PK | |
+| `id_employe` | FK | |
+| `numero_contrat` | varchar(30) unique | `CTR-{YYYY}-{NNNN}` |
+| `type_contrat` | enum | `cdi` \| `cdd` \| `stage` \| `interim` \| `apprentissage` \| `saisonnier` |
+| `date_debut` | date | |
+| `date_fin_prevue` | date | nullable pour CDI |
+| `date_fin_reelle` | date | |
+| `salaire_base_brut` | numeric(14,3) | mensuel |
+| `taux_horaire` | numeric(10,3) | pour heures sup |
+| `nb_heures_hebdo` | numeric(5,2) | 40 par défaut Tunisie |
+| `periode_essai_mois` | int | |
+| `pdf_contrat_url` | varchar(500) | contrat signé scanné |
+| `avenants` | jsonb | historique modifications |
+| `motif_rupture` | text | |
+| `statut` | enum | `actif` \| `termine` \| `rompu` \| `suspendu` |
+
+### 11bis.3 Structure organisationnelle
+
+`services` : `id_service`, `code`, `libelle` (ex "Tissage", "Coupe", "Administration", "Commercial", "Comptabilité"), `id_responsable_employe`, `budget_annuel`.
+
+`fonctions` : `id_fonction`, `code`, `libelle` (ex "Tisseur", "Chef d'atelier", "Comptable", "Directeur"), `salaire_min` / `salaire_max`, `id_convention_collective`.
+
+`equipes` : `id_equipe`, `libelle` (ex "Tissage équipe A poste matin"), `id_service`, `id_chef_equipe_employe`, `type_poste` (matin/après-midi/nuit).
+
+`employes_equipes` (pivot N-N) : un employé peut appartenir à plusieurs équipes.
+
+### 11bis.4 Recrutement
+
+`offres_emploi` :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_offre` | serial PK | |
+| `titre_poste` | varchar(200) | |
+| `id_fonction` | FK | |
+| `id_service` | FK | |
+| `type_contrat` | enum | idem 11bis.2 |
+| `salaire_min` / `salaire_max` | numeric | |
+| `description` | text | |
+| `competences_requises` | text[] | |
+| `date_publication` / `date_cloture` | date | |
+| `canal_diffusion` | text[] | `linkedin`, `site_web`, `facebook`, `agence_emploi`… |
+| `statut` | enum | `brouillon` \| `publiee` \| `en_cours_selection` \| `pourvue` \| `annulee` |
+| `id_employe_recrute` | FK employes | rempli à la fin |
+
+`candidatures` :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_candidature` | serial PK | |
+| `id_offre` | FK | |
+| `nom` / `prenom` | varchar(100) | |
+| `email` / `telephone` | | |
+| `cv_url` | varchar(500) | |
+| `lettre_motivation_url` | varchar(500) | |
+| `annees_experience` | int | |
+| `pretentions_salariales` | numeric | |
+| `statut` | enum | `nouvelle` \| `presélection` \| `entretien_1` \| `entretien_2` \| `entretien_final` \| `offre_envoyee` \| `acceptee` \| `refusee` \| `retiree` |
+| `score` | int | note évaluateur |
+| `notes` | text | |
+
+`entretiens` : sessions d'entretien avec date, id_evaluateurs, mode (présentiel/visio), résultat, prochaine étape.
+
+### 11bis.5 Pointage (intégration TimeMoto)
+
+`pointages` alimenté par TimeMoto ou saisie manuelle.
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_pointage` | serial PK | |
+| `id_employe` | FK | |
+| `date` | date | |
+| `heure_entree_matin` | time | |
+| `heure_sortie_pause` | time | |
+| `heure_retour_pause` | time | |
+| `heure_sortie_soir` | time | |
+| `heures_travaillees` | numeric(5,2) | calculé |
+| `heures_supplementaires` | numeric(5,2) | au-delà des 8h/j |
+| `type_journee` | enum | `travaillee` \| `conge_paye` \| `conge_maladie` \| `conge_maternite` \| `absence_justifiee` \| `absence_injustifiee` \| `repos_hebdo` \| `ferié` |
+| `source` | enum | `timemoto` \| `manuel` \| `import_csv` |
+| `valide_par` | FK utilisateurs | manager |
+| `notes` | text | |
+
+Job cron nocturne consolide les pointages TimeMoto du jour et alimente cette table.
+
+### 11bis.6 Congés & absences
+
+`soldes_conges` (calculé pour chaque employé × année) :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_solde` | serial PK | |
+| `id_employe` | FK | |
+| `annee` | int | |
+| `conges_annuels_dus` | numeric(5,2) | droit selon convention (Tunisie : 1 j/mois travaillé plafonné 30 j/an) |
+| `conges_pris` | numeric(5,2) | |
+| `conges_restants` | computed | |
+| `conges_reportes_annee_precedente` | numeric | si politique de report |
+
+`demandes_conges` :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_demande` | serial PK | |
+| `id_employe` | FK | |
+| `type_conge` | enum | `annuel` \| `maladie` \| `maternite` \| `paternite` \| `familial` (mariage, décès) \| `sans_solde` \| `formation` |
+| `date_debut` / `date_fin` | date | |
+| `nb_jours` | numeric(5,2) | |
+| `motif` | text | |
+| `certificat_medical_url` | varchar(500) | pour maladie |
+| `statut` | enum | `en_attente` \| `approuvee` \| `refusee` \| `annulee` |
+| `approuvee_par_manager_id` | FK employes | |
+| `date_reponse` | timestamp | |
+| `commentaire_reponse` | text | |
+
+### 11bis.7 Sanctions & primes
+
+`sanctions_disciplinaires` :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_sanction` | serial PK | |
+| `id_employe` | FK | |
+| `type_sanction` | enum | `avertissement_oral` \| `avertissement_ecrit` \| `blame` \| `mise_a_pied` \| `retenue_salaire` \| `licenciement_faute_grave` |
+| `date_faute` | date | |
+| `description_faute` | text | |
+| `montant_retenue` | numeric(14,3) | pour retenues |
+| `pdf_notification_url` | varchar(500) | |
+| `date_notification` | date | |
+| `signee_par_employe` | bool | |
+| `emise_par` | FK utilisateurs | RH_MANAGER + ADMIN |
+
+`primes_recompenses` :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_prime` | serial PK | |
+| `id_employe` | FK | |
+| `type_prime` | enum | `rendement` \| `presence` \| `transport` \| `panier` \| `anciennete` \| `exceptionnelle` \| `objectif_atteint` \| `13eme_mois` |
+| `mois_reference` | varchar(7) | `2026-09` |
+| `montant` | numeric(14,3) | |
+| `motif` | text | |
+| `attribuee_par` | FK utilisateurs | |
+| `date_attribution` | date | |
+| `versee_avec_bulletin_id` | FK bulletins_paie | quand payée |
+
+### 11bis.8 Bulletins de paie
+
+`bulletins_paie` — un par employé × mois.
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_bulletin` | serial PK | |
+| `numero_bulletin` | varchar(30) unique | `BP-{YYYYMM}-{NNNN}` |
+| `id_employe` | FK | |
+| `mois_reference` | varchar(7) | `2026-09` |
+| `date_generation` | date | |
+| `salaire_base_brut` | numeric(14,3) | du contrat |
+| `nb_heures_travaillees` | numeric(5,2) | de pointages |
+| `nb_heures_supp` | numeric(5,2) | |
+| `montant_heures_supp` | numeric(14,3) | majoration Tunisie 75 % (jour normal) ou 100 % (jour repos) |
+| `nb_jours_conge_payes` | numeric | |
+| `nb_jours_absence_injustifiee` | numeric | |
+| `retenue_absences` | numeric | |
+| `primes_total` | numeric | Σ primes du mois |
+| `avantages_nature` | numeric | logement, véhicule… |
+| `salaire_brut` | numeric | calculé |
+| `cnss_salarie` | numeric | 9.18 % du brut |
+| `irpp` | numeric | selon barème progressif |
+| `retenues_sanctions` | numeric | |
+| `avances_sur_salaire` | numeric | déduites |
+| `salaire_net` | numeric | |
+| `cnss_employeur` | numeric | 16.57 % (informatif) |
+| `mode_paiement` | enum | `virement` \| `especes` \| `cheque` |
+| `id_bancaire_source` | FK societe_bancaires | notre compte débité |
+| `statut` | enum | `brouillon` \| `valide` \| `paye` |
+| `pdf_bulletin_url` | varchar(500) | PDF signé |
+| `id_ecriture` | FK ecritures_comptables | comptabilisation classe 64 |
+
+### 11bis.9 Paie Tunisie — spécificités
+
+Application automatique à la génération d'un bulletin :
+
+- **CNSS salarié** : 9,18 % du salaire brut (retenue employé)
+- **CNSS employeur** : 16,57 % du salaire brut (charge société — compte 6451)
+- **IRPP** : barème progressif 5 tranches (2025) :
+  - 0 – 5 000 DT : 0 %
+  - 5 000,01 – 20 000 DT : 26 %
+  - 20 000,01 – 30 000 DT : 28 %
+  - 30 000,01 – 50 000 DT : 32 %
+  - > 50 000 DT : 35 %
+- **Abattement chef de famille** : 300 DT/an
+- **Abattement enfants à charge** : 100 DT/enfant/an (jusqu'à 4)
+- **Prime rendement**, **prime présence**, **prime transport**, **prime panier** — variables, ajoutées avant CNSS/IRPP
+
+Job cron mensuel (le 25 du mois) : génère les bulletins brouillon pour tous les employés actifs → RH_MANAGER valide → PAYE.
+
+**Déclarations** :
+- **CNSS trimestrielle** : agrégat des CNSS employeur + salarié par trimestre → PDF déclaration
+- **Retenues IRPP mensuelles** : versement fisc mensuel des IRPP retenues
+
+### 11bis.10 Formations
+
+`plans_formation` : formation annuelle par service.
+
+`sessions_formation` :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_session` | serial PK | |
+| `libelle` | varchar(200) | |
+| `theme` | varchar(200) | |
+| `type` | enum | `interne` \| `externe` |
+| `id_organisme_formation` | FK fournisseurs | si externe |
+| `formateur_nom` | varchar(200) | |
+| `date_debut` / `date_fin` | date | |
+| `duree_heures` | int | |
+| `cout_total_ht` | numeric | |
+| `financement` | enum | `entreprise` \| `TFP` (taxe formation professionnelle) \| `mixte` |
+| `statut` | enum | `planifiee` \| `en_cours` \| `terminee` \| `annulee` |
+
+`inscriptions_formation` : `id_employe`, `id_session`, `presence`, `evaluation_score`, `certificat_url`.
+
+### 11bis.11 Endpoints RH
+
+```
+Employés     : /api/employes              GET|POST|PUT|DELETE
+               /api/employes/:id/contrats
+               /api/employes/:id/pointages?periode=
+               /api/employes/:id/bulletins?annee=
+               /api/employes/:id/soldes-conges
+
+Contrats     : /api/contrats-travail      GET|POST|PUT|DELETE
+               POST /api/contrats/:id/rompre
+
+Organisation : /api/services              GET|POST|PUT|DELETE
+               /api/fonctions             GET|POST|PUT|DELETE
+               /api/equipes               GET|POST|PUT|DELETE
+
+Recrutement  : /api/offres-emploi         GET|POST|PUT|DELETE
+               /api/candidatures          GET|POST|PUT
+               /api/entretiens            GET|POST|PUT
+
+Pointage     : GET  /api/pointages?id_employe=&periode=
+               POST /api/pointages/import-timemoto
+               POST /api/pointages/:id/valider (manager)
+
+Congés       : /api/demandes-conges       GET|POST|PUT
+               POST /api/demandes-conges/:id/approuver
+               POST /api/demandes-conges/:id/refuser
+               GET  /api/soldes-conges?annee=
+
+Sanctions    : /api/sanctions             GET|POST|PUT (RH_MANAGER + ADMIN)
+
+Primes       : /api/primes                GET|POST|PUT
+
+Paie         : /api/bulletins-paie        GET|POST|PUT
+               POST /api/bulletins-paie/generer-mois?mois=
+               POST /api/bulletins-paie/:id/valider
+               POST /api/bulletins-paie/:id/payer
+               GET  /api/bulletins-paie/:id/pdf
+
+Déclarations : GET  /api/cnss/declaration?trimestre=
+               POST /api/cnss/declaration/:trimestre/generer
+               GET  /api/irpp/retenues?mois=
+
+Formations   : /api/plans-formation       GET|POST|PUT|DELETE
+               /api/sessions-formation    GET|POST|PUT
+               /api/inscriptions-formation GET|POST
+```
+
+### 11bis.12 Impact sur les autres phases
+
+- **§7.8 `of_pointages`** : chaque `id_operateur` est un `id_employe` — les pointages atelier alimentent les heures travaillées de la paie.
+- **§10 Comptabilité** : validation d'un bulletin génère automatiquement une écriture comptable :
+  - Débit `641 Rémunérations` + `645 Charges sociales`
+  - Crédit `421 Personnel dû` + `43x CNSS/IRPP dus`
+- **§14.15 nouveau Dashboard RH Manager** (voir §14).
+
+---
+
+## 11ter. IA & Agents autonomes (Phase 5)
+
+Concept : plusieurs **agents spécialisés** qui tournent en tâche de fond, analysent les données du système (lecture seule), détectent des anomalies et envoient des rapports à l'admin. **Pas de chatbot** — des agents opérationnels avec responsabilités précises.
+
+### 11ter.1 Types d'agents (seed initial)
+
+| Code | Rôle métier | Fréquence défaut |
+|---|---|---|
+| `AGENT_STOCK` | Rupture probable J+7 · Bobines dormantes > 3 mois · Sur-stockage · Écart inventaire cyclique | Quotidien |
+| `AGENT_PRODUCTION` | OF en retard vs planning · Machines sous-utilisées · Cadence anormale · Sélecteurs mal configurés | 2 h |
+| `AGENT_QUALITE` | Taux 2ᵉ choix machine > seuil · Défaut récurrent par opérateur · ST sous seuil qualité | Quotidien |
+| `AGENT_FINANCE` | Trésorerie prévisionnelle négative · Factures impayées > 30 j · Ratios dégradés | Quotidien |
+| `AGENT_COMMERCIAL` | Clients dormants > 90 j · Devis sans relance · Grands comptes activité baissante | Quotidien |
+| `AGENT_FOURNISSEURS` | Retard livraison · Hausse prix > 10 % · Non-conformité BC/BL/FF | Quotidien |
+| `AGENT_RH` | Absentéisme > 5 % · Heures sup excessives · Turnover atypique | Hebdomadaire |
+| `AGENT_RAPPORT_QUOTIDIEN` | Digest matinal 8h (CA veille, OF finis, alertes ouvertes, pointage anormal) | 8h quotidien |
+| `AGENT_RAPPORT_HEBDO` | Bilan semaine (CA, coûts, KPIs, alertes non traitées) | Lundi 9h |
+| `AGENT_RAPPORT_MENSUEL` | Bilan mensuel complet + comparaison N-1 | 1er du mois |
+
+### 11ter.2 `agents_ia`
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_agent` | serial PK | |
+| `code` | varchar(50) unique | |
+| `libelle` | varchar(200) | |
+| `description` | text | |
+| `frequence_cron` | varchar(50) | expression cron |
+| `actif` | bool | |
+| `parametres_json` | jsonb | seuils personnalisables |
+| `canaux_notification` | text[] | `email` \| `whatsapp` \| `in_app` |
+| `destinataires_id_utilisateurs` | int[] | |
+| `provider` | enum | `claude` \| `gpt` \| `local` |
+| `modele` | varchar(100) | `claude-sonnet-4.5`, `gpt-4o`… |
+| `budget_mensuel_tokens` | int | plafond |
+| `derniere_execution` / `prochaine_execution` | timestamp | |
+
+### 11ter.3 `agents_ia_executions`, `agents_ia_findings`, `agents_ia_rapports`
+
+Voir schéma détaillé — historique runs, constats détectés (severité info/warning/critique), rapports envoyés (HTML + PDF archive).
+
+### 11ter.4 Architecture technique
+
+- Workers Node.js déclenchés par `node-cron` selon `frequence_cron`
+- Chaque agent :
+  1. Requête SQL analytique (lecture seule) sur son périmètre
+  2. Prompt LLM avec contexte + données extraites
+  3. Parsing structuré du output → écriture `findings`
+  4. Génération rapport HTML + envoi selon canaux configurés
+- **Sécurité** : agents READ ONLY sur la DB métier — écriture uniquement sur les tables `agents_ia_*`
+- **Coûts** : monitor tokens consommés par agent + alerte si dépassement budget
+
+### 11ter.5 Endpoints
+
+```
+GET|POST|PUT|DELETE  /api/agents-ia
+POST /api/agents-ia/:code/executer-maintenant
+POST /api/agents-ia/:code/activer /desactiver
+GET  /api/agents-ia/:code/executions
+GET  /api/agents-ia-findings?statut=nouveau&severite=critique
+POST /api/agents-ia-findings/:id/traiter
+GET  /api/agents-ia-rapports
+POST /api/agents-ia-rapports/:id/renvoyer
+```
+
+Voir **§14.16 Dashboard IA** pour l'interface utilisateur.
+
+---
+
 ## 12. Messagerie inter-postes
 
 Système existant dans le legacy (`Hub > Messages_Postes`) — à répliquer.
@@ -2375,7 +2769,27 @@ Curatif + préventif.
 - Alertes échéances abonnements récurrents
 - Boutons : nouvelle écriture, valider écriture, imprimer bilan/compte de résultat
 
-### 14.15 Écran Planification & Suivis (module central)
+### 14.15 Dashboard RH Manager (`RH_MANAGER`)
+
+- KPI : effectifs actifs, nouveaux entrants du mois, sortants, turnover annuel, absentéisme, masse salariale mois, congés en attente approbation, bulletins à générer
+- **Bloc Alertes** : contrats CDD arrivant à échéance (< 30 j), périodes d'essai à valider, formations obligatoires manquées, écarts pointage anormaux
+- **Structure organisationnelle** : arbre visualisant services → équipes → employés
+- **Actions rapides** : nouvelle embauche, saisir sanction, valider congés en attente, générer bulletins du mois
+- **Onglet Recrutement** : offres actives, candidatures en cours, entretiens à venir, conversions
+- **Onglet Formations** : sessions à venir, coût mensuel formation, TFP consommée vs quota
+- **Onglet Paie** : bulletins mois en cours (brouillon → validé → payé), déclaration CNSS trimestrielle en préparation, IRPP dus
+
+### 14.16 Dashboard IA (`ADMIN`)
+
+Voir §11ter pour les agents.
+
+- **Vue Agents actifs** : liste avec code, libellé, dernière exécution / prochaine / statut / nb constats aujourd'hui · toggle activer/désactiver
+- **Vue Constats à traiter** : file d'attente triée par sévérité (critique / warning / info), avec actions "traiter" / "ignorer" / "assigner"
+- **Vue Rapports générés** : historique envois + prévisualisation HTML + PDF archive
+- **Vue Configuration agents** : ajuster seuils par agent (`parametres_json`), destinataires, fréquence cron, provider LLM
+- **Vue Coûts LLM** : consommation tokens par agent · budget mensuel restant · alerte dépassement · courbe temporelle
+
+### 14.17 Écran Planification & Suivis (module central)
 
 - Gantt drag-drop machines × créneaux
 - Contraintes auto (laize, nb couleurs, MP dispo)
@@ -2453,11 +2867,35 @@ Accueil
 │    ├─ TVA (déclarations)
 │    ├─ Rapports (Résultat, Bilan, Grand livre, Balance)
 │    └─ Clôture d'exercice
+├─ Ressources Humaines                  ← ADMIN + RH_MANAGER
+│    ├─ Employés
+│    ├─ Contrats de travail
+│    ├─ Services / Fonctions / Équipes
+│    ├─ Recrutement (offres, candidatures, entretiens)
+│    ├─ Pointage (TimeMoto + saisie manuelle)
+│    ├─ Congés & absences
+│    ├─ Sanctions & primes
+│    ├─ Bulletins de paie
+│    ├─ Paie Tunisie (CNSS, IRPP, déclarations)
+│    └─ Formations
 ├─ Marketing                            ← ADMIN
-│    ├─ Campagnes
-│    ├─ Segments
-│    ├─ Comptes externes (sites, RS, ads)
+│    ├─ Campagnes email/WhatsApp/Telegram
+│    ├─ Segments clients
+│    ├─ Comptes externes (Facebook, Instagram, Google Ads, Meta Ads…)
 │    └─ Stats & performance
+├─ E-commerce                           ← ADMIN  (partage §11.4 comptes marketing)
+│    ├─ Sites web synchronisés (Shopify / WooCommerce / custom API)
+│    ├─ Commandes web importées         (webhook Shopify → §8 commandes)
+│    ├─ Stock synchronisé vers sites    (push régulier)
+│    ├─ Statistiques ventes web
+│    ├─ Panier abandonné (relance auto)
+│    └─ Programme fidélité web (optionnel)
+├─ Intelligence Artificielle            ← ADMIN
+│    ├─ Agents actifs
+│    ├─ Constats à traiter
+│    ├─ Rapports générés
+│    ├─ Configuration agents (seuils, destinataires, fréquence)
+│    └─ Coûts & consommation LLM
 ├─ Messagerie inter-postes             (tous rôles, filtre par poste)
 ├─ Dashboards
 │    ├─ Admin                         (ADMIN)
@@ -2472,6 +2910,8 @@ Accueil
 │    ├─ Contrôle Qualité
 │    ├─ Mécanicien / Maintenance
 │    ├─ Comptable
+│    ├─ RH Manager
+│    ├─ IA (agents & rapports)
 │    └─ Planification & Suivis        (outil partagé)
 ├─ Mon compte                          (tous)
 │    ├─ Profil
@@ -2553,8 +2993,11 @@ POST /api/parametres/societe/logo   — upload multipart
 7. **Phase 3 — Ventes** (§8) : Devis → Commande → BL → Facture, colisage, palettes, transporteurs, paiements & échéances, relances
 8. **Phase 3.2 — Achats & Fournisseurs** (§9)
 9. **Phase 4 — Comptabilité** (§10) : plan comptes, journal, TVA, caisse, rapprochement, immobilisations
-10. **Phase 4 bis — Marketing** (§11.3-11.4)
-11. **Phase 5 — Réouverture progressive** des autres modules si besoin métier (RH étendu, POS, e-commerce…)
+10. **Phase 4bis — Ressources Humaines** (§11bis) : employés, contrats, pointage TimeMoto, congés, sanctions/primes, bulletins paie Tunisie (CNSS/IRPP), formations
+11. **Phase 4ter — Marketing** (§11.3-11.4)
+12. **Phase 4quater — E-commerce** : sites synchronisés Shopify/WooCommerce, import commandes web, push stock
+13. **Phase 5 — IA & Agents autonomes** (§11ter) : agents Stock/Production/Qualité/Finance/Commercial/Fournisseurs/RH + rapports auto quotidien/hebdo/mensuel
+14. **Phase 5+** — Autres modules si besoin métier (POS, portail client complet, mobile ateliers…)
 
 À chaque phase :
 - Écran fonctionne bout-en-bout dans navigateur avant passage suivante
@@ -2565,6 +3008,16 @@ POST /api/parametres/societe/logo   — upload multipart
 
 ## Changelog
 
+- `2026-09-23` — **v2.1** : réintégration RH + E-commerce + IA agents autonomes :
+  - **§11bis Ressources Humaines** nouveau chapitre complet — employés, contrats CDI/CDD/stage, structure orga (services/fonctions/équipes), recrutement (offres, candidatures, entretiens), pointage (intégration TimeMoto), congés & absences (7 types), sanctions disciplinaires (6 niveaux), primes/récompenses (8 types), bulletins de paie avec calcul CNSS 9.18%/16.57% et IRPP barème progressif 5 tranches Tunisie, formations avec TFP, endpoints. Rôles ajoutés : `RH_MANAGER`, `RH_ASSISTANT` (§2.4).
+  - **§11ter IA & Agents autonomes** nouveau chapitre — 10 agents spécialisés (Stock, Production, Qualité, Finance, Commercial, Fournisseurs, RH, Rapports Quotidien/Hebdo/Mensuel). Tables `agents_ia`, `agents_ia_executions`, `agents_ia_findings`, `agents_ia_rapports`. Architecture Node.js + cron + LLM (Claude/GPT), lecture seule DB métier, budget tokens configurable, canaux notification (email/WhatsApp/in-app).
+  - **§14.15 Dashboard RH Manager** nouveau — KPI effectifs/turnover/absentéisme/masse salariale, alertes contrats/périodes d'essai, actions embauche/sanctions/paie, onglets Recrutement/Formations/Paie.
+  - **§14.16 Dashboard IA** nouveau — Agents actifs, Constats à traiter (tri par sévérité), Rapports générés, Configuration seuils, Coûts LLM.
+  - **§14.17 Planification & Suivis** renuméroté (était 14.15).
+  - Menu §15 : ajout **Ressources Humaines** (10 sous-menus), **E-commerce** (6 sous-menus, standalone mais partage §11.4 Comptes marketing), **Intelligence Artificielle** (5 sous-menus). Dashboards §14 enrichi de RH Manager + IA.
+  - Ordre d'exécution §17 : Phase 4bis RH, Phase 4quater E-commerce, Phase 5 IA agents.
+  - Impact §7.8 : `id_operateur` des pointages atelier = `id_employe` — alimente heures paie.
+  - Impact §10 : validation bulletin génère écriture comptable auto (débit 641/645, crédit 421/43x).
 - `2026-09-23` — **v2.0.1** : ajouts sur Achats & Comptabilité :
   - §9.8 **Achats de services** — type_fournisseur `service`/`mixte`, pas de réception physique, compte 61/62, table `contrats_services` pour récurrents (maintenance, télécoms, honoraires).
   - §9.9 **Achats espèces non comptabilisés** — nouvelle table `depenses_courantes_espece` (journal informel : pourboires, café ouvriers, dépannage). Décrémente la caisse (mouvement type `frais`) mais pas d'écriture comptable par défaut. Option "Comptabiliser en bloc" en fin de mois génère UNE écriture globale. Seuil configurable (défaut 100 DT) au-dessus duquel une facture + écriture sont obligatoires.
