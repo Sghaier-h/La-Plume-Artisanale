@@ -1,6 +1,6 @@
 # La Plume Artisanale — Contrat de domaine
 
-Version : 1.5 · Statut : brouillon en validation
+Version : 1.6 · Statut : brouillon en validation
 
 Ce document est la **source de vérité** pour le vocabulaire, les entités, les endpoints et les règles métier du projet.
 
@@ -11,6 +11,7 @@ Périmètre validé pour la remise à plat :
 - **Phase 1** — CRM + Clients
 - **Phase 2** — Produits (Modèle → Articles) + Catalogues web
 - **Phase 2.5** — **Stock & Entrepôts** : entrepôts, stock par article/entrepôt, mouvements, réservations, inventaires
+- **Phase 2.7** — **Fabrication** : BOM, gamme, OF, suivi temps réel, contrôle qualité, sous-traitance, coûts, dashboards ateliers
 - **Phase 3** — Ventes : Devis · Commande · Bon de livraison · **Liste de colisage · Transporteur & suivi** · Facture · Avoir · Bon de retour
 - **Phase 3.5** — Dashboard Magasinier Préparation + Dashboard Commercial (avec commissions)
 
@@ -59,6 +60,11 @@ Rôles Phase 1 :
 - `COMMERCIAL` — voit uniquement **ses** comptes (`id_commercial = <lui>`) et leurs documents. Peut créer/modifier **client, contact, devis, commande, BL**. Ne peut pas créer de facture ni d'avoir. Voit son propre compte de commission.
 - `MAGASINIER_PREPARATION` — voit toutes les commandes à préparer, gère colisage + palettes. Dashboard dédié. Ne voit pas les prix.
 - `MAGASINIER_STOCK` — gère les entrepôts (réceptions, sorties, transferts, inventaires) pour PF, SF, MP et fournitures. Dashboard dédié. Ne voit pas les prix de vente ni les commissions.
+- `CHEF_PRODUCTION` — pilote l'atelier : crée/planifie les OF, dispatche sur les machines, valide les étapes clés, gère la sous-traitance. Dashboard dédié (§6.5). Ne voit pas les prix de vente.
+- `TISSEUR` — opérateur sur métier à tisser. Voit ses OF assignés, pointe début/fin d'étape, saisit défauts. Dashboard atelier tablette dédié (§6.6). Ne voit ni prix ni clients.
+- `COUPEUR` / `POST_COUPE` — opérateur coupe & finition (frange, ourlet). Même logique que TISSEUR sur son poste. Dashboard tablette (§6.6).
+- `CONTROLEUR_QUALITE` — enregistre les contrôles qualité par étape et par OF. Dashboard dédié (§6.7). Peut bloquer un OF.
+- `MECANICIEN` — maintenance machines. Voit toutes les machines, leur état, planifie interventions. Dashboard dédié (§6.8).
 
 Filtrage backend obligatoire — jamais côté frontend seul.
 
@@ -819,6 +825,413 @@ Alertes       : /api/alertes-stock?niveau=            GET
 
 ---
 
+## 4ter. Fabrication (Phase 2.7)
+
+La Plume Artisanale **fabrique** des textiles (foutas, jetés, serviettes, ponchos, sacs) — le cœur métier. Cette phase couvre la nomenclature, la gamme opératoire, l'ordre de fabrication (OF), le suivi temps réel des opérateurs, le contrôle qualité, la sous-traitance et le calcul des coûts réels.
+
+### 4ter.0 Vocabulaire
+
+| Terme | Sens |
+|---|---|
+| **BOM** (Bill of Material) | Nomenclature — liste des matières premières et fournitures nécessaires pour produire un article, avec quantités théoriques. |
+| **Gamme** | Séquence ordonnée des étapes de fabrication (bobinage → chainage → tissage → coupe → frange → contrôle → finition → emballage). |
+| **Poste** | Type de travail (ex "Tissage", "Coupe", "Frange", "Contrôle qualité"). |
+| **Machine** | Équipement physique rattaché à un poste (ex métier `M2301`, bobinoir `BOB-01`). |
+| **OF** (Ordre de Fabrication) | Instruction concrète de produire N unités d'un article, avec date de début, machines assignées, MP réservées. |
+| **Étape OF** | Instance d'une étape de gamme dans un OF concret. |
+| **Ratière** | Sous-mécanisme du métier à tisser qui pilote les fils de trame — chaque modèle a un programme ratière spécifique. |
+| **Sélecteur couleur** | Nombre de couleurs que la machine peut alterner en trame. Une fouta bicolore nécessite au moins un sélecteur 2 couleurs. |
+
+### 4ter.1 `bom` — Nomenclature par article
+
+Chaque `article` (variante PF ou SF) a une BOM qui liste ses MP + fournitures.
+
+`bom` (en-tête) :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_bom` | serial PK | |
+| `id_article` | FK articles | l'article produit |
+| `version` | int | pour évolutions BOM (v1 obsolète, v2 courante) |
+| `est_active` | bool | 1 seule active par article |
+| `perte_theorique_pct` | numeric(5,2) | perte globale prévue (chutes, casse) |
+| `notes` | text | |
+| `date_creation` / `cree_par` | | |
+
+`bom_lignes` :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_ligne_bom` | serial PK | |
+| `id_bom` | FK | |
+| `id_article_composant` | FK articles | MP, SF ou fourniture — pointe vers un article `type_stock IN ('matiere_premiere', 'semi_fini', 'fourniture_*', 'emballage')` |
+| `quantite` | numeric(14,4) | pour 1 unité d'article produit |
+| `unite` | varchar(10) | `kg` / `m` / `pc` / `g` |
+| `id_etape_gamme` | FK gamme_etapes | à quelle étape ce composant est consommé (permet consommation partielle) |
+| `role` | enum | `chaine` / `trame` / `fourniture` / `emballage` |
+| `remplacements_possibles` | int[] | ids d'articles substituables (ex fil blanc NM15 ↔ NM20 en cas de rupture) |
+
+**Exemple BOM** — Fouta ARTHUR 100/200 blanc/rouge (`AR1020-B02-03`) :
+
+| Composant | Rôle | Quantité | Étape |
+|---|---|---|---|
+| Fil coton NM15 blanc (`NM15-01.00`) | chaîne | 0.28 kg | Chainage |
+| Fil coton NM15 rouge (`NM15-03.00`) | trame | 0.12 kg | Tissage |
+| Étiquette tissée logo (`ETIQ-TIS-01`) | fourniture | 1 pc | Frange |
+| Sachet kraft M (`EMB-SAK-M`) | emballage | 1 pc | Emballage |
+
+### 4ter.2 `gammes` et `gamme_etapes`
+
+Une **gamme** = séquence type d'étapes. Souvent 1 gamme par catégorie de produit (Fouta / Jeté / Serviette / Poncho) ; peut être surchargée par modèle.
+
+`gammes` :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_gamme` | serial PK | |
+| `code` | varchar(20) unique | `GAM_FOUTA_STD`, `GAM_JETE_JQ`... |
+| `libelle` | varchar(150) | |
+| `id_categorie` | FK categories_produits | à quelle catégorie applicable |
+| `actif` | bool | |
+
+`gamme_etapes` :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_etape` | serial PK | |
+| `id_gamme` | FK | |
+| `ordre` | int | séquence |
+| `code` | varchar(30) | `BOBIN`, `CHAIN`, `TISSAGE`, `COUPE`, `FRANGE`, `CTRL_Q`, `LAVAGE`, `REPASS`, `EMBALL` |
+| `libelle` | varchar(150) | |
+| `id_poste` | FK postes_travail | poste par défaut |
+| `duree_standard_sec` | int | par unité produite |
+| `est_bloquante` | bool | true = doit être validée avant étape suivante |
+| `necessite_ctrl_qualite` | bool | true = un contrôle QC est requis en fin |
+| `permet_sous_traitance` | bool | peut être externalisée |
+| `sous_type` | enum | pour analyses (`preparation` / `production` / `finition` / `controle` / `logistique`) |
+
+`article_gamme` (assignation) — chaque article référence sa gamme (ou hérite de sa catégorie modèle) :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_article` | FK PK | |
+| `id_gamme` | FK | |
+
+### 4ter.3 `postes_travail` et `machines`
+
+`postes_travail` :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_poste` | serial PK | |
+| `code` | varchar(20) unique | `TISSAGE`, `COUPE`, `FRANGE`, `CTRL_Q`... |
+| `libelle` | varchar(150) | |
+| `id_entrepot` | FK entrepots | où est physiquement le poste (usine, atelier) |
+| `capacite_horaire_theorique` | numeric(10,2) | unités/h pour dimensionnement planning |
+| `actif` | bool | |
+
+`machines` (étend le concept `postes_travail` avec l'aspect physique) :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_machine` | serial PK | |
+| `code_machine` | varchar(20) unique | `M2301`, `BOB-01`, `COUPE-A` |
+| `libelle` | varchar(200) | ex "Métier Dornier A2301 à ratière" |
+| `id_poste` | FK postes_travail | |
+| `type_machine` | enum | `metier_tisser` / `bobinoir` / `ourdissoir` / `coupe` / `frange` / `couture` / `lavage` / `repassage` / `emballage` / `impression` / `autre` |
+| `numero_serie` | varchar(50) | |
+| `type_ratiere` | varchar(50) | pour métiers à tisser (`Staubli 2666`, `Bonas`, `Grosse`) |
+| `nb_couleurs_selecteur` | int | 1-8 — nombre de couleurs de trame simultanées |
+| `laize_machine_cm` | numeric(6,2) | largeur utile |
+| `laize_actuelle_cm` | numeric(6,2) | réglage courant (peut différer selon config produit) |
+| `nb_fils_par_cm` | numeric(6,2) | densité chaîne |
+| `nb_fils_chaine_total` | int | |
+| `longueur_peigne_cm` | numeric(6,2) | |
+| `type_programme` | varchar(50) | technologie (`AGA-8`, `Bonas`, `Jacquard`) |
+| `vitesse_max_duite_min` | int | duites par minute (cadence max) |
+| `etat` | enum | `en_service` / `en_maintenance` / `en_panne` / `arret` |
+| `id_parc` | FK parcs_machines | Usine / Atelier |
+| `date_derniere_maintenance` | date | |
+| `date_prochaine_maintenance` | date | |
+| `actif` | bool | |
+
+### 4ter.4 `ordres_fabrication` (OF)
+
+`ordres_fabrication` :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_of` | serial PK | |
+| `numero_of` | varchar(30) unique | `OF-YYYYMMDD-NNNN` |
+| `id_article` | FK articles | article à produire |
+| `id_bom` | FK bom | version BOM utilisée (snapshot) |
+| `id_gamme` | FK gammes | gamme utilisée |
+| `quantite_prevue` | numeric(14,3) | |
+| `quantite_produite` | numeric(14,3) | maj au fil du suivi |
+| `quantite_rebut` | numeric(14,3) | pièces non conformes |
+| `id_commande` | FK commandes | commande à l'origine (nullable si stock prévisionnel) |
+| `id_ligne_commande` | FK commandes_lignes | ligne précise |
+| `priorite` | enum | `urgente` / `haute` / `normale` / `basse` |
+| `statut` | enum | `brouillon` / `planifie` / `en_attente_mp` / `en_cours` / `en_pause` / `pret` (fini, en attente entrée stock) / `termine` / `annule` |
+| `date_creation_of` | timestamp | |
+| `date_planification` | date | quand démarrer |
+| `date_debut_reel` | timestamp | premier pointage |
+| `date_fin_prevue` | date | |
+| `date_fin_reel` | timestamp | dernier pointage clôture |
+| `cout_theorique_ht` | numeric(14,3) | somme (BOM × PMP MP + main-d'œuvre standard) |
+| `cout_reel_ht` | numeric(14,3) | calculé à la clôture |
+| `id_lot_produit` | FK lots_articles | lot généré à la clôture (traçabilité descendante) |
+| `chef_production_id_utilisateur` | FK utilisateurs | responsable |
+| `notes_speciales` | text | affichées au magasinier prépa (§6.2) |
+| `est_sous_traite` | bool | tout ou partie externalisé |
+| `id_soustraitant` | FK soustraitants | si sous-traité |
+
+`of_etapes` (instance de gamme dans l'OF) :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_of_etape` | serial PK | |
+| `id_of` | FK | |
+| `id_etape_gamme` | FK gamme_etapes | référence template |
+| `ordre` | int | copie de l'étape gamme (peut être réordonné) |
+| `id_machine` | FK machines | assignation planning |
+| `duree_estimee_sec` | int | |
+| `duree_reelle_sec` | int | calculée à partir des pointages |
+| `date_debut_prevue` | timestamp | |
+| `date_debut_reel` | timestamp | premier pointage |
+| `date_fin_prevue` | timestamp | |
+| `date_fin_reel` | timestamp | |
+| `operateur_principal_id_utilisateur` | FK utilisateurs | |
+| `statut` | enum | `a_faire` / `en_cours` / `en_pause` / `termine` / `bloque_qc` / `annule` |
+| `quantite_produite` | numeric(14,3) | à cette étape (peut être partiel) |
+| `quantite_rebut` | numeric(14,3) | rebuts à cette étape |
+| `commentaire` | text | libre |
+
+`of_consommations_mp` (BOM éclaté effectif — ce qui a **réellement** été consommé) :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id` | serial PK | |
+| `id_of` | FK | |
+| `id_of_etape` | FK | à quelle étape |
+| `id_article_composant` | FK articles | la MP consommée |
+| `id_lot` | FK lots_articles | lot MP puisé (traçabilité) |
+| `quantite_theorique` | numeric(14,4) | issue de la BOM |
+| `quantite_reelle` | numeric(14,4) | ce que l'opérateur a réellement pris |
+| `ecart_pct` | numeric(6,2) | calculé |
+| `id_mouvement_stock` | FK mouvements_stock | mouvement `sortie_of` correspondant |
+| `date_consommation` | timestamp | |
+
+### 4ter.5 Suivi temps réel (pointages opérateurs)
+
+`of_pointages` — chaque tisseur/coupeur scanne son badge (ou saisit sur tablette) début / pause / reprise / fin. Timeline précise du travail.
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_pointage` | serial PK | |
+| `id_of_etape` | FK | |
+| `id_utilisateur` | FK utilisateurs | opérateur |
+| `id_machine` | FK machines | machine utilisée à ce moment |
+| `type_event` | enum | `debut` / `pause` / `reprise` / `fin` / `changement_operateur` / `panne_machine` / `attente_mp` |
+| `horodatage` | timestamp | précis à la seconde |
+| `quantite_intermediaire` | numeric(14,3) | quantité produite lors du pointage (compteur machine si dispo) |
+| `notes` | text | ex "arrêt casse fil trame" |
+
+**Écran opérateur tablette** (§6.6) : liste ses OF assignés, boutons Démarrer / Pause / Reprendre / Terminer. Scanne QR de la MP entrante pour la consommer proprement.
+
+### 4ter.6 Contrôle qualité (§4ter.CQ)
+
+Chaque étape peut avoir un contrôle qualité obligatoire (`necessite_ctrl_qualite`). Le contrôleur enregistre ses mesures.
+
+`controles_qualite` (par OF étape ou en fin d'OF) :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_ctrl` | serial PK | |
+| `id_of` | FK | |
+| `id_of_etape` | FK | nullable si contrôle global final |
+| `id_controleur_utilisateur` | FK utilisateurs | |
+| `date_controle` | timestamp | |
+| `type_controle` | enum | `visuel` / `dimensionnel` / `colorimetrique` / `resistance` / `poids` |
+| `resultat` | enum | `conforme` / `non_conforme_mineur` / `non_conforme_majeur` / `bloquant` |
+| `quantite_controlee` | numeric(14,3) | |
+| `quantite_rebut` | numeric(14,3) | |
+| `defauts_json` | jsonb | ex `{"trous": 2, "tache": 1, "delta_couleur": 3.5}` — libre |
+| `photos_urls` | text[] | preuves photo |
+| `action` | enum | `laisser_passer` / `rework` / `mise_au_rebut` |
+| `commentaire` | text | |
+
+**Règle** : un contrôle `bloquant` bloque l'OF (`statut='bloque_qc'`), notifie le chef de production. Reprise après validation ADMIN/CHEF_PRODUCTION.
+
+### 4ter.7 Sous-traitance de fabrication
+
+Une étape (ou tout un OF) peut être externalisée.
+
+Existant : `soustraitants` déjà en périmètre. Étendre :
+
+| Colonne additionnelle | Type | Note |
+|---|---|---|
+| `specialite` | enum | `broderie` / `sérigraphie` / `laser` / `finition` / `emballage` / `tissage_complementaire` |
+| `capacite_hebdomadaire_pieces` | int | |
+| `delai_moyen_jours` | int | |
+| `taux_qualite_pct` | numeric(5,2) | historique |
+| `id_grille_tarif_ss_traitance` | FK | prix par prestation |
+
+`of_sous_traitance` (mouvement sortie/entrée avec un sous-traitant) :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_ss_of` | serial PK | |
+| `id_of` | FK | |
+| `id_of_etape` | FK | quelle étape est sous-traitée |
+| `id_soustraitant` | FK | |
+| `numero_bon_sortie` | varchar(30) | ex `BSST-YYYY-NNN` |
+| `date_sortie` | date | envoi chez le sous-traitant |
+| `quantite_envoyee` | numeric(14,3) | |
+| `date_retour_prevue` | date | |
+| `date_retour_reelle` | date | |
+| `quantite_retournee_conforme` | numeric(14,3) | |
+| `quantite_retournee_rebut` | numeric(14,3) | |
+| `cout_prestation_ht` | numeric(14,3) | |
+| `statut` | enum | `envoye` / `en_cours` / `retour_partiel` / `retourne` / `litige` |
+
+Interaction stock : la sortie chez le sous-traitant est un `mouvement_stock` `transfert_entrepot` vers l'entrepôt virtuel du sous-traitant (§4bis.1 type `sous_traitant`). Le retour crée un mouvement inverse + un `entree_fabrication`.
+
+### 4ter.8 Planning de fabrication
+
+Le CHEF_PRODUCTION dispose d'un **écran de planning** de type Gantt/Kanban :
+
+- Colonnes = machines · Lignes = créneaux horaires (jour/semaine).
+- OF planifiés = cartes déplaçables par drag-and-drop → mise à jour `of_etapes.id_machine` + `date_debut_prevue`.
+- Contraintes automatiques vérifiées : capacité machine (nb couleurs, laize compatible), disponibilité MP réservée, dispo opérateur.
+- Filtre par priorité, par date livraison commande liée.
+
+`planning_slots` (dénormalisé pour perf) :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_slot` | serial PK | |
+| `id_machine` | FK | |
+| `id_of_etape` | FK | |
+| `date_debut` / `date_fin` | timestamp | |
+| `statut` | enum | `prevu` / `en_cours` / `termine` / `deplace` |
+
+### 4ter.9 Coûts de fabrication
+
+À la clôture d'un OF, on calcule le coût réel et on le compare au coût théorique.
+
+**Formule coût réel HT** :
+
+```
+cout_reel_ht =
+  SUM(of_consommations_mp.quantite_reelle × mp.prix_moyen_pondere_kg)
++ SUM(of_pointages temps × poste.taux_horaire_main_oeuvre)
++ SUM(of_sous_traitance.cout_prestation_ht)
++ ventilation frais fixes atelier (amortissement machines, énergie, etc.) — clé de répartition par heure machine
+```
+
+`postes_travail.taux_horaire_main_oeuvre` (config Paramètre Fabrication).
+
+**Écart** : `cout_reel - cout_theorique` — analyse en dashboard.
+
+`of_couts` (snapshot à clôture) :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_of` | FK PK | |
+| `cout_mp_reel_ht` | numeric(14,3) | |
+| `cout_mo_reel_ht` | numeric(14,3) | main d'œuvre |
+| `cout_ss_traitance_reel_ht` | numeric(14,3) | |
+| `cout_frais_fixes_ht` | numeric(14,3) | |
+| `cout_total_reel_ht` | numeric(14,3) | |
+| `cout_theorique_ht` | numeric(14,3) | |
+| `ecart_ht` | numeric(14,3) | |
+| `ecart_pct` | numeric(6,2) | |
+| `cout_unitaire_reel_ht` | numeric(14,3) | `cout_total / quantite_produite` |
+
+Ce coût unitaire réel alimente rétroactivement `articles.prix_reviens` (moyenne mobile ou PMP configurable).
+
+### 4ter.10 Cycle de vie complet d'un OF
+
+```
+CREATION (par CHEF_PRODUCTION ou auto depuis §5.2 commande validée)
+        │
+        │  BOM figée, gamme copiée, etapes créées
+        ▼
+BROUILLON → PLANIFIE
+        │
+        │  Vérification MP dispo (via §4bis.6 réservations)
+        ▼
+EN_ATTENTE_MP (si manque) ─ MP livrées ► PLANIFIE
+        │
+        │  Démarrage 1er pointage
+        ▼
+EN_COURS
+        │  Étapes séquentielles avec pointages tisseurs/coupeurs
+        │  Consommations MP en temps réel
+        │  Contrôles qualité aux jalons
+        │  Éventuellement sous-traitance (§4ter.7)
+        ▼
+PRET (dernière étape finie, en attente entrée stock)
+        │
+        │  Génération lot produit (id_lot) + mouvement `entree_fabrication`
+        ▼
+TERMINE
+        │
+        │  Calcul cout_reel, mise à jour prix_reviens article
+        ▼
+CLÔTURÉ (immutable)
+```
+
+### 4ter.11 Endpoints Fabrication
+
+```
+BOM         : /api/bom                       GET|POST|PUT|DELETE
+              /api/bom/:id/lignes            CRUD
+              /api/bom/:id/activer           POST (rend cette version active)
+              /api/articles/:id/bom          GET (BOM active)
+
+Gammes      : /api/gammes                    GET|POST|PUT|DELETE
+              /api/gammes/:id/etapes         CRUD
+
+Machines    : /api/machines                  GET|POST|PUT|DELETE
+              /api/machines/:id/planning     GET (créneaux)
+              /api/machines/:id/etat         GET (dernière panne, dernier op)
+
+OF          : /api/of                        GET|POST|PUT|DELETE
+              /api/of/:id                    GET (détail complet)
+              /api/of/:id/lancer             POST (planifie → en_cours)
+              /api/of/:id/pause / :id/reprendre / :id/annuler
+              /api/of/:id/terminer           POST (calcule cout, génère lot)
+              /api/of/:id/etapes             CRUD
+              /api/of/:id/consommations      GET|POST (saisie manuelle si scanner HS)
+              /api/of/:id/pointages          GET
+              POST /api/of-etapes/:id/pointer  (opérateur tablette : type_event)
+
+Contrôle Q  : /api/of/:id/controles          GET|POST
+              /api/of-etapes/:id/controles   CRUD
+              /api/controles-qualite/:id/action  POST (laisser_passer / rework / rebut)
+
+Sous-trait  : /api/of/:id/sous-traiter       POST
+              /api/of-sous-traitance         GET|POST|PUT
+              /api/of-sous-traitance/:id/retour  POST
+
+Planning    : /api/planning                  GET (période + filtres)
+              PUT /api/of-etapes/:id/replanifier  (drag-drop)
+
+Coûts       : /api/of/:id/couts              GET
+              /api/rapports/ecarts-cout      GET (dashboard analyse)
+```
+
+### 4ter.12 Impacts sur les autres phases
+
+- **§4bis Stock** : OF consomme MP (mouvement `sortie_of`) et produit PF (mouvement `entree_fabrication`) avec `id_lot` généré. `stock_article_entrepot` mis à jour atomiquement.
+- **§5.2 Ventes** : si la commande validée requiert un article non-en-stock, le système propose de créer un OF (workflow existant à réutiliser). L'OF terminé alimente le stock et libère la sortie vente.
+- **§6.2 Magasinier Préparation** : les articles en fabrication apparaissent à l'état `en_fabrication` avec avancement (%) et OF cliquable → détail.
+- **§8 Communications** : chaque changement de statut OF peut déclencher une notification (ex `bloque_qc` → chef de production + admin).
+
+---
+
 ## 5. Ventes (Phase 3)
 
 ### 5.1 Documents et transitions
@@ -1211,11 +1624,56 @@ Table `commissions_versements` :
 
 **Ne voit pas** : prix de vente client, marges, commissions, factures. Voit les **prix de reviens** et la valorisation stock.
 
-### 6.4 Dashboard Admin
+### 6.5 Dashboard Chef de Production (`CHEF_PRODUCTION`)
+
+**Périmètre** : pilotage de l'atelier de fabrication.
+
+- KPI en tête : nb OF en cours · OF en retard · OF bloqués QC · TRS moyen atelier · charge machines (%) · MP en rupture bloquant OF.
+- **Planning Gantt** interactif (§4ter.8) : drag-drop des OF sur les machines.
+- Liste OF à planifier (issus des commandes validées).
+- Liste OF en cours avec avancement + alertes (retard, blocage QC).
+- Vue machines : état temps réel, panne, opérateur courant.
+- Actions rapides : "Créer OF", "Sous-traiter étape", "Débloquer OF" (après revue QC).
+- Ne voit pas les prix de vente ni les commissions. Voit les coûts fabrication.
+
+### 6.6 Dashboards opérateurs atelier (Tisseur, Coupeur, Post-Coupe) — tablettes
+
+Un même écran responsive optimisé tablette, adapté au rôle.
+
+**Écran opérateur** :
+
+- Header : nom opérateur, machine assignée, poste.
+- Liste "Mes OF" — OF assignés triés par priorité + date début prévue.
+- Chaque OF : article + qté, étape courante, temps écoulé, bouton actif (Démarrer / Pause / Reprendre / Terminer).
+- Scan QR MP entrante → consommation `of_consommations_mp` alimentée avec `id_lot`.
+- Bouton "Signaler défaut" → saisie rapide `defauts_json` + photo → contrôle QC déclenché.
+- Compteur de duites / pièces produites (auto depuis machine si connectée, sinon saisie manuelle).
+- Historique de la journée : temps de production, temps arrêt, cadence moyenne.
+
+**Ne voit pas** : prix, clients, montants commande. Voit uniquement ce qui est nécessaire à sa tâche.
+
+### 6.7 Dashboard Contrôleur Qualité (`CONTROLEUR_QUALITE`)
+
+- KPI : contrôles du jour · taux conformité · défauts fréquents (top 5) · OF bloqués en attente contrôle.
+- Liste des étapes OF terminées nécessitant un contrôle (`necessite_ctrl_qualite`).
+- Écran de saisie contrôle (§4ter.6) : type, mesures, photos, action (laisser passer / rework / rebut).
+- Historique contrôles avec filtre par article / machine / opérateur / défaut.
+- Peut bloquer un OF (`bloque_qc`) — notifie chef production.
+
+### 6.8 Dashboard Mécanicien / Maintenance (`MECANICIEN`)
+
+- Vue machines : état (en_service, en_panne, en_maintenance) avec dernières interventions.
+- Alertes maintenance préventive (date_prochaine_maintenance approche).
+- Historique interventions (`interventions_maintenance` — table existante à réutiliser).
+- Bouton "Signaler panne" → change `machines.etat`, notifie chef production, journalise arrêt.
+- Bouton "Démarrer intervention" → passe en maintenance, journalise.
+- KPI : MTBF, MTTR, taux de disponibilité par machine.
+
+### 6.9 Dashboard Admin
 
 Vue globale : tous les KPIs, tous les documents, gestion des utilisateurs, grilles tarifaires, commissions, paramètres société.
 
-**L'admin voit tout** — pas d'onglets "Commercial" / "Magasinier Préparation" / "Magasinier Stock" séparés dans son menu (il accède à ces vues via une bascule "Voir en tant que…" si besoin d'audit).
+**L'admin voit tout** — pas d'onglets Commercial / Magasinier Prépa / Magasinier Stock / Chef Production / Ateliers / QC / Mécanicien séparés dans son menu (il accède à ces vues via une bascule "Voir en tant que…" si besoin d'audit).
 
 ---
 
@@ -1392,6 +1850,18 @@ Accueil
 │    ├─ Articles (variantes)
 │    ├─ Catalogues
 │    └─ SEO produits web
+├─ Fabrication                     (Phase 2.7)
+│    ├─ BOM (nomenclatures)
+│    ├─ Gammes
+│    ├─ Postes de travail
+│    ├─ Machines
+│    │    └─ Maintenance
+│    ├─ Ordres de fabrication (OF)
+│    ├─ Planning atelier            (Gantt)
+│    ├─ Suivi temps réel
+│    ├─ Contrôle qualité
+│    ├─ Sous-traitance
+│    └─ Analyse des coûts
 ├─ Stock
 │    ├─ Entrepôts
 │    ├─ Vue par catégorie
@@ -1430,7 +1900,11 @@ Accueil
 │    ├─ Admin                      (ADMIN uniquement)
 │    ├─ Commercial                 (COMMERCIAL uniquement)
 │    ├─ Magasinier Préparation     (MAGASINIER_PREPARATION uniquement)
-│    └─ Magasinier Stock           (MAGASINIER_STOCK uniquement)
+│    ├─ Magasinier Stock           (MAGASINIER_STOCK uniquement)
+│    ├─ Chef Production            (CHEF_PRODUCTION uniquement)
+│    ├─ Tisseur / Coupeur          (tablette — TISSEUR / COUPEUR)
+│    ├─ Contrôle Qualité           (CONTROLEUR_QUALITE uniquement)
+│    └─ Mécanicien / Maintenance   (MECANICIEN uniquement)
 ├─ Mon compte                      (tous rôles — sa config perso)
 │    ├─ Profil
 │    ├─ Paramètre Email            (SMTP perso — §8.4)
@@ -1441,6 +1915,7 @@ Accueil
      ├─ Paramètre Produits         (dimensions, couleurs, finitions, tissages — CRUD)
      ├─ Paramètre Vente            (grilles tarifaires, tarifs transport, conditions paiement, échéances, relances)
      ├─ Paramètre Stock             (entrepôts, seuils alerte, types stock, valorisation PMP/FIFO)
+     ├─ Paramètre Fabrication      (gammes types, postes, taux horaires MO, frais fixes atelier, règles ratière)
      ├─ Paramètre Transporteurs    (transporteurs + credentials API)
      ├─ Paramètre Commissions      (taux par commercial, grilles)
      ├─ Paramètre Communication    (templates email/WhatsApp/Telegram, SMTP société défaut, WA Business société défaut, bot Telegram)
@@ -1460,11 +1935,12 @@ Tout le reste (RH, sous-traitants, maintenance, planning, Gantt, IA, e-commerce 
 3. **Phase 1** — CRM & Clients (comptes, contacts, adresses, leads, interactions, grilles tarif).
 4. **Phase 2** — Modèles & articles (variant matrix, détection doublons, image article, EAN, poids/dim) + Catalogues + SEO web + Photos multi.
 5. **Phase 2.5** — Stock & Entrepôts : entrepôts, catégories (PF/SF/MP/fournitures/emballage), mouvements (réception/sortie/transfert), lots, réservations, inventaires, alertes, Dashboard Magasinier Stock.
-6. **Phase 3** — Ventes core : Devis → Commande (avec réservation stock) → BL → Facture. Livraison croisée. RBAC. Envoi transactionnel.
-7. **Phase 3.1** — Liste de colisage + Palettes + Transporteurs + Suivi API.
-8. **Phase 3.5** — Dashboard Commercial (avec commissions) + Dashboard Magasinier Préparation.
-9. **Phase 4** — Marketing (campagnes + segments).
-10. Rouverture progressive des autres modules si besoin métier.
+6. **Phase 2.7** — Fabrication : BOM, gammes, postes, machines, OF, suivi opérateurs (tablette), contrôle qualité, sous-traitance, planning Gantt, coûts, Dashboards Chef Prod / Tisseur / Coupeur / QC / Mécanicien.
+7. **Phase 3** — Ventes core : Devis → Commande (avec réservation stock + création OF si non-en-stock) → BL → Facture. Livraison croisée. RBAC. Envoi transactionnel.
+8. **Phase 3.1** — Liste de colisage + Palettes + Transporteurs + Suivi API.
+9. **Phase 3.5** — Dashboard Commercial (avec commissions) + Dashboard Magasinier Préparation.
+10. **Phase 4** — Marketing (campagnes + segments).
+11. Rouverture progressive des autres modules si besoin métier.
 
 À chaque phase :
 
@@ -1538,6 +2014,29 @@ POST /api/parametres/societe/logo       — upload logo (multipart)
 ## Changelog
 
 - `2026-09-22` — v1.0. Création du document. Périmètre CRM + Produits + Ventes fixé.
+- `2026-09-23` — v1.6. Phase 2.7 Fabrication :
+  - §1.4 nouveaux rôles : `CHEF_PRODUCTION`, `TISSEUR`, `COUPEUR`, `CONTROLEUR_QUALITE`, `MECANICIEN`.
+  - §4ter **nouveau chapitre complet** — 12 sous-sections :
+    - 4ter.0 Vocabulaire (BOM, gamme, poste, machine, OF, étape, ratière, sélecteur couleur).
+    - 4ter.1 `bom` + `bom_lignes` (nomenclature versionnée par article, avec rôles chaîne/trame/fourniture/emballage et remplacements possibles).
+    - 4ter.2 `gammes` + `gamme_etapes` (séquence type par catégorie, config bloquante/QC/sous-traitance).
+    - 4ter.3 `postes_travail` + `machines` (Dornier, ratière, sélecteur couleur, laize, nb fils, cadence, état).
+    - 4ter.4 `ordres_fabrication` + `of_etapes` + `of_consommations_mp` (BOM figée + gamme copiée, cout théorique/réel, lot produit).
+    - 4ter.5 `of_pointages` (suivi temps réel opérateurs avec type_event début/pause/reprise/fin/panne + machine + quantité).
+    - 4ter.6 `controles_qualite` (par étape ou global, mesures json, photos, action laisser passer/rework/rebut, blocage OF).
+    - 4ter.7 Sous-traitance (extension `soustraitants` + `of_sous_traitance` avec bons de sortie/retour + interaction stock via entrepôt virtuel sous-traitant).
+    - 4ter.8 Planning atelier (Gantt drag-drop, contraintes machine, `planning_slots`).
+    - 4ter.9 Coûts (formule MP+MO+ST+frais fixes, `of_couts` snapshot, alimente rétroactivement `articles.prix_reviens`).
+    - 4ter.10 Cycle de vie OF (BROUILLON → PLANIFIE → EN_ATTENTE_MP → EN_COURS → PRET → TERMINE → CLÔTURÉ).
+    - 4ter.11 Endpoints (BOM, gammes, machines, OF, contrôles, sous-traitance, planning, coûts).
+    - 4ter.12 Impacts sur autres phases (mouvements stock, création OF depuis commande, magasinier prépa voit avancement, notifications blocage).
+  - §6.5 nouveau Dashboard **Chef de Production** : KPI atelier, planning Gantt, OF à planifier / en cours / bloqués.
+  - §6.6 nouveaux Dashboards **Opérateurs (Tisseur / Coupeur)** — tablette : mes OF, scan QR MP, boutons pointage, saisie défauts.
+  - §6.7 nouveau Dashboard **Contrôleur Qualité** : contrôles à faire, saisie mesures + photos + action, historique défauts.
+  - §6.8 nouveau Dashboard **Mécanicien / Maintenance** : état machines, alertes préventives, interventions, MTBF/MTTR.
+  - §6.9 Dashboard Admin renuméroté.
+  - §9 menu : nouvelle branche "Fabrication" (BOM, Gammes, Postes, Machines+Maintenance, OF, Planning, Suivi temps réel, Contrôle qualité, Sous-traitance, Analyse coûts) + Dashboards ateliers (Chef Prod / Tisseur-Coupeur / QC / Mécanicien) + Paramètre Fabrication.
+  - §10 ordre d'exécution : Phase 2.7 insérée entre Stock (2.5) et Ventes (3).
 - `2026-09-23` — v1.5. Unification MP dans le modèle Modèle → Articles :
   - §4bis.0.1 **réécrit** — les MP réutilisent les tables `modeles` + `articles`. Pas de table `matieres_premieres` séparée.
   - `modeles.type_produit` ajouté (`produit_fini` / `semi_fini` / `matiere_premiere` / `fourniture_fabrication` / `fourniture_bureau` / `emballage`).
