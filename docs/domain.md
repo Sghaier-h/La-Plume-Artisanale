@@ -1,6 +1,6 @@
 # La Plume Artisanale — Contrat de domaine
 
-Version : **2.1** · Statut : brouillon en validation · Refonte complète intégrant toutes les analyses legacy + RH + IA agents autonomes.
+Version : **2.2 FINAL** · Statut : contrat verrouillé, prêt pour implémentation · Refonte complète intégrant toutes les analyses legacy + RH + IA agents autonomes + Mobile offline + Déploiement OVH.
 
 Ce document est la **source de vérité** pour le vocabulaire, les entités, les endpoints et les règles métier du projet. Il remplace intégralement les versions 1.x.
 
@@ -12,6 +12,7 @@ Toute modification postérieure (ajout de champ, changement de règle, renommage
 
 1. [Introduction & périmètre](#1-introduction--périmètre)
 2. [Règles transverses](#2-règles-transverses)
+2bis. [Authentification & Sessions](#2bis-authentification--sessions)
 3. [CRM & Comptes](#3-crm--comptes-phase-1)
 4. [Tarification](#4-tarification-phase-1)
 5. [Produits](#5-produits-phase-2)
@@ -23,6 +24,7 @@ Toute modification postérieure (ajout de champ, changement de règle, renommage
 11. [Communications](#11-communications)
 11bis. [Ressources Humaines](#11bis-ressources-humaines-phase-4bis)
 11ter. [IA & Agents autonomes](#11ter-ia--agents-autonomes-phase-5)
+11quater. [Application mobile / Tablette (offline-first)](#11quater-application-mobile--tablette-offline-first)
 12. [Messagerie inter-postes](#12-messagerie-inter-postes)
 13. [Conformité fiscale par pays](#13-conformité-fiscale-par-pays)
 14. [Dashboards](#14-dashboards)
@@ -157,6 +159,198 @@ Ces défauts sont documentés — **notre v2.0 les corrige** :
 - Numérotation par balayage complet des feuilles → séquences PostgreSQL nativement atomiques
 - Fonctions kilométriques mélangeant lecture Sheets / règles / UI → controllers séparés services séparés
 - Absence litiges/2e choix ST → tables dédiées `litiges_st`
+
+---
+
+## 2bis. Authentification & Sessions
+
+### 2bis.1 Utilisateurs (`utilisateurs`)
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_utilisateur` | serial PK | |
+| `email` | varchar(150) unique | login principal (RFC 5321 valide) |
+| `username` | varchar(50) unique | login alternatif optionnel |
+| `mot_de_passe_hash` | text | bcrypt cost 12 |
+| `id_employe` | FK employes | lien vers fiche RH si personnel salarié |
+| `nom` / `prenom` | varchar(100) | |
+| `telephone` / `whatsapp` | varchar(30) | |
+| `role_principal` | enum | ADMIN, COMMERCIAL, COMPTABLE, MAGASINIER_MP, MAGASINIER_STOCK, MAGASINIER_PREPARATION, MAGASINIER_SOUSTRAITANTS, CHEF_PRODUCTION, CHEF_ATELIER, OURDISSEUR, TISSEUR, COUPEUR, CONTROLEUR_QUALITE, MECANICIEN, RH_MANAGER, RH_ASSISTANT, RESPONSABLE_SECURITE |
+| `roles_supplementaires` | text[] | multi-rôles possibles (ex un chef atelier peut aussi être contrôleur qualité) |
+| `permissions_supplementaires` | text[] | permissions granulaires override du rôle |
+| `permissions_bloquees` | text[] | permissions retirées de son rôle |
+| `id_langue` | FK langues | `fr` par défaut, `ar`, `en` prévus |
+| `photo_url` | varchar(500) | avatar |
+| `actif` | bool | |
+| `est_verifie` | bool | email vérifié |
+| `derniere_connexion` | timestamp | |
+| `ip_derniere_connexion` | inet | |
+| `nb_echecs_connexion` | int | reset à 0 après login réussi |
+| `verrouille_jusqu` | timestamp | verrouillage temporaire après échecs |
+| `mfa_actif` | bool | 2FA activée |
+| `mfa_secret_totp` | text (chiffré) | secret TOTP |
+| `mfa_backup_codes_hash` | text[] | codes récup hashés |
+| Champs audit | | `date_creation`, `cree_par`, `date_modification`, `modifie_par` |
+
+### 2bis.2 Politique de mot de passe
+
+- **Minimum 12 caractères**
+- **Au moins 3 catégories parmi 4** : minuscule, majuscule, chiffre, symbole
+- **Interdit** : mot de passe dans top 10 000 leaked passwords (haveibeenpwned intégré)
+- **Interdit** : contenir email, nom, prénom, username
+- **Rotation** : optionnelle 6 mois (recommandé pour ADMIN + COMPTABLE + RH_MANAGER)
+- **Historique** : 5 derniers passwords stockés hashés pour empêcher réutilisation
+- **Reset** : email avec token à usage unique, TTL 15 min, invalidé après usage
+
+### 2bis.3 Méthodes de connexion
+
+| Méthode | Statut | Rôles cibles |
+|---|---|---|
+| **Email + mot de passe** | ✅ obligatoire base | tous |
+| **2FA TOTP** (Google Authenticator, Authy) | ✅ obligatoire pour rôles sensibles | ADMIN, COMPTABLE, RH_MANAGER, RESPONSABLE_SECURITE |
+| **2FA optionnelle** | ✅ activable | tous les autres |
+| **Magic link email** | ✅ pour opérateurs tablette | TISSEUR, COUPEUR, OURDISSEUR (login rapide sans mot de passe) |
+| **SSO Google Workspace** | ✅ optionnel | employés société |
+| **Badge NFC/QR** | ✅ pour tablettes atelier | TISSEUR, COUPEUR, OURDISSEUR (scan badge = login rapide, JWT court 8h) |
+
+### 2bis.4 Sessions multi-appareils
+
+`sessions` :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_session` | uuid PK | |
+| `id_utilisateur` | FK | |
+| `refresh_token_hash` | text | bcrypt |
+| `access_token_jti` | varchar(40) | pour blacklist Redis |
+| `type_appareil` | enum | `web` \| `mobile_ios` \| `mobile_android` \| `tablette_atelier` |
+| `nom_appareil` | varchar(200) | ex "iPad Tissage M2301" |
+| `user_agent` | text | |
+| `ip_creation` | inet | |
+| `ip_derniere_utilisation` | inet | |
+| `pays_derniere_utilisation` | char(2) | géoloc IP |
+| `date_creation` | timestamp | |
+| `date_derniere_utilisation` | timestamp | |
+| `date_expiration` | timestamp | selon type |
+| `revoquee` | bool | |
+| `revoquee_par` | FK utilisateurs | |
+| `motif_revocation` | text | |
+
+**TTL différenciés** :
+
+| Type appareil | Access token | Refresh token |
+|---|---|---|
+| Web admin | 15 min | 24 h |
+| Web opérateur | 30 min | 7 jours |
+| Mobile smartphone | 1 h | 30 jours |
+| Tablette atelier (offline) | 8 h | 7 jours |
+| Badge NFC/QR (login rapide) | 8 h (poste travail) | non applicable |
+
+Rotation automatique du refresh token à chaque `POST /api/auth/refresh` (le précédent devient invalide).
+
+### 2bis.5 Récupération de compte
+
+Flux "mot de passe oublié" :
+
+1. `POST /api/auth/reset-password` avec email
+2. Rate limit : 3/h par IP, 5/h par email
+3. Envoi email avec lien token TTL 15 min (via SMTP §11.2)
+4. `POST /api/auth/reset-password/:token` avec nouveau password
+5. Toutes les sessions actives de l'utilisateur sont **révoquées** automatiquement
+6. Notification à l'utilisateur (email + WhatsApp) : "Votre mot de passe a été modifié"
+7. Log dans `security_events` catégorie `password_reset`
+
+Flux "MFA perdue" :
+
+1. Utilisation d'un des 10 codes de backup (hashés en DB)
+2. Ou reset manuel par ADMIN via `/api/admin/utilisateurs/:id/reset-mfa`
+3. Nouveau secret TOTP généré + email de confirmation
+
+### 2bis.6 Blocage de compte
+
+**Blocage automatique** après :
+- 10 échecs consécutifs → verrouillage 24 h
+- Détection bot (User-Agent absent, timing inhumain) → verrouillage indéfini
+- Événement critique sécurité (§17bis.7.E)
+
+**Déblocage** :
+- Automatique après expiration `verrouille_jusqu`
+- Manuel par ADMIN ou RESPONSABLE_SECURITE
+- Notification email + WhatsApp à l'utilisateur bloqué avec instructions
+
+### 2bis.7 Endpoints Auth
+
+```
+Login       POST /api/auth/login                    { email, password }
+            POST /api/auth/login-magic-link         { email }
+            POST /api/auth/login-badge-nfc          { badge_id, id_poste }
+            POST /api/auth/login-sso-google         (OAuth callback)
+            POST /api/auth/verify-2fa               { session_pre_2fa, code_totp }
+
+Logout      POST /api/auth/logout                   révoque session courante
+            POST /api/auth/logout-all               révoque toutes ses sessions
+
+Tokens      POST /api/auth/refresh                  { refresh_token }
+            POST /api/auth/revoke-token             { access_token_jti }
+
+Mot de pass POST /api/auth/reset-password           { email }
+            POST /api/auth/reset-password/:token    { new_password }
+            POST /api/auth/change-password          { old, new } (session active)
+            GET  /api/auth/password-strength        (check en temps réel)
+
+MFA         POST /api/auth/enable-2fa               retourne QR + secret
+            POST /api/auth/verify-2fa-setup         { code_totp }
+            POST /api/auth/disable-2fa              { password + code_totp }
+            POST /api/auth/generate-backup-codes    (regen)
+            POST /api/auth/use-backup-code          { code }
+
+Sessions    GET  /api/auth/sessions                 mes sessions actives
+            POST /api/auth/sessions/:id/revoke      révoque une session
+            GET  /api/auth/security-events          mes événements récents
+
+Utilisateurs (ADMIN):
+            GET|POST|PUT|DELETE  /api/utilisateurs
+            POST /api/utilisateurs/:id/verrouiller
+            POST /api/utilisateurs/:id/deverrouiller
+            POST /api/utilisateurs/:id/force-logout
+            POST /api/utilisateurs/:id/reset-mfa
+            POST /api/utilisateurs/:id/impersonate  (audit trail obligatoire)
+```
+
+### 2bis.8 Permissions granulaires (RBAC + ABAC)
+
+Le rôle donne un ensemble de permissions par défaut. Peut être surchargé par utilisateur :
+
+- **`permissions_supplementaires`** : capacités ajoutées (ex un CHEF_ATELIER peut recevoir `qualite:valider_bloquant`)
+- **`permissions_bloquees`** : capacités retirées (ex un COMMERCIAL peut se voir retirer `client:supprimer`)
+
+Format permission : `<domaine>:<action>[:<scope>]` — ex `facture:emettre`, `stock:ajuster:MP`, `paie:consulter:soi`.
+
+Vérification middleware : `hasPermission(user, 'facture:emettre')` → true/false.
+
+**Politique par attribut (ABAC)** :
+
+- Un COMMERCIAL n'accède qu'aux comptes où `id_commercial = <lui>` (filtre backend WHERE clause)
+- Un TISSEUR ne voit que les OF où `id_machine IN <ses_machines>`
+- Un MAGASINIER_STOCK ne modifie que les entrepôts où `id_responsable = <lui>` (sauf ADMIN)
+
+### 2bis.9 Audit d'authentification
+
+Table `auth_audit_log` :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_log` | serial PK | |
+| `id_utilisateur` | FK | nullable si tentative sur compte inexistant |
+| `email_tente` | varchar(150) | pour tentatives échouées |
+| `type_event` | enum | `login_success`, `login_failed`, `logout`, `password_reset_requested`, `password_reset_success`, `mfa_enabled`, `mfa_disabled`, `mfa_failed`, `account_locked`, `session_revoked`, `permission_denied`, `impersonation`, `suspicious_activity` |
+| `ip` | inet | |
+| `user_agent` | text | |
+| `pays` | char(2) | géoloc IP |
+| `details_json` | jsonb | payload contextuel |
+| `date_event` | timestamp | |
+
+Rétention **3 ans minimum** (obligation légale accès données personnelles).
 
 ---
 
@@ -1818,7 +2012,19 @@ Si le comptable décide de régulariser un mois de dépenses courantes en fin de
 
 Écran comptable filtre : `non_comptabilise` / `comptabilise_bloc` / `comptabilise_individuel`.
 
-**Règle** : par défaut les achats > 100 DT au comptant doivent générer une facture ET une écriture. Le seuil est configurable en Paramètre Comptabilité.
+**Règles fiscales tunisiennes** (3 seuils paramétrables) :
+
+| Paramètre | Défaut | Fondement |
+|---|---|---|
+| `seuil_facture_obligatoire_dt` | **500 DT TTC** | Art. 34 Code TVA Tunisie : charge > 500 DT non déductible fiscalement sans règlement chèque/virement ET facture |
+| `seuil_comptabilisation_bloc_dt` | **50 DT** | En-dessous : peut rester en `depense_espece` sans écriture unique |
+| `seuil_paiement_espece_max_dt` | **5000 DT** | Loi 2018-52 anti-blanchiment : au-dessus, espèces interdites |
+
+Zone 50-500 DT : facture souhaitée mais possible comptabilisation en bloc mensuel.
+Zone > 500 DT : facture + règlement traçable OBLIGATOIRE.
+Zone > 5000 DT : espèces INTERDITES, virement/chèque seul.
+
+Ces 3 seuils sont configurables dans `parametres_comptabilite`. Ils s'ajustent automatiquement si la loi change (audit trail obligatoire sur modification).
 
 ### 9.10 Endpoints Achats
 
@@ -2569,6 +2775,110 @@ Voir **§14.16 Dashboard IA** pour l'interface utilisateur.
 
 ---
 
+## 11quater. Application mobile / Tablette (offline-first)
+
+Les dashboards ateliers (Tisseur §14.9, Coupeur §14.10, Ourdisseur §14.11, Magasinier MP §14.4 pour scan QR bobines) doivent fonctionner **hors ligne** — une coupure WiFi ne doit jamais arrêter la production.
+
+### 11quater.1 Stack technique
+
+| Couche | Techno |
+|---|---|
+| App mobile | **Expo React Native** (partage code TS avec frontend web) |
+| Stockage local | **WatermelonDB** (SQLite optimisée React Native) |
+| Sync engine | Custom + timestamps `updated_at` serveur |
+| Queue actions | Table locale `pending_actions` |
+| État connexion | `@react-native-community/netinfo` |
+| Auth offline | `expo-secure-store` avec JWT TTL long (7 jours) |
+| Build | EAS Build (Expo) — APK Android + iOS |
+
+Le dossier `mobile/android/app-tisseur/` (Kotlin natif) est **supprimé** — un seul codebase Expo unifié.
+
+### 11quater.2 Modèle de données local (SQLite tablette)
+
+**Read-only cachées** (sync au démarrage) :
+- `articles` (périmètre opérateur uniquement)
+- `machines` (celles auxquelles il a accès)
+- `postes_travail`
+- `parametres_couleurs`, `parametres_numeros_metriques`, autres référentiels
+
+**Read-write locales** (écriture locale puis push serveur) :
+- `of_pointages_local` + colonne `sync_status`
+- `of_consommations_local`
+- `controles_qualite_local`
+- `pending_actions` (queue de rejeu)
+
+### 11quater.3 `pending_actions` — queue de sync
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_local` | text PK | UUID généré tablette |
+| `type_action` | text | `POST` \| `PUT` \| `DELETE` |
+| `endpoint` | text | ex `/api/of-etapes/42/pointer` |
+| `payload_json` | text | body requête |
+| `id_entite_local` | text | UUID temporaire entité |
+| `id_entite_serveur` | integer | rempli après sync réussie |
+| `created_at` | datetime | horodatage local |
+| `synced_at` | datetime | rempli à la sync |
+| `nb_tentatives` | integer | pour backoff |
+| `dernier_erreur` | text | diagnostic |
+| `statut` | text | `pending` \| `syncing` \| `synced` \| `conflict` \| `failed` |
+
+### 11quater.4 Résolution de conflits
+
+Si version serveur diffère de la version tablette :
+1. **`updated_at` serveur fait foi**
+2. Tablette télécharge la version serveur + rebase ses `pending_actions`
+3. Vrai conflit métier (ex quantité impossible) → notification tisseur + validation manuelle
+
+### 11quater.5 Endpoints backend mobile
+
+```
+POST /api/mobile/sync/pull?since=<timestamp>&id_utilisateur=<x>&id_machine=<y>
+     → Payload delta : nouveaux OF, mises à jour depuis last_sync
+
+POST /api/mobile/sync/push
+     → Body: array pending_actions
+     → Réponse: {status per action (ok/conflict/error), ids serveurs}
+
+GET  /api/mobile/init?id_utilisateur=<x>&id_machine=<y>
+     → Bootstrap initial : référentiels + OF actifs + périmètre données
+
+POST /api/mobile/heartbeat
+     → Ping 30s quand online — détecte reconnexion
+```
+
+### 11quater.6 UI comportement offline
+
+- Badge header permanent : `🟢 Online` OU `🟠 Offline (X actions en attente)`
+- Actions restent utilisables offline (pointage, scan QR, saisie coupe)
+- Icône par action : `⏱ synced` / `⏳ pending` / `⚠ conflict`
+- Toast à la reconnexion : "12 actions synchronisées ✓"
+
+### 11quater.7 Fréquence sync
+
+- **Pull** : ouverture app + toutes les 5 min + à chaque reconnexion
+- **Push** : dès qu'action offline créée (si online) OU à la reconnexion (si offline)
+- **Bootstrap** : 1 fois/jour au matin (charge tous les OF du jour)
+
+### 11quater.8 Durée offline max
+
+**24 heures supportées** — au-delà, avertissement utilisateur "Reconnectez-vous, données potentiellement obsolètes".
+
+Configurable dans `parametres_mobile` (Paramètre Mobile).
+
+### 11quater.9 Menu Paramètre Mobile
+
+```
+Paramètres → Paramètre Mobile
+├─ Tablettes enregistrées      (device_id, dernière sync, user)
+├─ Utilisateurs offline autorisés
+├─ TTL JWT offline (jours)
+├─ Durée offline max heures
+└─ Politique résolution conflits (auto / manuelle)
+```
+
+---
+
 ## 12. Messagerie inter-postes
 
 Système existant dans le legacy (`Hub > Messages_Postes`) — à répliquer.
@@ -3006,8 +3316,207 @@ POST /api/parametres/societe/logo   — upload multipart
 
 ---
 
+## 17bis. Infrastructure & Déploiement
+
+### 17bis.1 Infrastructure OVH actuelle
+
+| Composant | Valeur | Note |
+|---|---|---|
+| **VPS** | Ubuntu 25.04, IP `137.74.40.191` | provisionné OVH |
+| **Utilisateur SSH** | `ubuntu` | clé SSH ou mot de passe |
+| **Domaine production** | `https://fabrication.laplume-artisanale.tn` | HTTPS Let's Encrypt actif |
+| **Domaine staging** | `staging.fabrication.laplume-artisanale.tn` | à provisionner |
+| **DB PostgreSQL** | `sh131616-002.eu.clouddb.ovh.net:35392` | OVH CloudDB, dédiée à ce projet |
+| **DB user** | `postgres` | password dans `.env` |
+| **Node.js** | v18.20.8 déjà installé | |
+| **Reverse proxy** | Nginx | port 5000 → 443 |
+| **Process manager actuel** | PM2 (`fouta-api`) | app path `/opt/fouta-erp/backend` |
+| **Health check** | `/health` sur backend | |
+
+### 17bis.2 Migration PM2 → Docker Compose (recommandée)
+
+Le repo contient déjà un `docker-compose.yml` prêt (Redis + Backend + Frontend + Nginx). Migration proposée :
+
+1. Sauvegarder `.env` actuel
+2. Arrêter PM2 : `pm2 stop fouta-api && pm2 delete fouta-api`
+3. Installer Docker + Compose plugin
+4. Copier `docker-compose.yml` + `.env` → `/opt/laplume/`
+5. `docker compose up -d` — Redis + backend + frontend + nginx démarrés en containers
+
+**Avantages Docker** : isolation, rollback facile (`docker compose down && checkout <sha> && up -d`), CI/CD GHCR déjà configuré (`.github/workflows/deploy.yml`).
+
+### 17bis.3 CI/CD GitHub Actions
+
+Workflow `.github/workflows/deploy.yml` déjà en place :
+
+1. Push sur `main` → GitHub Actions déclenché
+2. Build images Docker `laplume-backend`, `laplume-frontend`, `laplume-nginx`
+3. Push sur GHCR (`ghcr.io/Sghaier-h/laplume-*`)
+4. SSH vers VPS + `docker compose pull && up -d`
+
+**Secrets GitHub à configurer** :
+- `VPS_HOST` = `137.74.40.191`
+- `VPS_USER` = `ubuntu`
+- `VPS_SSH_KEY` = clé SSH privée (contenu)
+- `DB_HOST`, `DB_PASSWORD`, `JWT_SECRET`, `SESSION_SECRET`, `SMTP_*`, etc.
+
+### 17bis.4 Environnements
+
+| Env | Domaine | Branche Git | Auto-deploy |
+|---|---|---|---|
+| **Production** | `fabrication.laplume-artisanale.tn` | `main` | ✅ sur push main |
+| **Staging** | `staging.fabrication.laplume-artisanale.tn` | `develop` | ✅ sur push develop |
+| **Local dev** | `localhost:3000` (front) + `localhost:5000` (back) | branches feature | manual |
+
+### 17bis.5 Backups DB
+
+- OVH CloudDB fait des backups automatiques quotidiens (rétention 7 jours)
+- Backup supplémentaire hebdo via cron sur VPS → S3 OVH Object Storage
+- Restauration testée trimestriellement
+
+### 17bis.6 Monitoring & Logs
+
+- **PM2/Docker logs** : `docker compose logs -f backend`
+- **Nginx access/error logs** : `/var/log/nginx/`
+- **Health check externe** : UptimeRobot → `/health` toutes les 5 min
+- **Alertes email admin** : en cas de downtime > 3 min
+
+### 17bis.7 Sécurité production — Défense en profondeur
+
+Protection contre les tentatives de piratage à **plusieurs couches** (defense in depth) :
+
+#### A. Réseau & Serveur
+
+- **HTTPS obligatoire** — redirection 80 → 443, HSTS activé (`max-age=31536000`)
+- Certificat Let's Encrypt renouvelé auto via `certbot`
+- **Firewall UFW** strict : ports 22 (SSH restreint), 80, 443 uniquement
+- **Port SSH non standard** : passer de 22 à un port haut (ex 2244) — bloque 90% des scans bots
+- **Fail2ban** actif sur SSH + `/api/auth/login` — ban IP 24h après 5 échecs
+- **DNS SPF/DMARC/DKIM** configurés pour bloquer usurpation email
+- **DDoS protection** OVH Anti-DDoS activée (gratuit sur VPS OVH)
+
+#### B. Application & Auth
+
+- **Authentification** :
+  - Mots de passe hachés `bcrypt` (cost factor 12)
+  - JWT signé HS256 avec `JWT_SECRET` fort (min 64 octets aléatoires)
+  - Refresh token séparé (7 jours) + access token court (15 min)
+  - Rotation des tokens à chaque refresh
+  - Révocation possible côté serveur (blacklist Redis)
+- **2FA obligatoire** pour ADMIN + COMPTABLE + RH_MANAGER (via TOTP Google Authenticator)
+- **Rate limiting** :
+  - `/api/auth/login` : 5 tentatives / 15 min par IP
+  - `/api/auth/reset-password` : 3 par heure
+  - Endpoints généraux : 300 req/min par utilisateur
+- **CSRF protection** sur cookies session (double submit + SameSite=Strict)
+- **CORS strict** : origines whitelisted uniquement (`fabrication.laplume-artisanale.tn`)
+- **Content Security Policy (CSP)** : bloque XSS via inline scripts non signés
+- **Headers sécurité** : X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy strict-origin
+
+#### C. Base de données
+
+- **Pas d'accès public** DB — seule l'IP du VPS whitelistée sur OVH CloudDB
+- **Prepared statements** obligatoires — 0 concaténation SQL brute (protège de SQL injection)
+- **Chiffrement au repos** activé par défaut OVH
+- **Chiffrement TLS** obligatoire sur connexion `DB_SSL=true`
+- **Utilisateurs DB** :
+  - `laplume_app` (lecture/écriture métier)
+  - `laplume_readonly` (lecture seule, pour agents IA §11ter)
+  - `laplume_backup` (dump-only)
+  - Aucun utilisateur `postgres` superuser exposé
+- **Backup encrypted** at rest + rotation 30 jours
+- **Audit trail** obligatoire sur toutes les tables sensibles (paiements, factures, écritures comptables, salaires, sanctions) — trigger PostgreSQL qui log INSERT/UPDATE/DELETE avec `user`, `timestamp`, `old_value`, `new_value`
+
+#### D. Application code
+
+- **Dépendances scannées** : `npm audit` en CI (échec si vulnérabilité `high` ou `critical`)
+- **Renovate Bot** : PR auto pour mises à jour deps sécurité
+- **Secrets management** : aucun secret dans le repo (`.env` gitignored), utilisation GitHub Secrets pour CI
+- **Sanitization** de toutes les entrées utilisateur (validation Zod côté API)
+- **Uploads sécurisés** :
+  - Whitelist extensions (jpg/png/webp pour photos, pdf pour docs)
+  - Scan antivirus ClamAV côté serveur avant stockage
+  - Renommage aléatoire des fichiers (empêche path traversal)
+  - Stockage hors racine web
+- **Logging sécurité** : tous les événements auth (login, échec, logout, reset password) → log dédié `security.log`
+
+#### E. Détection & Réponse aux intrusions
+
+- **`security_events`** — table dédiée aux événements suspects :
+  - Tentatives login multiples échecs
+  - Endpoints appelés hors périmètre du rôle (élévation privilège)
+  - Modifications massives (>100 lignes en 1 min)
+  - Exports de données inhabituels
+  - Accès depuis pays non whitelistés (géoloc IP)
+- **Notifications immédiates admin** (§12 messagerie + email + WhatsApp) sur événement `critique`
+- **Compte suspendu automatiquement** après :
+  - 10 échecs login consécutifs
+  - Détection de bot (User-Agent absent, navigation inhumaine)
+  - Requêtes injectant SQL/XSS patterns
+- **Session invalidée** en cas de :
+  - Changement d'IP significatif (pays différent)
+  - Détection appareil différent après login
+
+#### F. Sauvegardes & continuité
+
+- **Backup DB** quotidien OVH + hebdo vers S3 chiffré (rétention 90 jours)
+- **Backup fichiers uploads** hebdo vers S3
+- **Snapshot VPS** hebdomadaire (OVH VPS Backup Storage)
+- **Test de restauration** trimestriel documenté (RTO 4h, RPO 24h)
+- **Runbook incident** dans `docs/security/RUNBOOK_INCIDENT.md` (à créer)
+
+#### G. Conformité & audit externe
+
+- **Audit sécurité externe** annuel (pentest)
+- **RGPD compliant** : opt-in explicite (§3.1), droit à l'oubli implémenté (endpoint `DELETE /api/comptes/:id/rgpd`)
+- **Log d'accès aux données sensibles** (salaires, factures, données clients) conservé 3 ans minimum
+- **Politique de confidentialité** publiée sur le site
+
+#### H. Formation utilisateurs (facteur humain)
+
+- Formation obligatoire à la connexion premier jour : bonnes pratiques mot de passe, phishing
+- **Simulations phishing** 2x/an
+- Charte de sécurité signée par chaque utilisateur
+- Politique de changement mot de passe : force minimale (12 caractères, 3 catégories) + rotation optionnelle 6 mois
+
+### 17bis.8 Endpoints sécurité
+
+```
+Auth        POST /api/auth/login                    (5/15min IP)
+            POST /api/auth/logout
+            POST /api/auth/refresh                  (rotation token)
+            POST /api/auth/reset-password           (3/h IP)
+            POST /api/auth/enable-2fa               (ADMIN/COMPTABLE/RH)
+            POST /api/auth/verify-2fa
+            POST /api/auth/revoke-session
+
+Sécurité    GET  /api/security/events?severite=critique
+            POST /api/security/events/:id/traiter
+            GET  /api/security/sessions-actives     (par utilisateur)
+            POST /api/security/sessions/:id/revoquer
+            GET  /api/security/audit-trail?table=factures&periode=
+
+RGPD        DELETE /api/comptes/:id/rgpd            (droit à l'oubli)
+            GET    /api/comptes/:id/export-donnees  (portabilité)
+```
+
+### 17bis.9 Nouveau rôle SECURITE
+
+Rôle **`RESPONSABLE_SECURITE`** (nouveau §2.4) — voit les logs sécurité, les événements, peut suspendre/débloquer utilisateurs, force logout global. Dashboard §14.18 (à ajouter).
+
+---
+
 ## Changelog
 
+- `2026-09-23` — **v2.2 FINAL** : contrat verrouillé pour implémentation :
+  - **§2bis Authentification & Sessions** nouveau chapitre complet — utilisateurs (18 rôles incluant `RESPONSABLE_SECURITE`), politique mot de passe (12 caract min, 3 catégories/4, haveibeenpwned, historique 5), 6 méthodes de login (email/pwd, 2FA TOTP obligatoire ADMIN+COMPTABLE+RH, magic link, SSO Google, badge NFC/QR), sessions multi-appareils avec TTL différenciés par type d'appareil (web 15min, mobile 1h, tablette 8h), récupération compte, blocage automatique, RBAC granulaire + ABAC (permissions_supplementaires / bloquees), audit auth 3 ans.
+  - **§9.9 seuils espèces** corrigés : 3 seuils Tunisie légaux (50 DT bloc / 500 DT facture obligatoire Art. 34 CGI / 5000 DT max espèces Loi 2018-52) au lieu du 100 DT arbitraire.
+  - **§11quater Application mobile / Tablette (offline-first)** nouveau chapitre — Expo React Native + WatermelonDB, queue `pending_actions`, sync pull/push, résolution conflits par timestamp serveur, 24h offline supporté, TTL JWT différenciés, décision de supprimer `mobile/android/app-tisseur/` (Kotlin dupliqué).
+  - **§17bis Infrastructure & Déploiement** complet avec infos VPS réelles trouvées (`137.74.40.191`, Ubuntu 25.04, `fabrication.laplume-artisanale.tn`, OVH CloudDB `sh131616-002.eu.clouddb.ovh.net`, Node v18 + PM2 + Nginx + Let's Encrypt déjà en place), plan migration PM2 → Docker Compose (déjà configuré dans repo), CI/CD GitHub Actions avec GHCR, environnements prod/staging/local, backups + monitoring.
+  - **§17bis.7 Sécurité production — Défense en profondeur** 8 sous-sections : Réseau/Serveur (SSH non standard, Fail2ban, DDoS OVH), App/Auth (bcrypt cost 12, JWT rotation, 2FA obligatoire rôles sensibles, CSRF, CORS strict, CSP), DB (prepared statements, chiffrement, users granulaires app/readonly/backup, audit trail sensitive tables), Code (npm audit CI, Renovate, sanitization Zod, uploads whitelist + ClamAV), Détection intrusions (`security_events` + suspension auto + session invalidée), Backups (RTO 4h/RPO 24h), Conformité RGPD (opt-in, droit à l'oubli, export données), Formation utilisateurs (simulations phishing 2x/an).
+  - **§17bis.8** endpoints Auth complets (login, MFA, sessions, utilisateurs ADMIN).
+  - **§17bis.9** rôle `RESPONSABLE_SECURITE` ajouté avec dashboard sécurité.
+  - Contrat **verrouillé** — prochaine étape = schéma SQL complet + squelette backend modules.
 - `2026-09-23` — **v2.1** : réintégration RH + E-commerce + IA agents autonomes :
   - **§11bis Ressources Humaines** nouveau chapitre complet — employés, contrats CDI/CDD/stage, structure orga (services/fonctions/équipes), recrutement (offres, candidatures, entretiens), pointage (intégration TimeMoto), congés & absences (7 types), sanctions disciplinaires (6 niveaux), primes/récompenses (8 types), bulletins de paie avec calcul CNSS 9.18%/16.57% et IRPP barème progressif 5 tranches Tunisie, formations avec TFP, endpoints. Rôles ajoutés : `RH_MANAGER`, `RH_ASSISTANT` (§2.4).
   - **§11ter IA & Agents autonomes** nouveau chapitre — 10 agents spécialisés (Stock, Production, Qualité, Finance, Commercial, Fournisseurs, RH, Rapports Quotidien/Hebdo/Mensuel). Tables `agents_ia`, `agents_ia_executions`, `agents_ia_findings`, `agents_ia_rapports`. Architecture Node.js + cron + LLM (Claude/GPT), lecture seule DB métier, budget tokens configurable, canaux notification (email/WhatsApp/in-app).
