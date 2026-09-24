@@ -3354,6 +3354,110 @@ Opération **soldée** quand `Retour = qté article − 2ᵉ − rebut`. Tant qu
 
 Cf. §2bis.4 (politique tablette partagée). Le flux 3 étapes (sélection utilisateur → PIN → routage rôle) est un composant réutilisable, adressable via `/tablette/login` sans redirection préalable.
 
+### 14bis.6bis Agents IA · contrôle, détection erreurs, propositions de correction
+
+Le module IA agents (§11ter) est enrichi de **5 catégories fonctionnelles** couvrant : contrôle cohérence, détection d'erreurs avec proposition de correction validable, information proactive, analyse prédictive, recherche &amp; assistant conversationnel. Tous les agents restent en **lecture seule** de la DB ; toute correction est **non destructive** et nécessite validation d'un utilisateur avec traçabilité complète.
+
+#### 14bis.6bis.1 Catégories d'agents
+
+| # | Catégorie | Rôle | Exemples d'agents |
+|---|---|---|---|
+| 1 | **Contrôle cohérence** | Vérifie l'intégrité des données croisées | Cohérence stock/OF · compta (balance/TVA) · BOM/prod (écart consommation) · paie/pointage TimeMoto |
+| 2 | **Détection erreurs + correction** | Détecte anomalies et propose SQL/action correctrice | Anomalies factures (numéros sautés, doublons, totaux erronés) · écritures (débit ≠ crédit, compte inexistant) · stock (mouvements sans QR, quantités négatives, lots orphelins) |
+| 3 | **Information proactive** | Génère rapports auto selon calendrier ou seuils | Direction hebdo (lundi 8 h) · Qualité 2×/jour (taux 2ᵉ choix par machine) · Finance quotidien (trésorerie/impayés/TVA) |
+| 4 | **Analyse prédictive** | Projette tendances futures | Rupture MP J+3/J+7 · risque impayé (scoring client) · saisonnalité vente (foutas plage été) |
+| 5 | **Recherche &amp; assistant** | Répond en langage naturel, cherche dans docs | Chatbot Q&amp;A sur DB · recherche documents archivés · rédacteur (relance, RDV, email) |
+
+#### 14bis.6bis.2 Workflow correction validée
+
+Une correction proposée par un agent suit un cycle strict :
+
+```mermaid
+flowchart LR
+  A[Détection anomalie] --> B[Analyse cause probable]
+  B --> C[Proposition SQL/action]
+  C --> D{Validation user}
+  D -->|Appliquer| E[Exécution transaction]
+  D -->|Revoir| B
+  D -->|Ignorer| F[Marqué faux positif]
+  E --> G[Trace audit before/after]
+  G --> H[Rollback 24h possible]
+```
+
+Toute correction appliquée crée un enregistrement dans `ia_corrections_appliquees` (voir §14bis.6bis.4), incluant l'état avant (`snapshot_avant_json`) et après (`snapshot_apres_json`), pour permettre un rollback rapide sous 24 h en un clic — délai au-delà duquel le rollback nécessite une écriture comptable manuelle avec motif.
+
+#### 14bis.6bis.3 Table `ia_erreurs_detectees`
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_erreur` | serial PK | |
+| `id_agent` | FK agents_config | qui a détecté |
+| `id_run` | FK agents_runs | run source |
+| `type_erreur` | enum | `ecriture_desequilibree` \| `qte_incoherente` \| `total_facture_faux` \| `numero_saute` \| `doublon_facture` \| `mouvement_sans_qr` \| `stock_negatif` \| `paie_pointage_ecart` \| `bom_consommation_ecart` \| `autre` |
+| `gravite` | enum | `critique` \| `majeure` \| `mineure` |
+| `objet_type` | varchar | `ecriture` \| `facture` \| `of` \| `mouvement_stock` \| `bulletin_paie` \| … |
+| `objet_id` | int | référence à la ligne concernée |
+| `description` | text | Description en langage naturel générée par LLM |
+| `cause_probable` | text | Hypothèse formulée par l'agent |
+| `proposition_correction` | text | Description humaine de la correction |
+| `sql_correction` | text | SQL/JSON opération non destructive à exécuter |
+| `alternatives_json` | jsonb | Alternatives possibles (multi-choix) |
+| `date_detection` | timestamptz | |
+| `statut` | enum | `en_attente` \| `en_cours_enquete` \| `corrigee` \| `resolue_manuellement` \| `ignoree` \| `faux_positif` |
+| `sources_db_json` | jsonb | Tables/id consultés pour établir le diagnostic |
+
+#### 14bis.6bis.4 Table `ia_corrections_appliquees`
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_correction` | serial PK | |
+| `id_erreur` | FK ia_erreurs_detectees | |
+| `applique_par_user` | FK users | utilisateur qui a validé |
+| `date_application` | timestamptz | |
+| `sql_execute` | text | requête effectivement jouée |
+| `snapshot_avant_json` | jsonb | état DB avant (rollback) |
+| `snapshot_apres_json` | jsonb | état DB après |
+| `resultat` | enum | `succes` \| `echec` \| `partiel` |
+| `message_erreur` | text | si échec |
+| `date_expiration_rollback` | timestamptz | date_application + 24 h |
+| `rollback_effectue` | bool | |
+| `rollback_par_user` / `date_rollback` / `motif_rollback` | | audit rollback |
+
+#### 14bis.6bis.5 Endpoints
+
+```
+GET    /api/ia/erreurs                            — liste erreurs détectées + filtres statut/gravité
+GET    /api/ia/erreurs/:id                        — détail avec proposition correction
+POST   /api/ia/erreurs/:id/appliquer-correction   — valide + exécute + trace
+POST   /api/ia/erreurs/:id/marquer-enquete        — passe en `en_cours_enquete`
+POST   /api/ia/erreurs/:id/resoudre-manuel        — clos avec commentaire
+POST   /api/ia/erreurs/:id/ignorer                — faux positif (améliore prompt)
+POST   /api/ia/corrections/:id/rollback           — annule si &lt; 24 h
+GET    /api/ia/corrections/:id/audit              — traces avant/après/rollback
+POST   /api/ia/chatbot                            — question en langage naturel
+GET    /api/ia/chatbot/historique                 — questions récentes user
+```
+
+#### 14bis.6bis.6 Assistant conversationnel (chatbot Q&amp;A)
+
+Un agent dédié répond aux questions en langage naturel des utilisateurs, avec **citation systématique des sources** (tables/ids DB consultés) et interdiction d'inventer des valeurs — s'il ne trouve pas l'information, il l'indique explicitement (`"Je n'ai pas trouvé cette information dans les données consultées"`).
+
+Fonctionnalités clés :
+- Contexte utilisateur : le chatbot connaît le rôle de l'utilisateur et filtre les données selon les permissions RBAC/ABAC.
+- Historique conversation : les 20 dernières questions restent en contexte pour permettre le follow-up (`"et par région ?"`).
+- Suggestions dynamiques : 4 questions suggérées adaptées au rôle (ex : COMPTABLE → *"Quels sont mes impayés > 30 j ?"* · CHEF_PRODUCTION → *"Quel est le TRS moyen cette semaine ?"*).
+- Génération de contenu : le chatbot peut rédiger un mail de relance, un procès-verbal, une réponse client — le brouillon est éditable avant envoi.
+- Coût utilisateur affiché : chaque réponse indique tokens et coût pour transparence budget.
+
+#### 14bis.6bis.7 Principes directeurs
+
+- **Lecture seule DB** : les agents n'ont accès qu'à des rôles Postgres `readonly`. Les corrections passent par un compte séparé `ia_correction_bot` avec permissions granulaires par type d'opération.
+- **Non destructif** : aucune correction ne supprime physiquement de données. Les modifications suivent le pattern INSERT-then-UPDATE avec conservation historique.
+- **Validation obligatoire** : aucune correction n'est appliquée sans clic humain (sauf catégorie "Contrôle cohérence" qui alerte seulement, ne modifie jamais).
+- **Rollback 24 h** : toute correction est réversible en un clic pendant 24 h. Au-delà, rollback = nouvelle opération comptable avec motif.
+- **Transparence coût** : chaque agent affiche tokens et coût cumulé mensuel. Alerte à 80 % du budget, blocage à 100 %.
+- **Trace audit complète** : `audit_log` + `ia_corrections_appliquees` + `ia_erreurs_detectees` permettent reconstitution complète des actions.
+
 ### 14bis.7 Envoi documents par lien signature (style Odoo)
 
 **Principe** — chaque document commercial (devis, commande, facture, avoir, reçu de paiement) génère un **lien one-shot signé** envoyable par **WhatsApp Business ou email**. Le destinataire ouvre une page publique responsive (sans compte), consulte le document, le **valide** et le **signe électroniquement**. La signature est horodatée, tracée (IP + géoloc + user-agent) et scellée par un hash SHA-256 du PDF final. Base légale Tunisie : **Art. 453 bis Code des Obligations et des Contrats** (signature électronique équivalente à la manuscrite).
