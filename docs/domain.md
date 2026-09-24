@@ -885,6 +885,65 @@ Un site web dédié (ou une section du site principal) présente uniquement les 
 - Devis en ligne avec versement d'un acompte (30 % à la commande via Konnect).
 - Partage social : le client peut partager son mockup sur Instagram/WhatsApp avant validation.
 
+#### 5.8.8 UX configurateur — niveau Tostadora / Tee-shirts Express
+
+Le configurateur suit la référence UX des sites de personnalisation professionnels (Tostadora, Tee-shirts Express Creator 2.0, Stanley Stella customizer), adaptée au textile fouta / serviette / totebag.
+
+**Layout produit** : trois colonnes fixes (miniatures 80 px · preview grande · panneau options 380 px), preview façon fiche produit e-commerce (breadcrumb, prix TTC + HT unitaire, référence).
+
+**Vues alternatives** (colonne miniatures gauche) : vue avant, vue dos/verso, vue 3D interactive, vidéo produit courte (10–15 s). Chaque miniature sélectionne la vue centrale.
+
+**Palette couleurs** :
+- Pastilles bicolores 48 px (fond + rayure) représentatives de la vraie fouta.
+- Badges `24h` pour les couleurs en stock permanent (fabrication express).
+- Bouton `+N` en fin de palette ouvrant la palette étendue (49 couleurs typiques Stanley Stella, réduites aux références réellement disponibles dans nos codes commerciaux C01–C49).
+
+**Quantités par dimension** — grille 2×3 (six formats) :
+
+| Format | Cible marché | MOQ typique |
+|---|---|---|
+| 90×160 | Enfant / bain | 20 |
+| 100×180 | Standard plage B2C | 20 |
+| 100×200 | Standard hôtel/spa B2B | 20 |
+| 110×220 | XL premium | 12 |
+| 140×240 | Nappe / plage familiale | 12 |
+| Custom | Sur mesure (§5.8.1) | 20 |
+
+Chaque case = un input numérique. Le total dynamique s'affiche dessous avec validation MOQ globale (`✓ Total : N pièces · MOQ N respecté`).
+
+**Types de personnalisation** — pill toggle segmenté (Broderie · Sérigraphie · Rayures), active = terracotta plein.
+
+**Emplacements broderie/sérigraphie** — grille 5 miniatures produit format 2:3 :
+- Coin haut gauche, coin haut droit, centre, coin bas gauche, coin bas droit.
+- Miniature active = bordure terracotta 2 px + halo lumineux.
+- Bouton `+ Voir toutes les surfaces` ouvre le mode expert (position cm exacte).
+
+**Prix dégressif** — grille 4 paliers TTC visibles en permanence :
+
+| Palier | Prix unitaire TTC (fouta 100×200) |
+|---|---|
+| 12+ | 12,50 € |
+| 50+ | 10,80 € |
+| 200+ | 8,90 € |
+| 500+ | 7,90 € |
+
+Le palier atteint par la quantité totale saisie est mis en surbrillance (background terracotta). Le prix affiché en tête de fiche recalcule automatiquement à chaque changement de quantité.
+
+**Actions CTA** — deux boutons empilés :
+- `Personnaliser maintenant` (blanc bordé, ouvre l'éditeur immersif plein écran avec drag&drop logo).
+- `Ajouter au panier · N €` (sage plein, affiche le montant total TTC live).
+
+**Bandeaux réassurance** — trois cartes courtes en pied de panneau :
+- 🚚 Livraison 7–12 jours (fabrication + expédition)
+- ↩ Retour 60 jours (défaut fabrication, hors personnalisation)
+- ✓ Made in Tunisia (traçabilité usine)
+
+**Bandeau bas cross-sell** — grille 5 miniatures « Personnalisez aussi » : Fouta plage · Serviette hammam · Tote bag · Peignoir · Pack cadeau. Chaque carte porte le MOQ et le prix HT de départ.
+
+**Boutons annexes preview** — sous la preview centrale : zoom in/out, reset, `📤 Partager mon design` (génère URL courte pour envoi WhatsApp/Instagram avec mockup PNG haute résolution).
+
+**Performance cible** : régénération preview SVG < 200 ms sur mobile 4G, upload logo < 3 s pour SVG 500 Ko, prix live < 50 ms.
+
 ---
 
 ## 6. Stock & Entrepôts (Phase 2.5)
