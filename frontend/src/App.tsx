@@ -55,6 +55,8 @@ const RhRecrutement = React.lazy(() => import('./pages/RhRecrutement'));
 const PointageTimeMoto = React.lazy(() => import('./pages/PointageTimeMoto'));
 const MessagesOperateurs = React.lazy(() => import('./pages/MessagesOperateurs'));
 const Ecommerce = React.lazy(() => import('./pages/Ecommerce'));
+const EcommerceB2B = React.lazy(() => import('./pages/EcommerceB2B'));
+const PubliciteDigitale = React.lazy(() => import('./pages/PubliciteDigitale'));
 const FoutaManagementApp = React.lazy(() => import('./pages/FoutaManagement'));
 const DashboardTisseur = React.lazy(() => import('./pages/DashboardTisseur'));
 const DashboardMagasinierMP = React.lazy(() => import('./pages/DashboardMagasinierMP'));
@@ -95,6 +97,7 @@ const ImportExcel = React.lazy(() => import('./pages/ImportExcel'));
 const PipelineVente = React.lazy(() => import('./pages/PipelineVente'));
 const CrmLeads = React.lazy(() => import('./pages/CrmLeads'));
 const Opportunities = React.lazy(() => import('./pages/Opportunities'));
+const ConfigurateurPersonnalisation = React.lazy(() => import('./pages/ConfigurateurPersonnalisation'));
 
 // ── Portail Client (auth séparée) ────────────────────────────────────
 const PortailLogin = React.lazy(() => import('./pages/portail/PortailLogin'));
@@ -669,6 +672,22 @@ const AppContent: React.FC = () => {
             }
           />
           <Route
+            path="/ecommerce-b2b"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMMERCIAL', 'MARKETING']}>
+                <EcommerceB2B />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/publicite"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMMERCIAL', 'MARKETING']}>
+                <PubliciteDigitale />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/fournisseurs"
             element={
               <PrivateRoute>
@@ -964,6 +983,23 @@ const AppContent: React.FC = () => {
             element={
               <PrivateRoute>
                 <Opportunities />
+              </PrivateRoute>
+            }
+          />
+          {/* Configurateur personnalisation §5.8 — deux variantes (avec ou sans id) */}
+          <Route
+            path="/configurateur"
+            element={
+              <PrivateRoute>
+                <ConfigurateurPersonnalisation />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/configurateur/:articleId"
+            element={
+              <PrivateRoute>
+                <ConfigurateurPersonnalisation />
               </PrivateRoute>
             }
           />
