@@ -248,6 +248,14 @@ Ces défauts sont documentés — **notre v2.0 les corrige** :
 
 Rotation automatique du refresh token à chaque `POST /api/auth/refresh` (le précédent devient invalide).
 
+**Politique tablette partagée (postes terrain)** :
+
+- **Pas de timeout d'inactivité**. Le tisseur, le coupeur ou le magasinier travaille à son poste et ne revient à la tablette que pour saisir ; une déconnexion automatique par inactivité (5, 10, 15 min) rendrait le poste inutilisable. La session couvre le shift complet.
+- **Session terminée** : uniquement par déconnexion explicite (bouton `⏻ Déco.`) OU expiration TTL (8 h — cf. table ci-dessus) OU pointage fin d'équipe.
+- **Verrouillage écran manuel** (bouton cadenas) pour libérer la tablette sans terminer la session — le PIN 4 chiffres suffit pour reprendre, sans rescanner badge ni ressaisir mot de passe.
+- **Pointage automatique** début de session = pointage entrée · déconnexion = pointage sortie (alimente `pointages` RH).
+- **Écran de connexion tablette partagée** en 3 étapes : (1) sélection utilisateur parmi avatars + option badge NFC · (2) PIN 4 chiffres (3 essais avant blocage) · (3) redirection automatique vers le dashboard du poste (Tisseur → tablette tisseur, Coupeur → tablette coupeur, etc.).
+
 ### 2bis.5 Récupération de compte
 
 Flux "mot de passe oublié" :
@@ -3106,6 +3114,245 @@ Voir §11ter pour les agents.
 - Modal Attribution QR MP au drop
 - Panneau latéral : file d'attente OF à planifier
 - Panneau bas : OF en cours / en retard / incidents
+
+### 14.18 Poste Contrôle — tour de contrôle usine (`CONTROLEUR_QUALITE` élargi)
+
+Le poste Contrôle est la tour de contrôle : il consolide en temps réel production, qualité, personnel et sécurité, et déclenche les actions correctives. **Il ne produit pas — il mesure, note, alerte, trace.**
+
+**Principe directeur** : chaque note, chaque contrôle et chaque décision est **horodaté**, **signé** par son auteur et **jamais écrasé sans trace**.
+
+**10 écrans (onglets)** :
+
+| # | Écran | Rôle |
+|---|---|---|
+| 1 | Vue d'ensemble | 8 KPIs globaux + alertes ouvertes + état des postes |
+| 2 | Fabrication | Tissage + Coupe + Planification, TRS, contrôle cohérence auto |
+| 3 | Qualité produit | Contrôles par point de passage, cycle NC (bloqué → arbitrage → clôture) |
+| 4 | Atelier | Flux continu par opération, cadences pcs/h, défauts couture |
+| 5 | Matières premières | Stock, couverture jours, lot teinture, alertes rupture |
+| 6 | Mécanique | Interventions, MTBF, MTTR, alerte panne récurrente (3× en 30 j) |
+| 7 | Sous-traitance | Sorties/retours, délai aller-retour, taux NC par ST (seuil > 3 %) |
+| 8 | Personnel & discipline | Notation 6 critères pondérés, échelle 0–10, historique 12 mois |
+| 9 | Environnement & sécurité | Contrôles zones, incidents, jours sans accident |
+| 10 | Performance & rapports | 4 rapports standard (journalier, hebdo qualité, mensuel personnel, mensuel sécurité) |
+
+#### 14.18.1 Vue d'ensemble — 8 KPIs
+
+| KPI | Objectif | Seuils couleur |
+|---|---|---|
+| TRS global | > 85 % | vert ≥ 85 · orange 75–85 · rouge < 75 |
+| Qualité 1ᵉʳ choix | > 95 % | vert ≥ 95 · orange 90–95 · rouge < 90 |
+| Rendement réel | > 90 % | vert ≥ 90 · orange 80–90 · rouge < 80 |
+| Respect planning | > 95 % | vert ≥ 95 · orange 85–95 · rouge < 85 |
+| Disponibilité matière | > 95 % | vert ≥ 95 · orange 85–95 · rouge < 85 |
+| Note moyenne personnel | ≥ 8/10 | vert ≥ 8 · orange 6–8 · rouge < 6 |
+| Conformité sécurité | 100 % | vert ≥ 95 · orange 85–95 · rouge < 85 |
+| Jours sans accident | croissant | compteur, RAZ à chaque accident avec arrêt |
+
+#### 14.18.2 Notation personnel — 6 critères pondérés
+
+| Critère | Poids | Source | Évaluation |
+|---|---|---|---|
+| Rendement | 25 % | Auto + évaluateur | production réelle vs objectif poste |
+| Ponctualité | 15 % | Auto (pointage) | 10 au départ mois, −1 par retard > 10 min, −2 par absence injustifiée, plancher 0 |
+| Attention & organisation | 15 % | Évaluateur + NC | −0,5 pt par NC imputée (plafond −3/mois) |
+| Comportement professionnel | 15 % | Évaluateur | discipline, esprit équipe |
+| Hygiène & propreté | 15 % | Évaluateur + contrôle zone | tenue, poste |
+| Respect matériel & sécurité | 15 % | Évaluateur + incidents | EPI, machines, signalement, −2 pt par incident imputé |
+
+| Note | Niveau | Couleur | Conséquence |
+|---|---|---|---|
+| 9 – 10 | Excellent | Vert | Éligible prime |
+| 7 – 8,9 | Bon | Bleu | Aucune |
+| 5 – 6,9 | Moyen | Orange | Entretien chef de poste |
+| < 5 | Faible | Rouge | Plan amélioration + suivi RH |
+
+**Un critère ≤ 4 déclenche une alerte** même si la note globale reste correcte.
+
+**Discipline** : Remarque verbale → Avertissement écrit → Mise à pied → Dossier direction. Aucune sanction n'est automatique — le système propose, un responsable décide. Chaque mesure = motif + faits + auteur + signature de l'employé.
+
+#### 14.18.3 Fiche non-conformité
+
+`non_conformite` : `numero (NC-AAAA-nnnn) · gravité (mineure/majeure/critique) · origine (poste + personne + machine) · decision (reprise/2ᵉ choix/rebut/dérogation) · responsable · echeance · statut`. Un lot NC est **bloqué** et ne passe pas au poste suivant tant que la fiche n'est pas clôturée par le responsable production. Une NC imputée à une personne alimente automatiquement sa note Attention.
+
+#### 14.18.4 Contrôle qualité — 4 points de passage
+
+| Secteur | Moment | Points vérifiés |
+|---|---|---|
+| Fabrication | Sortie métier, après coupe | dimensions, couleurs vs réf, densité, défauts tissage, 1ᵉʳ/2ᵉ choix |
+| Atelier | Après pliage, couture, étiquetage | ourlets, coutures, étiquette conforme, pliage, propreté |
+| Magasin MP | Réception fil | référence, couleur (lot teinture), poids, humidité, conformité bon fournisseur |
+| Entrepôt PF | Avant expédition | quantité colis, colisage multi-articles, marquage carton, conformité commande |
+
+#### 14.18.5 Contrôle cohérence auto
+
+Le système signale automatiquement : quantité coupée > quantité tissée · OF clôturé avec reste > 0 · métier en production sans tisseur pointé · consommation fil anormale (écart > 5 % vs BOM).
+
+#### 14.18.6 Environnement & sécurité — grille zone
+
+6 critères par zone, note /10 : Propreté · Équipements sécurité · Organisation · Gestion risques · Évacuation · Matériel sécurité. **Un critère "Évacuation" ou "Matériel sécurité" < 5 crée automatiquement une alerte critique.**
+
+Types d'incidents : accident avec arrêt · sans arrêt · presque-accident · dégât matériel · risque constaté. **Un accident avec arrêt remet à zéro le compteur "jours sans accident" et notifie immédiatement le Directeur.**
+
+#### 14.18.7 Catalogue alertes
+
+| Alerte | Gravité | Destinataires |
+|---|---|---|
+| Accident avec arrêt | Critique | Directeur, RH, resp. production |
+| Lot NC bloqué | Majeure | Resp. production, chef poste origine |
+| TRS métier < 75 % sur une équipe | Majeure | Resp. production, mécanicien |
+| Machine en panne > 2 h | Majeure | Mécanicien, resp. production |
+| Stock fil < minimum | Majeure | Magasinier MP, resp. production |
+| OF en retard | Majeure | Resp. production |
+| Employé note < 5 ou critère ≤ 4 | Info | Chef poste, RH |
+| 3 retards / mois | Info | Chef poste, RH |
+| Retour ST en retard | Info | Resp. sous-traitance |
+| Action corrective à échéance J-1 | Info | Responsable action |
+
+#### 14.18.8 Rôles & droits (RBAC affiné)
+
+| Acteur | Consulter | Saisir | Valider / clôturer |
+|---|---|---|---|
+| Directeur | Tout | — | Sanctions, actions correctives majeures, rapports |
+| Resp. production | Tout | Actions correctives | Décisions qualité, plan action |
+| Contrôleur qualité | Tout sauf RH confidentiel | Contrôles qualité + sécurité + évaluations | Conformité lot |
+| Chef atelier/poste | Son secteur | Évaluations équipe, incidents | — |
+| Responsable RH | Personnel & discipline | Absences, retards, sanctions | Clôture dossier disciplinaire |
+| Employé | Sa propre fiche | — | Signature prise de connaissance |
+
+Règles : évaluateur ne peut pas noter sa propre fiche · note validée non modifiable (correction = nouvelle version avec motif) · commentaires disciplinaires visibles Directeur + RH + évaluateur uniquement.
+
+---
+
+## 14bis. Amendements v3 — précisions design 2026-09-24
+
+Sur la base des specs fonctionnelles rédigées par @Sghaier Hamdi (Coupe, Magasinier MP, Chef d'Atelier Finition, Magasinier Sous-Traitant, Poste Contrôle, Mécanicien) et de la conception des maquettes, les précisions suivantes s'ajoutent au contrat sans le contredire :
+
+### 14bis.1 Coupeur (§14.10) — précisions
+
+- **Champ "Dont ourlet"** : sous-ensemble du 1ᵉʳ choix qui **ne s'ajoute pas** au total coupé. Contrôle bloquant : `ourlet ≤ 1er_choix`. Source d'erreur la plus fréquente sur ce poste.
+- Saisie 4 quantités : **1ᵉʳ choix · 2ᵉ choix · 2ᵉ approuvé · déchet**. Total = somme des 4. Reste à produire = qté fabrication − total.
+- **Reste temps réel** en 3 états : Manquant (orange) · Compte juste (vert) · Surplus (rouge, signale mélange autre lot).
+- **Bannière alerte selon opération scannée** (Fin fabrication / Fin de poste / En cours tissage) — informative, décisions viennent après saisie.
+- **12 types de défaut** : Tâche · Déchiré · Fils simples · Défait · Abîmé · Défaut tissage · Erreur couleur · Erreur dimension · Trou · Défaut de coupe · Salissure · Autre. Multi-sélection · obligatoire si 2ᵉ choix > 0.
+- **Étiquettes lot** : 5 pcs standard + reliquat (ex : 23 pcs → 4 × 5 + 1 × 3). **Modèles jacquard : lot manuel** (une seule étiquette pour la totalité). Taille paramétrable par modèle et à terme par client.
+- **Numérotation** : 1ᵉʳ choix `{sousOF}-{nnn}` (ex `OF246533-001`) · 2ᵉ choix `{sousOF}-2C-{nnn}` · 2ᵉ approuvé `{sousOF}-2A-{nnn}`. Le numéro de suivi est la clé de traçabilité pour tout l'aval.
+- **File étiquettes** empilée en cours de journée · envoi imprimante **en une fois** en fin de journée.
+- **Écran Corrections** : journal d'audit — valeur avant/après, auteur, horodatage, motif. Aucune saisie écrasée sans trace.
+
+### 14bis.2 Magasinier MP (§14.4) — précisions
+
+**7 onglets exacts** (au lieu des 5 énoncés initialement) :
+
+1. **Alertes urgentes** — rupture, machine, planning urgent, stock bas · triées par priorité · bouton **Traiter** ouvre l'écran utile.
+2. **Préparation** — file OF planifiés + préparation par sélecteur + alimentation machine.
+3. **Stock MP** — par QR et par entrepôt (Usine / E1 / E2) · kg + nb bobines + position + réservé + dispo + statut.
+4. **Transferts** — bon PDF numéroté avec statuts **En attente → En transit → Livré (ou Livré avec écart)**.
+5. **Retours & consommations** — écart préparé/consommé + écart vs BOM ±5 % (alerte au-delà).
+6. **Maintenance** — demandes signalées au mécanicien (numérotation `DM2025NNN`).
+7. **Analyses** — 8 indicateurs (conso journalière/hebdo/mensuelle, taux rupture < 5 %, temps prépa moyen < 30 min, top consommations, alertes par type, transferts par semaine, écart vs BOM).
+
+**3 codes matière** distincts (§14.4 précision) :
+
+| Code | Exemple | Usage |
+|---|---|---|
+| Code commercial | `C29` | Construit la référence commerciale de l'article |
+| Code fabrication | `NM05-01.00` | Identifie le fil (numéro métrique) |
+| **QR MP** | `C29_ROUGE_NM05-01.00_S2023` | Identifie la bobine physique : couleur + code fabrication + lot |
+
+La préparation se fait **toujours au niveau du QR MP** — c'est lui qui garantit la traçabilité du lot jusqu'à la pièce finie.
+
+**Alimentation machine = double scan** : (1) scan QR machine · (2) scan de chaque QR MP · l'application vérifie la correspondance avec l'OF (code fabrication + couleur BOM) et **bloque en cas d'erreur de lot ou de sélecteur**. Validation → notification tisseur ("Machine alimentée") + OF passe en attente de départ.
+
+**Règles clés** :
+- Aucune alimentation sans QR MP attribué à chaque sélecteur de l'OF.
+- Un QR MP n'est attribué que s'il correspond au code fabrication + couleur BOM.
+- Toute sortie/transfert/retour se fait par scan.
+- OF urgent en tête de liste, alerte tant que non préparé.
+- Stock réservé libéré si OF annulé ou déplacé sur une autre machine.
+
+### 14bis.3 Chef d'Atelier (§14.8) — précisions
+
+**6 opérations exactes** (pas 7) : **Frange · Pliage · Étiquetage · Couture · Repassage · Emballage**. Chaque opération porte un code couleur propre, conservé dans toutes les vues.
+
+**Principe flux continu** — une opération ne se fait pas en une fois. Pièces sortent et reviennent par paquets, jour après jour. Chaque opération suit **3 quantités par n° de suivi** :
+
+| Quantité | Définition |
+|---|---|
+| **Sortie (S)** | Cumul pièces envoyées à l'opération depuis le début |
+| **Retour (R)** | Cumul pièces revenues de l'opération |
+| **En cours (EC)** | S − R : pièces encore chez l'opérateur ou le sous-traitant |
+
+Opération **soldée** quand `Retour = qté article − 2ᵉ − rebut`. Tant que EC > 0, bouton **Préparer (X pièces)** apparaît sur la ligne.
+
+**5 vues exactes** :
+1. Par opération (compteurs En cours / Terminé / En attente par poste)
+2. Par commande — arbo **Commande → Article → n° suivi → 6 opérations**
+3. Alertes (3 familles : magasinier PF · date envoi · 2ᵉ choix à arbitrer)
+4. Maintenance (demandes vers mécanicien)
+5. Analyse 2ᵉ choix par sous-traitant
+
+**Analyse 2ᵉ choix par ST** — seuils :
+
+| Taux | Lecture |
+|---|---|
+| < 5 % | Normal |
+| 5–7 % | À surveiller |
+| > 7 % | À traiter avec le sous-traitant |
+
+**Déclaration 2ᵉ choix** : n° suivi (scanné) · qté · type défaut (référentiel commun avec Coupe) · origine (interne / sous-traitant nommé) · décision (approuvé / non approuvé). À la validation : qté lot diminuée, magasinier PF MAJ auto, étiquette 2ᵉ choix générée.
+
+**Rebut & complément urgent** — si 2ᵉ non approuvé et qté livrable < commandée : (a) affecter rebut fabrication s'il existe · (b) sinon lancer demande de complément urgent qui part simultanément vers tissage + coupe + sous-traitance.
+
+**Stock fournitures** suivi : étiquettes · cartons · sachets · rubans · films · fils de couture. Stock actuel + seuil alerte + consommation journalière + autonomie en jours. Demande réappro auto au Magasinier MP sous seuil.
+
+### 14bis.4 Magasinier Sous-Traitant — §14.6 précisions
+
+**Unité de travail = numéro de suivi** (`OF246533-001`), jamais l'OF seul. Un OF peut partir chez deux façonniers différents, en plusieurs fois.
+
+**6 écrans + Archives** :
+
+1. **Alertes** (écran d'ouverture) — 3 blocs : (a) Alertes magasinier PF (OF urgents/en retard) · (b) **Anomalies d'ordre de retour** (règle sécurité, cf. ci-dessous) · (c) Pièces en attente de sortie.
+2. **Sortie** — scan cumulatif n° suivi + ST + type travail + date retour prévue + **photos contrôle qualité avant remise** (pièce probante en cas de litige) → bon PDF.
+3. **Suivi** — 2 axes commutables (Par sous-traitant / Par OF).
+4. **Retour** — scan étiquette + qté retournée + état (Conforme / 2ᵉ choix / Rebut / À vérifier) + photos anomalie (comparaison avec photos sortie).
+5. **Sous-traitants** — fiche complète · **CIN ou matricule fiscal obligatoire** · performance calculée : `perf = 50 % délai + 40 % conformité + 10 % absence d'écart quantité`. Seuils ≥ 95 vert · 90–94 orange · < 90 rouge.
+6. **Analyse** — délai aller-retour, taux NC par ST × type travail.
++ **Archives** bons de sortie.
+
+**Règle sécurité — anomalie d'ordre de retour** : pour un ST donné, si un lot **R** est retourné alors qu'il existe un lot **L** du même ST tel que `date_sortie(L) < date_sortie(R)` et `L` non intégralement retourné → anomalie. Principal filet de sécurité — révèle lots oubliés, pièces égarées, ST hors ordre.
+
+**Bon de sortie BS-AAAA-NNN** — séquence **annuelle sans trou**, non réutilisable, **jamais modifiable** (correction = bon d'annulation ou rectificatif référençant l'original). Corps du bon **agrégé par article** (modèle × type tissage × dimensions), pas par OF — le façonnier compte des pièces d'un article, le découpage OF est interne. Entité émettrice **sélectionnable** (multi-sociétés du groupe). Signature de réception rattachée au bon (écran tablette au moment de l'enlèvement OU scan bon papier signé) — un bon sans signature au-delà d'un délai (à trancher) lève une alerte.
+
+### 14bis.5 Mécanicien (§14.13) — précisions
+
+**7 onglets exacts** (au lieu des 4 énoncés) :
+
+1. **Planning machines** — grille avec métrage restant, jours restants ensouple, OF en cours et suivant, alertes changement de modèle.
+2. **Rendement** — temps réaction moyen · arrêt mécanique / électrique / total · pièces perdues · **perte CA en TND** · classement machines pénalisantes.
+3. **Alertes pannes** — cycle 4 étapes : Déclaration → Départ (temps réaction calculé) → Fin réparation → Remise en marche.
+4. **Demandes** — reçues des autres services (opérateur, magasinier, coupeur, chef atelier).
+5. **Ourdissage & nouage** — cf. ci-dessous, l'ancien §14.11 Ourdisseur est **intégré ici**.
+6. **Achats** — cf. ci-dessous.
+7. **Révisions** — plan maintenance préventive.
+
+**Ourdissage intégré au poste Mécanicien** (fusion §14.11 dans §14.13) — le mécanicien pilote le cycle d'ourdissage (le poste "Ourdisseur" autonome disparaît) :
+- Alerte fin d'ensouple quand jours restants < seuil.
+- Demande ourdissage → magasinier MP prépare le fil → envoi ST ourdissage → réception → attribution machine / réserve.
+- 5 statuts : **Demandée → Fil préparé → Envoyée ST → Reçue → Attribuée**.
+- Poids chaîne calculé auto : `(nb_fils × mètres × 2) / (NM × 1000)` kg · plafond métrage **5 000 m** · alerte tisseur < **500 m** restants.
+
+**Nouage** — demande + bon de nouage signé (mécanicien + noueur ST) + prix TND + récapitulatif mensuel par ST pour paiement.
+
+**Changement de modèle + conformité (nouveau)** — alerte automatique quand OF suivant a un modèle différent de l'OF en cours. Le mécanicien confirme le démarrage, effectue le changement de dessin, tisse la première pièce et saisit **longueur (cm), largeur (cm), poids (g)**. Le système compare aux valeurs référence du modèle (tolérances paramétrables) et affiche **conforme / non conforme**. Historique archivé (date, machine, OF, modèle, mesures, écart, résultat, mécanicien, observations).
+
+**Perte CA en TND** — formule : `pièces perdues × prix vente unitaire modèle en cours`. Affichée par machine et au total dans l'onglet Rendement.
+
+**Demandes d'achat (§14bis.5 modifié)** — envoyées à **Comptabilité + Admin** (au lieu du seul "Responsable fabrication" du doc initial), par **email OU messagerie interne** (choix utilisateur). Statuts : brouillon → envoyée → validée / refusée → commandée → reçue. Trace du canal + de la réponse.
+
+### 14bis.6 Écran de connexion tablette partagée
+
+Cf. §2bis.4 (politique tablette partagée). Le flux 3 étapes (sélection utilisateur → PIN → routage rôle) est un composant réutilisable, adressable via `/tablette/login` sans redirection préalable.
 
 ---
 
