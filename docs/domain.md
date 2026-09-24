@@ -2577,7 +2577,104 @@ Job cron nocturne consolide les pointages TimeMoto du jour et alimente cette tab
 | `motif` | text | |
 | `attribuee_par` | FK utilisateurs | |
 | `date_attribution` | date | |
-| `versee_avec_bulletin_id` | FK bulletins_paie | quand payée |
+| `mode_versement` | enum | `hors_bulletin_especes` (défaut rendement) \| `hors_bulletin_virement` \| `avec_bulletin` |
+| `bordereau_prime_id` | FK `bordereaux_primes` | pour prime rendement hors bulletin |
+| `versee_avec_bulletin_id` | FK bulletins_paie | uniquement si `mode_versement = avec_bulletin` |
+
+#### 11bis.7bis Prime de rendement — versement séparé hors bulletin
+
+Le **système de prime de rendement** est un dispositif de motivation qui distribue une **cagnotte hebdomadaire** aux salariés d'un poste (tisseurs, opérateurs finition…) selon un score pondéré sur 5 critères. Les primes ne passent **pas** par le bulletin de paie : elles sont versées **séparément**, généralement en espèces sous enveloppe nominative, avec bordereau signé.
+
+**Formule prime · 5 critères pondérés (paramétrables par poste)** :
+
+```
+Score = (Quantité × 0,30)
+      + (Qualité   × 0,25)
+      + (Présence  × 0,15)
+      + (Absences  × 0,15)
+      + (Discipline × 0,15)
+
+Prime_DT = Score × Cagnotte_semaine / Σ(Scores équipe)
+```
+
+| Critère | Formule | Base 100 |
+|---|---|---|
+| Quantité | (pcs/duites réels / objectif) × 100 | production réelle vs cadence théorique |
+| Qualité | % 1ᵉʳ choix × 100 | pièces conformes / total produites |
+| Présence | (h pointées / h prévues) × 100 | pointage TimeMoto |
+| Absences | ((jours travaillés − 2×absences_injustifiées) / jours prévus) × 100 | pénalité forte |
+| Discipline | 10 base · −1 rem. verbale · −2 avertissement · −5 mise à pied · −10 blâme (rolling 90 j) | max 10 |
+
+**Seuils exclusion** (paramétrables) :
+
+- Rendement quantitatif < 70 % → exclu de la cagnotte
+- Qualité 1ᵉʳ choix < 85 % → exclu
+- 3 retards / mois → prime annulée
+- 1 absence injustifiée / mois → prime annulée
+
+**Table `primes_config`** (paramétrage par poste × semaine) :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_config` | serial PK | |
+| `poste_cible` | enum | `tissage` \| `finition` \| `coupe` \| `ourdissage` \| `magasin` |
+| `poids_quantite` / `poids_qualite` / `poids_presence` / `poids_absences` / `poids_discipline` | numeric(3,2) | somme = 1,00 |
+| `cagnotte_hebdo_dt` | numeric(10,3) | ex 840 tisseurs, 620 finition |
+| `seuil_rendement_min` / `seuil_qualite_min` | numeric | ex 70/85 |
+| `max_retards_mois` / `max_absences_mois` | int | seuils d'exclusion |
+| `mode_versement_defaut` | enum | `especes` \| `virement` |
+| `date_activation` / `date_fin_validite` | date | historisable |
+
+**Table `bordereaux_primes`** (un bordereau par cagnotte hebdo × poste) :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_bordereau` | serial PK | |
+| `numero` | varchar(30) | format `PRIME-{AAAA}-S{semaine}-{poste}-{seq}` |
+| `poste_cible` | enum | idem `primes_config` |
+| `semaine` | int | 1..53 |
+| `annee` | int | |
+| `cagnotte_totale` | numeric(10,3) | |
+| `montant_distribue` | numeric(10,3) | somme primes calculées |
+| `nb_beneficiaires` | int | |
+| `nb_exclus` | int | |
+| `reste_report` | numeric(10,3) | non distribué → semaine suivante ou bonus mensuel |
+| `date_calcul` / `date_versement_prevu` / `date_versement_effectif` | timestamptz | |
+| `statut` | enum | `brouillon` \| `valide` \| `verse` \| `reporte` |
+| `mode_versement` | enum | `especes` \| `virement` |
+| `verse_par` | FK utilisateurs | |
+| `pdf_url` | varchar(500) | bordereau complet |
+
+**Comptabilisation** :
+
+- Compte débit : **648 · Autres charges de personnel** (charges d'exploitation)
+- Compte crédit : `531 Caisse` (espèces) ou `512 Banque` (virement)
+- **Non soumis à CNSS** (article convention textile)
+- **IRPP** appliqué séparément selon barème progressif (retenue à la source si montant significatif)
+- Bordereau archivé avec **reçus individuels signés** par chaque bénéficiaire
+
+**Flux hebdomadaire** :
+
+```mermaid
+flowchart LR
+  A[Lundi 06:00<br/>Cron calcul] --> B[Extraction<br/>données sem N-1<br/>dim 22h → dim 22h]
+  B --> C[Score par salarié<br/>5 critères pondérés]
+  C --> D[Application seuils<br/>exclusion]
+  D --> E[Bordereau v-brouillon]
+  E --> F{Validation RH}
+  F -->|✓| G[PDF bordereau + reçus]
+  G --> H[Vendredi 18h<br/>versement espèces<br/>enveloppes nominatives]
+  H --> I[Signature reçu<br/>par bénéficiaire]
+  I --> J[Compta compte 648]
+  F -->|✗| E
+```
+
+**Écrans TV atelier** — deux moniteurs 55″ Full HD, un dans la salle des métiers (tissage), un dans l'atelier finition, actualisation auto **toutes les 30 s** via socket.io :
+
+- **Écran tissage** : bandeau équipe + horloge · 5 KPIs jour (duites/1ᵉʳ choix/2ᵉ choix/déchets/rendement) · barre horaire idéale 100 % · **Top 5 tisseurs semaine** avec photo, machine, duites/sem, rendement, prime prévue · panneaux latéraux (Présence · Perte totale · **Cagnotte tisseurs**)
+- **Écran finition** : 6 opérations avec compteurs (frange/pliage/étiquetage/couture/repassage/emballage) · barre horaire · **Top 4 opérateurs** avec photo, poste, pcs/sem, qualité, prime prévue · panneaux (Présence · 2ᵉ choix · **Cagnotte finition**)
+
+**Photos de profil employés** — la table `employes` accueille un champ `photo_url` (upload multipart JPG/PNG, redimensionnement carré 200×200 auto, fallback avatar initiales gradient). Les photos sont **affichées partout** où le salarié apparaît : bulletin, écrans TV atelier, portail collaborateur, fiche RH, liste utilisateurs. Format préféré : **portrait rond bordé**.
 
 ### 11bis.8 Bulletins de paie
 
