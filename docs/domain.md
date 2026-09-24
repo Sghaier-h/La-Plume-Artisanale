@@ -3354,6 +3354,136 @@ Opération **soldée** quand `Retour = qté article − 2ᵉ − rebut`. Tant qu
 
 Cf. §2bis.4 (politique tablette partagée). Le flux 3 étapes (sélection utilisateur → PIN → routage rôle) est un composant réutilisable, adressable via `/tablette/login` sans redirection préalable.
 
+### 14bis.7 Envoi documents par lien signature (style Odoo)
+
+**Principe** — chaque document commercial (devis, commande, facture, avoir, reçu de paiement) génère un **lien one-shot signé** envoyable par **WhatsApp Business ou email**. Le destinataire ouvre une page publique responsive (sans compte), consulte le document, le **valide** et le **signe électroniquement**. La signature est horodatée, tracée (IP + géoloc + user-agent) et scellée par un hash SHA-256 du PDF final. Base légale Tunisie : **Art. 453 bis Code des Obligations et des Contrats** (signature électronique équivalente à la manuscrite).
+
+#### 14bis.7.1 Flux 4 étapes
+
+```
+1. Composer + envoyer  →  2. Client ouvre le lien  →  3. Valide + signe  →  4. PDF signé + tracking
+   (commercial choisit    (page publique, aucun       (signature tactile,     (horodatage + IP + géoloc,
+    WhatsApp ou email)     compte requis)              nom + fonction)         hash SHA-256, archive)
+```
+
+#### 14bis.7.2 Types de documents concernés
+
+| Document | Actions client | Statut cible |
+|---|---|---|
+| **Devis** | Valider · Signer · Refuser + commentaire · Demander modification | `accepte` / `refuse` |
+| **Commande** | Confirmer · Signer · Refuser + motif | `confirmee` / `annulee` |
+| **Facture** | Valider · Signer · **Payer en ligne** · Refuser + motif | `signee` / `payee` |
+| **Avoir** | Accuser réception · Signer | `signe` |
+| **Reçu de paiement** | Attester paiement · Signer (client déclare avoir payé) | `signe` |
+
+#### 14bis.7.3 Table `documents_liens_signature`
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_lien` | uuid PK | |
+| `type_document` | enum | `devis` \| `commande` \| `facture` \| `avoir` \| `recu_paiement` |
+| `id_document` | int FK | FK polymorphe vers table concernée |
+| `token_jwt` | text | JWT signé expirant (par défaut 30 j) |
+| `slug_public` | varchar(24) | code URL `laplume.tn/doc/{slug}` |
+| `id_destinataire_compte` | FK comptes | client cible |
+| `destinataire_email` | varchar(150) | copié à l'envoi |
+| `destinataire_telephone` | varchar(30) | copié à l'envoi (E.164) |
+| `canal_envoi` | enum | `whatsapp` \| `email` \| `both` |
+| `message_personnalise` | text | modèle éditable au moment de l'envoi |
+| `emis_par_user` | FK users | qui a envoyé |
+| `date_emission` | timestamptz | |
+| `date_expiration` | timestamptz | par défaut J+30 |
+| `statut` | enum | `envoye` \| `livre` \| `lu` \| `ouvert` \| `signe` \| `paye` \| `refuse` \| `expire` |
+| `rappel_auto` | bool | rappel J+2 si non ouvert |
+| `nb_rappels` | int | compteur |
+| `revoque` | bool | émetteur peut révoquer le lien |
+
+#### 14bis.7.4 Table `documents_evenements` (timeline)
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_event` | serial PK | |
+| `id_lien` | uuid FK | |
+| `type_event` | enum | `envoye_wa`, `envoye_email`, `livre_wa`, `lu_wa`, `livre_email`, `ouvert_web`, `signe`, `paye`, `refuse`, `commentaire`, `rappel_envoye`, `expire` |
+| `date_event` | timestamptz | |
+| `ip` | inet | IP source (page publique) |
+| `pays_iso` | char(2) | géoloc IP |
+| `latitude` / `longitude` | numeric(9,6) | GPS si autorisé par le client |
+| `user_agent` | text | navigateur / device |
+| `donnee_json` | jsonb | payload contextuel (nom signataire, fonction, commentaire refus, etc.) |
+
+#### 14bis.7.5 Table `signatures_electroniques`
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_signature` | serial PK | |
+| `id_lien` | uuid FK | |
+| `id_document` | int | ref croisée |
+| `type_document` | enum | idem §14bis.7.2 |
+| `signataire_nom` | varchar(150) | saisi par le client |
+| `signataire_fonction` | varchar(100) | ex "Gérant", "Directeur achat" |
+| `signature_svg_path` | text | dessin canvas exporté SVG |
+| `signature_image_png` | bytea | export PNG (fallback impression) |
+| `date_signature` | timestamptz | |
+| `ip_signature` | inet | |
+| `geoloc_signature` | point | latitude/longitude (nullable) |
+| `hash_pdf_signe` | varchar(64) | SHA-256 du PDF final signé |
+| `certificat_horodatage` | text | RFC 3161 (facultatif, service tiers) |
+| `mention_lu_approuve` | bool | case cochée par le client |
+
+#### 14bis.7.6 Endpoints
+
+```
+# Côté ENTREPRISE (auth requise)
+POST   /api/documents/:type/:id/envoyer-lien       — génère token + envoie WA/email
+POST   /api/documents/:type/:id/revoquer-lien      — invalide le lien
+GET    /api/documents/:type/:id/liens              — historique liens émis
+GET    /api/documents/:type/:id/evenements         — timeline temps réel
+POST   /api/documents/:type/:id/renvoyer-rappel    — rappel manuel
+
+# Côté CLIENT (accès public via token)
+GET    /doc/:slug                                  — page publique HTML
+POST   /doc/:slug/signer                           — signature électronique
+POST   /doc/:slug/payer                            — bascule vers Konnect/BIAT/D17
+POST   /doc/:slug/refuser                          — refus avec commentaire
+POST   /doc/:slug/telecharger-pdf                  — PDF horodaté téléchargeable
+POST   /doc/:slug/ping-ouverture                   — trace ouverture (analytics)
+```
+
+#### 14bis.7.7 Intégration WhatsApp Business
+
+- API Cloud Meta ou provider tiers (**Twilio**, **360dialog**) — cf. §11.3.
+- Modèle de message pré-approuvé (`hsm_template`) obligatoire pour envois hors fenêtre 24 h.
+- Format lien court `laplume.tn/doc/xR9k7mQpZ2b` (24 caractères base62).
+- Aperçu automatique (Open Graph : `og:title` = "Facture FA-XX à signer", `og:image` = miniature première page).
+
+#### 14bis.7.8 Rappels automatiques
+
+Cron quotidien :
+
+- **J+2 après émission** si `statut IN ('envoye', 'livre')` → 1er rappel WA/email + `nb_rappels++`.
+- **J+7** si toujours non ouvert → 2ᵉ rappel avec CC commercial.
+- **J+15** → notification chef commercial pour intervention manuelle.
+- **J+30** → `statut = 'expire'`, lien invalide, notification interne.
+
+Paramétrable par type de document dans `parametres_signatures_liens`.
+
+#### 14bis.7.9 Valeur probante & archivage
+
+- PDF signé stocké dans `documents_archive` avec `hash_sha256` en clair pour vérification tierce.
+- Certificat d'horodatage optionnel via TSA (Time-Stamping Authority) RFC 3161.
+- Piste d'audit exportable en cas de litige : événements horodatés + IP + géoloc + user-agent + signature SVG + hash PDF.
+- Rétention **10 ans minimum** (obligation fiscale + civile Tunisie).
+
+#### 14bis.7.10 Page publique — exigences UX
+
+- **Aucun compte requis** — token dans l'URL suffit.
+- **Responsive** — utilisable smartphone (Android WebView, iOS Safari) sans téléchargement d'app.
+- **Aperçu PDF inline** — pas de téléchargement forcé pour signer.
+- **4 actions gros boutons** : Valider &amp; signer · Payer en ligne · Télécharger PDF · Refuser + commentaire.
+- **Bandeau sécurité** : "🔒 Lien sécurisé, expire le JJ/MM. Aucun compte requis. Actions horodatées et tracées."
+- **Signature tactile** : canvas HTML5 (dessin doigt/souris) + saisie nom + fonction + case "Lu et approuvé".
+
 ---
 
 ## 15. Menu
