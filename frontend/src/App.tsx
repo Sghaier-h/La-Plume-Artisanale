@@ -98,6 +98,9 @@ const PipelineVente = React.lazy(() => import('./pages/PipelineVente'));
 const CrmLeads = React.lazy(() => import('./pages/CrmLeads'));
 const Opportunities = React.lazy(() => import('./pages/Opportunities'));
 const ConfigurateurPersonnalisation = React.lazy(() => import('./pages/ConfigurateurPersonnalisation'));
+const PrimesRendement = React.lazy(() => import('./pages/PrimesRendement'));
+const TvAtelierTissage = React.lazy(() => import('./pages/TvAtelierTissage'));
+const TvAtelierFinition = React.lazy(() => import('./pages/TvAtelierFinition'));
 
 // ── Portail Client (auth séparée) ────────────────────────────────────
 const PortailLogin = React.lazy(() => import('./pages/portail/PortailLogin'));
@@ -285,6 +288,15 @@ const AppContent: React.FC = () => {
         <Suspense fallback={<LoadingSpinner />}>
         <Routes>
           <Route path="/login" element={<Login />} />
+
+          {/* ─── TV atelier — routes PUBLIQUES, sans sidebar ni login ────────
+              §11bis.7bis · écrans muraux 55" plein écran, actualisation 30 s.
+              Placées AVANT tout PrivateRoute pour rester hors layout. */}
+          <Route path="/tv/tissage/:token" element={<TvAtelierTissage />} />
+          <Route path="/tv/finition/:token" element={<TvAtelierFinition />} />
+          {/* Variantes sans token — utile en démo / preview */}
+          <Route path="/tv/tissage" element={<TvAtelierTissage />} />
+          <Route path="/tv/finition" element={<TvAtelierFinition />} />
 
           {/* Portail Client — auth séparée, hors PrivateRoute admin */}
           <Route path="/portail/login" element={<PortailLogin />} />
@@ -984,6 +996,16 @@ const AppContent: React.FC = () => {
               <PrivateRoute>
                 <Opportunities />
               </PrivateRoute>
+            }
+          />
+          {/* Primes de rendement hors bulletin §11bis.7bis
+              Accès : ADMIN | RH_MANAGER | COMPTABLE */}
+          <Route
+            path="/primes-rendement"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'RH_MANAGER', 'COMPTABLE']}>
+                <PrimesRendement />
+              </ProtectedRoute>
             }
           />
           {/* Configurateur personnalisation §5.8 — deux variantes (avec ou sans id) */}
