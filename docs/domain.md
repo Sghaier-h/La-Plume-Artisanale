@@ -2880,19 +2880,88 @@ Voir **§14.16 Dashboard IA** pour l'interface utilisateur.
 
 ---
 
-## 11quinquies. E-commerce & sites web (Phase 4quater)
+## 11quinquies. E-commerce B2B + B2C (Phase 4quater)
 
 ### 11quinquies.1 Principe
 
-L'ERP est la **source de vérité** pour tout : produits, prix, stock, clients, commandes. Les sites web e-commerce sont des **vitrines** qui reçoivent les données en push depuis l'ERP et remontent leurs commandes en webhook. Aucune saisie n'a lieu directement dans les sites.
+L'ERP est la **source de vérité** pour tout : produits, prix, stock, clients, commandes. Les sites e-commerce sont de **vrais canaux de vente autonomes** (pas de simples vitrines) : ils permettent l'ajout au panier, le checkout complet, le paiement en ligne, la génération automatique des documents (facture, BL) et la conversion instantanée en commande ERP. Deux canaux distincts sont supportés :
 
-La société La Plume Artisanale opère (ou opérera) plusieurs sites :
+| Canal | Cible | Particularités |
+|---|---|---|
+| **B2C** | Grand public (particuliers) | Achat unitaire · prix TTC affichés · paiement direct (carte, Konnect, PayPal, D17) · commande = facture immédiate · pas de compte obligatoire (checkout invité) |
+| **B2B** | Revendeurs · boutiques · hôtels · hammams · importateurs | **Login obligatoire · comptes revendeurs approuvés** · tarifs négociés selon grille tarifaire client (§4) · **quantités minimum** (MOQ) · remises par volume · paiement 30/60 j fin de mois · devis en ligne · téléchargement catalogue PDF · portail client (§ portail client) |
 
-| Site | Domaine | Plateforme | Cible |
-|---|---|---|---|
-| La Plume Artisanale · vitrine | laplume-artisanale.tn | custom (Next.js) | Vitrine B2B + catalogue |
-| All by Fouta · boutique | allbyfouta.com | **Shopify** | B2C France + Europe |
-| Flying Tex · export | flyingtex.com | **WooCommerce** | B2B export |
+Chaque site peut porter les 2 canaux (via login/rôle) ou être dédié à un seul. Configuration La Plume Artisanale actuelle :
+
+| Site | Domaine | Plateforme | Canal | Devise |
+|---|---|---|---|---|
+| La Plume Artisanale | laplume-artisanale.tn | custom (Next.js) | **B2C + B2B** (login détecte le rôle) | DT / EUR |
+| All by Fouta | allbyfouta.com | **Shopify** | **B2C** grand public France + Europe | EUR |
+| Flying Tex | flyingtex.com | **WooCommerce + WB2B** | **B2B pur** revendeurs export | EUR / USD |
+
+### 11quinquies.1bis Spécificités B2B
+
+**Compte revendeur** (extension `comptes` §3) :
+
+| Colonne ajoutée | Type | Note |
+|---|---|---|
+| `est_revendeur_b2b` | bool | actif ou non côté site B2B |
+| `statut_approbation_b2b` | enum | `en_attente` \| `approuve` \| `rejete` · workflow validation manuelle par COMMERCIAL |
+| `id_grille_tarif` | FK tarifs | déjà existant §3.1, appliquée automatiquement sur le site |
+| `moq_multiplicateur` | numeric(3,2) | 1,00 par défaut · 0,5 pour partenaires premium (MOQ divisé par 2) |
+| `credit_max_b2b` | numeric(14,3) | montant d'encours maximum autorisé pour commandes non payées |
+| `delai_paiement_b2b` | enum | `comptant` \| `30j_fin_mois` \| `60j_fin_mois` \| `à_livraison` |
+| `remise_permanente_pct` | numeric(4,2) | remise permanente accordée au compte (surcouche grille) |
+| `documents_kyc_json` | jsonb | RC, MF, CIN gérant, statuts entreprise (upload requis à l'inscription) |
+
+**Workflow inscription B2B** :
+
+```mermaid
+flowchart LR
+  A[Prospect s'inscrit<br/>formulaire B2B] --> B[Upload KYC<br/>RC + MF + CIN]
+  B --> C[Statut: en_attente]
+  C --> D{Validation<br/>Commercial}
+  D -->|Approuve| E[Attribution grille tarif<br/>+ crédit + délai paiement]
+  E --> F[Email bienvenue<br/>+ accès catalogue B2B]
+  D -->|Rejette| G[Email refus + motif]
+```
+
+**Quantités minimum (MOQ · Minimum Order Quantity)** — table `articles_moq_b2b` :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_moq` | serial PK | |
+| `id_article` | FK articles_catalogue | |
+| `qte_min_b2b` | int | ex 12, 24, 50 pièces |
+| `pas_incrementation` | int | achat par carton de 12 → pas 12 |
+| `unite_vente` | enum | `piece` \| `carton_12` \| `carton_24` \| `palette` |
+
+**Remises volume** — table `remises_volume_b2b` (barème par article ou par famille) :
+
+| Colonne | Type |
+|---|---|
+| `id_remise` | serial PK |
+| `portee` | enum `article` \| `famille` \| `commande_globale` |
+| `id_cible` | int FK selon portée |
+| `qte_seuil` | int (ex 50, 100, 200) |
+| `remise_pct` | numeric(4,2) (ex 5,00 · 10,00 · 15,00) |
+| `cumulable_grille` | bool |
+
+**Devis en ligne B2B** — le revendeur peut :
+- **Ajouter au panier** puis choisir **"Demander devis"** au lieu de "Payer maintenant".
+- Le devis est créé automatiquement dans l'ERP (§8) avec statut `en_attente_validation_commercial`.
+- Notification commercial (WhatsApp + email + push).
+- Le commercial peut ajuster (remise ponctuelle, port offert…) puis renvoyer un lien signature (§14bis.7).
+- Le revendeur signe électroniquement → commande auto-créée.
+
+**Fonctionnalités additionnelles B2B** :
+- **Reorder rapide** : historique des commandes précédentes avec bouton "Recommander la même chose".
+- **Listes de souhaits** partagées entre acheteurs d'une même entreprise.
+- **Multi-utilisateurs par compte** : gérant approuvé peut créer des sous-comptes (acheteur, magasinier réception) avec permissions granulaires.
+- **Téléchargement catalogue PDF** avec prix négociés du compte connecté.
+- **Fiche technique produit** téléchargeable (BOM public sans coût, photos HD, certifications).
+- **Prix affiché HT** + toggle "voir TTC".
+- **Notifications** : nouveaux produits, ruptures anticipées, promotions dédiées.
 
 ### 11quinquies.2 Tables
 
