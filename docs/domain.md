@@ -2880,6 +2880,266 @@ Voir **§14.16 Dashboard IA** pour l'interface utilisateur.
 
 ---
 
+## 11quinquies. E-commerce & sites web (Phase 4quater)
+
+### 11quinquies.1 Principe
+
+L'ERP est la **source de vérité** pour tout : produits, prix, stock, clients, commandes. Les sites web e-commerce sont des **vitrines** qui reçoivent les données en push depuis l'ERP et remontent leurs commandes en webhook. Aucune saisie n'a lieu directement dans les sites.
+
+La société La Plume Artisanale opère (ou opérera) plusieurs sites :
+
+| Site | Domaine | Plateforme | Cible |
+|---|---|---|---|
+| La Plume Artisanale · vitrine | laplume-artisanale.tn | custom (Next.js) | Vitrine B2B + catalogue |
+| All by Fouta · boutique | allbyfouta.com | **Shopify** | B2C France + Europe |
+| Flying Tex · export | flyingtex.com | **WooCommerce** | B2B export |
+
+### 11quinquies.2 Tables
+
+`sites_web` :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_site` | serial PK | |
+| `code_site` | varchar(20) | `LP_VITRINE` · `AF_SHOPIFY` · `FT_WOO` |
+| `libelle` | varchar(150) | |
+| `plateforme` | enum | `shopify` \| `woocommerce` \| `custom_api` \| `prestashop` |
+| `url_site` | varchar(300) | |
+| `api_endpoint` | varchar(300) | URL API REST/GraphQL |
+| `api_key_encrypted` | text | secret · chiffré au repos |
+| `webhook_secret` | text | HMAC signature vérification |
+| `id_societe_emettrice` | FK parametres_societe | LP · AF · FT |
+| `devise_defaut` | char(3) | DT · EUR · USD |
+| `taux_change_source` | enum | `bct_auto` \| `manuel` |
+| `politique_prix` | enum | `prix_erp` \| `prix_site_avec_majoration_%` \| `prix_libre` |
+| `stock_source` | enum | `erp_temps_reel` \| `snapshot_manuel` \| `desactive` |
+| `sync_active` | bool | interrupteur global |
+| `derniere_sync_at` | timestamptz | |
+| `statut_sante` | enum | `ok` \| `erreur_auth` \| `erreur_api` \| `desactive` |
+
+`sites_web_produits_sync` :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_sync` | serial PK | |
+| `id_site` | FK | |
+| `id_article` | FK articles_catalogue | |
+| `id_externe` | varchar(50) | SKU/product_id côté site (ex Shopify GID) |
+| `slug_url` | varchar(200) | URL du produit sur le site |
+| `publie` | bool | visible en front |
+| `prix_ttc_site` | numeric(12,3) | prix effectif sur le site (peut différer ERP selon politique) |
+| `stock_publie` | int | quantité affichée (peut être plafonné, ex `min(erp, 20)`) |
+| `date_publication` | timestamptz | |
+| `derniere_maj` | timestamptz | |
+| `statut_derniere_sync` | enum | `ok` \| `erreur` \| `ignore` |
+| `message_erreur` | text | si erreur |
+
+`commandes_web_import` :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_import` | serial PK | |
+| `id_site` | FK | |
+| `id_externe_commande` | varchar(50) | order_id côté site |
+| `numero_web` | varchar(50) | numéro affiché client (ex `#1042`) |
+| `date_commande_web` | timestamptz | |
+| `payload_json` | jsonb | copie brute du webhook |
+| `client_email` / `client_nom` / `client_telephone` | varchar | |
+| `client_adresse_livraison_json` | jsonb | copie adresse |
+| `total_ht` / `tva` / `frais_port` / `total_ttc` | numeric(14,3) | |
+| `devise` | char(3) | |
+| `statut_paiement_web` | enum | `paye` \| `en_attente` \| `rembourse` \| `echec` |
+| `statut_traitement_erp` | enum | `en_attente` \| `converti` \| `refus_stock` \| `refus_manuel` \| `annule_web` |
+| `id_commande_erp` | FK commandes | quand converti en commande interne |
+| `id_compte_client_erp` | FK comptes | client CRM créé/rapproché |
+| `date_traitement` | timestamptz | |
+| `motif_refus` | text | si refusé |
+| `webhook_signature_ok` | bool | HMAC validé |
+
+### 11quinquies.3 Sync produits ERP → site
+
+Déclenchée par événements ERP (`article.publie_ecommerce=true`) ou par cron :
+
+```mermaid
+flowchart LR
+  A[Article ERP marqué<br/>ecommerce_actif] --> B[Job sync]
+  B --> C{Politique prix}
+  C -->|prix_erp| D[Prix HT + TVA cible]
+  C -->|majoration| E[Prix × 1.15]
+  C -->|libre| F[Ne pas toucher prix site]
+  D --> G[POST/PUT vers site]
+  E --> G
+  F --> G
+  G --> H{Réponse}
+  H -->|200| I[MAJ sites_web_produits_sync<br/>ok + timestamp]
+  H -->|4xx/5xx| J[Retry expo backoff<br/>+ log]
+```
+
+Endpoints internes :
+
+```
+POST   /api/ecommerce/sync-produit/:id_site/:id_article    — sync un article
+POST   /api/ecommerce/sync-tout/:id_site                   — sync catalogue complet
+POST   /api/ecommerce/sync-stock/:id_site                  — sync stocks seulement (léger, fréquent)
+GET    /api/ecommerce/sites/:id/produits-syncs             — état par article
+POST   /api/ecommerce/produits/:id_article/publier         — mark ecommerce_actif + trigger sync
+POST   /api/ecommerce/produits/:id_article/depublier       — retire du site
+```
+
+### 11quinquies.4 Réception commandes web → ERP
+
+Webhook signé HMAC reçu du site, validé côté ERP :
+
+```mermaid
+flowchart LR
+  A[Client passe commande<br/>+ paie sur site] --> B[Webhook signé]
+  B --> C{Signature HMAC}
+  C -->|KO| D[401 + log alerte]
+  C -->|OK| E[commandes_web_import<br/>en_attente]
+  E --> F[Job traitement]
+  F --> G{Stock ERP dispo ?}
+  G -->|Non| H[refus_stock<br/>+ notif site]
+  G -->|Oui| I[Créer/rapprocher<br/>compte_client CRM]
+  I --> J[Créer commande ERP<br/>lignes + adresse liv.]
+  J --> K[Générer OFs si besoin<br/>§14bis.3]
+  K --> L[MAJ statut converti]
+  L --> M[Confirmation site<br/>+ email client]
+```
+
+Endpoints :
+
+```
+POST   /api/ecommerce/webhook/:code_site       — endpoint public HMAC
+GET    /api/ecommerce/imports                   — file traitement
+POST   /api/ecommerce/imports/:id/traiter       — force traitement
+POST   /api/ecommerce/imports/:id/refuser       — refus manuel avec motif
+POST   /api/ecommerce/imports/:id/rembourser    — déclenche remboursement site
+```
+
+### 11quinquies.5 Dashboard e-commerce (§14bis.9)
+
+Un dashboard dédié agrège les 3 sites :
+
+**KPIs** : CA en ligne mois/YTD par site · nombre commandes · panier moyen · taux conversion (via analytics tiers si connecté) · stock alertes rupture site.
+
+**Tables** : top 10 produits vendus (par site et global) · dernières commandes reçues avec statut ERP · commandes en erreur/refus.
+
+**Alertes** : produit publié en rupture ERP, écart prix ERP vs site, webhook signature échec, sync cron n'a pas tourné depuis N minutes.
+
+### 11quinquies.6 Comptabilisation
+
+- CA e-commerce enregistré sur sous-compte dédié : **7071 Ventes en ligne** (subdivisé par site : `7071.LP` · `7071.AF` · `7071.FT`).
+- Frais commissions plateformes (Shopify 2 %, WooCommerce plugins…) : compte **622 Rémunérations d'intermédiaires**.
+- Frais paiement en ligne (Konnect, Stripe, PayPal) : compte **627 Services bancaires · frais paiement en ligne`.
+- Écarts de change sur ventes EUR/USD : compte **766 Gains de change** ou **666 Pertes de change**.
+
+### 11quinquies.7 SEO & marketing
+
+Le site LP vitrine est aussi un canal marketing :
+
+- Balises SEO (`meta_title`, `meta_description`, `og_image`) éditables depuis l'ERP par article.
+- Redirections 301 gérées (`id_redirection` avec ancien slug → nouveau).
+- Sitemap XML régénéré à chaque publication produit.
+- Intégration Google Analytics 4 + Facebook Pixel via `id_analytique` par site.
+- Voir §11.3 pour les campagnes marketing (emailings, promotions codes).
+
+### 11quinquies.8 Codes promo & remises site
+
+Table `codes_promo_web` synchronisée avec `remises_client` (§4.4) — les codes créés dans l'ERP sont poussés sur les sites correspondants avec conditions (montant min, produits éligibles, dates validité, utilisations max).
+
+### 11quinquies.9 Publicité digitale · Meta · Google · TikTok · Instagram
+
+Module de gestion multi-plateformes des campagnes publicitaires, connecté aux comptes marketing (§11.4).
+
+**Plateformes supportées** :
+
+| Plateforme | API | Objectifs supportés |
+|---|---|---|
+| **Meta Ads** (Facebook + Instagram) | Marketing API v18 | Awareness · Trafic · Ventes · Leads |
+| **Google Ads** | Google Ads API v14 | Search · Display · Shopping · YouTube |
+| **TikTok Ads** | Marketing API v1.3 | Découverte · UGC · Spark Ads |
+| **LinkedIn Ads** *(à venir)* | — | B2B export |
+
+**Tables** :
+
+`campagnes_pub` :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_campagne` | serial PK | |
+| `plateforme` | enum | idem tableau |
+| `id_externe` | varchar(80) | ID côté plateforme |
+| `objectif` | enum | `awareness` \| `trafic` \| `ventes` \| `leads` \| `decouverte` |
+| `libelle` | varchar(200) | ex "Été indien · Marinière" |
+| `budget_total` / `budget_quotidien` | numeric(10,3) | DT |
+| `date_debut` / `date_fin` | date | |
+| `statut` | enum | `brouillon` \| `en_cours` \| `pause` \| `terminee` \| `refusee_plateforme` |
+| `id_site_destination` | FK sites_web | landing associé |
+| `id_produit_promu` | FK articles_catalogue | produit vedette (nullable si multi) |
+| `id_pixel_conversion` | varchar(80) | Meta pixel / GA4 / TikTok pixel |
+
+`creatifs_pub` (assets visuels) :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_creatif` | serial PK | |
+| `id_campagne` | FK | |
+| `format` | enum | `1_1_feed` (1080×1080) \| `9_16_story_reels` (1080×1920) \| `4_5_portrait` (1080×1350) \| `16_9_landscape` (1200×628) |
+| `type_creatif` | enum | `image_statique` \| `carousel` \| `video` \| `ugc_creator` |
+| `angle` | enum | `lifestyle` \| `detail_matiere` \| `prix_promo` \| `made_in_tunisia` \| `temoignage` |
+| `slogan` | varchar(300) | généré IA éditable |
+| `cta_libelle` | varchar(50) | ex "Acheter maintenant", "En savoir plus" |
+| `cta_url` | varchar(500) | landing avec UTM auto |
+| `url_media` | varchar(500) | URL asset final (S3/CDN) |
+| `genere_par_ia` | bool | si généré par agent créa |
+| `variante_test_ab` | char(1) | A · B · C · D pour A/B tests |
+| `statut_moderation` | enum | `soumis` \| `approuve` \| `refuse_plateforme` |
+
+`campagne_metriques_jour` (fait quotidien remonté API) :
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_metrique` | serial PK | |
+| `id_campagne` | FK | |
+| `date_jour` | date | |
+| `impressions` / `clics` / `ctr` / `cpc_moyen` / `depense` | numeric | |
+| `conversions` / `ventes_attribuees` / `revenu_attribue` / `roas` | numeric | |
+| `taux_conversion` | numeric | |
+
+**Générateur créatifs IA** (agent §11ter enrichi) :
+
+- Entrées : produit à mettre en avant · format cible · angle éditorial · saisonnalité.
+- Sortie : 3 variantes visuelles (image + slogan + CTA) par appel, exploitant les photos produit du catalogue et un modèle génératif image (Stable Diffusion / Midjourney API / DALL-E 3).
+- Slogans générés en français, adaptés au ton de la marque (voir prompt système versionné dans `agents_prompts`).
+- Chaque créatif garde un lien vers la source photo produit et la BOM (traçabilité "cette photo montre le produit AR1020-B02-03").
+
+**Événements de conversion** trackés automatiquement via pixels (page_view · view_item · add_to_cart · begin_checkout · **purchase**) et remontés vers les APIs Ads pour optimisation.
+
+**Calendrier campagnes** — vue Gantt multi-plateformes (§14bis.9), planification hebdomadaire, code couleur par plateforme, arbitrage budget (transfert automatique vers meilleure ROAS si activé).
+
+**KPIs dashboard marketing** :
+
+- Budget mois vs consommé
+- ROAS global + par plateforme + par produit
+- CPA moyen (coût par acquisition)
+- Ventes attribuées last-click vs first-click
+- Alertes : budget dépassé · ROAS < seuil · créatif refusé · pixel non fired
+
+**Endpoints** :
+
+```
+GET    /api/pub/campagnes                  — liste + filtres statut/plateforme
+POST   /api/pub/campagnes                  — création + push plateforme
+GET    /api/pub/campagnes/:id/metriques    — série journalière
+POST   /api/pub/creatifs/generer           — génération IA 3 variantes
+POST   /api/pub/creatifs/:id/publier       — push vers plateforme
+POST   /api/pub/campagnes/:id/pause        — mise en pause
+POST   /api/pub/campagnes/:id/reprendre    — reprise
+POST   /api/pub/sync-metriques             — cron horaire, pull depuis APIs
+```
+
+---
+
 ## 11quater. Application mobile / Tablette (offline-first)
 
 Les dashboards ateliers (Tisseur §14.9, Coupeur §14.10, Ourdisseur §14.11, Magasinier MP §14.4 pour scan QR bobines) doivent fonctionner **hors ligne** — une coupure WiFi ne doit jamais arrêter la production.
