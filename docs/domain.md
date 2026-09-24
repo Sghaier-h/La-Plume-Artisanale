@@ -747,6 +747,144 @@ GET|POST|PUT|DELETE  /api/parametres/grammages/:id?
 GET|POST|PUT|DELETE  /api/photos     (multipart pour POST)
 ```
 
+### 5.8 Personnalisation & configurateur produit
+
+Certains modèles sont **personnalisables** : le client (B2B ou B2C) peut ajuster couleurs, motifs, texte brodé, sérigraphie… L'ERP fournit un **configurateur temps réel** avec preview visuel, calcul de prix live et génération automatique d'un devis avec spécifications complètes.
+
+#### 5.8.1 Types de personnalisation supportés
+
+| Type | Description | MOQ minimum typique | Supplément prix typique |
+|---|---|---|---|
+| `broderie` | Logo, texte, monogramme brodé sur pièce | 20 pcs | 3–8 DT/pièce selon surface |
+| `serigraphie` | Impression sérigraphique (motif, logo) | 50 pcs | 1,5–4 DT/pièce |
+| `rayures_personnalisees` | Choix couleurs + largeurs des rayures dans la limite des 8 sélecteurs | 12 pcs | 0–2 DT/pièce (selon couleurs standards ou spéciales) |
+| `couleurs_personnalisees` | Choix couleurs parmi palette (unis, dégradés) | 12 pcs | 0–3 DT/pièce |
+| `dimensions_custom` | Format hors catalogue (petites variations) | 20 pcs | +10 % du prix base |
+| `pack_composé` | Assemblage plusieurs modèles/couleurs en pack cadeau | 6 packs | +5 DT/pack (packaging) |
+
+#### 5.8.2 Table `personnalisations_config` (configuration par article)
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_config` | serial PK | |
+| `id_article` OU `id_modele` | FK | scope de la personnalisation |
+| `types_autorises` | jsonb array | ex `["broderie", "rayures_personnalisees"]` |
+| `moq_par_type_json` | jsonb | override MOQ par type ex `{"broderie":20, "serigraphie":50}` |
+| `zones_impression_json` | jsonb | zones autorisées pour broderie/sérigraphie ex `["face_avant", "coin_bas_droit", "centre"]` |
+| `surfaces_max_cm2_json` | jsonb | limite surface par zone (broderie difficile > 100 cm²) |
+| `couleurs_disponibles_json` | jsonb | sous-ensemble des couleurs BOM utilisables pour rayures |
+| `polices_disponibles_json` | jsonb | fonts autorisées pour texte brodé |
+| `suppléments_prix_json` | jsonb | formule prix par type + surface + nombre couleurs |
+| `delai_supplementaire_jours` | int | délai fabrication ajouté (broderie ajoute typiquement 5–10 j) |
+
+#### 5.8.3 Table `commandes_personnalisations` (choix client par ligne)
+
+| Colonne | Type | Note |
+|---|---|---|
+| `id_pers` | serial PK | |
+| `id_ligne_document` | FK (devis_lignes / commandes_lignes) | quelle ligne est personnalisée |
+| `type_personnalisation` | enum | idem §5.8.1 |
+| `parametres_json` | jsonb | choix complet du client (voir exemples ci-dessous) |
+| `preview_image_url` | varchar(500) | mockup généré serveur (SVG/PNG) |
+| `fichier_source_url` | varchar(500) | logo client uploadé (SVG/AI/PNG haute résolution) |
+| `supplement_ht` | numeric(10,3) | montant ajouté sur ligne |
+| `moq_applique` | int | copie du MOQ validé |
+| `date_creation` | timestamptz | |
+| `validee_par_client` | bool | client a confirmé le mockup |
+| `validee_par_commercial` | bool | commercial a validé la faisabilité |
+| `specs_atelier_json` | jsonb | spec technique complète pour l'OF (position exacte cm, fils, couleurs BOM) |
+
+**Exemples `parametres_json`** :
+
+*Broderie* :
+```json
+{
+  "zone": "coin_bas_droit",
+  "position_cm": {"x": 8, "y": 8},
+  "type_motif": "logo_client",
+  "logo_source_url": "https://.../logo-client.svg",
+  "dimensions_cm": {"largeur": 6, "hauteur": 4},
+  "couleurs_fils": ["#3B4E68", "#C8663D"],
+  "police": null
+}
+```
+
+*Rayures personnalisées* :
+```json
+{
+  "orientation": "verticales",
+  "sequence": [
+    {"couleur_ref": "C15-blanc", "largeur_cm": 3},
+    {"couleur_ref": "C08-marine", "largeur_cm": 1},
+    {"couleur_ref": "C29-rouge", "largeur_cm": 0.5}
+  ],
+  "repetition": "alternee"
+}
+```
+
+*Sérigraphie* :
+```json
+{
+  "zone": "face_avant_centre",
+  "motif_source_url": "https://.../motif-client.png",
+  "dimensions_cm": {"largeur": 20, "hauteur": 15},
+  "couleurs": ["#FFFFFF"],
+  "type_encre": "eau"
+}
+```
+
+#### 5.8.4 Configurateur temps réel
+
+Composant frontend interactif accessible sur les sites e-commerce (§11quinquies) via un canal dédié **« Personnaliser »** ou depuis la fiche article si `personnalisations_config` existe.
+
+Fonctionnalités :
+
+- **Preview visuel live** : mockup produit avec superposition de la personnalisation choisie (SVG côté client, régénéré à chaque modification, en < 200 ms).
+- **Zones cliquables** : le client clique sur la zone du produit où appliquer la broderie/sérigraphie.
+- **Sélection couleurs** : palette limitée à `couleurs_disponibles_json` (échantillons visuels).
+- **Upload logo** : SVG/AI/PNG accepté, redimensionnement/repositionnement live.
+- **Éditeur texte** : saisie texte avec police et couleur (broderie de nom, monogramme…).
+- **Rayures builder** : glisser des bandes colorées pour composer un motif, largeur ajustable, aperçu tissu temps réel.
+- **Compteur MOQ** : minimum affiché en évidence · quantité éditable · bouton `-` désactivé sous MOQ.
+- **Prix live** : (prix_base + supplément) × quantité affiché avec ventilation.
+- **Délai estimé** : temps de fabrication mis à jour selon type personnalisation.
+
+#### 5.8.5 Workflow devis auto
+
+```mermaid
+flowchart LR
+  A[Client configure<br/>+ upload logo] --> B[Preview finale<br/>validée client]
+  B --> C[« Demander devis »]
+  C --> D[Devis auto créé<br/>ERP §8]
+  D --> E[Notification<br/>commercial]
+  E --> F{Faisabilité<br/>atelier}
+  F -->|OK| G[Envoi lien<br/>signature §14bis.7]
+  F -->|Ajustement<br/>requis| H[Contre-proposition<br/>commercial]
+  H --> G
+  G --> I[Client signe]
+  I --> J[Commande + OF<br/>avec specs_atelier_json]
+```
+
+#### 5.8.6 Envoi à l'atelier
+
+Lorsque la commande personnalisée est validée, l'OF généré (§7) porte les **spécifications atelier complètes** :
+
+- Pour **broderie** : fichier DST/EMB (format brodeuse), position cm, couleurs fils Madeira/Isacord, densité, arrêts.
+- Pour **sérigraphie** : positifs films par couleur, position, alignement, type encre, séchage.
+- Pour **rayures personnalisées** : ordre couleurs par sélecteur S01-S08 recalculé, largeurs en fils/duites, dessin ratière régénéré.
+
+Ces spécifications sont **imprimées sur la fiche OF papier** distribuée à l'atelier et affichées sur la tablette Tisseur/Coupeur/Finition concernée.
+
+#### 5.8.7 Canal de vente dédié « Personnaliser »
+
+Un site web dédié (ou une section du site principal) présente uniquement les articles personnalisables comme un **catalogue de créativité** :
+
+- Landing « Créez votre fouta » avec exemples inspirants (cas clients, hôtels, événements).
+- Filtres par type de personnalisation (Je veux : broderie · logo · rayures aux couleurs de mon entreprise · pack cadeau).
+- Marketing dédié : hôtels/spas (personnalisation logo), événementiel (cadeau entreprise), particuliers (monogramme, cadeau naissance/mariage).
+- Devis en ligne avec versement d'un acompte (30 % à la commande via Konnect).
+- Partage social : le client peut partager son mockup sur Instagram/WhatsApp avant validation.
+
 ---
 
 ## 6. Stock & Entrepôts (Phase 2.5)
