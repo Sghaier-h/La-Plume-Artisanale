@@ -1,7 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import Navigation from './Navigation';
+import Navigation from './NavigationEnhanced';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -28,8 +28,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Chargement...</p>
+          <div className="animate-spin rounded-full h-12 w-12 mx-auto" style={{ borderBottom: '2px solid var(--accent-terracotta)' }}></div>
+          <p className="mt-4" style={{ color: 'var(--fg-secondary)' }}>Chargement...</p>
         </div>
       </div>
     );
@@ -46,14 +46,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     
     if (!hasRole) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-app)' }}>
           <div className="text-center">
-            <div className="text-red-600 text-6xl mb-4">🔒</div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Accès Refusé</h2>
-            <p className="text-gray-600 mb-4">
+            <div className="text-6xl mb-4" style={{ color: 'var(--color-danger)' }}>🔒</div>
+            <h2 className="text-2xl font-bold mb-2" style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', color: 'var(--fg-primary)' }}>Accès Refusé</h2>
+            <p className="mb-4" style={{ color: 'var(--fg-secondary)' }}>
               Vous n'avez pas les permissions nécessaires pour accéder à cette page.
             </p>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm" style={{ color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)' }}>
               Rôle requis: {Array.isArray(requiredRole) ? requiredRole.join(' ou ') : requiredRole}
             </p>
           </div>
@@ -96,17 +96,17 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       
       if (!hasDashboard) {
         return (
-          <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-app)' }}>
             <div className="text-center">
-              <div className="text-orange-600 text-6xl mb-4">🔒</div>
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">Accès Refusé</h2>
-              <p className="text-gray-600">
+              <div className="text-6xl mb-4" style={{ color: 'var(--accent-gold)' }}>🔒</div>
+              <h2 className="text-2xl font-bold mb-2" style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', color: 'var(--fg-primary)' }}>Accès Refusé</h2>
+              <p style={{ color: 'var(--fg-secondary)' }}>
                 Vous n'avez pas accès à ce dashboard.
               </p>
-              <p className="text-sm text-gray-500 mt-2">
+              <p className="text-sm mt-2" style={{ color: 'var(--fg-muted)' }}>
                 Contactez votre administrateur pour obtenir l'accès.
               </p>
-              <p className="text-xs text-gray-400 mt-4">
+              <p className="text-xs mt-4" style={{ color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)', opacity: 0.6 }}>
                 Debug: Rôle={user.role || 'undefined'} | Dashboard requis={requiredDashboard} | Dashboards attribués={JSON.stringify(user.dashboardsAttribues || [])}
               </p>
             </div>
