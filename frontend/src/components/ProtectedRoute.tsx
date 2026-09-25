@@ -138,8 +138,17 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     }
   }
 
-  // Si toutes les vérifications passent, afficher le contenu
-  // Rôles tablette → layout tablette dédié (pas de sidebar PC)
+  // Si toutes les vérifications passent, afficher le contenu.
+  //
+  // UserBar : TOUJOURS affichée dès qu'on est authentifié (barre système
+  // permanente). Le prop `showNav` ne contrôle QUE le menu latéral —
+  // certaines pages métier (dashboards dédiés, tablettes atelier)
+  // désactivent le menu tout en gardant la barre système.
+  //
+  // Layout gauche :
+  // - Rôles tablette (Tisseur/Coupeur/Ourdisseur) → TabletteLayout kiosque
+  // - Autres rôles (bureau) → NavigationEnhanced sidebar §15 filtrée
+  // - showNav=false → aucun menu à gauche (UserBar seule)
   const roleUpper = user.role?.toUpperCase() || '';
   const isTabletteRole = TABLETTE_ROLES.has(roleUpper);
 
@@ -154,7 +163,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   return (
     <>
-      {showNav && <UserBar />}
+      <UserBar />
       {showNav && <Navigation />}
       {children}
     </>
