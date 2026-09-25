@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { commandesService, clientsService, articlesService, bonsLivraisonService, parametresCatalogueService } from '../services/api';
-import { ShoppingCart, Plus, Edit, Trash2, Search, Eye, X, CheckCircle, Package, Calendar, User, DollarSign, Truck, Upload, File, Clock, TrendingUp, Zap } from 'lucide-react';
+import { ShoppingCart, Plus, Edit, Trash2, Search, X, CheckCircle, Package, Calendar, User, DollarSign, Truck, Upload, File, Clock, TrendingUp, Zap } from 'lucide-react';
 import ArticlePicker from '../components/ArticlePicker';
-import { useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import KpiCard from '../components/ecommerce/KpiCard';
 
 const Commandes: React.FC = () => {
+  const navigate = useNavigate();
   const [commandes, setCommandes] = useState<any[]>([]);
   const [clients, setClients] = useState<any[]>([]);
   const [articles, setArticles] = useState<any[]>([]);
@@ -612,7 +613,11 @@ const Commandes: React.FC = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {commandes.map((commande) => (
-                <tr key={commande.id_commande}>
+                <tr
+                  key={commande.id_commande}
+                  onClick={() => navigate(`/commandes/${commande.id_commande}`)}
+                  className="hover:bg-gray-50 group cursor-pointer"
+                >
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{commande.numero_commande}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">{commande.client_nom}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">{new Date(commande.date_commande).toLocaleDateString()}</td>
@@ -643,16 +648,9 @@ const Commandes: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                     <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Link
-                        to={`/commandes/${commande.id_commande}`}
-                        className="hover:opacity-70 transition"
-                        style={{ color: 'var(--accent-indigo)' }}
-                        title="Consulter"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Link>
-                      <button 
-                        onClick={() => {
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
                           handleEdit(commande);
                         }}
                         className="text-gray-600 hover:text-gray-900"
@@ -661,8 +659,8 @@ const Commandes: React.FC = () => {
                         <Edit className="w-4 h-4" />
                       </button>
                       {commande.statut === 'en_attente' && (
-                        <button 
-                          onClick={() => handleValider(commande.id_commande)} 
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleValider(commande.id_commande); }}
                           className="text-green-600 hover:text-green-900"
                           title="Valider"
                         >

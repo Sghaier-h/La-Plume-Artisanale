@@ -14,7 +14,6 @@ import {
   AlertTriangle,
   CheckCircle2,
   Filter,
-  Eye,
   Pencil,
   Trash2,
   TrendingUp,
@@ -870,7 +869,7 @@ const ComptesTab: React.FC<{
           </thead>
           <tbody className="divide-y divide-gray-100">
             {filtered.map((c) => (
-              <tr key={c.id_compte} className="hover:bg-gray-50">
+              <tr key={c.id_compte} onClick={() => setDetail(c)} className="hover:bg-gray-50 cursor-pointer">
                 <td className="px-4 py-3">
                   <div className="font-semibold text-gray-900">{c.raison_sociale}</div>
                   <div className="text-xs text-gray-500">
@@ -906,14 +905,7 @@ const ComptesTab: React.FC<{
                   {c.nombre_commandes || 0} cmd ·{' '}
                   {(c.ca_total || 0).toLocaleString('fr-FR', { maximumFractionDigits: 0 })} DT
                 </td>
-                <td className="px-4 py-3 text-right">
-                  <button
-                    onClick={() => setDetail(c)}
-                    className="text-[#3B4E68] hover:text-[#C8663D] inline-flex items-center gap-1 text-xs font-medium"
-                  >
-                    <Eye className="w-3.5 h-3.5" /> Détails
-                  </button>
-                </td>
+                <td className="px-4 py-3 text-right"></td>
               </tr>
             ))}
             {filtered.length === 0 && (
@@ -1118,7 +1110,7 @@ const CommandesTab: React.FC<{
           </thead>
           <tbody className="divide-y divide-gray-100">
             {filtered.map((c) => (
-              <tr key={c.id_import} className="hover:bg-gray-50">
+              <tr key={c.id_import} onClick={() => setPayloadCmd(c)} className="hover:bg-gray-50 cursor-pointer">
                 <td className="px-4 py-3 font-mono text-xs">
                   <div className="font-semibold text-gray-900">{c.numero_web}</div>
                   {c.id_commande_erp && (
@@ -1174,16 +1166,9 @@ const CommandesTab: React.FC<{
                   </div>
                 </td>
                 <td className="px-4 py-3 text-right whitespace-nowrap">
-                  <button
-                    onClick={() => setPayloadCmd(c)}
-                    className="text-xs text-[#3B4E68] hover:text-[#C8663D] mr-2 inline-flex items-center gap-1"
-                    title="Voir payload webhook"
-                  >
-                    <Eye className="w-3.5 h-3.5" /> Payload
-                  </button>
                   {c.statut_traitement_erp === 'en_attente' && (
                     <button
-                      onClick={() => importerErp(c)}
+                      onClick={(e) => { e.stopPropagation(); importerErp(c); }}
                       className="text-xs bg-[#4A6C5B] text-white px-2 py-1 rounded hover:bg-[#385444] inline-flex items-center gap-1"
                     >
                       <ArrowUpRight className="w-3.5 h-3.5" /> Importer ERP

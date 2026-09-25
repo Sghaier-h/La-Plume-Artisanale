@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, Plus, Edit, Trash2, Search, Download, Eye, X, FileText } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Trash2, Search, Download, X, FileText } from 'lucide-react';
 import { avoirsService, clientsService, facturesService } from '../services/api';
 import ArticlePicker from '../components/ArticlePicker';
 
@@ -571,7 +571,21 @@ const Avoir: React.FC = () => {
                 </tr>
               ) : (
                 filteredAvoirs.map((avoir) => (
-                  <tr key={avoir.id_avoir} className="hover:bg-gray-50 group">
+                  <tr
+                    key={avoir.id_avoir}
+                    onClick={async () => {
+                      try {
+                        const result = await avoirsService.getAvoirById(avoir.id_avoir);
+                        if (result.data?.success) {
+                          setSelectedAvoir(result.data?.data);
+                        }
+                      } catch (error: any) {
+                        console.error('Erreur chargement avoir:', error);
+                        alert(error.response?.data?.error?.message || 'Erreur lors du chargement');
+                      }
+                    }}
+                    className="hover:bg-gray-50 group cursor-pointer"
+                  >
                     <td className="px-6 py-4 whitespace-nowrap font-medium">{avoir.numero_avoir}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{avoir.numero_facture || '-'}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{avoir.client_nom}</td>
@@ -584,25 +598,9 @@ const Avoir: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
-                          onClick={async () => {
-                            try {
-                              const result = await avoirsService.getAvoirById(avoir.id_avoir);
-                              if (result.data?.success) {
-                                setSelectedAvoir(result.data?.data);
-                              }
-                            } catch (error: any) {
-                              console.error('Erreur chargement avoir:', error);
-                              alert(error.response?.data?.error?.message || 'Erreur lors du chargement');
-                            }
-                          }}
-                          className="text-[#C8663D] hover:text-[#a55231]"
-                          title="Consulter"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
                         <button
-                          onClick={async () => {
+                          onClick={async (e) => {
+                            e.stopPropagation();
                             try { await avoirsService.downloadPDF(avoir.id_avoir, avoir.numero_avoir); }
                             catch { alert('Erreur lors du téléchargement du PDF'); }
                           }}
@@ -611,8 +609,9 @@ const Avoir: React.FC = () => {
                         >
                           <Download className="w-4 h-4" />
                         </button>
-                        <button 
-                          onClick={async () => {
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
                             try {
                               const result = await avoirsService.getAvoirById(avoir.id_avoir);
                               if (result.data?.success) {
@@ -651,8 +650,9 @@ const Avoir: React.FC = () => {
                         >
                           <Edit className="w-4 h-4" />
                         </button>
-                        <button 
-                          onClick={async () => {
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
                             if (window.confirm(`Supprimer l'avoir ${avoir.numero_avoir} ?`)) {
                               try {
                                 await avoirsService.deleteAvoir(avoir.id_avoir);

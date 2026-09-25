@@ -184,7 +184,11 @@ const PlanificationGantt: React.FC = () => {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {taches.map((tache) => (
-                    <tr key={tache.id_tache}>
+                    <tr
+                      key={tache.id_tache}
+                      className="hover:bg-gray-50 group cursor-pointer"
+                      onClick={() => setSelectedTache(tache)}
+                    >
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         {tache.libelle}
                       </td>
@@ -213,14 +217,7 @@ const PlanificationGantt: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button 
-                            onClick={() => setSelectedTache(tache)}
-                            className="text-blue-600 hover:text-blue-800"
-                            title="Consulter"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button className="text-gray-600 hover:text-gray-800" title="Modifier">Modifier</button>
+                          <button onClick={(e) => { e.stopPropagation(); }} className="text-gray-600 hover:text-gray-800" title="Modifier">Modifier</button>
                         </div>
                       </td>
                     </tr>

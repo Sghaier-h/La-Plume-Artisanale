@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Truck, Plus, Edit, Trash2, Search, Download, Eye, CheckCircle, X, Package, Receipt } from 'lucide-react';
+import { Truck, Plus, Edit, Trash2, Search, Download, CheckCircle, X, Package, Receipt } from 'lucide-react';
 import { bonsLivraisonService, commandesService, clientsService, articlesService, facturesService } from '../services/api';
 import ArticlePicker from '../components/ArticlePicker';
 
@@ -552,7 +552,21 @@ const BonLivraison: React.FC = () => {
                 </tr>
               ) : (
                 filteredBL.map((bl) => (
-                  <tr key={bl.id_bl} className="hover:bg-gray-50 group">
+                  <tr
+                    key={bl.id_bl}
+                    onClick={async () => {
+                      try {
+                        const result = await bonsLivraisonService.getBonLivraisonById(bl.id_bl);
+                        if (result.data?.success) {
+                          setSelectedBL(result.data?.data);
+                        }
+                      } catch (error: any) {
+                        console.error('Erreur chargement BL:', error);
+                        alert(error.response?.data?.error?.message || 'Erreur lors du chargement');
+                      }
+                    }}
+                    className="hover:bg-gray-50 group cursor-pointer"
+                  >
                     <td className="px-6 py-4 whitespace-nowrap font-medium">{bl.numero_bl}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{bl.numero_commande || '-'}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{bl.client_nom}</td>
@@ -565,25 +579,9 @@ const BonLivraison: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
-                          onClick={async () => {
-                            try {
-                              const result = await bonsLivraisonService.getBonLivraisonById(bl.id_bl);
-                              if (result.data?.success) {
-                                setSelectedBL(result.data?.data);
-                              }
-                            } catch (error: any) {
-                              console.error('Erreur chargement BL:', error);
-                              alert(error.response?.data?.error?.message || 'Erreur lors du chargement');
-                            }
-                          }}
-                          className="text-[#C8663D] hover:text-[#a55231]"
-                          title="Consulter"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
                         <button
-                          onClick={async () => {
+                          onClick={async (e) => {
+                            e.stopPropagation();
                             try { await bonsLivraisonService.downloadPDF(bl.id_bl, bl.numero_bl); }
                             catch { alert('Erreur lors du téléchargement du PDF'); }
                           }}
@@ -592,8 +590,9 @@ const BonLivraison: React.FC = () => {
                         >
                           <Download className="w-4 h-4" />
                         </button>
-                        <button 
-                          onClick={async () => {
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
                             try {
                               const result = await bonsLivraisonService.getBonLivraisonById(bl.id_bl);
                               if (result.data?.success) {
@@ -631,8 +630,9 @@ const BonLivraison: React.FC = () => {
                         >
                           <Edit className="w-4 h-4" />
                         </button>
-                        <button 
-                          onClick={async () => {
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
                             if (window.confirm(`Supprimer le bon de livraison ${bl.numero_bl} ?`)) {
                               try {
                                 await bonsLivraisonService.deleteBonLivraison(bl.id_bl);

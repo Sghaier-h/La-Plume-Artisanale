@@ -3,7 +3,6 @@ import {
   FileText,
   Search,
   Filter,
-  Eye,
   PlusCircle,
   Upload,
   Lock,
@@ -360,7 +359,11 @@ const JournalEcritures: React.FC = () => {
                 {filtered.map((e) => {
                   const tiers = (e.lignes || []).find((l) => l.nom_tiers)?.nom_tiers;
                   return (
-                    <tr key={e.id_ecriture} className="hover:bg-[#FDF2ED]/40 group">
+                    <tr
+                      key={e.id_ecriture}
+                      onClick={() => setDetail(e)}
+                      className="hover:bg-[#FDF2ED]/40 group cursor-pointer"
+                    >
                       <td className="px-4 py-3 text-gray-700 text-xs whitespace-nowrap">
                         {new Date(e.date_ecriture).toLocaleDateString('fr-FR')}
                       </td>
@@ -389,12 +392,6 @@ const JournalEcritures: React.FC = () => {
                         <StatutEcritureBadge statut={e.statut} />
                       </td>
                       <td className="px-4 py-3 text-right whitespace-nowrap">
-                        <button
-                          onClick={() => setDetail(e)}
-                          className="text-xs text-[#3B4E68] hover:text-[#C8663D] inline-flex items-center gap-1 font-medium"
-                        >
-                          <Eye className="w-3.5 h-3.5" /> Détail
-                        </button>
                       </td>
                     </tr>
                   );

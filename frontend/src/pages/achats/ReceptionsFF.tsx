@@ -6,7 +6,6 @@ import {
   AlertTriangle,
   Search,
   Filter,
-  Eye,
   Truck,
 } from 'lucide-react';
 import KpiCard from '../../components/ecommerce/KpiCard';
@@ -327,7 +326,8 @@ const ReceptionsFF: React.FC = () => {
                     return (
                       <tr
                         key={r.id_reception}
-                        className="border-b border-gray-100 hover:bg-[#FBF8F3]/60 group"
+                        onClick={() => setSelected(r)}
+                        className="border-b border-gray-100 hover:bg-[#FBF8F3]/60 group cursor-pointer"
                       >
                         <td className="px-4 py-3 font-mono text-xs text-[#4A5D75] font-semibold">
                           {r.numero_reception}
@@ -354,19 +354,11 @@ const ReceptionsFF: React.FC = () => {
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex justify-end gap-1">
-                            <button
-                              type="button"
-                              onClick={() => setSelected(r)}
-                              className="p-1.5 rounded hover:bg-[#EDF0F5] text-[#4A5D75]"
-                              title="Détails"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
                             {r.statut === 'en_cours' && (
                               <>
                                 <button
                                   type="button"
-                                  onClick={() => handleValider(r)}
+                                  onClick={(e) => { e.stopPropagation(); handleValider(r); }}
                                   className="p-1.5 rounded hover:bg-emerald-100 text-emerald-700"
                                   title="Valider réception"
                                 >
@@ -374,7 +366,7 @@ const ReceptionsFF: React.FC = () => {
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => handleLitige(r)}
+                                  onClick={(e) => { e.stopPropagation(); handleLitige(r); }}
                                   className="p-1.5 rounded hover:bg-red-100 text-red-700"
                                   title="Signaler écart"
                                 >

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Receipt, Plus, Edit, Trash2, Search, Download, Eye, Send, X, CheckCircle, FileText, ArrowLeft, TrendingUp, AlertCircle, Clock, Wallet } from 'lucide-react';
+import { Receipt, Plus, Edit, Trash2, Search, Download, Send, X, CheckCircle, FileText, ArrowLeft, TrendingUp, AlertCircle, Clock, Wallet } from 'lucide-react';
 import { facturesService, clientsService, commandesService, bonsLivraisonService, avoirsService } from '../services/api';
 import KpiCard from '../components/ecommerce/KpiCard';
 
@@ -667,8 +667,20 @@ const Facture: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                filteredFactures.map((facture) => (
-                  <tr key={facture.id_facture} className="hover:bg-gray-50 group">
+                filteredFactures.map((facture) => {
+                  const openFactureView = async () => {
+                    try {
+                      const result = await facturesService.getFactureById(facture.id_facture);
+                      if (result.data?.success) {
+                        setSelectedFacture(result.data?.data);
+                      }
+                    } catch (error: any) {
+                      console.error('Erreur chargement facture:', error);
+                      alert(error.response?.data?.error?.message || 'Erreur lors du chargement');
+                    }
+                  };
+                  return (
+                  <tr key={facture.id_facture} onClick={openFactureView} className="hover:bg-gray-50 cursor-pointer group">
                     <td className="px-6 py-4 whitespace-nowrap font-medium">{facture.numero_facture}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{facture.client_nom}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{facture.date_facture}</td>
@@ -684,26 +696,9 @@ const Facture: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
-                          onClick={async () => {
-                            try {
-                              const result = await facturesService.getFactureById(facture.id_facture);
-                              if (result.data?.success) {
-                                setSelectedFacture(result.data?.data);
-                              }
-                            } catch (error: any) {
-                              console.error('Erreur chargement facture:', error);
-                              alert(error.response?.data?.error?.message || 'Erreur lors du chargement');
-                            }
-                          }}
-                          className="hover:opacity-70 transition"
-                          style={{ color: 'var(--accent-indigo)' }}
-                          title="Consulter"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
                         <button
-                          onClick={async () => {
+                          onClick={async (e) => {
+                            e.stopPropagation();
                             try {
                               await facturesService.downloadPDF(facture.id_facture, facture.numero_facture);
                             } catch (err) {
@@ -715,8 +710,9 @@ const Facture: React.FC = () => {
                         >
                           <Download className="w-4 h-4" />
                         </button>
-                        <button 
-                          onClick={async () => {
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
                             try {
                               const result = await facturesService.getFactureById(facture.id_facture);
                               if (result.data?.success) {
@@ -757,8 +753,9 @@ const Facture: React.FC = () => {
                         >
                           <Edit className="w-4 h-4" />
                         </button>
-                        <button 
-                          onClick={async () => {
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
                             if (window.confirm(`Supprimer la facture ${facture.numero_facture} ?`)) {
                               try {
                                 await facturesService.deleteFacture(facture.id_facture);
@@ -778,7 +775,8 @@ const Facture: React.FC = () => {
                       </div>
                     </td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>

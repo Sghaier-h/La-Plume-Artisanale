@@ -9,7 +9,6 @@ import {
   PlusCircle,
   RefreshCw,
   X,
-  Eye,
   Pencil,
   Trash2,
   Pause,
@@ -1049,7 +1048,11 @@ const CampagnesTab: React.FC<{
               const meta = PLATFORM_META[c.plateforme];
               const spark = genSpark(c.depense ? c.depense / 14 : 5, 0.4);
               return (
-                <tr key={c.id_campagne} className="hover:bg-gray-50">
+                <tr
+                  key={c.id_campagne}
+                  className="hover:bg-gray-50 cursor-pointer"
+                  onClick={() => openMetriques(c)}
+                >
                   <td className="px-4 py-3">
                     <div className="font-semibold text-gray-900">{c.libelle}</div>
                     <div className="flex items-center gap-2 mt-1">
@@ -1122,13 +1125,7 @@ const CampagnesTab: React.FC<{
                   </td>
                   <td className="px-4 py-3 text-right whitespace-nowrap">
                     <button
-                      onClick={() => openMetriques(c)}
-                      className="text-xs text-[#3B4E68] hover:text-[#C8663D] inline-flex items-center gap-1 mr-2"
-                    >
-                      <Eye className="w-3.5 h-3.5" /> KPI
-                    </button>
-                    <button
-                      onClick={() => togglePause(c)}
+                      onClick={(e) => { e.stopPropagation(); togglePause(c); }}
                       className={`text-xs inline-flex items-center gap-1 font-medium px-2 py-1 rounded ${
                         c.statut === 'pause'
                           ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'

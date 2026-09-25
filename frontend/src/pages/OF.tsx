@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ofService, articlesService, machinesService, commandesService, suiviFabricationService, stockService, qualiteAvanceeService } from '../services/api';
-import { FileText, Plus, Edit, Trash2, Search, Eye, X, Play, Square, CheckCircle, Settings, Package, Calendar, AlertCircle, TrendingUp, Clock, User } from 'lucide-react';
+import { FileText, Plus, Edit, Trash2, Search, X, Play, Square, CheckCircle, Settings, Package, Calendar, AlertCircle, TrendingUp, Clock, User } from 'lucide-react';
 
 interface LigneOF {
   id_operation?: number;
@@ -572,7 +572,11 @@ const OF: React.FC = () => {
                 </tr>
               ) : (
                 filteredOFs.map((of) => (
-                  <tr key={of.id_of} className="hover:bg-gray-50 group">
+                  <tr
+                    key={of.id_of}
+                    className="hover:bg-gray-50 group cursor-pointer"
+                    onClick={() => { if (of.id_of) navigate(`/of/${of.id_of}`); }}
+                  >
                     <td className="px-6 py-4 whitespace-nowrap font-medium">{of.numero_of}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
@@ -619,16 +623,6 @@ const OF: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (of.id_of) navigate(`/of/${of.id_of}`);
-                          }}
-                          className="text-green-600 hover:text-green-700"
-                          title="Voir les détails"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
                         {of.statut === 'planifie' && (
                           <button 
                             onClick={(e) => {

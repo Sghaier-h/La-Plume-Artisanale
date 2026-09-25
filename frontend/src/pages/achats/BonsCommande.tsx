@@ -4,7 +4,6 @@ import {
   PlusCircle,
   Send,
   Download,
-  Eye,
   Search,
   Filter,
   Package,
@@ -358,7 +357,8 @@ const BonsCommande: React.FC = () => {
                   {filtered.map((b) => (
                     <tr
                       key={b.id_bc}
-                      className="border-b border-gray-100 hover:bg-[#FBF8F3]/60 group"
+                      onClick={() => setSelected(b)}
+                      className="border-b border-gray-100 hover:bg-[#FBF8F3]/60 group cursor-pointer"
                     >
                       <td className="px-4 py-3 font-mono text-xs text-[#4A5D75] font-semibold">
                         {b.numero_bc}
@@ -391,18 +391,10 @@ const BonsCommande: React.FC = () => {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex justify-end gap-1">
-                          <button
-                            type="button"
-                            onClick={() => setSelected(b)}
-                            title="Voir lignes"
-                            className="p-1.5 rounded hover:bg-[#EDF0F5] text-[#4A5D75]"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
                           {b.statut === 'brouillon' && (
                             <button
                               type="button"
-                              onClick={() => handleEnvoyer(b)}
+                              onClick={(e) => { e.stopPropagation(); handleEnvoyer(b); }}
                               title="Envoyer au fournisseur"
                               className="p-1.5 rounded hover:bg-[#EEF4F0] text-[#4A6C5B]"
                             >
@@ -411,7 +403,7 @@ const BonsCommande: React.FC = () => {
                           )}
                           <button
                             type="button"
-                            onClick={() => handleDownload(b)}
+                            onClick={(e) => { e.stopPropagation(); handleDownload(b); }}
                             title="Télécharger PDF"
                             className="p-1.5 rounded hover:bg-[#FBF3E0] text-[#8A6412]"
                           >

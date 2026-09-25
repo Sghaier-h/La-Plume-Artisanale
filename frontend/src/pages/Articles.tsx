@@ -1533,7 +1533,11 @@ const Articles: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-gray-200">
               {filteredArticles.map((article) => (
-                <tr key={article.id_article} className="hover:bg-gray-50 group">
+                <tr
+                  key={article.id_article}
+                  onClick={() => { if (article.id_article) navigate(`/articles/${article.id_article}`); }}
+                  className="hover:bg-gray-50 group cursor-pointer"
+                >
                   <td className="px-6 py-4">
                     {article.photo_article ? (
                       <img src={article.photo_article} alt={article.ref_commercial} className="w-12 h-12 object-cover rounded" />
@@ -1571,7 +1575,8 @@ const Articles: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <button
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setSelectedArticleForStock(article);
                         setShowStockDetail(true);
                       }}
@@ -1607,16 +1612,6 @@ const Articles: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (article.id_article) navigate(`/articles/${article.id_article}`);
-                        }}
-                        className="text-green-600 hover:text-green-700"
-                        title="Voir les détails"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();

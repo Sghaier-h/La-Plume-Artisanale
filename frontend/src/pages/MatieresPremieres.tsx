@@ -239,7 +239,21 @@ const MatieresPremieres: React.FC = () => {
                 {matieres.map((matiere) => {
                   const status = getStockStatus(matiere);
                   return (
-                    <tr key={matiere.id_mp} className="hover:bg-gray-50 group">
+                    <tr
+                      key={matiere.id_mp}
+                      className="hover:bg-gray-50 group cursor-pointer"
+                      onClick={async () => {
+                        try {
+                          const result = await matieresPremieresService.getMatierePremiere(matiere.id_mp);
+                          if (result.data?.data) {
+                            setSelectedMatiere(result.data?.data);
+                          }
+                        } catch (error: any) {
+                          console.error('Erreur chargement matière:', error);
+                          setSelectedMatiere(matiere);
+                        }
+                      }}
+                    >
                       <td className="px-6 py-4 whitespace-nowrap font-mono text-xs font-medium text-[#C8663D]">
                         {matiere.qr_mp || '-'}
                       </td>
@@ -268,24 +282,7 @@ const MatieresPremieres: React.FC = () => {
                       <td className="px-6 py-4">
                         <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
-                            onClick={async () => {
-                              try {
-                                const result = await matieresPremieresService.getMatierePremiere(matiere.id_mp);
-                                if (result.data?.data) {
-                                  setSelectedMatiere(result.data?.data);
-                                }
-                              } catch (error: any) {
-                                console.error('Erreur chargement matière:', error);
-                                setSelectedMatiere(matiere);
-                              }
-                            }}
-                            className="text-[#C8663D] hover:text-[#4A5D75]"
-                            title="Consulter"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleEdit(matiere)}
+                            onClick={(e) => { e.stopPropagation(); handleEdit(matiere); }}
                             className="text-gray-600 hover:text-gray-800"
                             title="Modifier"
                           >

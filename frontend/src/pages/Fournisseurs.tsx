@@ -309,8 +309,20 @@ const Fournisseurs: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {fournisseurs.map((fournisseur) => (
-                    <tr key={fournisseur.id_fournisseur}>
+                  {fournisseurs.map((fournisseur) => {
+                    const openFournisseurView = async () => {
+                      try {
+                        const result = await fournisseursService.getFournisseur(fournisseur.id_fournisseur);
+                        if (result.data?.data) {
+                          setSelectedFournisseur(result.data?.data);
+                        }
+                      } catch (error: any) {
+                        console.error('Erreur chargement fournisseur:', error);
+                        setSelectedFournisseur(fournisseur);
+                      }
+                    };
+                    return (
+                    <tr key={fournisseur.id_fournisseur} onClick={openFournisseurView} className="hover:bg-gray-50 cursor-pointer group">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{fournisseur.code_fournisseur}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">{fournisseur.raison_sociale}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">{fournisseur.ville}</td>
@@ -323,30 +335,14 @@ const Fournisseurs: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button 
-                            onClick={async () => {
-                              try {
-                                const result = await fournisseursService.getFournisseur(fournisseur.id_fournisseur);
-                                if (result.data?.data) {
-                                  setSelectedFournisseur(result.data?.data);
-                                }
-                              } catch (error: any) {
-                                console.error('Erreur chargement fournisseur:', error);
-                                setSelectedFournisseur(fournisseur);
-                              }
-                            }}
-                            className="text-[#C8663D] hover:text-[#4A5D75]"
-                            title="Consulter"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => handleEdit(fournisseur)} className="text-gray-600 hover:text-gray-900" title="Modifier">
+                          <button onClick={(e) => { e.stopPropagation(); handleEdit(fournisseur); }} className="text-gray-600 hover:text-gray-900" title="Modifier">
                             <Edit className="w-4 h-4" />
                           </button>
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

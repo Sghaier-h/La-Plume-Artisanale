@@ -5,7 +5,6 @@ import {
   Info,
   CheckCircle2,
   XCircle,
-  Eye,
   Code2,
   Filter,
 } from 'lucide-react';
@@ -300,7 +299,7 @@ const ConstatsATraiter: React.FC = () => {
                   const sev = SEV_CFG[f.severite];
                   const st = STATUT_CFG[f.statut];
                   return (
-                    <tr key={f.id_finding} className="hover:bg-[#FDF2ED]/40 group">
+                    <tr key={f.id_finding} onClick={() => setSelected(f)} className="hover:bg-[#FDF2ED]/40 group cursor-pointer">
                       <td className="px-4 py-3">
                         <div className="font-semibold text-xs" style={{ color: 'var(--fg-primary, #2F2A26)' }}>{f.agent_source}</div>
                         <div className="text-[10px]" style={{ color: 'var(--fg-muted, #8A6E4A)' }}>{f.agent_domaine}</div>
@@ -344,18 +343,10 @@ const ConstatsATraiter: React.FC = () => {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-center gap-1">
-                          <button
-                            onClick={() => setSelected(f)}
-                            title="Voir détails"
-                            className="p-1.5 rounded hover:bg-[#FDF2ED]"
-                            style={{ color: 'var(--fg-secondary, #5D4E42)' }}
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
                           {(f.statut === 'nouveau' || f.statut === 'en_revue') && (
                             <>
                               <button
-                                onClick={() => valider(f.id_finding)}
+                                onClick={(e) => { e.stopPropagation(); valider(f.id_finding); }}
                                 title="Valider correction"
                                 className="p-1.5 rounded hover:bg-emerald-50"
                                 style={{ color: '#4A6C5B' }}
@@ -363,7 +354,7 @@ const ConstatsATraiter: React.FC = () => {
                                 <CheckCircle2 className="w-4 h-4" />
                               </button>
                               <button
-                                onClick={() => rejeter(f.id_finding)}
+                                onClick={(e) => { e.stopPropagation(); rejeter(f.id_finding); }}
                                 title="Rejeter"
                                 className="p-1.5 rounded hover:bg-red-50"
                                 style={{ color: '#B84A4A' }}

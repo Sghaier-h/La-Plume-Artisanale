@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { suiviFabricationService, ofService, machinesService } from '../services/api';
-import { TrendingUp, Clock, CheckCircle, XCircle, AlertTriangle, Search, Filter, Eye, X, Plus, Edit, Play, Square, Calendar, Package, Settings, User, Percent, BarChart3 } from 'lucide-react';
+import { TrendingUp, Clock, CheckCircle, XCircle, AlertTriangle, Search, Filter, X, Plus, Edit, Play, Square, Calendar, Package, Settings, User, Percent, BarChart3 } from 'lucide-react';
 
 interface SuiviFabrication {
   id_suivi: number;
@@ -460,7 +460,21 @@ const SuiviFabrication: React.FC = () => {
                   filteredSuivis.map((suivi) => {
                     const rendement = calculerRendement(suivi.quantite_bonne || 0, suivi.quantite_produite || 0);
                     return (
-                      <tr key={suivi.id_suivi} className="hover:bg-gray-50 group">
+                      <tr
+                        key={suivi.id_suivi}
+                        className="hover:bg-gray-50 group cursor-pointer"
+                        onClick={async () => {
+                          try {
+                            const result = await suiviFabricationService.getSuiviFabrication(suivi.id_suivi);
+                            if (result.data?.data) {
+                              setSelectedSuivi(result.data?.data);
+                            }
+                          } catch (error: any) {
+                            console.error('Erreur chargement suivi:', error);
+                            setSelectedSuivi(suivi);
+                          }
+                        }}
+                      >
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{suivi.numero_suivi}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">{suivi.numero_of}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">{suivi.machine_designation}</td>
@@ -484,25 +498,8 @@ const SuiviFabrication: React.FC = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button 
-                              onClick={async () => {
-                                try {
-                                  const result = await suiviFabricationService.getSuiviFabrication(suivi.id_suivi);
-                                  if (result.data?.data) {
-                                    setSelectedSuivi(result.data?.data);
-                                  }
-                                } catch (error: any) {
-                                  console.error('Erreur chargement suivi:', error);
-                                  setSelectedSuivi(suivi);
-                                }
-                              }}
-                              className="text-blue-600 hover:text-blue-700"
-                              title="Consulter"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
-                            <button 
-                              onClick={() => handleEdit(suivi)}
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleEdit(suivi); }}
                               className="text-gray-600 hover:text-gray-700"
                               title="Modifier"
                             >

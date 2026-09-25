@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   Receipt,
   Search,
-  Eye,
   Download,
   RefreshCw,
   CheckCircle2,
@@ -330,7 +329,11 @@ const BulletinsPaie: React.FC = () => {
                   </tr>
                 ) : (
                   filtered.map((b) => (
-                    <tr key={b.id_bulletin} className="border-t border-[#EDE3CE] hover:bg-[#FBF8F3] group">
+                    <tr
+                      key={b.id_bulletin}
+                      className="border-t border-[#EDE3CE] hover:bg-[#FBF8F3] group cursor-pointer"
+                      onClick={() => setPreview(b)}
+                    >
                       <td className="px-4 py-3 font-mono text-xs text-[#4A5D75]">{b.numero_bulletin}</td>
                       <td className="px-4 py-3 font-medium">
                         {b.employe_prenom} {b.employe_nom}
@@ -370,17 +373,11 @@ const BulletinsPaie: React.FC = () => {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="inline-flex items-center gap-1">
-                          <button
-                            onClick={() => setPreview(b)}
-                            title="Voir bulletin PRO"
-                            className="p-1.5 rounded hover:bg-[#FDF2ED]"
-                          >
-                            <Eye className="w-4 h-4 text-[#C8663D]" />
-                          </button>
                           <a
                             href={bulletinsService.pdfUrl(b.id_bulletin)}
                             target="_blank"
                             rel="noreferrer"
+                            onClick={(e) => e.stopPropagation()}
                             title="Télécharger PDF"
                             className="p-1.5 rounded hover:bg-[#EDF0F5]"
                           >

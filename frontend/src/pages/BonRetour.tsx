@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { RotateCcw, Plus, Edit, Trash2, Search, Download, Eye, X, Package } from 'lucide-react';
+import { RotateCcw, Plus, Edit, Trash2, Search, Download, X, Package } from 'lucide-react';
 import { bonsRetourService, bonsLivraisonService, clientsService } from '../services/api';
 
 interface LigneRetour {
@@ -504,7 +504,21 @@ const BonRetour: React.FC = () => {
                 </tr>
               ) : (
                 filteredBR.map((br) => (
-                  <tr key={br.id_retour} className="hover:bg-gray-50 group">
+                  <tr
+                    key={br.id_retour}
+                    onClick={async () => {
+                      try {
+                        const result = await bonsRetourService.getBonRetourById(br.id_retour);
+                        if (result.data?.success) {
+                          setSelectedBR(result.data?.data);
+                        }
+                      } catch (error: any) {
+                        console.error('Erreur chargement BR:', error);
+                        alert(error.response?.data?.error?.message || 'Erreur lors du chargement');
+                      }
+                    }}
+                    className="hover:bg-gray-50 group cursor-pointer"
+                  >
                     <td className="px-6 py-4 whitespace-nowrap font-medium">{br.numero_retour}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{br.numero_bl || '-'}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{br.client_nom}</td>
@@ -517,28 +531,16 @@ const BonRetour: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
-                          onClick={async () => {
-                            try {
-                              const result = await bonsRetourService.getBonRetourById(br.id_retour);
-                              if (result.data?.success) {
-                                setSelectedBR(result.data?.data);
-                              }
-                            } catch (error: any) {
-                              console.error('Erreur chargement BR:', error);
-                              alert(error.response?.data?.error?.message || 'Erreur lors du chargement');
-                            }
-                          }}
-                          className="text-[#C8663D] hover:text-[#a55231]"
-                          title="Consulter"
+                        <button
+                          onClick={(e) => { e.stopPropagation(); }}
+                          className="text-green-600 hover:text-green-700"
+                          title="Télécharger PDF"
                         >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button className="text-green-600 hover:text-green-700" title="Télécharger PDF">
                           <Download className="w-4 h-4" />
                         </button>
-                        <button 
-                          onClick={async () => {
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
                             try {
                               const result = await bonsRetourService.getBonRetourById(br.id_retour);
                               if (result.data?.success) {
@@ -574,8 +576,9 @@ const BonRetour: React.FC = () => {
                         >
                           <Edit className="w-4 h-4" />
                         </button>
-                        <button 
-                          onClick={async () => {
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
                             if (window.confirm(`Supprimer le bon de retour ${br.numero_retour} ?`)) {
                               try {
                                 await bonsRetourService.deleteBonRetour(br.id_retour);

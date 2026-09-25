@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { FileText, Plus, Edit, Trash2, Search, Download, Eye, X, CheckCircle, ShoppingCart, TrendingUp, Clock, Award } from 'lucide-react';
+import { FileText, Plus, Edit, Trash2, Search, Download, X, CheckCircle, ShoppingCart, TrendingUp, Clock, Award } from 'lucide-react';
 import { devisService, commandesService, clientsService, articlesService } from '../services/api';
 import ArticlePicker from '../components/ArticlePicker';
 import KpiCard from '../components/ecommerce/KpiCard';
@@ -633,14 +633,6 @@ const Devis: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                     <div className="flex gap-2">
-                      <button
-                        onClick={openDevisView}
-                        className="hover:opacity-70 transition"
-                        style={{ color: 'var(--accent-indigo)' }}
-                        title="Consulter"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
                       {!dejaTransforme && (
                         <button
                           onClick={transformerRow}
@@ -651,7 +643,8 @@ const Devis: React.FC = () => {
                         </button>
                       )}
                       <button
-                        onClick={async () => {
+                        onClick={async (e) => {
+                          e.stopPropagation();
                           try { await devisService.downloadPDF(devis.id_devis, devis.numero_devis); }
                           catch { alert('Erreur lors du téléchargement du PDF'); }
                         }}
@@ -660,8 +653,9 @@ const Devis: React.FC = () => {
                       >
                         <Download className="w-4 h-4" />
                       </button>
-                      <button 
-                        onClick={async () => {
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
                           try {
                             const result = await devisService.getDevisById(devis.id_devis);
                             if (result.data?.success) {
@@ -701,8 +695,9 @@ const Devis: React.FC = () => {
                       >
                         <Edit className="w-4 h-4" />
                       </button>
-                      <button 
-                        onClick={async () => {
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
                           if (window.confirm(`Êtes-vous sûr de vouloir supprimer le devis ${devis.numero_devis} ?`)) {
                             try {
                               await devisService.deleteDevis(devis.id_devis);

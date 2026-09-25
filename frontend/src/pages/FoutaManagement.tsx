@@ -1682,9 +1682,13 @@ export default function FoutaManagementApp() {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredOF.map((of, idx) => (
-                      <tr 
+                      <tr
                         key={idx}
-                        className={`hover:bg-gray-50 transition-colors ${
+                        onClick={() => {
+                          setSelectedOF(of);
+                          setShowDocumentModal(true);
+                        }}
+                        className={`hover:bg-gray-50 transition-colors cursor-pointer ${
                           of.urgence ? 'bg-red-50' : ''
                         }`}
                       >
@@ -1742,16 +1746,7 @@ export default function FoutaManagementApp() {
                           {of.dateLivraison}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <button 
-                            onClick={() => {
-                              setSelectedOF(of);
-                              setShowDocumentModal(true);
-                            }}
-                            className="text-[#4A5D75] hover:text-[#3B4E68] mr-3"
-                          >
-                            <Eye className="w-5 h-5 inline" />
-                          </button>
-                          <button className="text-gray-600 hover:text-gray-900 mr-3">
+                          <button onClick={(e) => e.stopPropagation()} className="text-gray-600 hover:text-gray-900 mr-3">
                             <Edit className="w-5 h-5 inline" />
                           </button>
                         </td>
@@ -2251,9 +2246,6 @@ export default function FoutaManagementApp() {
                           <span className="font-semibold text-green-600">{bom.prixRevient.toFixed(2)} TND</span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right">
-                          <button className="text-[#4A5D75] hover:text-[#3B4E68] mr-3">
-                            <Eye className="w-5 h-5 inline" />
-                          </button>
                           <button className="text-gray-600 hover:text-gray-900 mr-3">
                             <Edit className="w-5 h-5 inline" />
                           </button>

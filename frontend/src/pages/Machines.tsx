@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { machinesService } from '../services/api';
-import { Settings, Plus, Edit, Trash2, Search, Eye, X, Calendar, MapPin, AlertCircle, Activity, TrendingUp } from 'lucide-react';
+import { Settings, Plus, Edit, Trash2, Search, X, Calendar, MapPin, AlertCircle, Activity, TrendingUp } from 'lucide-react';
 
 const Machines: React.FC = () => {
   const [machines, setMachines] = useState<any[]>([]);
@@ -249,8 +249,20 @@ const Machines: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {machines.map((machine) => (
-                <tr key={machine.id_machine}>
+              {machines.map((machine) => {
+                const openMachineView = async () => {
+                  try {
+                    const result = await machinesService.getMachine(machine.id_machine);
+                    if (result.data?.data) {
+                      setSelectedMachine(result.data?.data);
+                    }
+                  } catch (error: any) {
+                    console.error('Erreur chargement machine:', error);
+                    setSelectedMachine(machine);
+                  }
+                };
+                return (
+                <tr key={machine.id_machine} onClick={openMachineView} className="hover:bg-gray-50 cursor-pointer group">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{machine.numero_machine}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">{machine.type_machine || '-'}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">{machine.marque} {machine.modele}</td>
@@ -266,25 +278,8 @@ const Machines: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm">{machine.emplacement || '-'}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                     <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button 
-                        onClick={async () => {
-                          try {
-                            const result = await machinesService.getMachine(machine.id_machine);
-                            if (result.data?.data) {
-                              setSelectedMachine(result.data?.data);
-                            }
-                          } catch (error: any) {
-                            console.error('Erreur chargement machine:', error);
-                            setSelectedMachine(machine);
-                          }
-                        }}
-                        className="text-[#C8663D] hover:text-[#a55231]"
-                        title="Consulter"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button 
-                        onClick={() => handleEdit(machine)}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleEdit(machine); }}
                         className="text-gray-600 hover:text-gray-700"
                         title="Modifier"
                       >
@@ -293,7 +288,8 @@ const Machines: React.FC = () => {
                     </div>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

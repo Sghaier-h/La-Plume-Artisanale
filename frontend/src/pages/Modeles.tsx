@@ -1385,16 +1385,6 @@ const Modeles: React.FC = () => {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (modele.id_modele) navigate(`/modeles/${modele.id_modele}`);
-                        }}
-                        className="text-green-600 hover:text-green-700"
-                        title="Voir les détails"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
                           handleEdit(modele);
                         }}
                         className="text-[#C8663D] hover:text-[#a55231]"
