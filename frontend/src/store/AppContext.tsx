@@ -5,6 +5,7 @@
 
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import { getPermissionsForRole } from '../config/rolePermissions';
 
 // Types
 interface AppState {
@@ -464,13 +465,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return true;
     }
 
-    // Vérifier les permissions spécifiques
+    // 1. Vérifier les permissions chargées depuis le backend (si dispo)
     const modulePermissions = state.permissions[module];
-    if (!modulePermissions) {
-      return false;
+    if (modulePermissions && modulePermissions[action] === true) {
+      return true;
     }
 
-    return modulePermissions[action] === true;
+    // 2. Fallback : matrice statique par rôle (frontend/src/config/rolePermissions.ts)
+    // Utile en attendant que le backend charge les permissions réelles au login.
+    const rolePerms = getPermissionsForRole(userRole);
+    if (rolePerms) {
+      const modPerms = rolePerms[module];
+      if (modPerms && modPerms[action] === true) {
+        return true;
+      }
+    }
+
+    return false;
   };
 
   // Helpers pour le panier de commande

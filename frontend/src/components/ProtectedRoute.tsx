@@ -2,6 +2,24 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import Navigation from './NavigationEnhanced';
+import TabletteLayout from './TabletteLayout';
+
+/**
+ * Rôles opérant sur tablette atelier (§14.9-14.13).
+ * Pour ces rôles, on remplace la sidebar PC par un layout tablette
+ * (header sticky top avec logo, poste, heure, notif, mon poste, déconnexion).
+ */
+const TABLETTE_ROLES = new Set([
+  'TISSEUR',
+  'COUPEUR',
+  'OURDISSEUR',
+  'CONTROLEUR_QUALITE',
+  'MECANICIEN',
+  'MAGASINIER_PREPARATION',
+  'MAGASINIER_MP',
+  'MAGASINIER_STOCK',
+  'MAGASINIER_SOUSTRAITANTS',
+]);
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -117,6 +135,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   // Si toutes les vérifications passent, afficher le contenu
+  // Rôles tablette → layout tablette dédié (pas de sidebar PC)
+  const roleUpper = user.role?.toUpperCase() || '';
+  const isTabletteRole = TABLETTE_ROLES.has(roleUpper);
+
+  if (showNav && isTabletteRole) {
+    return <TabletteLayout>{children}</TabletteLayout>;
+  }
+
   return (
     <>
       {showNav && <Navigation />}
