@@ -29,7 +29,7 @@ import {
   MessageSquare, LayoutDashboard, Store,
   UserCog, Mail, MessageCircle,
   Settings, MapPin, Percent as VatIcon,
-  ChevronDown, ChevronRight, ChevronLeft
+  ChevronDown, ChevronRight, ChevronLeft, LogOut
 } from 'lucide-react';
 import GlobalSearch from './GlobalSearch';
 import CompanySwitcher from './CompanySwitcher';
@@ -53,6 +53,9 @@ interface MenuCategory {
   icon: LucideIconLike;
   permission?: string;
   items: MenuItem[];
+  /** Masquer cette catégorie pour l'admin (l'admin gère le système,
+   * il n'a pas besoin des vues opérationnelles métier). */
+  hideForAdmin?: boolean;
 }
 
 interface NavigationEnhancedProps {
@@ -69,8 +72,23 @@ const CREAM_FG = '#FBF8F3';
 const NavigationEnhanced: React.FC<NavigationEnhancedProps> = ({ onNavigate }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { state, toggleSidebar, hasPermission } = useApp();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  const userInitials = React.useMemo(() => {
+    const nom = (user as any)?.nom || '';
+    const prenom = (user as any)?.prenom || '';
+    if (prenom || nom) {
+      return `${(prenom?.[0] || '').toUpperCase()}${(nom?.[0] || '').toUpperCase()}`.trim() || 'U';
+    }
+    const email = (user as any)?.email || '';
+    return email.slice(0, 2).toUpperCase() || 'U';
+  }, [user]);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
@@ -378,12 +396,14 @@ const NavigationEnhanced: React.FC<NavigationEnhancedProps> = ({ onNavigate }) =
       ],
     },
 
-    // 13. Dashboards
+    // 13. Dashboards — visibles pour tous SAUF l'admin (qui gère le système,
+    //     pas les vues opérationnelles métier)
     {
       id: 'dashboards',
       label: 'Dashboards',
       icon: LayoutDashboard,
       permission: 'dashboard.read',
+      hideForAdmin: true,
       items: [
         { path: '/dashboard-admin', label: 'Admin', icon: LayoutDashboard, permission: 'dashboard.read' },
         { path: '/dashboard-commercial', label: 'Commercial', icon: TrendingUp, permission: 'dashboard.commercial' },
@@ -459,6 +479,8 @@ const NavigationEnhanced: React.FC<NavigationEnhancedProps> = ({ onNavigate }) =
   const menuCategories: MenuCategory[] = rawCategories
     .map((category) => ({ ...category, items: filterByPermissions(category.items) }))
     .filter((category) => {
+      // Masquer les catégories opérationnelles pour l'admin (gère le système)
+      if (isAdmin && category.hideForAdmin) return false;
       if (isAdmin) return category.items.length > 0;
       if (category.permission && hasPermission) {
         try {
@@ -778,12 +800,103 @@ const NavigationEnhanced: React.FC<NavigationEnhancedProps> = ({ onNavigate }) =
           })}
         </div>
 
-        {/* Footer société */}
+        {/* Footer société + profil + déconnexion */}
         <div
-          className="mt-auto flex-shrink-0 border-t px-2 py-2"
+          className="mt-auto flex-shrink-0 border-t"
           style={{ borderColor: 'var(--border-default, #DFD3B8)' }}
         >
-          <CompanySwitcher />
+          <div className="px-2 py-2">
+            <CompanySwitcher />
+          </div>
+
+          {/* Bloc profil utilisateur + déconnexion */}
+          <div
+            className="border-t px-3 py-3"
+            style={{ borderColor: 'var(--border-subtle, #EDE3CE)' }}
+          >
+            <div className="flex items-center gap-3">
+              {/* Avatar gradient terracotta → gold */}
+              <div
+                className="flex items-center justify-center flex-shrink-0"
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, var(--accent-terracotta), var(--accent-gold))',
+                  color: CREAM_FG,
+                  fontFamily: 'var(--font-serif, Fraunces, serif)',
+                  fontSize: 14,
+                  fontWeight: 600,
+                  fontStyle: 'italic',
+                }}
+                aria-hidden="true"
+              >
+                {userInitials}
+              </div>
+
+              {/* Nom + rôle */}
+              <div className="flex-1 min-w-0">
+                <div
+                  className="truncate"
+                  style={{
+                    fontFamily: 'var(--font-sans, Inter, sans-serif)',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: 'var(--fg-primary, #2F1F12)',
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {(user as any)?.prenom
+                    ? `${(user as any).prenom} ${(user as any).nom || ''}`.trim()
+                    : (user as any)?.email || 'Utilisateur'}
+                </div>
+                <div
+                  className="truncate"
+                  style={{
+                    fontFamily: 'var(--font-mono, JetBrains Mono, monospace)',
+                    fontSize: 10,
+                    color: 'var(--fg-muted, #9B8874)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    marginTop: 2,
+                  }}
+                >
+                  {(user as any)?.role || 'USER'}
+                </div>
+              </div>
+            </div>
+
+            {/* Bouton déconnexion */}
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="w-full mt-2 flex items-center justify-center gap-2 py-2 transition-colors"
+              style={{
+                background: 'transparent',
+                border: '1px solid var(--border-default, #DFD3B8)',
+                borderRadius: 8,
+                color: 'var(--fg-secondary, #6B4E31)',
+                fontFamily: 'var(--font-sans, Inter, sans-serif)',
+                fontSize: 12,
+                fontWeight: 500,
+                cursor: 'pointer',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'var(--color-danger-bg, #FBEBE4)';
+                e.currentTarget.style.color = 'var(--color-danger, #B84A2F)';
+                e.currentTarget.style.borderColor = 'var(--color-danger, #B84A2F)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.color = 'var(--fg-secondary, #6B4E31)';
+                e.currentTarget.style.borderColor = 'var(--border-default, #DFD3B8)';
+              }}
+              aria-label="Se déconnecter"
+            >
+              <LogOut size={14} />
+              <span>Déconnexion</span>
+            </button>
+          </div>
         </div>
       </div>
     </nav>
