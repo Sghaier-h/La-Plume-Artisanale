@@ -11,6 +11,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import PlumeLogo from './PlumeLogo';
 import {
   Search,
   Sparkles,
@@ -33,9 +34,11 @@ const SOCIETES = [
 interface UserBarProps {
   /** Décalage top additionnel (pour navigation sticky au-dessus). Par défaut 0. */
   topOffset?: number;
+  /** Décalage gauche (largeur sidebar). Passe 288 pour laisser la place au menu §15. */
+  leftOffset?: number;
 }
 
-const UserBar: React.FC<UserBarProps> = ({ topOffset = 0 }) => {
+const UserBar: React.FC<UserBarProps> = ({ topOffset = 0, leftOffset = 0 }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [societeIdx, setSocieteIdx] = React.useState(0);
@@ -96,20 +99,75 @@ const UserBar: React.FC<UserBarProps> = ({ topOffset = 0 }) => {
   return (
     <div
       style={{
-        position: 'sticky',
+        position: 'fixed',
         top: topOffset,
-        zIndex: 200,
+        left: leftOffset,
+        right: 0,
+        zIndex: 30,   // sous la sidebar (z-50) pour que la sidebar la couvre à gauche
         background: 'var(--bg-elevated, #FFFFFF)',
         borderBottom: '1px solid var(--border-subtle, #EDE3CE)',
         padding: '8px 20px',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'flex-end',
+        justifyContent: 'space-between',
         gap: 8,
         minHeight: 48,
         fontFamily: 'var(--font-sans, Inter, sans-serif)',
       }}
     >
+      {/* Brand La Plume à gauche (cliquable → accueil) */}
+      <button
+        type="button"
+        onClick={() => navigate('/')}
+        aria-label="Retour à l'accueil"
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 10,
+          padding: '4px 8px',
+          background: 'transparent',
+          border: 'none',
+          borderRadius: 8,
+          cursor: 'pointer',
+          transition: 'background 0.15s',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = 'var(--bg-canvas, #F5EFE5)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = 'transparent';
+        }}
+      >
+        <PlumeLogo size={28} variant="icon" />
+        <div style={{ textAlign: 'left', lineHeight: 1.1 }}>
+          <div
+            style={{
+              fontFamily: 'var(--font-serif, Fraunces, serif)',
+              fontStyle: 'italic',
+              fontWeight: 500,
+              fontSize: 14,
+              color: 'var(--fg-primary, #2F1F12)',
+            }}
+          >
+            La Plume
+          </div>
+          <div
+            style={{
+              fontFamily: 'var(--font-mono, monospace)',
+              fontSize: 9,
+              color: 'var(--fg-muted, #9B8874)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+              marginTop: 1,
+            }}
+          >
+            Artisanale · ERP
+          </div>
+        </div>
+      </button>
+
+      {/* Groupe droit : outils + session */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
       {/* Recherche globale */}
       <button
         type="button"
@@ -286,6 +344,7 @@ const UserBar: React.FC<UserBarProps> = ({ topOffset = 0 }) => {
         <span style={{ opacity: 0.7 }}>·</span>
         <span>Déconnexion</span>
       </button>
+      </div>
     </div>
   );
 };

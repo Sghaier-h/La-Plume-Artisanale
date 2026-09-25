@@ -161,9 +161,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
+  // showNav=true → sidebar 288px à gauche, UserBar décalée
+  // showNav=false → UserBar pleine largeur (pas de sidebar)
   return (
     <>
-      <UserBar />
+      <UserBar leftOffset={showNav ? 288 : 0} />
       {showNav && <Navigation />}
       {children}
     </>

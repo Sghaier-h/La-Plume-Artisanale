@@ -520,57 +520,39 @@ const NavigationEnhanced: React.FC<NavigationEnhancedProps> = ({ onNavigate }) =
 
   return (
     <nav
-      className={`w-72 fixed left-0 flex flex-col z-40 transition-transform duration-300 shadow-xl border-r ${
+      className={`w-72 h-screen fixed left-0 top-0 flex flex-col z-50 transition-transform duration-300 shadow-xl border-r ${
         state.ui.sidebarCollapsed ? '-translate-x-full' : 'translate-x-0'
       }`}
       style={{
-        top: 48,               // laisse la place à UserBar (48px sticky top)
-        height: 'calc(100vh - 48px)',
         backgroundColor: 'var(--bg-app, #FBF8F3)',
         borderColor: 'var(--border-default, #DFD3B8)',
       }}
     >
       <div className="px-3 pt-3 pb-0 flex-1 min-h-0 flex flex-col overflow-hidden">
-        {/* Header marque */}
-        <div className="mb-4">
-          <div
-            className="flex items-center justify-between h-14 min-h-[56px] px-3 rounded-xl shadow-md"
-            style={{ backgroundColor: 'var(--accent-terracotta, #C8663D)' }}
+        {/* Le brand La Plume ET la recherche globale sont désormais dans la
+            UserBar en haut. Ici on garde juste un bouton discret pour replier
+            la sidebar. */}
+        <div className="mb-3 flex items-center justify-end">
+          <button
+            onClick={toggleSidebar}
+            className="p-2 rounded-lg transition-all duration-200 flex-shrink-0"
+            style={{
+              color: 'var(--fg-secondary, #6B4E31)',
+              backgroundColor: 'var(--bg-canvas, #F5EFE5)',
+            }}
+            aria-label="Replier le menu"
+            title="Replier le menu"
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--bg-hover, #F0E9DA)';
+              e.currentTarget.style.color = 'var(--accent-terracotta, #C8663D)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--bg-canvas, #F5EFE5)';
+              e.currentTarget.style.color = 'var(--fg-secondary, #6B4E31)';
+            }}
           >
-            <div className="flex items-center gap-3 min-w-0 flex-1">
-              <div
-                className="w-10 h-10 flex-shrink-0 rounded-xl flex items-center justify-center font-bold text-lg shadow-sm"
-                style={{ backgroundColor: 'rgba(251, 248, 243, 0.2)', color: CREAM_FG }}
-              >
-                LP
-              </div>
-              <div className="min-w-0">
-                <h1
-                  className="font-semibold text-base truncate"
-                  style={{ color: CREAM_FG, fontFamily: '"Fraunces", serif', fontStyle: 'italic' }}
-                >
-                  La Plume
-                </h1>
-                <p className="text-xs font-medium truncate" style={{ color: 'rgba(251, 248, 243, 0.85)' }}>
-                  Artisanale · ERP
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={toggleSidebar}
-              className="p-2 rounded-lg transition-all duration-200 flex-shrink-0"
-              style={{ color: CREAM_FG }}
-              aria-label="Replier le menu"
-              title="Replier le menu"
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(251, 248, 243, 0.15)')}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-          </div>
-          <div className="mt-3">
-            <GlobalSearch />
-          </div>
+            <ChevronLeft className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Accueil (racine) */}
@@ -878,36 +860,7 @@ const NavigationEnhanced: React.FC<NavigationEnhancedProps> = ({ onNavigate }) =
               </div>
             </div>
 
-            {/* Bouton déconnexion */}
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="w-full mt-2 flex items-center justify-center gap-2 py-2 transition-colors"
-              style={{
-                background: 'transparent',
-                border: '1px solid var(--border-default, #DFD3B8)',
-                borderRadius: 8,
-                color: 'var(--fg-secondary, #6B4E31)',
-                fontFamily: 'var(--font-sans, Inter, sans-serif)',
-                fontSize: 12,
-                fontWeight: 500,
-                cursor: 'pointer',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'var(--color-danger-bg, #FBEBE4)';
-                e.currentTarget.style.color = 'var(--color-danger, #B84A2F)';
-                e.currentTarget.style.borderColor = 'var(--color-danger, #B84A2F)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'transparent';
-                e.currentTarget.style.color = 'var(--fg-secondary, #6B4E31)';
-                e.currentTarget.style.borderColor = 'var(--border-default, #DFD3B8)';
-              }}
-              aria-label="Se déconnecter"
-            >
-              <LogOut size={14} />
-              <span>Déconnexion</span>
-            </button>
+            {/* Déconnexion et session sont dans la UserBar en haut, pas ici. */}
           </div>
         </div>
       </div>

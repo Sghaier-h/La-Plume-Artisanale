@@ -315,8 +315,26 @@ const PrivateRoute: React.FC<{ children: React.ReactNode; showNav?: boolean }> =
 
   // Autres rôles bureau → UserBar + sidebar §15 filtrée
   return (
+    <PrivateRouteBody showNav={showNav}>
+      {children}
+    </PrivateRouteBody>
+  );
+};
+
+// Sépare le body pour pouvoir utiliser useApp() (les hooks doivent être
+// dans un composant, pas dans un branchement conditionnel).
+const PrivateRouteBody: React.FC<{ showNav: boolean; children: React.ReactNode }> = ({ showNav, children }) => {
+  let sidebarCollapsed = false;
+  try {
+    const { state } = useApp();
+    sidebarCollapsed = state?.ui?.sidebarCollapsed || false;
+  } catch {
+    // pas d'AppContext (rare)
+  }
+  const sidebarWidth = showNav && !sidebarCollapsed ? 288 : 0;
+  return (
     <>
-      <UserBar />
+      <UserBar leftOffset={sidebarWidth} />
       {showNav && <NavigationWrapper />}
       {showNav && <SidebarToggleButton />}
       <ContentWrapper showNav={showNav}>
@@ -368,8 +386,16 @@ const ContentWrapper: React.FC<{ showNav: boolean; children: React.ReactNode }> 
     // Context not available, use defaults
   }
 
+  const sidebarOpen = showNav && !state?.ui?.sidebarCollapsed;
   return (
-    <div className={showNav ? (state?.ui?.sidebarCollapsed ? 'ml-0' : 'ml-72') : ''}>
+    <div
+      style={{
+        marginLeft: sidebarOpen ? 288 : 0,
+        paddingTop: 48, // hauteur UserBar
+        minHeight: '100vh',
+        transition: 'margin-left 0.3s',
+      }}
+    >
       {children}
     </div>
   );
