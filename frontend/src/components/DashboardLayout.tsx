@@ -43,6 +43,7 @@ import GlobalSearch from './GlobalSearch';
 import NotificationCenter from './NotificationCenter';
 import CompanySwitcher from './CompanySwitcher';
 import ThemeToggle from './dashboard/ThemeToggle';
+import PlumeLogo from './PlumeLogo';
 import {
   DASHBOARD_SECTIONS,
   getDashboardIdByPath,
@@ -190,10 +191,25 @@ export function DashboardLayout({
         }
         @media (max-width: 768px) {
           .lp-sidebar-desktop { display: none !important; }
+          .lp-brand-label { display: none !important; }
         }
         @media (min-width: 769px) {
           .lp-hamburger { display: none !important; }
           .lp-sidebar-drawer { display: none !important; }
+        }
+        .lp-menu-item {
+          transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease);
+        }
+        .lp-menu-item:hover {
+          background: rgba(200, 102, 61, 0.08) !important;
+          color: var(--accent-terracotta) !important;
+        }
+        .lp-menu-item.lp-menu-item-danger:hover {
+          background: var(--color-danger-bg) !important;
+          color: var(--color-danger) !important;
+        }
+        @media (max-width: 900px) {
+          .lp-user-name { display: none !important; }
         }
       `}</style>
 
@@ -201,7 +217,7 @@ export function DashboardLayout({
         style={{
           position: 'sticky',
           top: 0,
-          zIndex: 'var(--z-sticky)' as unknown as number,
+          zIndex: 20,
           height: 'var(--header-h)',
           background: 'var(--bg-elevated)',
           borderBottom: '1px solid var(--border-subtle)',
@@ -220,6 +236,50 @@ export function DashboardLayout({
           style={iconBtn()}
         >
           <MenuIcon size={20} />
+        </button>
+
+        <button
+          type="button"
+          className="lp-focus lp-brand-mark"
+          onClick={() => navigate('/dashboard-admin')}
+          aria-label="La Plume Artisanale · Accueil"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 'var(--s-2)',
+            padding: '4px 10px 4px 4px',
+            background: 'transparent',
+            border: '1px solid transparent',
+            borderRadius: 'var(--radius-full)',
+            cursor: 'pointer',
+            color: 'var(--fg-primary)',
+            transition:
+              'background var(--duration) var(--ease), border-color var(--duration) var(--ease)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'var(--bg-hover)';
+            e.currentTarget.style.borderColor = 'var(--border-subtle)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.borderColor = 'transparent';
+          }}
+        >
+          <PlumeLogo size={32} />
+          <span
+            className="lp-brand-label"
+            style={{
+              fontFamily: 'var(--font-serif)',
+              fontStyle: 'italic',
+              fontWeight: 500,
+              fontSize: 'var(--text-md)',
+              color: 'var(--fg-primary)',
+              letterSpacing: '-0.01em',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            La Plume
+          </span>
         </button>
 
         <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 'var(--s-4)' }}>
@@ -281,18 +341,36 @@ export function DashboardLayout({
                       width: 28,
                       height: 28,
                       borderRadius: '50%',
-                      background: 'var(--accent-terracotta)',
-                      color: '#fff',
+                      background:
+                        'linear-gradient(135deg, var(--accent-terracotta) 0%, var(--accent-gold) 100%)',
+                      color: '#FBF8F3',
                       display: 'inline-flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontWeight: 700,
-                      fontSize: 12,
+                      fontFamily: 'var(--font-serif)',
+                      fontWeight: 600,
+                      fontSize: 13,
+                      letterSpacing: '0.02em',
+                      boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.15)',
                     }}
                   >
                     {(user.prenom?.[0] || user.nom?.[0] || user.email?.[0] || 'U').toUpperCase()}
                   </div>
                 )}
+                <span
+                  className="lp-user-name"
+                  style={{
+                    fontSize: 'var(--text-sm)',
+                    fontWeight: 500,
+                    color: 'var(--fg-primary)',
+                    whiteSpace: 'nowrap',
+                    maxWidth: 140,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {user.prenom || user.nom || (user.email ? user.email.split('@')[0] : 'Utilisateur')}
+                </span>
                 <ChevronDown size={14} style={{ color: 'var(--fg-muted)' }} />
               </button>
               {userMenuOpen && (
@@ -307,7 +385,7 @@ export function DashboardLayout({
                     borderRadius: 'var(--radius-md)',
                     boxShadow: 'var(--shadow-lg)',
                     overflow: 'hidden',
-                    zIndex: 'var(--z-dropdown)' as unknown as number,
+                    zIndex: 30,
                   }}
                 >
                   <div style={{ padding: 'var(--s-3) var(--s-4)', borderBottom: '1px solid var(--border-subtle)' }}>
@@ -413,7 +491,7 @@ export function DashboardLayout({
               position: 'fixed',
               inset: 0,
               background: 'rgba(20,12,6,0.5)',
-              zIndex: 'var(--z-modal)' as unknown as number,
+              zIndex: 1000,
             }}
           >
             <aside
@@ -541,7 +619,7 @@ export function DashboardLayout({
             alignItems: 'center',
             justifyContent: 'center',
             boxShadow: 'var(--shadow-lg)',
-            zIndex: 'var(--z-elevated)' as unknown as number,
+            zIndex: 10,
           }}
         >
           {sidebarFooter}
@@ -652,7 +730,7 @@ const MenuBtn: React.FC<{
 }> = ({ icon, onClick, danger, children }) => (
   <button
     type="button"
-    className="lp-focus"
+    className={`lp-focus lp-menu-item${danger ? ' lp-menu-item-danger' : ''}`}
     onClick={onClick}
     style={{
       width: '100%',
