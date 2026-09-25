@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { clientsService, utilisateursService } from '../services/api';
 import { List, Grid, Eye, X, User, Mail, Phone, MapPin, Building, CreditCard, Percent, Edit, Trash2, Filter, Tag, Briefcase, Globe, FileText, Users, UserCheck, UserX, Award } from 'lucide-react';
 import KpiCard from '../components/ecommerce/KpiCard';
 
 const Clients: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -68,6 +69,30 @@ const Clients: React.FC = () => {
     loadTypesCommerciaux();
     loadCommerciaux();
   }, [search, filters]);
+
+  // Query param ?edit=<id> venant depuis ClientDetails (bouton "Modifier")
+  //   → charge le client et ouvre le formulaire d'édition, puis nettoie l'URL.
+  useEffect(() => {
+    const editId = searchParams.get('edit');
+    if (!editId) return;
+    (async () => {
+      try {
+        const res = await clientsService.getClient(Number(editId));
+        const c = res.data?.data ?? res.data;
+        if (c && c.id_client) {
+          await handleEdit(c);
+        }
+      } catch (err) {
+        console.error('Erreur chargement client pour édition:', err);
+      } finally {
+        // Retire ?edit de l'URL pour éviter la ré-ouverture au refresh
+        const next = new URLSearchParams(searchParams);
+        next.delete('edit');
+        setSearchParams(next, { replace: true });
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const loadData = async () => {
     try {
@@ -929,7 +954,11 @@ const Clients: React.FC = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {clients.map((client) => (
-                <tr key={client.id_client} className="hover:bg-gray-50 group">
+                <tr
+                  key={client.id_client}
+                  className="hover:bg-gray-50 group cursor-pointer"
+                  onClick={() => { if (client.id_client) navigate(`/clients/${client.id_client}`); }}
+                >
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium font-mono">{client.code_client}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{client.raison_sociale}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -950,21 +979,11 @@ const Clients: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                     <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (client.id_client) navigate(`/clients/${client.id_client}`);
-                        }}
-                        className="text-green-600 hover:text-green-900"
-                        title="Voir les détails"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button 
+                      <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleEdit(client);
-                        }} 
+                        }}
                         className="hover:opacity-70 transition"
                         style={{ color: 'var(--accent-indigo)' }}
                         title="Modifier"

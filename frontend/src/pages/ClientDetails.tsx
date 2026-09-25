@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { 
-  ArrowLeft, Edit, Trash2, User, Mail, Phone, MapPin, Building, CreditCard, 
-  Percent, BarChart3, Settings, FileText, Plus, X, Package, Receipt, 
-  Truck, Tag, Globe, Briefcase, UserCircle, Users, AlertCircle
+import {
+  ArrowLeft, Edit, Trash2, User, Mail, Phone, MapPin, Building, CreditCard,
+  Percent, BarChart3, Settings, FileText, Plus, X, Package, Receipt,
+  Truck, Tag, Globe, Briefcase, UserCircle, Users, AlertCircle,
+  Boxes, FileMinus, DollarSign
 } from 'lucide-react';
+import { colisageService, paiementsService } from '../services/ventesComplementsApi';
+import { avoirsService } from '../services/api';
 import { clientsService } from '../services/api';
+import { useDynamicCrumb } from '../components/BreadcrumbContext';
 
 interface Client {
   id_client?: number;
@@ -73,12 +77,14 @@ interface Contact {
   nom_adresse_associee?: string;
 }
 
-type TabType = 'info' | 'adresses' | 'contacts' | 'commandes' | 'livraisons' | 'factures';
+type TabType = 'info' | 'adresses' | 'contacts' | 'commandes' | 'livraisons' | 'colisage' | 'factures' | 'avoirs' | 'paiements';
 
 const ClientDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [client, setClient] = useState<Client | null>(null);
+  // Fil d'Ariane dynamique : Accueil › Clients › <raison_sociale ou code_client>
+  useDynamicCrumb(client?.raison_sociale || client?.code_client || null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('info');
@@ -259,7 +265,10 @@ const ClientDetails: React.FC = () => {
     { id: 'contacts' as TabType, label: 'Contacts', icon: Users },
     { id: 'commandes' as TabType, label: 'Commandes', icon: Package },
     { id: 'livraisons' as TabType, label: 'Bons de livraison', icon: Truck },
+    { id: 'colisage' as TabType, label: 'Liste de colisage', icon: Boxes },
     { id: 'factures' as TabType, label: 'Factures', icon: Receipt },
+    { id: 'avoirs' as TabType, label: 'Avoirs', icon: FileMinus },
+    { id: 'paiements' as TabType, label: 'Paiements', icon: DollarSign },
   ];
 
   return (
@@ -360,7 +369,10 @@ const ClientDetails: React.FC = () => {
           )}
           {activeTab === 'commandes' && <CommandesTab client={client} />}
           {activeTab === 'livraisons' && <LivraisonsTab client={client} />}
+          {activeTab === 'colisage' && <ColisageTab client={client} />}
           {activeTab === 'factures' && <FacturesTab client={client} />}
+          {activeTab === 'avoirs' && <AvoirsTab client={client} />}
+          {activeTab === 'paiements' && <PaiementsTab client={client} />}
         </div>
       </div>
 
@@ -926,6 +938,240 @@ const FacturesTab: React.FC<{ client: Client }> = ({ client }) => {
         <div className="text-center py-12 text-gray-500">
           <Receipt className="w-12 h-12 mx-auto mb-4 text-gray-300" />
           <p>Aucune facture</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// Onglets Liste de colisage / Avoirs / Paiements — fetch à la demande
+// depuis leurs services respectifs, filtré sur le client courant.
+// ═══════════════════════════════════════════════════════════════════
+
+const ColisageTab: React.FC<{ client: Client }> = ({ client }) => {
+  const [colis, setColis] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoading(true);
+        const commandes = client.commandes || [];
+        if (commandes.length === 0) { if (!cancelled) setColis([]); return; }
+        const results = await Promise.all(
+          commandes.map((c: any) => colisageService.list({ id_commande: c.id_commande }).catch(() => ({ data: { data: [] } })))
+        );
+        const all = results.flatMap((r: any) => {
+          const d = r.data?.data;
+          return Array.isArray(d) ? d : (d?.data || []);
+        });
+        if (!cancelled) setColis(all);
+      } catch (err) {
+        console.error('Erreur chargement colisage:', err);
+        if (!cancelled) setColis([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [client]);
+
+  return (
+    <div>
+      <h3 className="text-lg font-semibold mb-4">Liste de colisage</h3>
+      {loading ? (
+        <div className="text-center py-12 text-gray-500">Chargement…</div>
+      ) : colis.length > 0 ? (
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">N° Colis</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Commande</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Poids (kg)</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Volume</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {colis.map((c) => (
+                <tr key={c.id_colis}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-mono">{c.numero_colis || c.reference_colis}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">{c.numero_commande || c.id_commande}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">{c.poids_kg ?? '-'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    {c.volume_m3 != null ? `${c.volume_m3} m³` : '-'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 py-1 text-xs rounded ${
+                      c.statut === 'valide' || c.statut === 'expedie' ? 'bg-green-100 text-green-800' :
+                      c.statut === 'en_preparation' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>{c.statut || '-'}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="text-center py-12 text-gray-500">
+          <Boxes className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+          <p>Aucun colis</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const AvoirsTab: React.FC<{ client: Client }> = ({ client }) => {
+  const [avoirs, setAvoirs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoading(true);
+        const res = await avoirsService.getAvoirs({ id_client: client.id_client });
+        const d = res.data?.data;
+        if (!cancelled) setAvoirs(Array.isArray(d) ? d : (d?.data || d?.avoirs || []));
+      } catch (err) {
+        console.error('Erreur chargement avoirs:', err);
+        if (!cancelled) setAvoirs([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [client]);
+
+  return (
+    <div>
+      <h3 className="text-lg font-semibold mb-4">Avoirs</h3>
+      {loading ? (
+        <div className="text-center py-12 text-gray-500">Chargement…</div>
+      ) : avoirs.length > 0 ? (
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Numéro</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Facture liée</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Montant</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Motif</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {avoirs.map((a) => (
+                <tr key={a.id_avoir}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-mono">{a.numero_avoir}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    {a.date_avoir ? new Date(a.date_avoir).toLocaleDateString('fr-FR') : '-'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">{a.numero_facture || '-'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-mono">
+                    {Number(a.montant_total || 0).toLocaleString('fr-FR')} {client.devise || 'TND'}
+                  </td>
+                  <td className="px-6 py-4 text-sm">{a.motif || '-'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="text-center py-12 text-gray-500">
+          <FileMinus className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+          <p>Aucun avoir</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const PaiementsTab: React.FC<{ client: Client }> = ({ client }) => {
+  const [paiements, setPaiements] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoading(true);
+        const res = await paiementsService.list({ id_client: client.id_client });
+        const d = res.data?.data;
+        if (!cancelled) setPaiements(Array.isArray(d) ? d : (d?.data || d?.paiements || []));
+      } catch (err) {
+        console.error('Erreur chargement paiements:', err);
+        if (!cancelled) setPaiements([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [client]);
+
+  const totalPaye = paiements.reduce((s, p: any) => s + Number(p.montant_paye || p.montant || 0), 0);
+  const totalDu = paiements.reduce((s, p: any) => s + Number(p.montant_du || 0), 0);
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-semibold">Paiements & échéances</h3>
+        {paiements.length > 0 && (
+          <div className="text-sm font-mono" style={{ color: 'var(--fg-secondary)' }}>
+            Réglé : <span style={{ color: 'var(--color-success)' }}>{totalPaye.toLocaleString('fr-FR')} {client.devise || 'TND'}</span>
+            {' · '}
+            Dû : <span style={{ color: 'var(--color-danger)' }}>{totalDu.toLocaleString('fr-FR')} {client.devise || 'TND'}</span>
+          </div>
+        )}
+      </div>
+      {loading ? (
+        <div className="text-center py-12 text-gray-500">Chargement…</div>
+      ) : paiements.length > 0 ? (
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Facture</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Échéance</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Montant dû</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payé</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mode</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {paiements.map((p: any) => (
+                <tr key={p.id_paiement || p.id_echeance}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-mono">{p.numero_facture || '-'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    {p.date_echeance ? new Date(p.date_echeance).toLocaleDateString('fr-FR') : '-'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-mono">
+                    {Number(p.montant_du || 0).toLocaleString('fr-FR')}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-mono" style={{ color: 'var(--color-success)' }}>
+                    {Number(p.montant_paye || p.montant || 0).toLocaleString('fr-FR')}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">{p.mode_paiement || '-'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 py-1 text-xs rounded ${
+                      p.statut === 'paye' || p.statut === 'solde' ? 'bg-green-100 text-green-800' :
+                      p.statut === 'partiel' ? 'bg-yellow-100 text-yellow-800' :
+                      p.statut === 'echu' || p.statut === 'en_retard' ? 'bg-red-100 text-red-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>{p.statut || '-'}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="text-center py-12 text-gray-500">
+          <DollarSign className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+          <p>Aucun paiement enregistré</p>
         </div>
       )}
     </div>
