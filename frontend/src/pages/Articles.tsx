@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+﻿import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Package, Plus, Edit, Trash2, Search, RefreshCw, Upload, Image as ImageIcon, Eye, CheckSquare, XSquare, Save, FileText, Settings, Tag, X, Warehouse, TrendingUp, History, List, Grid, BarChart3, ArrowLeft, AlertTriangle, Star } from 'lucide-react';
 import { produitsService, articlesService, parametresCatalogueService, modelesService } from '../services/api';
@@ -1589,7 +1589,7 @@ const Articles: React.FC = () => {
                     </button>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 py-1 rounded text-xs font-medium" style={{ background: '#F2E7D6', color: '#7A5C1F' }}>
+                    <span className="px-2 py-1 rounded text-xs font-medium" style={{ background: 'color-mix(in srgb, var(--accent-gold) 12%, var(--bg-elevated))', color: '#7A5C1F' }}>
                       {article.quantite_deuxieme_choix || 0}
                     </span>
                   </td>
@@ -1842,7 +1842,7 @@ const Articles: React.FC = () => {
                       Stock: {article.stock_total || 0}
                     </button>
                     {article.quantite_deuxieme_choix && article.quantite_deuxieme_choix > 0 && (
-                      <span className="px-2 py-1 rounded text-xs font-medium" style={{ background: '#F2E7D6', color: '#7A5C1F' }}>
+                      <span className="px-2 py-1 rounded text-xs font-medium" style={{ background: 'color-mix(in srgb, var(--accent-gold) 12%, var(--bg-elevated))', color: '#7A5C1F' }}>
                         2ème: {article.quantite_deuxieme_choix}
                       </span>
                     )}
@@ -1937,7 +1937,7 @@ const Articles: React.FC = () => {
                     <div className="text-sm font-medium mb-1" style={{ color: '#3B4E68' }}>Stock Total</div>
                     <div className="text-3xl font-bold" style={{ color: '#2F3F55' }}>{selectedArticleForStock.stock_total || 0}</div>
                   </div>
-                  <div className="rounded-lg p-4" style={{ background: '#F2E7D6', border: '1px solid #DFCFA9' }}>
+                  <div className="rounded-lg p-4" style={{ background: 'color-mix(in srgb, var(--accent-gold) 12%, var(--bg-elevated))', border: '1px solid #DFCFA9' }}>
                     <div className="text-sm font-medium mb-1" style={{ color: '#7A5C1F' }}>2ème Choix</div>
                     <div className="text-3xl font-bold" style={{ color: '#5B4514' }}>{selectedArticleForStock.quantite_deuxieme_choix || 0}</div>
                     <div className="text-xs mt-1" style={{ color: '#9E7B2E' }}>À calculer prochainement</div>

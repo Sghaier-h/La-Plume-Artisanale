@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { Users, Plus, Trash2, Tag, Target, XCircle, ChevronDown } from 'lucide-react';
 import api from '../../services/api';
 
@@ -150,7 +150,7 @@ const ParamCrm: React.FC = () => {
                     className="w-full flex items-center justify-between p-4 hover:bg-[#FDF2ED]/30"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="rounded-lg p-2" style={{ backgroundColor: '#FDF2ED', color: '#C8663D' }}>
+                      <div className="rounded-lg p-2" style={{ backgroundColor: 'color-mix(in srgb, var(--accent-terracotta) 15%, var(--bg-elevated))', color: '#C8663D' }}>
                         {sec.icon}
                       </div>
                       <div className="text-left font-semibold" style={{ color: 'var(--fg-primary, #2F2A26)' }}>

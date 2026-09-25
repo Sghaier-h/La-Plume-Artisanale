@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { Users, Shield, Plus, Trash2, Pencil, X, Key, Check } from 'lucide-react';
 import api from '../../services/api';
 
@@ -178,7 +178,7 @@ const ParamUtilisateursRoles: React.FC = () => {
                       <td className="px-4 py-3 font-semibold">{u.nom}</td>
                       <td className="px-4 py-3 text-xs font-mono" style={{ color: 'var(--fg-secondary, #5D4E42)' }}>{u.email}</td>
                       <td className="px-4 py-3">
-                        <span className="inline-flex text-[10px] font-semibold px-2 py-0.5 rounded uppercase" style={{ backgroundColor: '#FDF2ED', color: '#C8663D' }}>
+                        <span className="inline-flex text-[10px] font-semibold px-2 py-0.5 rounded uppercase" style={{ backgroundColor: 'color-mix(in srgb, var(--accent-terracotta) 15%, var(--bg-elevated))', color: '#C8663D' }}>
                           {ROLES.find(r => r.code === u.role)?.libelle || u.role}
                         </span>
                       </td>
@@ -213,7 +213,7 @@ const ParamUtilisateursRoles: React.FC = () => {
               {ROLES.map(r => (
                 <div key={r.code} className="bg-white rounded-xl p-4 shadow-sm border border-[#E8DCC8]">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="inline-flex items-center gap-1 text-[10px] font-mono uppercase px-2 py-0.5 rounded" style={{ backgroundColor: '#FDF2ED', color: '#C8663D' }}>
+                    <span className="inline-flex items-center gap-1 text-[10px] font-mono uppercase px-2 py-0.5 rounded" style={{ backgroundColor: 'color-mix(in srgb, var(--accent-terracotta) 15%, var(--bg-elevated))', color: '#C8663D' }}>
                       <Shield className="w-3 h-3" /> {r.code}
                     </span>
                     <span className="text-[10px] font-mono" style={{ color: 'var(--fg-muted, #8A6E4A)' }}>{r.nb_permissions} perms</span>

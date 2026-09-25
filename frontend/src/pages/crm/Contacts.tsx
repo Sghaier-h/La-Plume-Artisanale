@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import {
   Users,
   Search,
@@ -260,7 +260,7 @@ const Contacts: React.FC = () => {
           {/* Table */}
           <div className="bg-white rounded-xl shadow-sm overflow-hidden">
             <table className="min-w-full text-sm">
-              <thead style={{ background: '#F5EEE2' }}>
+              <thead style={{ background: 'var(--bg-canvas)' }}>
                 <tr>
                   {['Nom', 'Poste', 'Email', 'Téléphone', 'Compte lié', 'Dernier échange'].map((h) => (
                     <th
@@ -286,7 +286,7 @@ const Contacts: React.FC = () => {
                       {c.role_decision === 'decideur' && (
                         <span
                           className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wide mt-0.5 px-2 py-0.5 rounded-full"
-                          style={{ background: '#FDF2ED', color: '#C8663D' }}
+                          style={{ background: 'color-mix(in srgb, var(--accent-terracotta) 15%, var(--bg-elevated))', color: '#C8663D' }}
                         >
                           <Star className="w-3 h-3" /> décideur
                         </span>

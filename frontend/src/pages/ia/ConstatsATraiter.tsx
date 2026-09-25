@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import {
   AlertOctagon,
   AlertTriangle,
@@ -138,13 +138,13 @@ const MOCK_FINDINGS: Finding[] = [
 
 const SEV_CFG: Record<Severite, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
   danger: { label: 'Critique', color: '#B84A4A', bg: '#FBECEC', icon: <AlertOctagon className="w-3 h-3" /> },
-  warning: { label: 'Attention', color: '#8A6412', bg: '#FBF3E0', icon: <AlertTriangle className="w-3 h-3" /> },
+  warning: { label: 'Attention', color: '#8A6412', bg: 'color-mix(in srgb, var(--accent-gold) 15%, var(--bg-elevated))', icon: <AlertTriangle className="w-3 h-3" /> },
   info: { label: 'Info', color: '#3B4E68', bg: '#EDF0F5', icon: <Info className="w-3 h-3" /> },
 };
 
 const STATUT_CFG: Record<StatutFinding, { label: string; color: string; bg: string }> = {
-  nouveau: { label: 'Nouveau', color: '#C8663D', bg: '#FDF2ED' },
-  en_revue: { label: 'En revue', color: '#8A6412', bg: '#FBF3E0' },
+  nouveau: { label: 'Nouveau', color: '#C8663D', bg: 'color-mix(in srgb, var(--accent-terracotta) 15%, var(--bg-elevated))' },
+  en_revue: { label: 'En revue', color: '#8A6412', bg: 'color-mix(in srgb, var(--accent-gold) 15%, var(--bg-elevated))' },
   valide: { label: 'Validé', color: '#4A6C5B', bg: '#EEF4F0' },
   rejete: { label: 'Rejeté', color: '#8A6E4A', bg: '#F0E7D4' },
 };

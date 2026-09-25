@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { Mail, MessageSquare, Send, Pencil, Trash2, Plus, ChevronDown, Zap } from 'lucide-react';
 import api from '../../services/api';
 
@@ -49,7 +49,7 @@ const MOCK_REGLES: RegleCanal[] = [
 const CANAL_CFG: Record<CanalType, { label: string; icon: React.ReactNode; color: string; bg: string }> = {
   email: { label: 'Email', icon: <Mail className="w-3 h-3" />, color: '#3B4E68', bg: '#EDF0F5' },
   whatsapp: { label: 'WhatsApp', icon: <MessageSquare className="w-3 h-3" />, color: '#4A6C5B', bg: '#EEF4F0' },
-  sms: { label: 'SMS', icon: <Send className="w-3 h-3" />, color: '#C8663D', bg: '#FDF2ED' },
+  sms: { label: 'SMS', icon: <Send className="w-3 h-3" />, color: '#C8663D', bg: 'color-mix(in srgb, var(--accent-terracotta) 15%, var(--bg-elevated))' },
 };
 
 const ParamCommunication: React.FC = () => {
@@ -117,7 +117,7 @@ const ParamCommunication: React.FC = () => {
                 <div key={sec.key} className="bg-white rounded-xl shadow-sm border border-[#E8DCC8] overflow-hidden">
                   <button onClick={() => setExpanded(sec.key)} className="w-full flex items-center justify-between p-4 hover:bg-[#FDF2ED]/30">
                     <div className="flex items-center gap-3">
-                      <div className="rounded-lg p-2" style={{ backgroundColor: '#FDF2ED', color: '#C8663D' }}>{sec.icon}</div>
+                      <div className="rounded-lg p-2" style={{ backgroundColor: 'color-mix(in srgb, var(--accent-terracotta) 15%, var(--bg-elevated))', color: '#C8663D' }}>{sec.icon}</div>
                       <div className="text-left font-semibold" style={{ color: 'var(--fg-primary, #2F2A26)' }}>{sec.label}</div>
                     </div>
                     <ChevronDown className={`w-5 h-5 transition-transform ${isOpen ? 'rotate-180' : ''}`} style={{ color: 'var(--fg-muted, #8A6E4A)' }} />

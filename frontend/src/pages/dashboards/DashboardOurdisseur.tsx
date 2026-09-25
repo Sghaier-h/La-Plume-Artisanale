@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import {
   Layers3,
   Boxes,
@@ -230,7 +230,7 @@ const DashboardOurdisseur: React.FC = () => {
                   style={{
                     color: tab === t.key ? '#C8663D' : 'var(--fg-muted, #7A6E63)',
                     borderBottom: tab === t.key ? '2px solid #C8663D' : '2px solid transparent',
-                    background: tab === t.key ? '#FDF2ED' : 'transparent',
+                    background: tab === t.key ? 'color-mix(in srgb, var(--accent-terracotta) 15%, var(--bg-elevated))' : 'transparent',
                   }}
                 >
                   {t.icon}
@@ -273,7 +273,7 @@ const DashboardOurdisseur: React.FC = () => {
                         <span
                           className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full font-medium"
                           style={{
-                            background: e.statut === 'controle' ? '#EEF4F0' : '#FDF2ED',
+                            background: e.statut === 'controle' ? '#EEF4F0' : 'color-mix(in srgb, var(--accent-terracotta) 15%, var(--bg-elevated))',
                             color: e.statut === 'controle' ? '#4A6C5B' : '#C8663D',
                           }}
                         >
@@ -306,7 +306,7 @@ const DashboardOurdisseur: React.FC = () => {
                           {pct}%
                         </span>
                       </div>
-                      <div className="h-2 rounded-full overflow-hidden" style={{ background: '#F5EEE2' }}>
+                      <div className="h-2 rounded-full overflow-hidden" style={{ background: 'var(--bg-canvas)' }}>
                         <div className="h-full" style={{ width: `${pct}%`, background: '#C8663D' }} />
                       </div>
                       <div
@@ -323,7 +323,7 @@ const DashboardOurdisseur: React.FC = () => {
 
             {tab === 'historique' && (
               <table className="min-w-full text-sm">
-                <thead style={{ background: '#F5EEE2' }}>
+                <thead style={{ background: 'var(--bg-canvas)' }}>
                   <tr>
                     {['Ensouple', 'OF', 'Longueur', 'Durée', 'Opérateur', 'Date fin'].map((h) => (
                       <th
@@ -391,7 +391,7 @@ const DashboardOurdisseur: React.FC = () => {
                     key={a.id}
                     className="rounded-lg p-4 flex items-start gap-3"
                     style={{
-                      background: a.gravite === 'haute' ? '#FDEDEA' : '#FBF3E0',
+                      background: a.gravite === 'haute' ? '#FDEDEA' : 'color-mix(in srgb, var(--accent-gold) 15%, var(--bg-elevated))',
                       borderLeft: `4px solid ${a.gravite === 'haute' ? '#C4574C' : '#D6A756'}`,
                     }}
                   >

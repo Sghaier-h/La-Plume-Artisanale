@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
   AlertCircle,
@@ -64,7 +64,7 @@ const pickArray = <T,>(res: PromiseSettledResult<any>, fallback: T[]): T[] => {
 
 const NIVEAU_META: Record<NiveauAlerte, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
   rupture: { label: 'Rupture', color: '#C4574C', bg: '#FDEDEA', icon: <PackageX className="w-3.5 h-3.5" /> },
-  sous_seuil: { label: 'Sous seuil', color: '#D6A756', bg: '#FBF3E0', icon: <AlertTriangle className="w-3.5 h-3.5" /> },
+  sous_seuil: { label: 'Sous seuil', color: '#D6A756', bg: 'color-mix(in srgb, var(--accent-gold) 15%, var(--bg-elevated))', icon: <AlertTriangle className="w-3.5 h-3.5" /> },
   preventif: { label: 'Préventif', color: '#3B4E68', bg: '#EDF0F5', icon: <AlertCircle className="w-3.5 h-3.5" /> },
 };
 
@@ -245,7 +245,7 @@ const AlertesStock: React.FC = () => {
           {/* Table */}
           <div className="bg-white rounded-xl shadow-sm overflow-hidden">
             <table className="min-w-full text-sm">
-              <thead style={{ background: '#F5EEE2' }}>
+              <thead style={{ background: 'var(--bg-canvas)' }}>
                 <tr>
                   {['Niveau', 'Article', 'Cat.', 'Stock', 'Seuils', 'Fournisseur', 'Délai', 'Actions'].map((h) => (
                     <th

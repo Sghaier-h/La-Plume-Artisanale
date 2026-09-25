@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { ShoppingBag, Plus, Trash2, Users, FileCheck, Layers } from 'lucide-react';
 import api from '../../services/api';
 
@@ -159,7 +159,7 @@ const ParamAchats: React.FC = () => {
               <h2 className="text-lg italic mb-4 flex items-center gap-2" style={h2Style}><FileCheck className="w-5 h-5" style={{ color: '#C8663D' }} /> Workflow d'approbation multi-niveaux</h2>
               <ol className="space-y-2">{workflow.map(w => (
                 <li key={w.id} className="flex items-center gap-3 p-3 rounded border" style={{ borderColor: '#E8DCC8', backgroundColor: 'var(--bg-app, #FBF8F3)' }}>
-                  <span className="inline-flex w-8 h-8 items-center justify-center rounded-full text-sm font-bold" style={{ backgroundColor: '#FDF2ED', color: '#C8663D' }}>{w.ordre}</span>
+                  <span className="inline-flex w-8 h-8 items-center justify-center rounded-full text-sm font-bold" style={{ backgroundColor: 'color-mix(in srgb, var(--accent-terracotta) 15%, var(--bg-elevated))', color: '#C8663D' }}>{w.ordre}</span>
                   <div className="flex-1">
                     <div className="font-semibold text-sm">{w.libelle}</div>
                     <div className="text-xs" style={{ color: 'var(--fg-muted, #8A6E4A)' }}>Rôle : {w.role}</div>

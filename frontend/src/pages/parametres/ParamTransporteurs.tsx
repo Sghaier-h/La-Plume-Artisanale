@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { Truck, Plus, Trash2, Pencil, X } from 'lucide-react';
 import api from '../../services/api';
 
@@ -28,7 +28,7 @@ const MOCK_TRANSPORTEURS: Transporteur[] = [
 const TYPE_CFG = {
   local: { color: '#4A6C5B', bg: '#EEF4F0', label: 'Local' },
   national: { color: '#3B4E68', bg: '#EDF0F5', label: 'National' },
-  international: { color: '#C8663D', bg: '#FDF2ED', label: 'International' },
+  international: { color: '#C8663D', bg: 'color-mix(in srgb, var(--accent-terracotta) 15%, var(--bg-elevated))', label: 'International' },
 } as const;
 
 const ParamTransporteurs: React.FC = () => {

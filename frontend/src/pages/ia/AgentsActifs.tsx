@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import {
   Bot,
   Play,
@@ -225,7 +225,7 @@ const MOCK_AGENTS: AgentIA[] = [
 
 const STATUT_CFG: Record<StatutAgent, { label: string; color: string; bg: string }> = {
   actif: { label: 'Actif', color: '#4A6C5B', bg: '#EEF4F0' },
-  pause: { label: 'En pause', color: '#8A6412', bg: '#FBF3E0' },
+  pause: { label: 'En pause', color: '#8A6412', bg: 'color-mix(in srgb, var(--accent-gold) 15%, var(--bg-elevated))' },
   erreur: { label: 'Erreur', color: '#B84A4A', bg: '#FBECEC' },
 };
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import {
   Package,
   Boxes,
@@ -55,12 +55,12 @@ const fmtTND = (n: number): string =>
   n.toLocaleString('fr-FR', { maximumFractionDigits: 0 });
 
 const CATEGORY_META: Record<CodeCategorie, { icon: React.ReactNode; accent: string; bg: string }> = {
-  PF: { icon: <Package className="w-6 h-6" />, accent: '#C8663D', bg: '#FDF2ED' },
+  PF: { icon: <Package className="w-6 h-6" />, accent: '#C8663D', bg: 'color-mix(in srgb, var(--accent-terracotta) 15%, var(--bg-elevated))' },
   SF: { icon: <Boxes className="w-6 h-6" />, accent: '#4A6C5B', bg: '#EEF4F0' },
   MP: { icon: <Layers className="w-6 h-6" />, accent: '#3B4E68', bg: '#EDF0F5' },
-  FabFournitures: { icon: <Paintbrush className="w-6 h-6" />, accent: '#D6A756', bg: '#FBF3E0' },
-  Bureau: { icon: <Briefcase className="w-6 h-6" />, accent: '#7A6E63', bg: '#F5EEE2' },
-  Emballage: { icon: <Package2 className="w-6 h-6" />, accent: '#C8663D', bg: '#FDF2ED' },
+  FabFournitures: { icon: <Paintbrush className="w-6 h-6" />, accent: '#D6A756', bg: 'color-mix(in srgb, var(--accent-gold) 15%, var(--bg-elevated))' },
+  Bureau: { icon: <Briefcase className="w-6 h-6" />, accent: '#7A6E63', bg: 'var(--bg-canvas)' },
+  Emballage: { icon: <Package2 className="w-6 h-6" />, accent: '#C8663D', bg: 'color-mix(in srgb, var(--accent-terracotta) 15%, var(--bg-elevated))' },
   Rechange: { icon: <Wrench className="w-6 h-6" />, accent: '#3B4E68', bg: '#EDF0F5' },
 };
 

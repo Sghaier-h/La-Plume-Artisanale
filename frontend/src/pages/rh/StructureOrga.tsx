@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import {
   Building2,
   Users,
@@ -80,7 +80,7 @@ const ServiceNode: React.FC<{ node: Service; children: Service[]; all: Service[]
     <div style={{ marginLeft: level === 0 ? 0 : 32, position: 'relative' }}>
       <div
         className="rounded-lg p-4 mb-3 border-l-4 shadow-sm bg-white flex flex-col"
-        style={{ borderLeftColor: c, borderColor: '#EDE3CE' }}
+        style={{ borderLeftColor: c, borderColor: 'var(--border-subtle)' }}
       >
         <div className="flex justify-between items-center">
           <div>

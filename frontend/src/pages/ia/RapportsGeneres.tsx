@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import {
   FileText,
   Calendar,
@@ -118,8 +118,8 @@ const MOCK_RAPPORTS: Rapport[] = [
 
 const PERIODE_CFG: Record<PeriodeRapport, { label: string; color: string; bg: string }> = {
   quotidien: { label: 'Quotidien', color: '#3B4E68', bg: '#EDF0F5' },
-  hebdomadaire: { label: 'Hebdomadaire', color: '#8A6412', bg: '#FBF3E0' },
-  mensuel: { label: 'Mensuel', color: '#C8663D', bg: '#FDF2ED' },
+  hebdomadaire: { label: 'Hebdomadaire', color: '#8A6412', bg: 'color-mix(in srgb, var(--accent-gold) 15%, var(--bg-elevated))' },
+  mensuel: { label: 'Mensuel', color: '#C8663D', bg: 'color-mix(in srgb, var(--accent-terracotta) 15%, var(--bg-elevated))' },
 };
 
 const RapportsGeneres: React.FC = () => {

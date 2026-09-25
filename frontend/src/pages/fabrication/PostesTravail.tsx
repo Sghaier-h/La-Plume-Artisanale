@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import {
   Cog,
   Search,
@@ -230,7 +230,7 @@ const PostesTravail: React.FC = () => {
           {/* Table */}
           <div className="bg-white rounded-xl shadow-sm overflow-hidden">
             <table className="min-w-full text-sm">
-              <thead style={{ background: '#F5EEE2' }}>
+              <thead style={{ background: 'var(--bg-canvas)' }}>
                 <tr>
                   {['Code', 'Libellé', 'Atelier', 'Capacité/h', 'Machines liées', 'Opérateurs typiques', ''].map((h, i) => (
                     <th

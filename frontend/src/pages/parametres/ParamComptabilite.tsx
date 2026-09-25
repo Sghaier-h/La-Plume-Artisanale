@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { Calculator, Book, Lock, Percent, Plus, Trash2 } from 'lucide-react';
 import api from '../../services/api';
 
@@ -32,7 +32,7 @@ const MOCK_TVA: TauxTva[] = [
 
 const STATUT_CFG = {
   ouvert: { color: '#4A6C5B', bg: '#EEF4F0', label: 'Ouvert' },
-  clos: { color: '#8A6412', bg: '#FBF3E0', label: 'Clos' },
+  clos: { color: '#8A6412', bg: 'color-mix(in srgb, var(--accent-gold) 15%, var(--bg-elevated))', label: 'Clos' },
   verrouille: { color: '#8A6E4A', bg: '#F0E7D4', label: 'Verrouillé' },
 } as const;
 
@@ -106,7 +106,7 @@ const ParamComptabilite: React.FC = () => {
                       <td className="py-2"><span className="inline-flex text-[10px] font-semibold px-2 py-0.5 rounded uppercase" style={{ backgroundColor: st.bg, color: st.color }}>{st.label}</span></td>
                       <td className="py-2 text-right">
                         {e.statut === 'ouvert' && (
-                          <button className="text-xs px-2 py-1 rounded" style={{ backgroundColor: '#FBF3E0', color: '#8A6412' }}>Clôturer</button>
+                          <button className="text-xs px-2 py-1 rounded" style={{ backgroundColor: 'color-mix(in srgb, var(--accent-gold) 15%, var(--bg-elevated))', color: '#8A6412' }}>Clôturer</button>
                         )}
                       </td>
                     </tr>

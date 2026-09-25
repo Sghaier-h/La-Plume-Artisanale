@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import {
   Calculator,
   FileText,
@@ -242,7 +242,7 @@ const DashboardComptable: React.FC = () => {
                   style={{
                     color: tab === t.key ? '#C8663D' : 'var(--fg-muted, #7A6E63)',
                     borderBottom: tab === t.key ? '2px solid #C8663D' : '2px solid transparent',
-                    background: tab === t.key ? '#FDF2ED' : 'transparent',
+                    background: tab === t.key ? 'color-mix(in srgb, var(--accent-terracotta) 15%, var(--bg-elevated))' : 'transparent',
                   }}
                 >
                   {t.icon}
@@ -253,7 +253,7 @@ const DashboardComptable: React.FC = () => {
 
             {tab === 'journal' && (
               <table className="min-w-full text-sm">
-                <thead style={{ background: '#F5EEE2' }}>
+                <thead style={{ background: 'var(--bg-canvas)' }}>
                   <tr>
                     {['N° pièce', 'Journal', 'Libellé', 'Montant', 'Statut'].map((h) => (
                       <th
@@ -311,7 +311,7 @@ const DashboardComptable: React.FC = () => {
                         ) : (
                           <span
                             className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium"
-                            style={{ background: '#FBF3E0', color: '#D6A756' }}
+                            style={{ background: 'color-mix(in srgb, var(--accent-gold) 15%, var(--bg-elevated))', color: '#D6A756' }}
                           >
                             <Clock className="w-3 h-3" />
                             Brouillon
@@ -329,7 +329,7 @@ const DashboardComptable: React.FC = () => {
                 {alertes.map((a) => {
                   const meta = CATEGORIE_META[a.categorie];
                   const c = a.gravite === 'haute' ? '#C4574C' : a.gravite === 'moyenne' ? '#D6A756' : '#3B4E68';
-                  const bg = a.gravite === 'haute' ? '#FDEDEA' : a.gravite === 'moyenne' ? '#FBF3E0' : '#EDF0F5';
+                  const bg = a.gravite === 'haute' ? '#FDEDEA' : a.gravite === 'moyenne' ? 'color-mix(in srgb, var(--accent-gold) 15%, var(--bg-elevated))' : '#EDF0F5';
                   return (
                     <div
                       key={a.id}
@@ -374,7 +374,7 @@ const DashboardComptable: React.FC = () => {
 
             {tab === 'actions' && (
               <table className="min-w-full text-sm">
-                <thead style={{ background: '#F5EEE2' }}>
+                <thead style={{ background: 'var(--bg-canvas)' }}>
                   <tr>
                     {['Action', 'Catégorie', 'Échéance', 'Statut'].map((h) => (
                       <th
@@ -424,7 +424,7 @@ const DashboardComptable: React.FC = () => {
                           ) : (
                             <span
                               className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium"
-                              style={{ background: '#FBF3E0', color: '#D6A756' }}
+                              style={{ background: 'color-mix(in srgb, var(--accent-gold) 15%, var(--bg-elevated))', color: '#D6A756' }}
                             >
                               <Clock className="w-3 h-3" /> À faire
                             </span>

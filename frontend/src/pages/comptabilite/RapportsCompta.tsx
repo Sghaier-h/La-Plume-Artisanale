@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import {
   BarChart3,
   Scale,
@@ -107,7 +107,7 @@ const CARDS: {
     description: 'Charges (60/61/62/63/64/65/67/68) vs Produits (70/74/76) — N vs N-1',
     icon: <BarChart3 className="w-6 h-6" />,
     couleur: '#C8663D',
-    fond: '#FDF2ED',
+    fond: 'color-mix(in srgb, var(--accent-terracotta) 15%, var(--bg-elevated))',
   },
   {
     key: 'bilan',
@@ -131,7 +131,7 @@ const CARDS: {
     description: 'Soldes N/N-1 de tous les comptes, contrôle Σ débits = Σ crédits',
     icon: <FileSpreadsheet className="w-6 h-6" />,
     couleur: '#C89B3C',
-    fond: '#FBF3E0',
+    fond: 'color-mix(in srgb, var(--accent-gold) 15%, var(--bg-elevated))',
   },
 ];
 

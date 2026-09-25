@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import {
   Search,
   Globe,
@@ -58,8 +58,8 @@ const pickArray = <T,>(res: PromiseSettledResult<any>, fallback: T[]): T[] => {
 
 const STATUT_META: Record<StatutIndex, { label: string; icon: React.ReactNode; color: string; bg: string }> = {
   indexe: { label: 'Indexé', icon: <CheckCircle2 className="w-3.5 h-3.5" />, color: '#4A6C5B', bg: '#EEF4F0' },
-  a_optimiser: { label: 'À optimiser', icon: <AlertTriangle className="w-3.5 h-3.5" />, color: '#D6A756', bg: '#FBF3E0' },
-  non_indexe: { label: 'Non indexé', icon: <XCircle className="w-3.5 h-3.5" />, color: '#7A6E63', bg: '#F5EEE2' },
+  a_optimiser: { label: 'À optimiser', icon: <AlertTriangle className="w-3.5 h-3.5" />, color: '#D6A756', bg: 'color-mix(in srgb, var(--accent-gold) 15%, var(--bg-elevated))' },
+  non_indexe: { label: 'Non indexé', icon: <XCircle className="w-3.5 h-3.5" />, color: '#7A6E63', bg: 'var(--bg-canvas)' },
   erreur: { label: 'Erreur', icon: <XCircle className="w-3.5 h-3.5" />, color: '#C4574C', bg: '#FDEDEA' },
 };
 
@@ -235,7 +235,7 @@ const SeoProduits: React.FC = () => {
           {/* Table */}
           <div className="bg-white rounded-xl shadow-sm overflow-hidden">
             <table className="min-w-full text-sm">
-              <thead style={{ background: '#F5EEE2' }}>
+              <thead style={{ background: 'var(--bg-canvas)' }}>
                 <tr>
                   {['Article', 'Slug', 'Meta title', 'Meta description', 'OG image', 'Statut', 'Score'].map((h) => (
                     <th

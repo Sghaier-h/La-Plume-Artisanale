@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import {
   Wrench,
   Cog,
@@ -114,7 +114,7 @@ const fmtDate = (iso: string): string => {
 
 const STATUT_META: Record<StatutMachine, { label: string; color: string; bg: string }> = {
   marche: { label: 'En marche', color: '#4A6C5B', bg: '#EEF4F0' },
-  pause: { label: 'En pause', color: '#D6A756', bg: '#FBF3E0' },
+  pause: { label: 'En pause', color: '#D6A756', bg: 'color-mix(in srgb, var(--accent-gold) 15%, var(--bg-elevated))' },
   panne: { label: 'En panne', color: '#C4574C', bg: '#FDEDEA' },
   maintenance: { label: 'Maintenance', color: '#3B4E68', bg: '#EDF0F5' },
 };
@@ -274,7 +274,7 @@ const MachinesMaintenance: React.FC = () => {
                   style={{
                     color: tab === t.key ? '#C8663D' : 'var(--fg-muted, #7A6E63)',
                     borderBottom: tab === t.key ? '2px solid #C8663D' : '2px solid transparent',
-                    background: tab === t.key ? '#FDF2ED' : 'transparent',
+                    background: tab === t.key ? 'color-mix(in srgb, var(--accent-terracotta) 15%, var(--bg-elevated))' : 'transparent',
                   }}
                 >
                   {t.icon}
@@ -298,7 +298,7 @@ const MachinesMaintenance: React.FC = () => {
                   </div>
                 </div>
                 <table className="min-w-full text-sm">
-                  <thead style={{ background: '#F5EEE2' }}>
+                  <thead style={{ background: 'var(--bg-canvas)' }}>
                     <tr>
                       {['Code', 'Modèle', 'Atelier', 'Année', 'Statut', 'Heures', 'Prochaine mtn.'].map((h) => (
                         <th
@@ -366,7 +366,7 @@ const MachinesMaintenance: React.FC = () => {
 
             {tab === 'planning' && (
               <table className="min-w-full text-sm">
-                <thead style={{ background: '#F5EEE2' }}>
+                <thead style={{ background: 'var(--bg-canvas)' }}>
                   <tr>
                     {['Date prévue', 'Machine', 'Type', 'Durée', 'Responsable', 'Statut'].map((h) => (
                       <th
@@ -434,7 +434,7 @@ const MachinesMaintenance: React.FC = () => {
 
             {tab === 'interventions' && (
               <table className="min-w-full text-sm">
-                <thead style={{ background: '#F5EEE2' }}>
+                <thead style={{ background: 'var(--bg-canvas)' }}>
                   <tr>
                     {['Début', 'Machine', 'Problème', 'Gravité', 'Durée est.', 'Technicien'].map((h) => (
                       <th
@@ -477,7 +477,7 @@ const MachinesMaintenance: React.FC = () => {
                         <span
                           className="inline-flex text-xs px-2 py-0.5 rounded-full font-medium"
                           style={{
-                            background: i.gravite === 'haute' ? '#FDEDEA' : i.gravite === 'moyenne' ? '#FBF3E0' : '#EEF4F0',
+                            background: i.gravite === 'haute' ? '#FDEDEA' : i.gravite === 'moyenne' ? 'color-mix(in srgb, var(--accent-gold) 15%, var(--bg-elevated))' : '#EEF4F0',
                             color: i.gravite === 'haute' ? '#C4574C' : i.gravite === 'moyenne' ? '#D6A756' : '#4A6C5B',
                           }}
                         >
@@ -499,7 +499,7 @@ const MachinesMaintenance: React.FC = () => {
 
             {tab === 'pieces' && (
               <table className="min-w-full text-sm">
-                <thead style={{ background: '#F5EEE2' }}>
+                <thead style={{ background: 'var(--bg-canvas)' }}>
                   <tr>
                     {['Code', 'Désignation', 'Stock', 'Seuil min', 'Machines compat.', 'Fournisseur'].map((h) => (
                       <th

@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 
 /**
  * ScoreCritereBar — barre horizontale 0..100 pour visualiser un critère
@@ -35,7 +35,7 @@ const ScoreCritereBar: React.FC<ScoreCritereBarProps> = ({
   const color =
     pct >= 85 ? '#4A6C5B' : pct >= 70 ? '#D6A756' : '#C8663D';
   const bgColor =
-    pct >= 85 ? '#EEF4F0' : pct >= 70 ? '#FBF3E0' : '#FDF2ED';
+    pct >= 85 ? '#EEF4F0' : pct >= 70 ? 'color-mix(in srgb, var(--accent-gold) 15%, var(--bg-elevated))' : 'color-mix(in srgb, var(--accent-terracotta) 15%, var(--bg-elevated))';
 
   const heightClass = size === 'sm' ? 'h-1.5' : size === 'lg' ? 'h-4' : 'h-2.5';
 

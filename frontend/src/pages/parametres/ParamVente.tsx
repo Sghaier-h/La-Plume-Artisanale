@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { ShoppingCart, Save, Plus, Trash2, Percent, Clock, AlertTriangle } from 'lucide-react';
 import api from '../../services/api';
 
@@ -143,7 +143,7 @@ const ParamVente: React.FC = () => {
                 </tr></thead>
                 <tbody>{relances.map(r => (
                   <tr key={r.niveau} className="border-t" style={{ borderColor: '#F0E7D4' }}>
-                    <td className="py-2"><span className="inline-flex w-6 h-6 items-center justify-center rounded-full text-xs font-bold" style={{ backgroundColor: '#FDF2ED', color: '#C8663D' }}>{r.niveau}</span></td>
+                    <td className="py-2"><span className="inline-flex w-6 h-6 items-center justify-center rounded-full text-xs font-bold" style={{ backgroundColor: 'color-mix(in srgb, var(--accent-terracotta) 15%, var(--bg-elevated))', color: '#C8663D' }}>{r.niveau}</span></td>
                     <td className="py-2 font-mono">J+{r.jours}</td>
                     <td className="py-2 text-xs">{r.canal}</td>
                     <td className="py-2">{r.action}</td>

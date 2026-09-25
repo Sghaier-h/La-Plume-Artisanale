@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { Percent, Plus, Trash2, Save } from 'lucide-react';
 import api from '../../services/api';
 
@@ -80,8 +80,8 @@ const MOCK_REGLES: RegleCommission[] = [
 const TYPE_CFG: Record<TypeRegle, { label: string; color: string; bg: string }> = {
   pct_ca: { label: '% CA', color: '#4A6C5B', bg: '#EEF4F0' },
   palier: { label: 'Palier progressif', color: '#3B4E68', bg: '#EDF0F5' },
-  produit: { label: 'Ciblage produit', color: '#C8663D', bg: '#FDF2ED' },
-  client: { label: 'Ciblage client', color: '#8A6412', bg: '#FBF3E0' },
+  produit: { label: 'Ciblage produit', color: '#C8663D', bg: 'color-mix(in srgb, var(--accent-terracotta) 15%, var(--bg-elevated))' },
+  client: { label: 'Ciblage client', color: '#8A6412', bg: 'color-mix(in srgb, var(--accent-gold) 15%, var(--bg-elevated))' },
   mixte: { label: 'Mixte', color: '#B84A4A', bg: '#FBECEC' },
 };
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import {
   Activity,
   Cog,
@@ -60,9 +60,9 @@ const pickArray = <T,>(res: PromiseSettledResult<any>, fallback: T[]): T[] => {
 
 const ETAT_META: Record<EtatMachine, { label: string; color: string; bg: string; border: string; icon: React.ReactNode }> = {
   marche: { label: 'En marche', color: '#4A6C5B', bg: '#EEF4F0', border: '#4A6C5B', icon: <Play className="w-3.5 h-3.5" /> },
-  pause: { label: 'En pause', color: '#D6A756', bg: '#FBF3E0', border: '#D6A756', icon: <Pause className="w-3.5 h-3.5" /> },
+  pause: { label: 'En pause', color: '#D6A756', bg: 'color-mix(in srgb, var(--accent-gold) 15%, var(--bg-elevated))', border: '#D6A756', icon: <Pause className="w-3.5 h-3.5" /> },
   panne: { label: 'En panne', color: '#C4574C', bg: '#FDEDEA', border: '#C4574C', icon: <AlertOctagon className="w-3.5 h-3.5" /> },
-  arret: { label: 'Arrêt', color: '#7A6E63', bg: '#F5EEE2', border: '#7A6E63', icon: <Power className="w-3.5 h-3.5" /> },
+  arret: { label: 'Arrêt', color: '#7A6E63', bg: 'var(--bg-canvas)', border: '#7A6E63', icon: <Power className="w-3.5 h-3.5" /> },
 };
 
 // ═══════════════════════════════════════════════════════════════════
@@ -295,7 +295,7 @@ const SuiviTempsReel: React.FC = () => {
                           {m.trs}%
                         </span>
                       </div>
-                      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#F5EEE2' }}>
+                      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--bg-canvas)' }}>
                         <div
                           className="h-full"
                           style={{

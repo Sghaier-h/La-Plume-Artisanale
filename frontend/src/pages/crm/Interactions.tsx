@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import {
   MessageSquare,
   Phone,
@@ -79,9 +79,9 @@ const fmtDateTime = (iso: string): string => {
 
 const TYPE_META: Record<TypeInteraction, { label: string; icon: React.ReactNode; color: string; bg: string }> = {
   appel: { label: 'Appel', icon: <Phone className="w-3.5 h-3.5" />, color: '#3B4E68', bg: '#EDF0F5' },
-  email: { label: 'Email', icon: <Mail className="w-3.5 h-3.5" />, color: '#C8663D', bg: '#FDF2ED' },
+  email: { label: 'Email', icon: <Mail className="w-3.5 h-3.5" />, color: '#C8663D', bg: 'color-mix(in srgb, var(--accent-terracotta) 15%, var(--bg-elevated))' },
   reunion: { label: 'Réunion', icon: <CalendarDays className="w-3.5 h-3.5" />, color: '#4A6C5B', bg: '#EEF4F0' },
-  note: { label: 'Note', icon: <FileText className="w-3.5 h-3.5" />, color: '#7A6E63', bg: '#F5EEE2' },
+  note: { label: 'Note', icon: <FileText className="w-3.5 h-3.5" />, color: '#7A6E63', bg: 'var(--bg-canvas)' },
 };
 
 // ═══════════════════════════════════════════════════════════════════
@@ -268,7 +268,7 @@ const Interactions: React.FC = () => {
           {/* Table */}
           <div className="bg-white rounded-xl shadow-sm overflow-hidden">
             <table className="min-w-full text-sm">
-              <thead style={{ background: '#F5EEE2' }}>
+              <thead style={{ background: 'var(--bg-canvas)' }}>
                 <tr>
                   {['Date', 'Type', 'Contact', 'Compte', 'Commercial', 'Résumé'].map((h) => (
                     <th

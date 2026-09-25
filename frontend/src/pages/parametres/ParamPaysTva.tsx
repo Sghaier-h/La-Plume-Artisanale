@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { Globe, Plus, Trash2, Pencil, X, AlertCircle } from 'lucide-react';
 import api from '../../services/api';
 
@@ -132,7 +132,7 @@ const ParamPaysTva: React.FC = () => {
             </table>
           </div>
 
-          <div className="mt-4 rounded-lg p-4 border flex items-start gap-3" style={{ borderColor: '#E5C67D', backgroundColor: '#FBF3E0' }}>
+          <div className="mt-4 rounded-lg p-4 border flex items-start gap-3" style={{ borderColor: '#E5C67D', backgroundColor: 'color-mix(in srgb, var(--accent-gold) 15%, var(--bg-elevated))' }}>
             <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" style={{ color: '#8A6412' }} />
             <div className="text-xs" style={{ color: '#8A6412' }}>
               <div className="font-semibold mb-1">Rappel réglementaire</div>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import {
   Sliders,
   Bot,
@@ -229,7 +229,7 @@ const ConfigurationAgents: React.FC = () => {
                     <div className="flex items-center gap-3">
                       <div
                         className="rounded-lg p-2"
-                        style={{ backgroundColor: '#FDF2ED', color: '#C8663D' }}
+                        style={{ backgroundColor: 'color-mix(in srgb, var(--accent-terracotta) 15%, var(--bg-elevated))', color: '#C8663D' }}
                       >
                         <Bot className="w-5 h-5" />
                       </div>
