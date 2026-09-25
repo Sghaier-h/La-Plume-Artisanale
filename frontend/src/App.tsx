@@ -8,6 +8,8 @@ import ErrorBoundary from './components/ErrorBoundary';
 import LoadingSpinner from './components/LoadingSpinner';
 import Login from './pages/Login';
 import ProtectedRoute from './components/ProtectedRoute';
+import UserBar from './components/UserBar';
+import TabletteLayout from './components/TabletteLayout';
 import { AppProvider } from './store/AppContext';
 import { useApp } from './store/AppContext';
 import { NotificationProvider } from './components/erp';
@@ -277,15 +279,18 @@ const DashboardWrapper: React.FC<{ children: React.ReactNode }> = ({ children })
   );
 };
 
+// Rôles tablette atelier (§15 « (tablette) » → Tisseur / Coupeur / Ourdisseur)
+const PRIVATE_TABLETTE_ROLES = new Set(['TISSEUR', 'COUPEUR', 'OURDISSEUR']);
+
 const PrivateRoute: React.FC<{ children: React.ReactNode; showNav?: boolean }> = ({ children, showNav = true }) => {
   const { user, loading } = useAuth();
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-app)' }}>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Chargement...</p>
+          <div className="animate-spin rounded-full h-12 w-12 mx-auto" style={{ borderBottom: '2px solid var(--accent-terracotta)' }}></div>
+          <p className="mt-4" style={{ color: 'var(--fg-secondary)' }}>Chargement...</p>
         </div>
       </div>
     );
@@ -295,8 +300,23 @@ const PrivateRoute: React.FC<{ children: React.ReactNode; showNav?: boolean }> =
     return <Navigate to="/login" />;
   }
 
+  const roleUpper = (user as any)?.role?.toUpperCase() || '';
+  const isTabletteRole = PRIVATE_TABLETTE_ROLES.has(roleUpper);
+
+  // Rôles tablette → UserBar + TabletteLayout kiosque (pas de sidebar)
+  if (showNav && isTabletteRole) {
+    return (
+      <>
+        <UserBar />
+        <TabletteLayout>{children}</TabletteLayout>
+      </>
+    );
+  }
+
+  // Autres rôles bureau → UserBar + sidebar §15 filtrée
   return (
     <>
+      <UserBar />
       {showNav && <NavigationWrapper />}
       {showNav && <SidebarToggleButton />}
       <ContentWrapper showNav={showNav}>
