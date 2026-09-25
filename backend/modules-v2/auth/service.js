@@ -1,7 +1,7 @@
 /**
  * Auth service — logique métier (hashage, tokens, MFA, verrouillage).
  */
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import crypto from 'node:crypto';
 import { getPool, withTransaction } from '../_shared/db.js';

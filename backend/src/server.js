@@ -191,6 +191,24 @@ import { securityManager } from './core/SecurityManager.js';
       logger.info(`Route: ${route.path}`);
     }
 
+    // ═══════════════════════════════════════════════════════════════
+    // Routes API v2 (modules-v2/ — groupes ventes/achats/comptabilite/
+    // rh/ia-agents/comms/personnalisation/ecommerce/publicite, préfixe
+    // /api/v2/*). N'entre PAS en conflit avec les routes v1 (/api/*).
+    // ═══════════════════════════════════════════════════════════════
+    try {
+      const { default: buildV2Router } = await import('../modules-v2/index.js');
+      const v2Router = await buildV2Router();
+      app.use(v2Router);
+      logger.info('[modules-v2] Router monté avec succès sur /api/v2/*');
+    } catch (err) {
+      // Ne pas planter le serveur : les routes v1 restent fonctionnelles
+      logger.error('[modules-v2] Échec chargement router', {
+        error: err.message,
+        stack: err.stack
+      });
+    }
+
   } catch (error) {
     logger.error('Erreur chargement des modules', { error: error.message, stack: error.stack });
   }

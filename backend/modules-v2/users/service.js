@@ -1,4 +1,4 @@
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 import * as M from './model.js';
 
 const BCRYPT_COST = 12;
