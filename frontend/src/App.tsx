@@ -137,6 +137,51 @@ const DepensesEspeces = React.lazy(() => import('./pages/achats/DepensesEspeces'
 const PaiementsFournisseurs = React.lazy(() => import('./pages/achats/PaiementsFournisseurs'));
 const RapprochementBcBlFf = React.lazy(() => import('./pages/achats/RapprochementBcBlFf'));
 
+// ── Pages TODO branchées 2026-09-25 (CRM, Produits, Stock, Fab, Dashboards)
+const CrmContacts = React.lazy(() => import('./pages/crm/Contacts'));
+const CrmInteractions = React.lazy(() => import('./pages/crm/Interactions'));
+const SeoProduits = React.lazy(() => import('./pages/produits/SeoProduits'));
+const AlertesStock = React.lazy(() => import('./pages/stock/AlertesStock'));
+const VueParCategorie = React.lazy(() => import('./pages/stock/VueParCategorie'));
+const PostesTravail = React.lazy(() => import('./pages/fabrication/PostesTravail'));
+const MachinesMaintenance = React.lazy(() => import('./pages/fabrication/MachinesMaintenance'));
+const SuiviTempsReel = React.lazy(() => import('./pages/fabrication/SuiviTempsReel'));
+const DashboardOurdisseur = React.lazy(() => import('./pages/dashboards/DashboardOurdisseur'));
+const DashboardComptable = React.lazy(() => import('./pages/dashboards/DashboardComptable'));
+
+// ── Marketing / E-commerce / Mon compte ──────────────────────────────
+const MarketingSegments = React.lazy(() => import('./pages/marketing/SegmentsClients'));
+const MarketingStats = React.lazy(() => import('./pages/marketing/StatsPerformance'));
+const EcomStockSync = React.lazy(() => import('./pages/ecommerce-app/StockSynchronise'));
+const EcomStats = React.lazy(() => import('./pages/ecommerce-app/StatsWeb'));
+const EcomPanierAbandonne = React.lazy(() => import('./pages/ecommerce-app/PanierAbandonne'));
+const EcomFidelite = React.lazy(() => import('./pages/ecommerce-app/Fidelite'));
+const EcomVitrine = React.lazy(() => import('./pages/ecommerce-app/VitrinePublique'));
+const MonProfil = React.lazy(() => import('./pages/mon-compte/Profil'));
+const MonEmailPerso = React.lazy(() => import('./pages/mon-compte/EmailPerso'));
+const MonWhatsAppPerso = React.lazy(() => import('./pages/mon-compte/WhatsAppPerso'));
+
+// ── IA agents (§11ter + §14bis.6bis) ──────────────────────────────────
+const IaAgentsActifs = React.lazy(() => import('./pages/ia/AgentsActifs'));
+const IaConstats = React.lazy(() => import('./pages/ia/ConstatsATraiter'));
+const IaRapports = React.lazy(() => import('./pages/ia/RapportsGeneres'));
+const IaConfiguration = React.lazy(() => import('./pages/ia/ConfigurationAgents'));
+const IaCoutsLLM = React.lazy(() => import('./pages/ia/CoutsLLM'));
+
+// ── Paramètres §15 (12 sous-items) ────────────────────────────────────
+const ParamSociete = React.lazy(() => import('./pages/parametres/ParamSociete'));
+const ParamCrm = React.lazy(() => import('./pages/parametres/ParamCrm'));
+const ParamVente = React.lazy(() => import('./pages/parametres/ParamVente'));
+const ParamAchats = React.lazy(() => import('./pages/parametres/ParamAchats'));
+const ParamComptabilite = React.lazy(() => import('./pages/parametres/ParamComptabilite'));
+const ParamStock = React.lazy(() => import('./pages/parametres/ParamStock'));
+const ParamFabrication = React.lazy(() => import('./pages/parametres/ParamFabrication'));
+const ParamTransporteurs = React.lazy(() => import('./pages/parametres/ParamTransporteurs'));
+const ParamCommissions = React.lazy(() => import('./pages/parametres/ParamCommissions'));
+const ParamCommunication = React.lazy(() => import('./pages/parametres/ParamCommunication'));
+const ParamPaysTva = React.lazy(() => import('./pages/parametres/ParamPaysTva'));
+const ParamUtilisateursRoles = React.lazy(() => import('./pages/parametres/ParamUtilisateursRoles'));
+
 // ── Portail Client (auth séparée) ────────────────────────────────────
 const PortailLogin = React.lazy(() => import('./pages/portail/PortailLogin'));
 const PortailReset = React.lazy(() => import('./pages/portail/PortailReset'));
@@ -1288,6 +1333,63 @@ const AppContent: React.FC = () => {
               </ProtectedRoute>
             }
           />
+
+          {/* ── CRM (§3) ────────────────────────────────────────────── */}
+          <Route path="/crm/contacts" element={<ProtectedRoute requiredRole={['ADMIN', 'COMMERCIAL']}><CrmContacts /></ProtectedRoute>} />
+          <Route path="/crm/interactions" element={<ProtectedRoute requiredRole={['ADMIN', 'COMMERCIAL']}><CrmInteractions /></ProtectedRoute>} />
+
+          {/* ── Produits (§5.6) ─────────────────────────────────────── */}
+          <Route path="/produits/seo-web" element={<ProtectedRoute requiredRole={['ADMIN', 'COMMERCIAL', 'MARKETING']}><SeoProduits /></ProtectedRoute>} />
+
+          {/* ── Stock §6.9 alertes + §6.1 vue catégorie ────────────── */}
+          <Route path="/stock/alertes" element={<ProtectedRoute><AlertesStock /></ProtectedRoute>} />
+          <Route path="/stock/vue-categories" element={<ProtectedRoute><VueParCategorie /></ProtectedRoute>} />
+
+          {/* ── Fabrication (§7.4 postes / §7 machines / temps réel) ─ */}
+          <Route path="/fabrication/postes" element={<ProtectedRoute requiredRole={['ADMIN', 'CHEF_PRODUCTION', 'CHEF_ATELIER']}><PostesTravail /></ProtectedRoute>} />
+          <Route path="/fabrication/machines-maintenance" element={<ProtectedRoute requiredRole={['ADMIN', 'CHEF_PRODUCTION', 'MECANICIEN']}><MachinesMaintenance /></ProtectedRoute>} />
+          <Route path="/fabrication/temps-reel" element={<ProtectedRoute requiredRole={['ADMIN', 'CHEF_PRODUCTION', 'CHEF_ATELIER']}><SuiviTempsReel /></ProtectedRoute>} />
+
+          {/* ── Dashboards manquants §14 ───────────────────────────── */}
+          <Route path="/dashboard-ourdisseur" element={<ProtectedRoute requiredRole={['ADMIN', 'OURDISSEUR', 'CHEF_PRODUCTION']}><DashboardOurdisseur /></ProtectedRoute>} />
+          <Route path="/dashboard-comptable" element={<ProtectedRoute requiredRole={['ADMIN', 'COMPTABLE']}><DashboardComptable /></ProtectedRoute>} />
+
+          {/* ── Marketing (§11.3-5) ────────────────────────────────── */}
+          <Route path="/marketing/segments" element={<ProtectedRoute requiredRole={['ADMIN', 'MARKETING']}><MarketingSegments /></ProtectedRoute>} />
+          <Route path="/marketing/stats" element={<ProtectedRoute requiredRole={['ADMIN', 'MARKETING']}><MarketingStats /></ProtectedRoute>} />
+
+          {/* ── E-commerce (§11quinquies) ──────────────────────────── */}
+          <Route path="/ecommerce/stock-sync" element={<ProtectedRoute requiredRole={['ADMIN', 'MARKETING']}><EcomStockSync /></ProtectedRoute>} />
+          <Route path="/ecommerce/stats" element={<ProtectedRoute requiredRole={['ADMIN', 'MARKETING', 'COMMERCIAL']}><EcomStats /></ProtectedRoute>} />
+          <Route path="/ecommerce/panier-abandonne" element={<ProtectedRoute requiredRole={['ADMIN', 'MARKETING']}><EcomPanierAbandonne /></ProtectedRoute>} />
+          <Route path="/ecommerce/fidelite" element={<ProtectedRoute requiredRole={['ADMIN', 'MARKETING']}><EcomFidelite /></ProtectedRoute>} />
+          <Route path="/ecommerce/vitrine" element={<ProtectedRoute requiredRole={['ADMIN', 'MARKETING']}><EcomVitrine /></ProtectedRoute>} />
+
+          {/* ── Mon compte (tous les rôles) ────────────────────────── */}
+          <Route path="/mon-compte/profil" element={<ProtectedRoute><MonProfil /></ProtectedRoute>} />
+          <Route path="/mon-compte/email" element={<ProtectedRoute><MonEmailPerso /></ProtectedRoute>} />
+          <Route path="/mon-compte/whatsapp" element={<ProtectedRoute><MonWhatsAppPerso /></ProtectedRoute>} />
+
+          {/* ── IA agents (§11ter + §14bis.6bis) — ADMIN ───────────── */}
+          <Route path="/ia/agents-actifs" element={<ProtectedRoute requiredRole="ADMIN"><IaAgentsActifs /></ProtectedRoute>} />
+          <Route path="/ia/constats" element={<ProtectedRoute requiredRole="ADMIN"><IaConstats /></ProtectedRoute>} />
+          <Route path="/ia/rapports" element={<ProtectedRoute requiredRole="ADMIN"><IaRapports /></ProtectedRoute>} />
+          <Route path="/ia/configuration" element={<ProtectedRoute requiredRole="ADMIN"><IaConfiguration /></ProtectedRoute>} />
+          <Route path="/ia/couts-llm" element={<ProtectedRoute requiredRole="ADMIN"><IaCoutsLLM /></ProtectedRoute>} />
+
+          {/* ── Paramètres §15 (12 sous-items) — ADMIN ─────────────── */}
+          <Route path="/parametres/societe" element={<ProtectedRoute requiredRole="ADMIN"><ParamSociete /></ProtectedRoute>} />
+          <Route path="/parametres/crm" element={<ProtectedRoute requiredRole="ADMIN"><ParamCrm /></ProtectedRoute>} />
+          <Route path="/parametres/vente" element={<ProtectedRoute requiredRole="ADMIN"><ParamVente /></ProtectedRoute>} />
+          <Route path="/parametres/achats" element={<ProtectedRoute requiredRole="ADMIN"><ParamAchats /></ProtectedRoute>} />
+          <Route path="/parametres/comptabilite" element={<ProtectedRoute requiredRole="ADMIN"><ParamComptabilite /></ProtectedRoute>} />
+          <Route path="/parametres/stock" element={<ProtectedRoute requiredRole="ADMIN"><ParamStock /></ProtectedRoute>} />
+          <Route path="/parametres/fabrication" element={<ProtectedRoute requiredRole="ADMIN"><ParamFabrication /></ProtectedRoute>} />
+          <Route path="/parametres/transporteurs" element={<ProtectedRoute requiredRole="ADMIN"><ParamTransporteurs /></ProtectedRoute>} />
+          <Route path="/parametres/commissions" element={<ProtectedRoute requiredRole="ADMIN"><ParamCommissions /></ProtectedRoute>} />
+          <Route path="/parametres/communication" element={<ProtectedRoute requiredRole="ADMIN"><ParamCommunication /></ProtectedRoute>} />
+          <Route path="/parametres/pays-tva" element={<ProtectedRoute requiredRole="ADMIN"><ParamPaysTva /></ProtectedRoute>} />
+          <Route path="/parametres/utilisateurs-roles" element={<ProtectedRoute requiredRole="ADMIN"><ParamUtilisateursRoles /></ProtectedRoute>} />
         </Routes>
         </Suspense>
         </ErrorBoundary>
