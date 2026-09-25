@@ -4,12 +4,22 @@ import { ok, okList, created, fail, asyncHandler } from '../../_shared/response.
 export const list = asyncHandler(async (req, res) => {
   const page  = Math.max(1, parseInt(req.query.page  || '1', 10));
   const limit = Math.min(200, parseInt(req.query.limit || '50', 10));
+  const actifParam = req.query.actif;
   const { rows, total } = await S.list({
-    q: req.query.q, statut: req.query.statut, id_commercial: req.query.id_commercial ? Number(req.query.id_commercial) : undefined,
-    limit, offset: (page - 1) * limit,
+    q:             req.query.q,
+    statut:        req.query.statut,
+    type_compte:   req.query.type_compte,
+    pays:          req.query.pays,
+    id_commercial: req.query.id_commercial ? Number(req.query.id_commercial) : undefined,
+    actif:         actifParam === undefined ? undefined
+                 : (actifParam === 'true'    ? true
+                 : (actifParam === 'false'   ? false : undefined)),
+    limit,         offset: (page - 1) * limit,
   }, req.user);
   return okList(res, rows, { page, limit, total, total_pages: Math.ceil(total / limit) });
 });
+
+export const stats = asyncHandler(async (req, res) => ok(res, await S.stats(req.user)));
 
 export const get = asyncHandler(async (req, res) => {
   try {

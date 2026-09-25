@@ -1,4 +1,6 @@
 import * as M from './model.js';
+import { withTransaction } from '../../_shared/db.js';
+import { next as nextNumerotation } from '../../_shared/numerotation/service.js';
 import { next as nextNumero } from '../../params/numerotation/service.js';
 
 // ABAC : COMMERCIAL ne voit que ses comptes (§2.4)
@@ -10,6 +12,10 @@ function scopeFor(user) {
 
 export async function list(params, user) {
   return M.list({ ...params, ...scopeFor(user) });
+}
+
+export async function stats(user) {
+  return M.stats(scopeFor(user));
 }
 
 export async function get(id, user) {
@@ -29,28 +35,45 @@ export async function create(input, user) {
   if (user?.role_principal === 'COMMERCIAL') input.id_commercial = user.id_user;
   input.cree_par = user?.id_user;
 
-  // Générer code_client via NumeroSequenceService (code CLI)
+  // Générer code_client d'abord via numerotation configurable, puis fallback legacy
   let code_client = input.code_client;
   if (!code_client) {
     try {
-      const num = await nextNumero({
-        id_societe: input.id_societe || 1,
-        code_document: 'CLI',
-        contexte: `create_compte`,
-        id_user: user?.id_user,
-      });
-      code_client = num.numero;
-    } catch (e) {
-      // fallback si CLI pas configuré (test/dev)
-      code_client = `CLI-${Date.now()}`;
+      const n = await nextNumerotation('client', { societe: input.id_societe || '' });
+      code_client = n.code;
+    } catch (_) {
+      try {
+        const num = await nextNumero({
+          id_societe: input.id_societe || 1,
+          code_document: 'CLI',
+          contexte: `create_compte`,
+          id_user: user?.id_user,
+        });
+        code_client = num.numero;
+      } catch (e) {
+        code_client = `CLI-${Date.now()}`;
+      }
     }
   }
-  const id = await M.create({ ...input, code_client });
-  await M.addHistorique(id, {
-    type_event: 'creation', direction: 'interne',
-    sujet: 'Création du compte', id_user: user?.id_user,
+
+  const contactsPayload = Array.isArray(input.contacts) ? input.contacts : [];
+  const adressesPayload = Array.isArray(input.adresses) ? input.adresses : [];
+
+  // Transaction unique : compte + contacts + adresses
+  return withTransaction(async (_client) => {
+    const id = await M.create({ ...input, code_client });
+    for (const c of contactsPayload) {
+      await M.upsertContact(id, c);
+    }
+    for (const a of adressesPayload) {
+      await M.upsertAdresse(id, a);
+    }
+    await M.addHistorique(id, {
+      type_event: 'creation', direction: 'interne',
+      sujet: 'Création du compte', id_user: user?.id_user,
+    });
+    return M.findById(id);
   });
-  return M.findById(id);
 }
 
 export async function update(id, patch, user) {

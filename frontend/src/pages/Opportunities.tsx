@@ -1,147 +1,219 @@
-import React, { useEffect, useState } from 'react';
-import api from '../services/api';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Briefcase, Search, PlusCircle, Filter, TrendingUp, Target, CheckCircle2, X,
+} from 'lucide-react';
+import { DashboardShell, KpiCard, SectionCard } from '../components/dashboard';
+import { opportunitesApi, pickData } from '../services/crmApi';
+import { fmtMoney, fmtDate } from '../utils/formatters';
 
-interface Opportunity {
-  id?: number;
-  id_opportunite?: number;
-  nom: string;
-  client_nom?: string;
-  id_client?: number | null;
-  montant_prevue?: number | string | null;
-  probabilite?: number | string | null;
-  statut?: string;
-  created_at?: string | null;
-  date_fermeture_prevue?: string | null;
+interface OppRow {
+  id_opportunite: number;
+  numero_opportunite: string;
+  libelle: string;
+  id_client?: number;
+  id_commercial?: number;
+  etape: string;
+  montant_estime: number | string;
+  probabilite: number;
+  date_cloture_prevue?: string | null;
+  statut: 'ACTIVE' | 'GAGNEE' | 'PERDUE' | 'ANNULEE';
+  motif_perte?: string;
+  description?: string;
+  created_at?: string;
 }
 
-const normalizeList = (res: any): any[] => {
-  const _r = res?.data?.data;
-  if (Array.isArray(_r)) return _r;
-  if (_r?.data && Array.isArray(_r.data)) return _r.data;
-  if (Array.isArray(res?.data)) return res.data;
-  return [];
-};
+type FilterKey = 'all' | 'ACTIVE' | 'GAGNEE' | 'PERDUE';
 
-const toNum = (v: any): number => {
-  const n = typeof v === 'number' ? v : parseFloat(v);
-  return Number.isFinite(n) ? n : 0;
-};
-
-const fmtDate = (d?: string | null): string => {
-  if (!d) return '-';
-  try {
-    return new Date(d).toLocaleDateString('fr-FR');
-  } catch {
-    return String(d);
-  }
-};
-
-const statutColor = (statut?: string): string => {
-  const s = (statut || '').toLowerCase();
-  if (s.includes('gagn')) return 'bg-emerald-100 text-emerald-800';
-  if (s.includes('perdu')) return 'bg-red-100 text-red-800';
-  if (s.includes('nouveau')) return 'bg-[#E8EFF6] text-[#4A5D75]';
-  if (s.includes('negoc') || s.includes('négoc')) return 'bg-[#F0E9DA] text-[#6B4E31]';
-  return 'bg-amber-100 text-amber-800';
+const STATUT_TONE: Record<string, string> = {
+  ACTIVE: 'var(--accent-indigo)',
+  GAGNEE: 'var(--accent-sage)',
+  PERDUE: 'var(--color-danger)',
+  ANNULEE: 'var(--fg-muted)',
 };
 
 const Opportunities: React.FC = () => {
-  const [items, setItems] = useState<Opportunity[]>([]);
+  const navigate = useNavigate();
+  const [rows, setRows] = useState<OppRow[]>([]);
+  const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [debounced, setDebounced] = useState('');
+  const [filter, setFilter] = useState<FilterKey>('all');
 
   useEffect(() => {
+    const t = setTimeout(() => setDebounced(search), 250);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  useEffect(() => {
+    let cancelled = false;
     (async () => {
+      setLoading(true);
+      setError(null);
       try {
-        const res = await api.get('/crm/opportunites');
-        setItems(normalizeList(res) as Opportunity[]);
+        const params: any = { limit: 200 };
+        if (debounced) params.q = debounced;
+        if (filter !== 'all') params.statut = filter;
+        const [rowsRes, statsRes] = await Promise.all([
+          opportunitesApi.list(params),
+          opportunitesApi.stats().catch(() => null),
+        ]);
+        if (cancelled) return;
+        setRows(pickData<OppRow>(rowsRes));
+        setStats(statsRes?.data?.data || null);
       } catch (e: any) {
-        setError(e?.response?.data?.error?.message || e?.message || 'Erreur de chargement');
+        if (!cancelled) setError(e?.response?.data?.error?.message || e.message);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     })();
-  }, []);
+    return () => { cancelled = true; };
+  }, [debounced, filter]);
 
-  if (loading) {
-    return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-amber-600"></div>
-      </div>
-    );
-  }
+  const kpis = useMemo(() => {
+    if (stats) return {
+      total: stats.total || 0,
+      actives: stats.actives || 0,
+      gagnees: stats.gagnees || 0,
+      perdues: stats.perdues || 0,
+      ca_previsionnel: Number(stats.ca_previsionnel || 0),
+    };
+    const total = rows.length;
+    return {
+      total,
+      actives: rows.filter((r) => r.statut === 'ACTIVE').length,
+      gagnees: rows.filter((r) => r.statut === 'GAGNEE').length,
+      perdues: rows.filter((r) => r.statut === 'PERDUE').length,
+      ca_previsionnel: rows.filter((r) => r.statut === 'ACTIVE').reduce((s, r) => s + Number(r.montant_estime || 0), 0),
+    };
+  }, [stats, rows]);
 
-  const totalMontant = items.reduce((s, o) => s + toNum(o.montant_prevue), 0);
+  const toggle = (f: FilterKey) => setFilter((p) => (p === f ? 'all' : f));
 
   return (
-    <div className="p-6">
-      <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">Opportunités</h1>
-          <p className="text-sm text-slate-500">Toutes les opportunités CRM</p>
-        </div>
-        <div className="flex gap-3">
-          <div className="bg-white rounded-lg border border-slate-200 px-4 py-2">
-            <p className="text-xs text-slate-500">Total</p>
-            <p className="font-semibold text-slate-800">{items.length}</p>
-          </div>
-          <div className="bg-white rounded-lg border border-slate-200 px-4 py-2">
-            <p className="text-xs text-slate-500">Montant total</p>
-            <p className="font-semibold text-emerald-700">{totalMontant.toFixed(2)} TND</p>
-          </div>
-        </div>
+    <DashboardShell
+      eyebrow="§8 · Pipeline"
+      title="Opportunités"
+      subtitle="Pipeline commercial · négociations en cours et closings."
+      headerRight={
+        <button type="button" style={btnPrimary}
+                onClick={() => alert('Formulaire création à venir (route /opportunities/nouveau)')}>
+          <PlusCircle size={14} style={{ marginRight: 6 }} /> Nouvelle opportunité
+        </button>
+      }
+    >
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 'var(--s-4)' }}>
+        <KpiCard label="Total"           value={kpis.total}   tone="terracotta" icon={<Briefcase size={18} />}    onClick={() => setFilter('all')} />
+        <KpiCard label="Actives"         value={kpis.actives} tone="indigo"     icon={<Target size={18} />}        onClick={() => toggle('ACTIVE')} />
+        <KpiCard label="Gagnées"         value={kpis.gagnees} tone="sage"       icon={<CheckCircle2 size={18} />}   onClick={() => toggle('GAGNEE')} />
+        <KpiCard label="CA prévisionnel" value={fmtMoney(kpis.ca_previsionnel, 'TND')} tone="gold" icon={<TrendingUp size={18} />} />
       </div>
 
-      {error && (
-        <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-2 text-sm text-red-700">
-          {error}
+      <SectionCard
+        title="Pipeline"
+        subtitle={`${rows.length} opportunité(s)`}
+        actions={
+          <button style={btnGhost} onClick={() => navigate('/pipeline-vente')}>Vue kanban →</button>
+        }
+      >
+        <div style={{ display: 'flex', gap: 'var(--s-3)', flexWrap: 'wrap', marginBottom: 'var(--s-4)' }}>
+          <div style={{ position: 'relative', flex: 1, minWidth: 260 }}>
+            <Search size={16} style={{ position: 'absolute', left: 12, top: 10, color: 'var(--fg-muted)' }} />
+            <input value={search} onChange={(e) => setSearch(e.target.value)}
+                   placeholder="Libellé, numéro…" style={inputStyle(true)} />
+            {search && <button onClick={() => setSearch('')} style={btnClear}><X size={14} /></button>}
+          </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <Filter size={16} style={{ color: 'var(--fg-muted)' }} />
+            <select value={filter} onChange={(e) => setFilter(e.target.value as FilterKey)} style={inputStyle(false)}>
+              <option value="all">Tous statuts</option>
+              <option value="ACTIVE">Actives</option>
+              <option value="GAGNEE">Gagnées</option>
+              <option value="PERDUE">Perdues</option>
+            </select>
+          </div>
         </div>
-      )}
 
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        {items.length === 0 ? (
-          <div className="p-12 text-center text-slate-500">Aucune opportunité.</div>
+        {loading ? (
+          <div style={{ padding: 'var(--s-8)', textAlign: 'center', color: 'var(--fg-muted)' }}>Chargement…</div>
+        ) : error ? (
+          <div style={{ padding: 'var(--s-4)', color: 'var(--color-danger)', background: 'var(--color-danger-bg)', borderRadius: 'var(--radius-sm)' }}>{error}</div>
+        ) : rows.length === 0 ? (
+          <div style={{ padding: 'var(--s-8)', textAlign: 'center', color: 'var(--fg-muted)' }}>Aucune opportunité.</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50 border-b border-slate-200">
-                <tr>
-                  <th className="text-left px-4 py-3 font-semibold text-slate-700">Nom</th>
-                  <th className="text-left px-4 py-3 font-semibold text-slate-700">Client</th>
-                  <th className="text-left px-4 py-3 font-semibold text-slate-700">Statut</th>
-                  <th className="text-right px-4 py-3 font-semibold text-slate-700">Montant</th>
-                  <th className="text-right px-4 py-3 font-semibold text-slate-700">Probabilité</th>
-                  <th className="text-left px-4 py-3 font-semibold text-slate-700">Fermeture prévue</th>
-                  <th className="text-left px-4 py-3 font-semibold text-slate-700">Créée le</th>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', fontSize: 'var(--text-sm)', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                  {['N°', 'Libellé', 'Étape', 'Statut', 'Montant', 'Probabilité', 'Clôture prévue'].map((h) => (
+                    <th key={h} style={thStyle}>{h}</th>
+                  ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
-                {items.map((o) => (
-                  <tr key={o.id ?? o.id_opportunite} className="hover:bg-slate-50 group">
-                    <td className="px-4 py-3 font-medium text-slate-800">{o.nom}</td>
-                    <td className="px-4 py-3 text-slate-600">{o.client_nom || '-'}</td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${statutColor(o.statut)}`}>
-                        {o.statut}
-                      </span>
+              <tbody>
+                {rows.map((o) => (
+                  <tr key={o.id_opportunite} style={{ borderBottom: '1px solid var(--border-subtle)', cursor: 'pointer' }}
+                      onClick={() => { /* drawer TODO */ }}>
+                    <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)' }}>{o.numero_opportunite}</td>
+                    <td style={{ ...tdStyle, fontWeight: 600 }}>{o.libelle}</td>
+                    <td style={tdStyle}>{o.etape}</td>
+                    <td style={tdStyle}>
+                      <span style={{
+                        display: 'inline-flex', padding: '2px 10px', borderRadius: 999,
+                        fontSize: 'var(--text-xs)', fontWeight: 600,
+                        background: `color-mix(in srgb, ${STATUT_TONE[o.statut] || 'var(--fg-muted)'} 15%, transparent)`,
+                        color: STATUT_TONE[o.statut] || 'var(--fg-muted)',
+                      }}>{o.statut}</span>
                     </td>
-                    <td className="px-4 py-3 text-right font-semibold text-emerald-700">
-                      {toNum(o.montant_prevue).toFixed(2)} TND
+                    <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', textAlign: 'right' }}>
+                      {fmtMoney(o.montant_estime, 'TND')}
                     </td>
-                    <td className="px-4 py-3 text-right text-slate-600">
-                      {toNum(o.probabilite).toFixed(0)}%
-                    </td>
-                    <td className="px-4 py-3 text-slate-600">{fmtDate(o.date_fermeture_prevue)}</td>
-                    <td className="px-4 py-3 text-slate-600">{fmtDate(o.created_at)}</td>
+                    <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', textAlign: 'right' }}>{o.probabilite}%</td>
+                    <td style={tdStyle}>{fmtDate(o.date_cloture_prevue)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         )}
-      </div>
-    </div>
+      </SectionCard>
+    </DashboardShell>
   );
 };
+
+const btnPrimary: React.CSSProperties = {
+  display: 'inline-flex', alignItems: 'center', padding: '8px 14px',
+  background: 'var(--accent-terracotta)', color: 'var(--fg-inverse)',
+  border: '1px solid var(--accent-terracotta)', borderRadius: 999,
+  fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 600, cursor: 'pointer',
+};
+const btnGhost: React.CSSProperties = {
+  padding: '6px 14px', background: 'var(--bg-canvas)', color: 'var(--fg-secondary)',
+  border: '1px solid var(--border-subtle)', borderRadius: 999,
+  fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', cursor: 'pointer',
+};
+const btnClear: React.CSSProperties = {
+  position: 'absolute', right: 8, top: 8, background: 'transparent',
+  border: 'none', cursor: 'pointer', color: 'var(--fg-muted)',
+};
+const inputStyle = (padLeft: boolean): React.CSSProperties => ({
+  width: '100%',
+  padding: padLeft ? '8px 12px 8px 36px' : '8px 12px',
+  border: '1px solid var(--border-default)',
+  borderRadius: 'var(--radius-sm)',
+  background: 'var(--bg-canvas)',
+  color: 'var(--fg-primary)',
+  fontSize: 'var(--text-sm)',
+});
+const thStyle: React.CSSProperties = {
+  padding: 'var(--s-3)', textAlign: 'left',
+  fontFamily: 'var(--font-serif)', fontStyle: 'italic',
+  fontSize: 'var(--text-xs)', fontWeight: 600,
+  color: 'var(--fg-primary)', background: 'var(--bg-canvas)',
+  textTransform: 'uppercase', letterSpacing: '0.05em',
+};
+const tdStyle: React.CSSProperties = { padding: 'var(--s-3)', color: 'var(--fg-primary)' };
 
 export default Opportunities;

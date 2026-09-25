@@ -1,353 +1,249 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
-import {
-  Users,
-  Search,
-  PlusCircle,
-  Mail,
-  Phone,
-  Building2,
-  Filter,
-  UserCheck,
-  Star,
-  Clock,
-} from 'lucide-react';
-import api from '../../services/api';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Users, Search, Filter, PlusCircle, Mail, Phone, Building2, Star, UserCheck, Clock, X } from 'lucide-react';
+import { DashboardShell, KpiCard, SectionCard } from '../../components/dashboard';
+import { contactsApi, pickData } from '../../services/crmApi';
+import { fmtRelative } from '../../utils/formatters';
 
-// ═══════════════════════════════════════════════════════════════════
-// Types
-// ═══════════════════════════════════════════════════════════════════
-interface ContactB2B {
+interface ContactRow {
   id_contact: number;
+  id_client?: number;
+  role: 'responsable' | 'acheteur' | 'commercial_client' | 'technique' | 'comptabilite' | 'autre';
+  civilite?: string;
   nom: string;
-  prenom: string;
-  poste: string;
-  email: string;
-  telephone: string;
-  compte_nom: string;
-  id_compte: number | null;
-  dernier_echange: string; // ISO date
-  role_decision: 'decideur' | 'influenceur' | 'utilisateur' | 'gatekeeper';
+  prenom?: string;
+  fonction?: string;
+  email?: string;
+  telephone?: string;
+  whatsapp?: string;
+  est_principal: boolean;
   actif: boolean;
+  compte_raison_sociale?: string;
+  compte_nom_particulier?: string;
+  code_client?: string;
+  updated_at?: string;
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// Mock
-// ═══════════════════════════════════════════════════════════════════
-const MOCK_CONTACTS: ContactB2B[] = [
-  { id_contact: 1, nom: 'Ben Hamida', prenom: 'Sonia', poste: 'Directrice Achats', email: 'sonia.benhamida@marina-djerba.tn', telephone: '+216 24 118 442', compte_nom: 'Hotel Marina Djerba', id_compte: 12, dernier_echange: new Date(Date.now() - 3 * 86400000).toISOString(), role_decision: 'decideur', actif: true },
-  { id_contact: 2, nom: 'Karray', prenom: 'Mehdi', poste: 'Chef de projet linge', email: 'm.karray@residence-hammamet.tn', telephone: '+216 71 224 890', compte_nom: 'Résidence Hammamet Beach', id_compte: 8, dernier_echange: new Date(Date.now() - 12 * 86400000).toISOString(), role_decision: 'influenceur', actif: true },
-  { id_contact: 3, nom: 'Sfar', prenom: 'Amine', poste: 'Gérant', email: 'amine.sfar@boutique-menzah.tn', telephone: '+216 98 445 220', compte_nom: 'Boutique El Menzah SARL', id_compte: 5, dernier_echange: new Date(Date.now() - 45 * 86400000).toISOString(), role_decision: 'decideur', actif: true },
-  { id_contact: 4, nom: 'Trabelsi', prenom: 'Nadia', poste: 'Responsable e-commerce', email: 'nadia@boutique-artisan.com', telephone: '+216 27 990 118', compte_nom: 'Boutique Artisan Tunis', id_compte: 15, dernier_echange: new Date(Date.now() - 1 * 86400000).toISOString(), role_decision: 'decideur', actif: true },
-  { id_contact: 5, nom: 'Ferchichi', prenom: 'Karim', poste: 'Directeur Général', email: 'k.ferchichi@groupe-cotton-plus.tn', telephone: '+216 71 448 220', compte_nom: 'Groupe Cotton Plus SA', id_compte: 20, dernier_echange: new Date(Date.now() - 8 * 86400000).toISOString(), role_decision: 'decideur', actif: true },
-  { id_contact: 6, nom: 'Zouari', prenom: 'Leila', poste: 'Assistante commerciale', email: 'l.zouari@souk-sfax.tn', telephone: '+216 74 220 118', compte_nom: 'Souk Central Sfax', id_compte: 9, dernier_echange: new Date(Date.now() - 20 * 86400000).toISOString(), role_decision: 'gatekeeper', actif: true },
-  { id_contact: 7, nom: 'Mansour', prenom: 'Youssef', poste: 'Responsable magasin', email: 'y.mansour@medina-shop.tn', telephone: '+216 22 448 990', compte_nom: 'Medina Shop Kairouan', id_compte: 18, dernier_echange: new Date(Date.now() - 55 * 86400000).toISOString(), role_decision: 'utilisateur', actif: false },
-  { id_contact: 8, nom: 'Ayadi', prenom: 'Fatma', poste: 'Directrice marketing', email: 'f.ayadi@hotel-corail.tn', telephone: '+216 79 118 442', compte_nom: 'Hotel Corail Mahdia', id_compte: 22, dernier_echange: new Date(Date.now() - 5 * 86400000).toISOString(), role_decision: 'influenceur', actif: true },
-];
+type Filter = 'all' | ContactRow['role'] | 'principal' | 'sans_email';
 
-// ═══════════════════════════════════════════════════════════════════
-// Helpers
-// ═══════════════════════════════════════════════════════════════════
-const pickArray = <T,>(res: PromiseSettledResult<any>, fallback: T[]): T[] => {
-  if (res.status !== 'fulfilled') return fallback;
-  const d = res.value?.data?.data ?? res.value?.data;
-  if (Array.isArray(d)) return d as T[];
-  if (d && Array.isArray(d.contacts)) return d.contacts as T[];
-  return fallback;
-};
-
-const fmtDate = (iso: string): string => {
-  try {
-    const d = new Date(iso);
-    const days = Math.round((Date.now() - d.getTime()) / 86400000);
-    if (days === 0) return "aujourd'hui";
-    if (days === 1) return 'hier';
-    if (days < 30) return `il y a ${days} j`;
-    return d.toLocaleDateString('fr-FR');
-  } catch {
-    return '-';
-  }
-};
-
-// ═══════════════════════════════════════════════════════════════════
-// KpiCard local (bordure gauche colorée)
-// ═══════════════════════════════════════════════════════════════════
-interface KpiProps {
-  label: string;
-  value: string | number;
-  hint?: string;
-  color: 'terracotta' | 'sage' | 'indigo' | 'gold';
-  icon?: React.ReactNode;
-}
-const COLORS: Record<KpiProps['color'], string> = {
-  terracotta: '#C8663D',
-  sage: '#4A6C5B',
-  indigo: '#3B4E68',
-  gold: '#D6A756',
-};
-
-const KpiCard: React.FC<KpiProps> = ({ label, value, hint, color, icon }) => (
-  <div
-    className="rounded-xl p-5 shadow-sm bg-white"
-    style={{ borderLeft: `4px solid ${COLORS[color]}` }}
-  >
-    <div className="flex items-start justify-between gap-3">
-      <div className="min-w-0">
-        <div
-          className="text-[11px] uppercase tracking-widest font-medium mb-2"
-          style={{ fontFamily: 'var(--font-mono, JetBrains Mono, monospace)', color: 'var(--fg-muted, #7A6E63)' }}
-        >
-          {label}
-        </div>
-        <div
-          className="text-3xl italic font-medium"
-          style={{ fontFamily: 'var(--font-serif, Fraunces, serif)', color: COLORS[color] }}
-        >
-          {value}
-        </div>
-        {hint && <div className="text-xs mt-1" style={{ color: 'var(--fg-muted, #7A6E63)' }}>{hint}</div>}
-      </div>
-      {icon && (
-        <div
-          className="rounded-lg p-2 shrink-0"
-          style={{ background: `${COLORS[color]}18`, color: COLORS[color] }}
-        >
-          {icon}
-        </div>
-      )}
-    </div>
-  </div>
-);
-
-// ═══════════════════════════════════════════════════════════════════
-// Page
-// ═══════════════════════════════════════════════════════════════════
 const Contacts: React.FC = () => {
-  const [contacts, setContacts] = useState<ContactB2B[]>([]);
+  const [rows, setRows] = useState<ContactRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [filterRole, setFilterRole] = useState<'all' | ContactB2B['role_decision']>('all');
+  const [debounced, setDebounced] = useState('');
+  const [filter, setFilter] = useState<Filter>('all');
+  const [error, setError] = useState<string | null>(null);
+
+  // Debounce 250ms
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(search), 250);
+    return () => clearTimeout(t);
+  }, [search]);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const results = await Promise.allSettled([api.get('/crm/contacts')]);
-      if (cancelled) return;
-      setContacts(pickArray<ContactB2B>(results[0], MOCK_CONTACTS));
-      setLoading(false);
+      setError(null);
+      try {
+        const params: any = { limit: 200 };
+        if (debounced) params.q = debounced;
+        if (filter !== 'all' && filter !== 'principal' && filter !== 'sans_email') params.role = filter;
+        const res = await contactsApi.list(params);
+        if (cancelled) return;
+        let list = pickData<ContactRow>(res);
+        if (filter === 'principal')  list = list.filter((c) => c.est_principal);
+        if (filter === 'sans_email') list = list.filter((c) => !c.email);
+        setRows(list);
+      } catch (e: any) {
+        if (!cancelled) setError(e?.response?.data?.error?.message || e.message);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    return () => { cancelled = true; };
+  }, [debounced, filter]);
 
   const kpis = useMemo(() => {
-    const total = contacts.length;
-    const actifs = contacts.filter((c) => c.actif).length;
-    const decideurs = contacts.filter((c) => c.role_decision === 'decideur').length;
-    const sans30j = contacts.filter((c) => {
-      const days = (Date.now() - new Date(c.dernier_echange).getTime()) / 86400000;
-      return days > 30;
-    }).length;
-    return { total, actifs, decideurs, sans30j };
-  }, [contacts]);
+    const total = rows.length;
+    const actifs = rows.filter((c) => c.actif).length;
+    const decideurs = rows.filter((c) => c.role === 'responsable' || c.est_principal).length;
+    const withEmail = rows.filter((c) => !!c.email).length;
+    return { total, actifs, decideurs, sansEmail: total - withEmail };
+  }, [rows]);
 
-  const filtered = useMemo(() => {
-    return contacts.filter((c) => {
-      if (filterRole !== 'all' && c.role_decision !== filterRole) return false;
-      if (!search) return true;
-      const q = search.toLowerCase();
-      return (
-        c.nom.toLowerCase().includes(q) ||
-        c.prenom.toLowerCase().includes(q) ||
-        c.email.toLowerCase().includes(q) ||
-        c.compte_nom.toLowerCase().includes(q) ||
-        c.poste.toLowerCase().includes(q)
-      );
-    });
-  }, [contacts, search, filterRole]);
+  const filtered = rows;
 
-  if (loading) {
-    return (
-      <div
-        className="min-h-screen flex items-center justify-center"
-        style={{ backgroundColor: 'var(--bg-app, #FBF8F3)' }}
-      >
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]" />
-      </div>
-    );
-  }
+  const toggleFilter = (f: Filter) => setFilter((p) => (p === f ? 'all' : f));
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-app, #FBF8F3)' }}>
-      <div className="p-6">
-        <div className="max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="mb-6">
-            <div
-              className="text-[11px] uppercase tracking-widest mb-2"
-              style={{
-                fontFamily: 'var(--font-mono, JetBrains Mono, monospace)',
-                color: 'var(--fg-muted, #7A6E63)',
-              }}
-            >
-              CRM · CONTACTS B2B
-            </div>
-            <div className="flex flex-wrap items-end justify-between gap-3">
-              <div>
-                <h1
-                  className="text-3xl italic font-medium flex items-center gap-3"
-                  style={{
-                    fontFamily: 'var(--font-serif, Fraunces, serif)',
-                    color: 'var(--fg-primary, #2F2A26)',
-                  }}
-                >
-                  <Users className="w-7 h-7" style={{ color: '#C8663D' }} />
-                  Contacts
-                </h1>
-                <p className="text-sm mt-1" style={{ color: 'var(--fg-muted, #7A6E63)' }}>
-                  Interlocuteurs B2B rattachés aux comptes clients &middot; historique des échanges
-                </p>
-              </div>
-              <button
-                className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white"
-                style={{ background: '#C8663D', borderRadius: '9999px' }}
-              >
-                <PlusCircle className="w-4 h-4" />
-                Nouveau contact
+    <DashboardShell
+      eyebrow="§3.2 · CRM"
+      title="Contacts"
+      subtitle="Interlocuteurs B2B rattachés aux comptes clients · principal, décideur, technique."
+      headerRight={
+        <button
+          type="button"
+          style={btnPrimary}
+          title="Bientôt : création inline via drawer"
+        >
+          <PlusCircle size={14} style={{ marginRight: 6 }} />
+          Nouveau contact
+        </button>
+      }
+    >
+      {/* KPI cliquables */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 'var(--s-4)' }}>
+        <KpiCard label="Total contacts" value={kpis.total}      tone="terracotta" icon={<Users size={18} />}      onClick={() => setFilter('all')} />
+        <KpiCard label="Principaux"     value={kpis.decideurs}  tone="indigo"     icon={<Star size={18} />}       onClick={() => toggleFilter('principal')} />
+        <KpiCard label="Actifs"         value={kpis.actifs}     tone="sage"       icon={<UserCheck size={18} />}  onClick={() => setFilter('all')} />
+        <KpiCard label="Sans email"     value={kpis.sansEmail}  tone="gold"       icon={<Clock size={18} />}      onClick={() => toggleFilter('sans_email')} />
+      </div>
+
+      {/* Barre recherche + filtre */}
+      <SectionCard title="Répertoire" subtitle={`${filtered.length} contact(s)`}>
+        <div style={{ display: 'flex', gap: 'var(--s-3)', flexWrap: 'wrap', marginBottom: 'var(--s-4)' }}>
+          <div style={{ position: 'relative', flex: 1, minWidth: 260 }}>
+            <Search size={16} style={{ position: 'absolute', left: 12, top: 10, color: 'var(--fg-muted)' }} />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Nom, email, compte, fonction…"
+              style={inputStyle(true)}
+            />
+            {search && (
+              <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 8, top: 8, background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--fg-muted)' }}>
+                <X size={14} />
               </button>
-            </div>
+            )}
           </div>
-
-          {/* KPI */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <KpiCard label="Total contacts" value={kpis.total} hint="Base B2B" color="terracotta" icon={<Users className="w-5 h-5" />} />
-            <KpiCard label="Actifs" value={kpis.actifs} hint={`${Math.round((kpis.actifs / Math.max(kpis.total, 1)) * 100)}% du total`} color="sage" icon={<UserCheck className="w-5 h-5" />} />
-            <KpiCard label="Décideurs" value={kpis.decideurs} hint="Signataires potentiels" color="indigo" icon={<Star className="w-5 h-5" />} />
-            <KpiCard label="Sans échange 30j" value={kpis.sans30j} hint="À relancer" color="gold" icon={<Clock className="w-5 h-5" />} />
-          </div>
-
-          {/* Filtres */}
-          <div className="bg-white rounded-xl shadow-sm p-3 mb-4 flex flex-wrap gap-3 items-center">
-            <div className="relative flex-1 min-w-[240px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--fg-muted, #7A6E63)' }} />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Nom, email, compte, poste…"
-                className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm outline-none focus:border-[#C8663D]"
-                style={{ borderColor: 'var(--border-subtle, #E7DFD3)' }}
-              />
-            </div>
-            <Filter className="w-4 h-4" style={{ color: 'var(--fg-muted, #7A6E63)' }} />
-            <select
-              value={filterRole}
-              onChange={(e) => setFilterRole(e.target.value as any)}
-              className="text-sm border rounded-lg px-2 py-1.5 bg-white"
-              style={{ borderColor: 'var(--border-subtle, #E7DFD3)' }}
-            >
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <Filter size={16} style={{ color: 'var(--fg-muted)' }} />
+            <select value={filter} onChange={(e) => setFilter(e.target.value as Filter)} style={inputStyle(false)}>
               <option value="all">Tous rôles</option>
-              <option value="decideur">Décideur</option>
-              <option value="influenceur">Influenceur</option>
-              <option value="utilisateur">Utilisateur</option>
-              <option value="gatekeeper">Gatekeeper</option>
+              <option value="responsable">Responsable</option>
+              <option value="acheteur">Acheteur</option>
+              <option value="commercial_client">Commercial client</option>
+              <option value="technique">Technique</option>
+              <option value="comptabilite">Comptabilité</option>
+              <option value="autre">Autre</option>
+              <option value="principal">— Principal seulement</option>
+              <option value="sans_email">— Sans email</option>
             </select>
-            <div className="text-sm ml-auto" style={{ color: 'var(--fg-muted, #7A6E63)' }}>
-              {filtered.length} / {contacts.length}
-            </div>
           </div>
+        </div>
 
-          {/* Table */}
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-            <table className="min-w-full text-sm">
-              <thead style={{ background: 'var(--bg-canvas)' }}>
-                <tr>
-                  {['Nom', 'Poste', 'Email', 'Téléphone', 'Compte lié', 'Dernier échange'].map((h) => (
-                    <th
-                      key={h}
-                      className="px-4 py-3 text-left italic font-medium text-xs uppercase tracking-wide"
-                      style={{
-                        fontFamily: 'var(--font-serif, Fraunces, serif)',
-                        color: 'var(--fg-primary, #2F2A26)',
-                      }}
-                    >
-                      {h}
-                    </th>
+        {loading ? (
+          <div style={{ padding: 'var(--s-8)', textAlign: 'center', color: 'var(--fg-muted)' }}>Chargement…</div>
+        ) : error ? (
+          <div style={{ padding: 'var(--s-4)', color: 'var(--color-danger)', background: 'var(--color-danger-bg)', borderRadius: 'var(--radius-sm)' }}>
+            {error}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div style={{ padding: 'var(--s-8)', textAlign: 'center', color: 'var(--fg-muted)' }}>
+            Aucun contact pour ces critères.
+          </div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', fontSize: 'var(--text-sm)', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                  {['Nom', 'Rôle', 'Email', 'Téléphone', 'Compte', 'MAJ'].map((h) => (
+                    <th key={h} style={thStyle}>{h}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y" style={{ borderColor: 'var(--border-subtle, #E7DFD3)' }}>
+              <tbody>
                 {filtered.map((c) => (
-                  <tr key={c.id_contact} className="hover:bg-[#FDF2ED]/50 transition-colors group">
-                    <td className="px-4 py-3">
-                      <div className="font-medium" style={{ color: 'var(--fg-primary, #2F2A26)' }}>
-                        {c.prenom} {c.nom}
+                  <tr key={c.id_contact} style={{ borderBottom: '1px solid var(--border-subtle)', cursor: 'pointer' }}
+                      onClick={() => { /* drawer TODO */ }}>
+                    <td style={tdStyle}>
+                      <div style={{ fontWeight: 600, color: 'var(--fg-primary)' }}>
+                        {(c.prenom || '') + ' ' + c.nom}
                       </div>
-                      {c.role_decision === 'decideur' && (
-                        <span
-                          className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wide mt-0.5 px-2 py-0.5 rounded-full"
-                          style={{ background: 'color-mix(in srgb, var(--accent-terracotta) 15%, var(--bg-elevated))', color: '#C8663D' }}
-                        >
-                          <Star className="w-3 h-3" /> décideur
+                      {c.est_principal && (
+                        <span style={badgePrincipal}>
+                          <Star size={10} /> Principal
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3" style={{ color: 'var(--fg-primary, #2F2A26)' }}>
-                      {c.poste}
+                    <td style={tdStyle}>{c.role}</td>
+                    <td style={tdStyle}>
+                      {c.email ? (
+                        <a href={`mailto:${c.email}`} onClick={(e) => e.stopPropagation()}
+                           style={{ color: 'var(--accent-indigo)', textDecoration: 'none' }}>
+                          <Mail size={12} style={{ marginRight: 4, verticalAlign: 'middle' }} />
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)' }}>{c.email}</span>
+                        </a>
+                      ) : '-'}
                     </td>
-                    <td className="px-4 py-3">
-                      <a href={`mailto:${c.email}`} className="inline-flex items-center gap-1.5 hover:underline" style={{ color: '#3B4E68' }}>
-                        <Mail className="w-3.5 h-3.5" />
-                        <span
-                          className="text-xs"
-                          style={{ fontFamily: 'var(--font-mono, JetBrains Mono, monospace)' }}
-                        >
-                          {c.email}
-                        </span>
-                      </a>
+                    <td style={tdStyle}>
+                      {c.telephone ? (
+                        <a href={`tel:${c.telephone}`} onClick={(e) => e.stopPropagation()}
+                           style={{ color: 'var(--accent-sage)', textDecoration: 'none' }}>
+                          <Phone size={12} style={{ marginRight: 4, verticalAlign: 'middle' }} />
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)' }}>{c.telephone}</span>
+                        </a>
+                      ) : '-'}
                     </td>
-                    <td className="px-4 py-3">
-                      <a href={`tel:${c.telephone}`} className="inline-flex items-center gap-1.5 hover:underline" style={{ color: '#4A6C5B' }}>
-                        <Phone className="w-3.5 h-3.5" />
-                        <span
-                          className="text-xs"
-                          style={{ fontFamily: 'var(--font-mono, JetBrains Mono, monospace)' }}
-                        >
-                          {c.telephone}
-                        </span>
-                      </a>
+                    <td style={tdStyle}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <Building2 size={12} style={{ color: 'var(--fg-muted)' }} />
+                        {c.compte_raison_sociale || c.compte_nom_particulier || '-'}
+                      </span>
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="inline-flex items-center gap-1.5" style={{ color: 'var(--fg-primary, #2F2A26)' }}>
-                        <Building2 className="w-3.5 h-3.5" style={{ color: 'var(--fg-muted, #7A6E63)' }} />
-                        {c.compte_nom}
-                      </div>
-                    </td>
-                    <td
-                      className="px-4 py-3 text-xs"
-                      style={{
-                        color: 'var(--fg-muted, #7A6E63)',
-                        fontFamily: 'var(--font-mono, JetBrains Mono, monospace)',
-                      }}
-                    >
-                      {fmtDate(c.dernier_echange)}
+                    <td style={{ ...tdStyle, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)' }}>
+                      {fmtRelative(c.updated_at || null)}
                     </td>
                   </tr>
                 ))}
-                {filtered.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="px-4 py-10 text-center" style={{ color: 'var(--fg-muted, #7A6E63)' }}>
-                      Aucun contact pour ces critères.
-                    </td>
-                  </tr>
-                )}
               </tbody>
             </table>
           </div>
-        </div>
-      </div>
-    </div>
+        )}
+      </SectionCard>
+    </DashboardShell>
   );
+};
+
+const btnPrimary: React.CSSProperties = {
+  display: 'inline-flex', alignItems: 'center', padding: '8px 14px',
+  background: 'var(--accent-terracotta)', color: 'var(--fg-inverse)',
+  border: '1px solid var(--accent-terracotta)', borderRadius: 999,
+  fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 600, cursor: 'pointer',
+};
+
+const inputStyle = (padLeft: boolean): React.CSSProperties => ({
+  width: '100%',
+  padding: padLeft ? '8px 12px 8px 36px' : '8px 12px',
+  border: '1px solid var(--border-default)',
+  borderRadius: 'var(--radius-sm)',
+  background: 'var(--bg-canvas)',
+  color: 'var(--fg-primary)',
+  fontSize: 'var(--text-sm)',
+});
+
+const thStyle: React.CSSProperties = {
+  padding: 'var(--s-3)',
+  textAlign: 'left',
+  fontFamily: 'var(--font-serif)', fontStyle: 'italic',
+  fontSize: 'var(--text-xs)', fontWeight: 600,
+  color: 'var(--fg-primary)',
+  background: 'var(--bg-canvas)',
+  textTransform: 'uppercase', letterSpacing: '0.05em',
+};
+
+const tdStyle: React.CSSProperties = {
+  padding: 'var(--s-3)',
+  color: 'var(--fg-primary)',
+};
+
+const badgePrincipal: React.CSSProperties = {
+  display: 'inline-flex', alignItems: 'center', gap: 4,
+  fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em',
+  padding: '2px 8px', borderRadius: 999,
+  background: 'color-mix(in srgb, var(--accent-terracotta) 15%, transparent)',
+  color: 'var(--accent-terracotta)',
+  marginTop: 4,
 };
 
 export default Contacts;

@@ -16,7 +16,8 @@ const groups = [
   ['params',       ['numerotation', 'societe']],
 
   // CRM & Produits
-  ['crm',          ['comptes', 'tarification']],
+  ['crm',          ['comptes', 'tarification', 'contacts', 'adresses',
+                    'leads', 'interactions', 'opportunites', 'parametres']],
   ['produits',     ['familles', 'modeles', 'articles']],
   ['bom',          ['master', 'composants']],
 
@@ -69,6 +70,7 @@ const routeSlug = {
   messagerie: 'messages',
   notifications: 'notifications',
   colisage: 'colis',
+  parametres: 'parametres',
 };
 
 export default async function buildV2Router() {

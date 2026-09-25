@@ -1,21 +1,46 @@
 import { getPool } from '../../_shared/db.js';
 
 // ------------------------ Comptes ------------------------
-export async function list({ q, statut, id_commercial, mesComptesOnly, userId, limit = 50, offset = 0 }) {
+export async function list({ q, statut, type_compte, pays, id_commercial, actif,
+                             mesComptesOnly, userId, limit = 50, offset = 0 }) {
   const wh = ['1=1']; const p = [];
   if (mesComptesOnly && userId) { p.push(userId); wh.push(`id_commercial = $${p.length}`); }
   else if (id_commercial)       { p.push(id_commercial); wh.push(`id_commercial = $${p.length}`); }
-  if (statut) { p.push(statut); wh.push(`statut_crm = $${p.length}`); }
-  if (q) { p.push(`%${q}%`); wh.push(`(code_client ILIKE $${p.length} OR raison_sociale ILIKE $${p.length} OR nom ILIKE $${p.length})`); }
+  if (statut)      { p.push(statut);      wh.push(`statut_crm  = $${p.length}`); }
+  if (type_compte) { p.push(type_compte); wh.push(`type_compte = $${p.length}`); }
+  if (pays)        { p.push(pays);        wh.push(`pays        = $${p.length}`); }
+  if (actif !== undefined) { p.push(actif); wh.push(`actif = $${p.length}`); }
+  if (q) {
+    p.push(`%${q}%`);
+    wh.push(`(code_client ILIKE $${p.length} OR raison_sociale ILIKE $${p.length} OR nom ILIKE $${p.length} OR prenom ILIKE $${p.length})`);
+  }
   const where = `WHERE ${wh.join(' AND ')}`;
   p.push(limit); p.push(offset);
   const sql = `SELECT id_client,code_client,type_compte,statut_crm,raison_sociale,nom,prenom,
-                      pays,id_commercial,id_grille_tarif,actif,created_at
+                      pays,id_commercial,id_grille_tarif,actif,created_at,
+                      COALESCE(devise,'TND') AS devise
                  FROM comptes ${where}
                 ORDER BY id_client DESC LIMIT $${p.length - 1} OFFSET $${p.length}`;
   const cnt = await getPool().query(`SELECT COUNT(*)::int AS n FROM comptes ${where}`, p.slice(0, p.length - 2));
   const { rows } = await getPool().query(sql, p);
   return { rows, total: cnt.rows[0].n };
+}
+
+export async function stats({ mesComptesOnly, userId } = {}) {
+  const wh = ['1=1']; const p = [];
+  if (mesComptesOnly && userId) { p.push(userId); wh.push(`id_commercial = $${p.length}`); }
+  const where = `WHERE ${wh.join(' AND ')}`;
+  const { rows } = await getPool().query(
+    `SELECT
+       COUNT(*)::int                                                AS total,
+       COUNT(*) FILTER (WHERE statut_crm = 'client')::int           AS clients,
+       COUNT(*) FILTER (WHERE statut_crm = 'prospect')::int         AS prospects,
+       COUNT(*) FILTER (WHERE statut_crm = 'lead')::int             AS leads,
+       COUNT(*) FILTER (WHERE statut_crm = 'archive')::int          AS archives,
+       COUNT(*) FILTER (WHERE actif = TRUE)::int                    AS actifs,
+       COUNT(*) FILTER (WHERE actif = FALSE)::int                   AS inactifs
+       FROM comptes ${where}`, p);
+  return rows[0];
 }
 
 export async function findById(id) {

@@ -1,161 +1,152 @@
-import React, { useEffect, useState } from 'react';
-import api from '../services/api';
+import React, { useEffect, useMemo, useState } from 'react';
+import { KanbanSquare } from 'lucide-react';
+import { DashboardShell, SectionCard } from '../components/dashboard';
+import { opportunitesApi, pickData } from '../services/crmApi';
+import { fmtMoney } from '../utils/formatters';
 
-interface Stage {
-  id: number;
-  name: string;
-  ordre?: number;
-  probabilite?: number;
+interface Opp {
+  id_opportunite: number;
+  numero_opportunite: string;
+  libelle: string;
+  etape: string;
+  statut: string;
+  montant_estime: number | string;
+  probabilite: number;
 }
 
-interface Opportunity {
-  id?: number;
-  id_opportunite?: number;
-  nom: string;
-  client_nom?: string;
-  id_client?: number | null;
-  montant_prevue?: number | string | null;
-  probabilite?: number | string | null;
-  statut?: string;
-  date_fermeture_prevue?: string | null;
-}
-
-const STAGE_STATUT_MAP: Record<string, string[]> = {
-  Nouveau: ['nouveau'],
-  Qualifié: ['qualification', 'qualifie', 'qualifié'],
-  Proposition: ['proposition'],
-  Négociation: ['negociation', 'négociation'],
-  Gagné: ['gagne', 'gagné', 'gagnee'],
-  Perdu: ['perdu'],
-};
-
-const normalizeList = (res: any): any[] => {
-  const _r = res?.data?.data;
-  if (Array.isArray(_r)) return _r;
-  if (_r?.data && Array.isArray(_r.data)) return _r.data;
-  if (Array.isArray(res?.data)) return res.data;
-  return [];
-};
-
-const toNum = (v: any): number => {
-  const n = typeof v === 'number' ? v : parseFloat(v);
-  return Number.isFinite(n) ? n : 0;
-};
+// Colonnes canoniques (contrat §8 · pipeline La Plume)
+const STAGES: { key: string; label: string; tone: string; match: (o: Opp) => boolean }[] = [
+  { key: 'NOUVEAU',       label: 'Nouveau',       tone: 'var(--accent-indigo)',
+    match: (o) => o.etape === 'NOUVEAU' },
+  { key: 'QUALIFICATION', label: 'Qualification', tone: 'var(--accent-indigo)',
+    match: (o) => o.etape === 'QUALIFICATION' },
+  { key: 'PROPOSITION',   label: 'Proposition',   tone: 'var(--accent-terracotta)',
+    match: (o) => o.etape === 'PROPOSITION' },
+  { key: 'NEGOCIATION',   label: 'Négociation',   tone: 'var(--accent-gold)',
+    match: (o) => o.etape === 'NEGOCIATION' },
+  { key: 'CLOTURE_GAGNEE', label: 'Gagné',        tone: 'var(--accent-sage)',
+    match: (o) => o.statut === 'GAGNEE' || o.etape === 'CLOTURE_GAGNEE' },
+  { key: 'CLOTURE_PERDUE', label: 'Perdu',        tone: 'var(--color-danger)',
+    match: (o) => o.statut === 'PERDUE' || o.etape === 'CLOTURE_PERDUE' },
+];
 
 const PipelineVente: React.FC = () => {
-  const [stages, setStages] = useState<Stage[]>([]);
-  const [opps, setOpps] = useState<Opportunity[]>([]);
+  const [opps, setOpps] = useState<Opp[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [drag, setDrag] = useState<number | null>(null);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const [stagesRes, oppsRes] = await Promise.all([
-          api.get('/crm/stages').catch(() => ({ data: { data: [] } })),
-          api.get('/crm/opportunites').catch(() => ({ data: { data: [] } })),
-        ]);
-        setStages(normalizeList(stagesRes) as Stage[]);
-        setOpps(normalizeList(oppsRes) as Opportunity[]);
-      } catch (e: any) {
-        setError(e?.message || 'Erreur de chargement');
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
-
-  const displayedStages: Stage[] = stages.length
-    ? stages
-    : [
-        { id: 1, name: 'Nouveau' },
-        { id: 2, name: 'Qualifié' },
-        { id: 3, name: 'Proposition' },
-        { id: 4, name: 'Négociation' },
-        { id: 5, name: 'Gagné' },
-        { id: 6, name: 'Perdu' },
-      ];
-
-  const oppsByStage = (stageName: string): Opportunity[] => {
-    const keys = STAGE_STATUT_MAP[stageName] || [stageName.toLowerCase()];
-    return opps.filter((o) => keys.includes((o.statut || '').toLowerCase()));
+  const reload = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await opportunitesApi.list({ limit: 500 });
+      setOpps(pickData<Opp>(res));
+    } catch (e: any) {
+      setError(e?.response?.data?.error?.message || e.message);
+    } finally { setLoading(false); }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-amber-600"></div>
-      </div>
-    );
-  }
+  useEffect(() => { reload(); }, []);
+
+  const buckets = useMemo(() => {
+    return STAGES.map((s) => {
+      const list = opps.filter(s.match);
+      const total = list.reduce((sum, o) => sum + Number(o.montant_estime || 0), 0);
+      return { ...s, list, total };
+    });
+  }, [opps]);
+
+  const moveTo = async (id: number, targetStage: string) => {
+    const patch: any = {};
+    if (targetStage === 'CLOTURE_GAGNEE') { patch.etape = 'CLOTURE_GAGNEE'; patch.statut = 'GAGNEE'; patch.probabilite = 100; }
+    else if (targetStage === 'CLOTURE_PERDUE') { patch.etape = 'CLOTURE_PERDUE'; patch.statut = 'PERDUE'; patch.probabilite = 0; }
+    else { patch.etape = targetStage; patch.statut = 'ACTIVE'; }
+    try {
+      await opportunitesApi.update(id, patch);
+      await reload();
+    } catch (e: any) {
+      alert(e?.response?.data?.error?.message || e.message);
+    }
+  };
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-800">Pipeline de Vente</h1>
-        <p className="text-sm text-slate-500">Vue kanban des opportunités par étape</p>
-      </div>
-
-      {error && (
-        <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-2 text-sm text-red-700">
-          {error}
-        </div>
-      )}
-
-      {opps.length === 0 ? (
-        <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
-          <p className="text-slate-500">Aucune opportunité à afficher.</p>
-        </div>
-      ) : (
-        <div className="flex gap-4 overflow-x-auto pb-4">
-          {displayedStages.map((stage) => {
-            const stageOpps = oppsByStage(stage.name);
-            const total = stageOpps.reduce((s, o) => s + toNum(o.montant_prevue), 0);
-            return (
+    <DashboardShell
+      eyebrow="§8 · Pipeline"
+      title="Pipeline de vente"
+      subtitle="Vue kanban · glissez une opportunité pour changer son étape."
+    >
+      <SectionCard title="Kanban commercial" subtitle={`${opps.length} opportunité(s)`}>
+        {loading ? (
+          <div style={{ padding: 'var(--s-8)', textAlign: 'center', color: 'var(--fg-muted)' }}>Chargement…</div>
+        ) : error ? (
+          <div style={{ padding: 'var(--s-4)', color: 'var(--color-danger)', background: 'var(--color-danger-bg)', borderRadius: 'var(--radius-sm)' }}>{error}</div>
+        ) : (
+          <div style={{ display: 'flex', gap: 'var(--s-3)', overflowX: 'auto', paddingBottom: 'var(--s-3)' }}>
+            {buckets.map((b) => (
               <div
-                key={stage.id}
-                className="flex-shrink-0 w-72 bg-slate-50 rounded-xl border border-slate-200"
+                key={b.key}
+                onDragOver={(e) => { e.preventDefault(); }}
+                onDrop={() => { if (drag != null) moveTo(drag, b.key); setDrag(null); }}
+                style={{
+                  flex: '0 0 260px',
+                  background: 'var(--bg-canvas)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: 'var(--radius-md)',
+                  display: 'flex', flexDirection: 'column',
+                }}
               >
-                <div className="px-4 py-3 border-b border-slate-200 bg-white rounded-t-xl">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-slate-800">{stage.name}</h3>
-                    <span className="text-xs font-medium bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
-                      {stageOpps.length}
-                    </span>
+                <header style={{
+                  padding: 'var(--s-3)',
+                  borderBottom: '1px solid var(--border-subtle)',
+                  background: 'var(--bg-elevated)',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                    <div style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 600, color: b.tone }}>{b.label}</div>
+                    <span style={{
+                      fontSize: 'var(--text-xs)', padding: '2px 8px', borderRadius: 999,
+                      background: `color-mix(in srgb, ${b.tone} 12%, transparent)`,
+                      color: b.tone, fontWeight: 600,
+                    }}>{b.list.length}</span>
                   </div>
-                  <p className="text-xs text-slate-500 mt-1">{total.toFixed(2)} TND</p>
-                </div>
-                <div className="p-2 space-y-2 max-h-[70vh] overflow-y-auto">
-                  {stageOpps.length === 0 ? (
-                    <p className="text-xs text-slate-400 text-center py-4">Vide</p>
-                  ) : (
-                    stageOpps.map((o) => (
-                      <div
-                        key={o.id ?? o.id_opportunite}
-                        className="bg-white rounded-lg border border-slate-200 p-3 shadow-sm hover:shadow-md transition-shadow"
-                      >
-                        <p className="font-medium text-sm text-slate-800 truncate">{o.nom}</p>
-                        {o.client_nom && (
-                          <p className="text-xs text-slate-500 truncate">{o.client_nom}</p>
-                        )}
-                        <div className="flex items-center justify-between mt-2 text-xs">
-                          <span className="font-semibold text-emerald-700">
-                            {toNum(o.montant_prevue).toFixed(2)} TND
-                          </span>
-                          <span className="text-slate-500">
-                            {toNum(o.probabilite).toFixed(0)}%
-                          </span>
-                        </div>
+                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-muted)', marginTop: 2, fontFamily: 'var(--font-mono)' }}>
+                    {fmtMoney(b.total, 'TND')}
+                  </div>
+                </header>
+                <div style={{ padding: 'var(--s-2)', maxHeight: '70vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 'var(--s-2)' }}>
+                  {b.list.length === 0 ? (
+                    <div style={{ padding: 'var(--s-4)', textAlign: 'center', fontSize: 'var(--text-xs)', color: 'var(--fg-muted)' }}>Vide</div>
+                  ) : b.list.map((o) => (
+                    <div
+                      key={o.id_opportunite}
+                      draggable
+                      onDragStart={() => setDrag(o.id_opportunite)}
+                      style={{
+                        background: 'var(--bg-elevated)',
+                        border: '1px solid var(--border-subtle)',
+                        borderRadius: 'var(--radius-sm)',
+                        padding: 'var(--s-3)',
+                        cursor: 'grab',
+                        boxShadow: 'var(--shadow-sm)',
+                      }}
+                    >
+                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)' }}>{o.numero_opportunite}</div>
+                      <div style={{ fontWeight: 600, marginTop: 2, color: 'var(--fg-primary)' }}>{o.libelle}</div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, fontSize: 'var(--text-xs)' }}>
+                        <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-sage)', fontWeight: 600 }}>
+                          {fmtMoney(o.montant_estime, 'TND')}
+                        </span>
+                        <span style={{ color: 'var(--fg-muted)' }}>{o.probabilite}%</span>
                       </div>
-                    ))
-                  )}
+                    </div>
+                  ))}
                 </div>
               </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
+            ))}
+          </div>
+        )}
+      </SectionCard>
+    </DashboardShell>
   );
 };
 

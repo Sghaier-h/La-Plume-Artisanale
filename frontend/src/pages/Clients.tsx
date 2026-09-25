@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { clientsService, utilisateursService } from '../services/api';
-import { List, Grid, Eye, X, User, Mail, Phone, MapPin, Building, CreditCard, Percent, Edit, Trash2, Filter, Tag, Briefcase, Globe, FileText, Users, UserCheck, UserX, Award } from 'lucide-react';
-import KpiCard from '../components/ecommerce/KpiCard';
+import { comptesApi, pickData } from '../services/crmApi';
+import { List, Grid, X, User, Mail, Phone, MapPin, Building, CreditCard, Percent, Edit, Trash2, Filter, Tag, Briefcase, Globe, FileText, Users, UserCheck, UserX, Award } from 'lucide-react';
+import { KpiCard } from '../components/dashboard';
 
 const Clients: React.FC = () => {
   const navigate = useNavigate();
@@ -346,9 +347,20 @@ const Clients: React.FC = () => {
     const total = clients.length;
     const actifs = clients.filter((c: any) => c.actif).length;
     const inactifs = total - actifs;
-    const prospects = clients.filter((c: any) => c.type_client === 'PROSPECT').length;
+    const prospects = clients.filter((c: any) =>
+      c.type_client === 'PROSPECT' || c.statut_crm === 'prospect').length;
     return { total, actifs, inactifs, prospects };
   }, [clients]);
+
+  // KPI actif → filtre visuel + navigate on click
+  const [kpiActive, setKpiActive] = useState<'all' | 'actifs' | 'inactifs' | 'prospects'>('all');
+  const toggleKpi = (k: 'all' | 'actifs' | 'inactifs' | 'prospects') => {
+    setKpiActive((prev) => (prev === k ? 'all' : k));
+    if (k === 'actifs')    setFilters({ ...filters, actif: 'true' });
+    else if (k === 'inactifs') setFilters({ ...filters, actif: 'false' });
+    else if (k === 'prospects') setFilters({ ...filters, type_client: 'PROSPECT', actif: '' });
+    else setFilters({ type_client: '', id_categorie: '', actif: '' });
+  };
 
   if (loading) {
     return (
@@ -376,7 +388,7 @@ const Clients: React.FC = () => {
               </p>
             </div>
             <button
-              onClick={() => { setShowForm(true); setEditingClient(null); resetForm(); }}
+              onClick={() => navigate('/clients/nouveau')}
               className="inline-flex items-center gap-2 transition-shadow"
               style={{
                 background: 'var(--accent-terracotta)',
@@ -393,16 +405,16 @@ const Clients: React.FC = () => {
           </div>
         </div>
 
-        {/* KPI row */}
+        {/* KPI row — cliquables (filtres actifs) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <KpiCard label="Total fiches" value={kpis.total} icon={<Users className="w-5 h-5" />} color="terracotta" />
-          <KpiCard label="Clients actifs" value={kpis.actifs} icon={<UserCheck className="w-5 h-5" />} color="sage" />
-          <KpiCard label="Inactifs" value={kpis.inactifs} icon={<UserX className="w-5 h-5" />} color={kpis.inactifs > 0 ? 'neutral' : 'neutral'} />
-          <KpiCard label="Prospects" value={kpis.prospects} icon={<Award className="w-5 h-5" />} color="indigo" />
+          <KpiCard label="Total fiches"   value={kpis.total}     tone="terracotta" icon={<Users size={18} />}    onClick={() => toggleKpi('all')} />
+          <KpiCard label="Clients actifs" value={kpis.actifs}    tone="sage"       icon={<UserCheck size={18} />} onClick={() => toggleKpi('actifs')} />
+          <KpiCard label="Inactifs"       value={kpis.inactifs}  tone="gold"       icon={<UserX size={18} />}     onClick={() => toggleKpi('inactifs')} />
+          <KpiCard label="Prospects"      value={kpis.prospects} tone="indigo"     icon={<Award size={18} />}     onClick={() => toggleKpi('prospects')} />
         </div>
 
         {/* Toggle Affichage et Recherche */}
-        <div className="bg-white p-4 rounded-lg shadow mb-6">
+        <div className="p-4 rounded-lg mb-6" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)' }}>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-gray-700">Affichage:</span>
@@ -937,66 +949,62 @@ const Clients: React.FC = () => {
 
         {/* Liste */}
         {affichageMode === 'ligne' ? (
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <div className="rounded-lg overflow-hidden" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)' }}>
+            <table className="min-w-full" style={{ borderCollapse: 'collapse' }}>
+            <thead style={{ background: 'var(--bg-canvas)' }}>
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Code</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Raison Sociale</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Catégorie</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ville</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pays</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                {['Code', 'Raison Sociale', 'Type', 'Catégorie', 'Ville', 'Pays', 'Email', 'Statut', 'Actions'].map((h) => (
+                  <th key={h} className="px-6 py-3 text-left text-xs uppercase"
+                      style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 600, color: 'var(--fg-primary)', letterSpacing: '0.05em' }}>
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody style={{ background: 'var(--bg-elevated)' }}>
               {clients.map((client) => (
                 <tr
                   key={client.id_client}
-                  className="hover:bg-gray-50 group cursor-pointer"
+                  className="group cursor-pointer"
+                  style={{ borderTop: '1px solid var(--border-subtle)' }}
                   onClick={() => { if (client.id_client) navigate(`/clients/${client.id_client}`); }}
                 >
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium font-mono">{client.code_client}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{client.raison_sociale}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" style={{ fontFamily: 'var(--font-mono)' }}>{client.code_client}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" style={{ color: 'var(--fg-primary)' }}>{client.raison_sociale || `${client.prenom || ''} ${client.nom || ''}`.trim()}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    {client.type_client === 'CLIENT' ? (
-                      <span className="px-2 py-1 text-xs rounded bg-[#EDF0F5] text-[#3B4E68]">Client</span>
+                    {(client.type_client === 'CLIENT' || client.statut_crm === 'client') ? (
+                      <span className="px-2 py-1 text-xs rounded" style={{ background: 'color-mix(in srgb, var(--accent-indigo) 15%, transparent)', color: 'var(--accent-indigo)' }}>Client</span>
+                    ) : client.statut_crm === 'lead' ? (
+                      <span className="px-2 py-1 text-xs rounded" style={{ background: 'color-mix(in srgb, var(--accent-terracotta) 15%, transparent)', color: 'var(--accent-terracotta)' }}>Lead</span>
                     ) : (
-                      <span className="px-2 py-1 text-xs rounded bg-yellow-100 text-yellow-800">Prospect</span>
+                      <span className="px-2 py-1 text-xs rounded" style={{ background: 'color-mix(in srgb, var(--accent-gold) 15%, transparent)', color: 'var(--accent-gold)' }}>Prospect</span>
                     )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{client.libelle_categorie || '-'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">{client.ville_facturation || '-'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">{client.pays_facturation || '-'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">{client.email_contact_principal || '-'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: 'var(--fg-secondary)' }}>{client.libelle_categorie || '-'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: 'var(--fg-primary)' }}>{client.ville_facturation || client.ville || '-'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: 'var(--fg-primary)' }}>{client.pays_facturation || client.pays || '-'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: 'var(--fg-primary)' }}>{client.email_contact_principal || '-'}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs rounded ${client.actif ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                    <span className="px-2 py-1 text-xs rounded" style={client.actif
+                      ? { background: 'color-mix(in srgb, var(--accent-sage) 15%, transparent)', color: 'var(--accent-sage)' }
+                      : { background: 'var(--color-danger-bg)', color: 'var(--color-danger)' }}>
                       {client.actif ? 'Actif' : 'Inactif'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                     <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEdit(client);
-                        }}
+                        onClick={(e) => { e.stopPropagation(); navigate(`/clients/${client.id_client}/edit`); }}
                         className="hover:opacity-70 transition"
                         style={{ color: 'var(--accent-indigo)' }}
                         title="Modifier"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(client.id_client);
-                        }} 
-                        className="text-red-600 hover:text-red-900" 
-                        title="Supprimer"
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDelete(client.id_client); }}
+                        style={{ color: 'var(--color-danger)' }}
+                        title="Archiver"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -1047,16 +1055,7 @@ const Clients: React.FC = () => {
                   </div>
                   <div className="flex gap-2 pt-3 border-t" onClick={(e) => e.stopPropagation()}>
                     <button
-                      onClick={() => {
-                        if (client.id_client) navigate(`/clients/${client.id_client}`);
-                      }}
-                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
-                    >
-                      <Eye className="w-4 h-4" />
-                      Voir
-                    </button>
-                    <button
-                      onClick={() => handleEdit(client)}
+                      onClick={() => navigate(`/clients/${client.id_client}/edit`)}
                       className="flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded hover:opacity-90 transition text-sm"
                       style={{ background: 'var(--accent-indigo)', color: 'var(--fg-inverse)', fontWeight: 600 }}
                     >

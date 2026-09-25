@@ -5,7 +5,8 @@ import * as C from './controller.js';
 const router = express.Router();
 router.use(authenticate);
 
-// Comptes CRUD
+// Comptes CRUD + stats
+router.get   ('/stats',           requirePermission('client:consulter'), C.stats);
 router.get   ('/',                requirePermission('client:consulter'), C.list);
 router.post  ('/',                requirePermission('client:creer'),      C.create);
 router.get   ('/:id(\\d+)',       requirePermission('client:consulter'), C.get);

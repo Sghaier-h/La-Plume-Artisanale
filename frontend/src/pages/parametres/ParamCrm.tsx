@@ -1,246 +1,301 @@
-﻿import React, { useEffect, useState } from 'react';
-import { Users, Plus, Trash2, Tag, Target, XCircle, ChevronDown } from 'lucide-react';
-import api from '../../services/api';
+import React, { useEffect, useState } from 'react';
+import { Tag, Target, XCircle, ChevronDown, Plus, Trash2, Coins, Hash } from 'lucide-react';
+import { DashboardShell, SectionCard } from '../../components/dashboard';
+import { paramCrmApi } from '../../services/crmApi';
 
-// §15 — Paramètres CRM
+// §15 — Paramètres CRM (branchés backend v2)
 
-interface Item {
-  id: number;
+type SectionKind = 'sources-leads' | 'motifs-perte' | 'categories-clients' | 'devises';
+
+interface SectionMeta {
+  key: SectionKind;
+  label: string;
+  icon: React.ReactNode;
+  hasColor?: boolean;
+  extraCols?: { key: string; label: string; input?: 'text' | 'number' }[];
+}
+
+const SECTIONS: SectionMeta[] = [
+  { key: 'sources-leads',      label: 'Sources de leads',    icon: <Target size={18} /> },
+  { key: 'motifs-perte',       label: 'Motifs de perte',     icon: <XCircle size={18} /> },
+  { key: 'categories-clients', label: 'Catégories clients',  icon: <Tag size={18} />, hasColor: true },
+  { key: 'devises',            label: 'Devises acceptées',   icon: <Coins size={18} />,
+    extraCols: [
+      { key: 'symbole',            label: 'Symbole',  input: 'text' },
+      { key: 'arrondi',            label: 'Décimales', input: 'number' },
+      { key: 'taux_change_vs_tnd', label: 'Taux / TND', input: 'number' },
+    ],
+  },
+];
+
+interface Row {
+  id_source?: number;
+  id_motif?: number;
+  id_categorie?: number;
   code: string;
   libelle: string;
   couleur?: string;
+  symbole?: string;
+  arrondi?: number;
+  taux_change_vs_tnd?: number;
+  actif: boolean;
   ordre?: number;
 }
 
-const MOCK_SOURCES: Item[] = [
-  { id: 1, code: 'SITE_WEB', libelle: 'Site web', ordre: 1 },
-  { id: 2, code: 'SALON', libelle: 'Salon professionnel', ordre: 2 },
-  { id: 3, code: 'RECOMMANDATION', libelle: 'Recommandation client', ordre: 3 },
-  { id: 4, code: 'INSTAGRAM', libelle: 'Instagram', ordre: 4 },
-  { id: 5, code: 'FACEBOOK', libelle: 'Facebook Ads', ordre: 5 },
-  { id: 6, code: 'CALL_ENTRANT', libelle: 'Appel entrant', ordre: 6 },
-];
-
-const MOCK_STATUTS: Item[] = [
-  { id: 1, code: 'NOUVEAU', libelle: 'Nouveau', couleur: '#3B4E68', ordre: 1 },
-  { id: 2, code: 'CONTACT', libelle: 'Contact établi', couleur: '#4A6C5B', ordre: 2 },
-  { id: 3, code: 'QUALIFIE', libelle: 'Qualifié', couleur: '#8A6412', ordre: 3 },
-  { id: 4, code: 'DEVIS', libelle: 'Devis envoyé', couleur: '#C8663D', ordre: 4 },
-  { id: 5, code: 'NEGOCIATION', libelle: 'En négociation', couleur: '#B84A4A', ordre: 5 },
-  { id: 6, code: 'GAGNE', libelle: 'Gagné', couleur: '#4A6C5B', ordre: 6 },
-  { id: 7, code: 'PERDU', libelle: 'Perdu', couleur: '#8A6E4A', ordre: 7 },
-];
-
-const MOCK_MOTIFS_PERDU: Item[] = [
-  { id: 1, code: 'PRIX', libelle: 'Prix trop élevé' },
-  { id: 2, code: 'DELAI', libelle: 'Délai de livraison' },
-  { id: 3, code: 'CONCURRENT', libelle: 'Choix concurrent' },
-  { id: 4, code: 'PAS_BESOIN', libelle: 'Besoin non confirmé' },
-  { id: 5, code: 'NO_REPLY', libelle: 'Sans réponse' },
-];
-
-const MOCK_TAGS: Item[] = [
-  { id: 1, code: 'VIP', libelle: 'VIP', couleur: '#C8663D' },
-  { id: 2, code: 'EXPORT', libelle: 'Export UE', couleur: '#3B4E68' },
-  { id: 3, code: 'B2B', libelle: 'B2B', couleur: '#4A6C5B' },
-  { id: 4, code: 'HOTEL', libelle: 'Hôtellerie', couleur: '#8A6412' },
-  { id: 5, code: 'REVENDEUR', libelle: 'Revendeur', couleur: '#B84A4A' },
-];
-
-type Section = 'sources' | 'statuts' | 'motifs' | 'tags';
-
-const SECTIONS: { key: Section; label: string; icon: React.ReactNode }[] = [
-  { key: 'sources', label: 'Sources de leads', icon: <Target className="w-5 h-5" /> },
-  { key: 'statuts', label: 'Statuts pipeline', icon: <ChevronDown className="w-5 h-5" /> },
-  { key: 'motifs', label: 'Motifs perdu', icon: <XCircle className="w-5 h-5" /> },
-  { key: 'tags', label: 'Tags contacts', icon: <Tag className="w-5 h-5" /> },
-];
+const idOf = (kind: SectionKind, r: Row): any =>
+  kind === 'devises' ? r.code
+  : kind === 'sources-leads' ? r.id_source
+  : kind === 'motifs-perte' ? r.id_motif
+  : r.id_categorie;
 
 const ParamCrm: React.FC = () => {
-  const [data, setData] = useState<Record<Section, Item[]>>({
-    sources: MOCK_SOURCES,
-    statuts: MOCK_STATUTS,
-    motifs: MOCK_MOTIFS_PERDU,
-    tags: MOCK_TAGS,
+  const [data, setData] = useState<Record<SectionKind, Row[]>>({
+    'sources-leads': [], 'motifs-perte': [], 'categories-clients': [], 'devises': [],
   });
+  const [numConfigs, setNumConfigs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expanded, setExpanded] = useState<Section>('sources');
-  const [newItem, setNewItem] = useState<Partial<Item>>({ libelle: '', code: '' });
+  const [error, setError] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<SectionKind | 'num'>('sources-leads');
+  const [newRow, setNewRow] = useState<Partial<Row>>({});
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      const r = await Promise.allSettled([
-        api.get('/api/v2/parametres/crm/sources'),
-        api.get('/api/v2/parametres/crm/statuts'),
-        api.get('/api/v2/parametres/crm/motifs-perdu'),
-        api.get('/api/v2/parametres/crm/tags'),
+  const reload = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [s1, s2, s3, s4, sn] = await Promise.all([
+        paramCrmApi.list('sources-leads'),
+        paramCrmApi.list('motifs-perte'),
+        paramCrmApi.list('categories-clients'),
+        paramCrmApi.list('devises'),
+        paramCrmApi.numListe().catch(() => ({ data: { data: [] } })),
       ]);
-      if (cancelled) return;
-      const pick = (res: PromiseSettledResult<any>, fb: Item[]): Item[] => {
-        if (res.status !== 'fulfilled') return fb;
-        const d = res.value?.data?.data ?? res.value?.data;
-        if (Array.isArray(d)) return d;
-        return fb;
-      };
       setData({
-        sources: pick(r[0], MOCK_SOURCES),
-        statuts: pick(r[1], MOCK_STATUTS),
-        motifs: pick(r[2], MOCK_MOTIFS_PERDU),
-        tags: pick(r[3], MOCK_TAGS),
+        'sources-leads':      (s1.data.data as Row[]) || [],
+        'motifs-perte':       (s2.data.data as Row[]) || [],
+        'categories-clients': (s3.data.data as Row[]) || [],
+        'devises':            (s4.data.data as Row[]) || [],
       });
-      setLoading(false);
-    })();
-    return () => {
-      cancelled = true;
+      setNumConfigs((sn.data as any).data || []);
+    } catch (e: any) {
+      setError(e?.response?.data?.error?.message || e.message);
+    } finally { setLoading(false); }
+  };
+  useEffect(() => { reload(); }, []);
+
+  const add = async (kind: SectionKind) => {
+    if (!newRow.libelle) return;
+    const payload: any = {
+      code: newRow.code || String(newRow.libelle).toUpperCase().replace(/\s+/g, '_'),
+      libelle: newRow.libelle,
+      actif: true,
+      ordre: 999,
     };
-  }, []);
-
-  const add = (section: Section) => {
-    const lib = newItem.libelle;
-    if (!lib) return;
-    const id = Date.now();
-    setData((prev) => ({
-      ...prev,
-      [section]: [...prev[section], { id, code: newItem.code || lib.toUpperCase().replace(/\s+/g, '_'), libelle: lib, couleur: newItem.couleur }],
-    }));
-    setNewItem({ libelle: '', code: '' });
+    if (kind === 'categories-clients') payload.couleur = newRow.couleur || null;
+    if (kind === 'devises') {
+      payload.symbole = newRow.symbole || null;
+      payload.arrondi = newRow.arrondi ?? 2;
+      payload.taux_change_vs_tnd = newRow.taux_change_vs_tnd ?? 1;
+    }
+    try {
+      await paramCrmApi.upsert(kind, payload);
+      setNewRow({});
+      reload();
+    } catch (e: any) {
+      alert(e?.response?.data?.error?.message || e.message);
+    }
   };
 
-  const remove = (section: Section, id: number) => {
-    setData((prev) => ({ ...prev, [section]: prev[section].filter((i) => i.id !== id) }));
+  const remove = async (kind: SectionKind, r: Row) => {
+    if (!window.confirm(`Supprimer "${r.libelle}" ?`)) return;
+    try {
+      await paramCrmApi.remove(kind, idOf(kind, r));
+      reload();
+    } catch (e: any) {
+      alert(e?.response?.data?.error?.message || e.message);
+    }
   };
 
-  if (loading) {
-    return (
-      <div className="p-6 flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]" />
-      </div>
-    );
-  }
+  const saveNum = async (entite: string, patch: any) => {
+    try {
+      await paramCrmApi.numUpdate(entite, patch);
+      reload();
+    } catch (e: any) { alert(e?.response?.data?.error?.message || e.message); }
+  };
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-app, #FBF8F3)' }}>
-      <div className="p-6">
-        <div className="max-w-5xl mx-auto">
-          <div className="mb-6">
-            <div className="text-xs uppercase tracking-widest font-mono mb-2" style={{ color: 'var(--fg-muted, #8A6E4A)' }}>
-              §15 · Paramètres
-            </div>
-            <h1
-              className="text-3xl italic mb-1"
-              style={{ fontFamily: 'var(--font-serif, Fraunces, serif)', fontWeight: 500, color: 'var(--fg-primary, #2F2A26)' }}
-            >
-              CRM
-            </h1>
-            <p className="text-sm" style={{ color: 'var(--fg-secondary, #5D4E42)' }}>
-              Sources leads, statuts pipeline, motifs perdu, tags
-            </p>
-          </div>
+    <DashboardShell
+      eyebrow="§15 · Paramètres"
+      title="CRM & Clients"
+      subtitle="Sources de leads, motifs de perte, catégories, devises et numérotation automatique."
+    >
+      {loading && <div style={{ padding: 'var(--s-8)', color: 'var(--fg-muted)' }}>Chargement…</div>}
+      {error && <div style={{ padding: 'var(--s-4)', color: 'var(--color-danger)', background: 'var(--color-danger-bg)', borderRadius: 'var(--radius-sm)' }}>{error}</div>}
 
-          <div className="space-y-3">
-            {SECTIONS.map((sec) => {
-              const isOpen = expanded === sec.key;
-              const items = data[sec.key];
-              return (
-                <div key={sec.key} className="bg-white rounded-xl shadow-sm border border-[#E8DCC8] overflow-hidden">
-                  <button
-                    onClick={() => setExpanded(sec.key)}
-                    className="w-full flex items-center justify-between p-4 hover:bg-[#FDF2ED]/30"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="rounded-lg p-2" style={{ backgroundColor: 'color-mix(in srgb, var(--accent-terracotta) 15%, var(--bg-elevated))', color: '#C8663D' }}>
-                        {sec.icon}
-                      </div>
-                      <div className="text-left font-semibold" style={{ color: 'var(--fg-primary, #2F2A26)' }}>
-                        {sec.label}
-                      </div>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded" style={{ backgroundColor: '#F5EFE4', color: 'var(--fg-muted, #8A6E4A)' }}>
-                        {items.length}
-                      </span>
-                    </div>
-                    <ChevronDown className={`w-5 h-5 transition-transform ${isOpen ? 'rotate-180' : ''}`} style={{ color: 'var(--fg-muted, #8A6E4A)' }} />
-                  </button>
-                  {isOpen && (
-                    <div className="p-5 border-t space-y-3" style={{ borderColor: '#E8DCC8' }}>
-                      <table className="min-w-full text-sm">
-                        <thead>
-                          <tr className="text-left">
-                            <th className="pb-2 text-xs font-mono uppercase" style={{ color: 'var(--fg-muted, #8A6E4A)' }}>Code</th>
-                            <th className="pb-2 text-xs font-mono uppercase" style={{ color: 'var(--fg-muted, #8A6E4A)' }}>Libellé</th>
-                            {(sec.key === 'statuts' || sec.key === 'tags') && (
-                              <th className="pb-2 text-xs font-mono uppercase" style={{ color: 'var(--fg-muted, #8A6E4A)' }}>Couleur</th>
+      {SECTIONS.map((sec) => {
+        const items = data[sec.key];
+        const isOpen = expanded === sec.key;
+        return (
+          <SectionCard key={sec.key}
+            icon={sec.icon}
+            title={sec.label}
+            subtitle={`${items.length} entrée(s)`}
+            headerRight={
+              <button style={btnGhost} onClick={() => setExpanded((p) => (p === sec.key ? 'sources-leads' : sec.key))}>
+                <ChevronDown size={14} style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform var(--duration)' }} />
+              </button>
+            }
+          >
+            {isOpen && (
+              <>
+                <table style={tableStyle}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                      <th style={thStyle}>Code</th>
+                      <th style={thStyle}>Libellé</th>
+                      {sec.hasColor && <th style={thStyle}>Couleur</th>}
+                      {sec.extraCols?.map((c) => <th key={c.key} style={thStyle}>{c.label}</th>)}
+                      <th style={thStyle}>Actif</th>
+                      <th style={thStyle}></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((r) => (
+                      <tr key={`${sec.key}-${idOf(sec.key, r)}`} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                        <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)' }}>{r.code}</td>
+                        <td style={tdStyle}>{r.libelle}</td>
+                        {sec.hasColor && (
+                          <td style={tdStyle}>
+                            {r.couleur && (
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                <span style={{ width: 14, height: 14, borderRadius: 4, background: r.couleur, border: '1px solid var(--border-subtle)' }} />
+                                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10 }}>{r.couleur}</span>
+                              </span>
                             )}
-                            <th className="pb-2"></th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {items.map((it) => (
-                            <tr key={it.id} className="border-t" style={{ borderColor: '#F0E7D4' }}>
-                              <td className="py-2 pr-4 font-mono text-xs" style={{ color: 'var(--fg-secondary, #5D4E42)' }}>{it.code}</td>
-                              <td className="py-2 pr-4" style={{ color: 'var(--fg-primary, #2F2A26)' }}>{it.libelle}</td>
-                              {(sec.key === 'statuts' || sec.key === 'tags') && (
-                                <td className="py-2 pr-4">
-                                  {it.couleur && (
-                                    <span className="inline-flex items-center gap-1">
-                                      <span className="w-4 h-4 rounded" style={{ backgroundColor: it.couleur }} />
-                                      <span className="font-mono text-[10px]">{it.couleur}</span>
-                                    </span>
-                                  )}
-                                </td>
-                              )}
-                              <td className="py-2 text-right">
-                                <button onClick={() => remove(sec.key, it.id)} className="p-1 rounded hover:bg-red-50" style={{ color: '#B84A4A' }}>
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                      <div className="flex gap-2 pt-3 border-t" style={{ borderColor: '#E8DCC8' }}>
-                        <input
-                          placeholder="Code (auto)"
-                          value={newItem.code || ''}
-                          onChange={(e) => setNewItem({ ...newItem, code: e.target.value })}
-                          className="border rounded px-2 py-1.5 text-sm font-mono w-32"
-                          style={{ borderColor: '#E8DCC8', backgroundColor: 'var(--bg-app, #FBF8F3)' }}
-                        />
-                        <input
-                          placeholder="Libellé"
-                          value={newItem.libelle || ''}
-                          onChange={(e) => setNewItem({ ...newItem, libelle: e.target.value })}
-                          className="border rounded px-2 py-1.5 text-sm flex-1"
-                          style={{ borderColor: '#E8DCC8', backgroundColor: 'var(--bg-app, #FBF8F3)' }}
-                        />
-                        {(sec.key === 'statuts' || sec.key === 'tags') && (
-                          <input
-                            type="color"
-                            value={newItem.couleur || '#C8663D'}
-                            onChange={(e) => setNewItem({ ...newItem, couleur: e.target.value })}
-                            className="border rounded w-12 h-9"
-                            style={{ borderColor: '#E8DCC8' }}
-                          />
+                          </td>
                         )}
-                        <button
-                          onClick={() => add(sec.key)}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm text-white"
-                          style={{ backgroundColor: '#C8663D' }}
-                        >
-                          <Plus className="w-4 h-4" /> Ajouter
-                        </button>
-                      </div>
-                    </div>
+                        {sec.extraCols?.map((c) => <td key={c.key} style={{ ...tdStyle, fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)' }}>{(r as any)[c.key] ?? '-'}</td>)}
+                        <td style={tdStyle}>{r.actif ? '✓' : '—'}</td>
+                        <td style={{ ...tdStyle, textAlign: 'right' }}>
+                          <button onClick={() => remove(sec.key, r)} style={btnDanger}><Trash2 size={14} /></button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                <div style={{ display: 'flex', gap: 8, marginTop: 'var(--s-4)', paddingTop: 'var(--s-4)', borderTop: '1px solid var(--border-subtle)', flexWrap: 'wrap' }}>
+                  <input placeholder="Code (auto)" value={newRow.code || ''} onChange={(e) => setNewRow({ ...newRow, code: e.target.value })}
+                         style={{ ...inputStyle, width: 140, fontFamily: 'var(--font-mono)' }} />
+                  <input placeholder="Libellé" value={newRow.libelle || ''} onChange={(e) => setNewRow({ ...newRow, libelle: e.target.value })}
+                         style={{ ...inputStyle, flex: 1, minWidth: 200 }} />
+                  {sec.hasColor && (
+                    <input type="color" value={newRow.couleur || '#C8663D'} onChange={(e) => setNewRow({ ...newRow, couleur: e.target.value })}
+                           style={{ ...inputStyle, width: 44, padding: 0, height: 38 }} />
                   )}
+                  {sec.extraCols?.map((c) => (
+                    <input key={c.key} type={c.input || 'text'} placeholder={c.label}
+                           value={(newRow as any)[c.key] ?? ''}
+                           onChange={(e) => setNewRow({ ...newRow, [c.key]: c.input === 'number' ? Number(e.target.value) : e.target.value })}
+                           style={{ ...inputStyle, width: 120 }} />
+                  ))}
+                  <button onClick={() => add(sec.key)} style={btnPrimary}>
+                    <Plus size={14} style={{ marginRight: 4 }} /> Ajouter
+                  </button>
                 </div>
-              );
-            })}
+              </>
+            )}
+          </SectionCard>
+        );
+      })}
+
+      {/* Numérotation configurable */}
+      <SectionCard
+        icon={<Hash size={18} />}
+        title="Numérotation automatique"
+        subtitle="Format des codes générés pour clients, contacts, leads, opportunités, interactions"
+        headerRight={
+          <button style={btnGhost} onClick={() => setExpanded((p) => (p === 'num' ? 'sources-leads' : 'num'))}>
+            <ChevronDown size={14} style={{ transform: expanded === 'num' ? 'rotate(180deg)' : 'none' }} />
+          </button>
+        }
+      >
+        {expanded === 'num' && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 'var(--s-4)' }}>
+            {numConfigs.map((n: any) => (
+              <div key={n.entite} style={{
+                border: '1px solid var(--border-subtle)',
+                borderRadius: 'var(--radius-sm)',
+                padding: 'var(--s-4)',
+                background: 'var(--bg-canvas)',
+              }}>
+                <div style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 600, color: 'var(--fg-primary)', marginBottom: 4 }}>
+                  {n.entite}
+                </div>
+                <label style={labelStyle}>Format</label>
+                <input defaultValue={n.format}
+                       onBlur={(e) => e.target.value !== n.format && saveNum(n.entite, { format: e.target.value })}
+                       style={{ ...inputStyle, fontFamily: 'var(--font-mono)', width: '100%', marginBottom: 6 }} />
+                <label style={labelStyle}>Reset</label>
+                <select defaultValue={n.reset_period}
+                        onChange={(e) => saveNum(n.entite, { reset_period: e.target.value })}
+                        style={{ ...inputStyle, width: '100%', marginBottom: 6 }}>
+                  <option value="jamais">Jamais</option>
+                  <option value="annuel">Annuel</option>
+                  <option value="mensuel">Mensuel</option>
+                </select>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)' }}>
+                  Séquence : {n.sequence_courante ?? 0} · Dernière période : {n.derniere_periode || '—'}
+                </div>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-muted)', marginTop: 6 }}>
+                  Placeholders : <code>{'{YYYY}'}</code> <code>{'{YY}'}</code> <code>{'{MM}'}</code> <code>{'{YYYYMM}'}</code> <code>{'{SEQ:N}'}</code>
+                </div>
+              </div>
+            ))}
+            {numConfigs.length === 0 && (
+              <div style={{ color: 'var(--fg-muted)' }}>Aucune configuration détectée (exécuter <code>npm run seed:demo</code>).</div>
+            )}
           </div>
-        </div>
-      </div>
-    </div>
+        )}
+      </SectionCard>
+    </DashboardShell>
   );
 };
+
+const btnPrimary: React.CSSProperties = {
+  display: 'inline-flex', alignItems: 'center', padding: '8px 14px',
+  background: 'var(--accent-terracotta)', color: 'var(--fg-inverse)',
+  border: '1px solid var(--accent-terracotta)', borderRadius: 'var(--radius-sm)',
+  fontSize: 'var(--text-sm)', fontWeight: 600, cursor: 'pointer',
+};
+const btnGhost: React.CSSProperties = {
+  padding: '6px 10px', background: 'transparent', color: 'var(--fg-secondary)',
+  border: '1px solid var(--border-subtle)', borderRadius: 999, cursor: 'pointer',
+};
+const btnDanger: React.CSSProperties = {
+  padding: 4, background: 'transparent', border: 'none',
+  color: 'var(--color-danger)', cursor: 'pointer',
+};
+const inputStyle: React.CSSProperties = {
+  padding: '8px 12px',
+  border: '1px solid var(--border-default)',
+  borderRadius: 'var(--radius-sm)',
+  background: 'var(--bg-elevated)',
+  color: 'var(--fg-primary)',
+  fontSize: 'var(--text-sm)',
+};
+const labelStyle: React.CSSProperties = {
+  display: 'block', fontSize: 'var(--text-xs)', fontWeight: 600,
+  color: 'var(--fg-muted)', marginBottom: 2, marginTop: 6,
+  textTransform: 'uppercase', letterSpacing: '0.05em',
+};
+const tableStyle: React.CSSProperties = { width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' };
+const thStyle: React.CSSProperties = {
+  padding: 'var(--s-2)', textAlign: 'left',
+  fontFamily: 'var(--font-serif)', fontStyle: 'italic',
+  fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--fg-primary)',
+  textTransform: 'uppercase', letterSpacing: '0.05em',
+  borderBottom: '1px solid var(--border-subtle)',
+};
+const tdStyle: React.CSSProperties = { padding: 'var(--s-2)', color: 'var(--fg-primary)' };
 
 export default ParamCrm;

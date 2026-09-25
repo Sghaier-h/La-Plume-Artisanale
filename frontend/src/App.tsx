@@ -26,6 +26,7 @@ const DashboardAdministrateur = React.lazy(() => import('./pages/DashboardAdmini
 const DashboardCommercial = React.lazy(() => import('./pages/DashboardCommercial'));
 const Articles = React.lazy(() => import('./pages/Articles'));
 const Clients = React.lazy(() => import('./pages/Clients'));
+const ClientForm = React.lazy(() => import('./pages/ClientForm'));
 const Commandes = React.lazy(() => import('./pages/Commandes'));
 const CommandeDetails = React.lazy(() => import('./pages/CommandeDetails'));
 const Machines = React.lazy(() => import('./pages/Machines'));
@@ -507,6 +508,22 @@ const AppContent: React.FC = () => {
             element={
               <PrivateRoute>
                 <Clients />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/clients/nouveau"
+            element={
+              <PrivateRoute>
+                <ClientForm mode="create" />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/clients/:id/edit"
+            element={
+              <PrivateRoute>
+                <ClientForm mode="edit" />
               </PrivateRoute>
             }
           />
