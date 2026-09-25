@@ -102,6 +102,41 @@ const PrimesRendement = React.lazy(() => import('./pages/PrimesRendement'));
 const TvAtelierTissage = React.lazy(() => import('./pages/TvAtelierTissage'));
 const TvAtelierFinition = React.lazy(() => import('./pages/TvAtelierFinition'));
 
+// ── RH §11bis (contrats / structure / sanctions-primes / bulletins / paie / formations)
+const RhContratsTravail = React.lazy(() => import('./pages/rh/ContratsTravail'));
+const RhStructureOrga = React.lazy(() => import('./pages/rh/StructureOrga'));
+const RhSanctionsPrimes = React.lazy(() => import('./pages/rh/SanctionsPrimes'));
+const RhBulletinsPaie = React.lazy(() => import('./pages/rh/BulletinsPaie'));
+const RhPaieTunisie = React.lazy(() => import('./pages/rh/PaieTunisie'));
+const RhFormations = React.lazy(() => import('./pages/rh/Formations'));
+
+// ── Ventes §8 (colisage / palettes / transporteurs / paiements / relances)
+const VentesListeColisage = React.lazy(() => import('./pages/ventes/ListeColisage'));
+const VentesListePalettes = React.lazy(() => import('./pages/ventes/ListePalettes'));
+const VentesSuiviTransporteurs = React.lazy(() => import('./pages/ventes/SuiviTransporteurs'));
+const VentesPaiementsEcheances = React.lazy(() => import('./pages/ventes/PaiementsEcheances'));
+const VentesRelancesFactures = React.lazy(() => import('./pages/ventes/RelancesFactures'));
+
+// ── Comptabilité (Phase 4 · §10 domain.md) ────────────────────────────
+const PlanComptes = React.lazy(() => import('./pages/comptabilite/PlanComptes'));
+const JournalEcritures = React.lazy(() => import('./pages/comptabilite/JournalEcritures'));
+const RapprochementBancaire = React.lazy(() => import('./pages/comptabilite/RapprochementBancaire'));
+const FondCaisse = React.lazy(() => import('./pages/comptabilite/FondCaisse'));
+const Immobilisations = React.lazy(() => import('./pages/comptabilite/Immobilisations'));
+const TvaDeclarations = React.lazy(() => import('./pages/comptabilite/TvaDeclarations'));
+const RapportsCompta = React.lazy(() => import('./pages/comptabilite/RapportsCompta'));
+const ClotureExercice = React.lazy(() => import('./pages/comptabilite/ClotureExercice'));
+
+// ── Achats & Fournisseurs (§9 domain.md) ─────────────────────────────
+const DemandesAchat = React.lazy(() => import('./pages/achats/DemandesAchat'));
+const BonsCommande = React.lazy(() => import('./pages/achats/BonsCommande'));
+const ReceptionsFF = React.lazy(() => import('./pages/achats/ReceptionsFF'));
+const FacturesFournisseur = React.lazy(() => import('./pages/achats/FacturesFournisseur'));
+const ContratsServices = React.lazy(() => import('./pages/achats/ContratsServices'));
+const DepensesEspeces = React.lazy(() => import('./pages/achats/DepensesEspeces'));
+const PaiementsFournisseurs = React.lazy(() => import('./pages/achats/PaiementsFournisseurs'));
+const RapprochementBcBlFf = React.lazy(() => import('./pages/achats/RapprochementBcBlFf'));
+
 // ── Portail Client (auth séparée) ────────────────────────────────────
 const PortailLogin = React.lazy(() => import('./pages/portail/PortailLogin'));
 const PortailReset = React.lazy(() => import('./pages/portail/PortailReset'));
@@ -249,7 +284,7 @@ const SidebarToggleButton: React.FC = () => {
       type="button"
       onClick={toggleSidebar}
       className={`fixed z-[60] top-1/2 -translate-y-1/2 flex items-center justify-center w-10 h-14 rounded-r-lg shadow-md transition-all duration-300 bg-gradient-to-r from-slate-600 to-amber-600 text-white hover:from-slate-500 hover:to-amber-500 ${
-        collapsed ? 'left-0' : 'left-64'
+        collapsed ? 'left-0' : 'left-72'
       }`}
       aria-label={collapsed ? 'Ouvrir le menu' : 'Fermer le menu'}
       title={collapsed ? 'Ouvrir le menu' : 'Fermer le menu'}
@@ -269,7 +304,7 @@ const ContentWrapper: React.FC<{ showNav: boolean; children: React.ReactNode }> 
   }
 
   return (
-    <div className={showNav ? (state?.ui?.sidebarCollapsed ? 'ml-0' : 'ml-64') : ''}>
+    <div className={showNav ? (state?.ui?.sidebarCollapsed ? 'ml-0' : 'ml-72') : ''}>
       {children}
     </div>
   );
@@ -1008,6 +1043,100 @@ const AppContent: React.FC = () => {
               </ProtectedRoute>
             }
           />
+          {/* ─── RH §11bis — Contrats · Structure · Sanctions/Primes · Bulletins · Paie · Formations
+              Accès : ADMIN | RH_MANAGER | COMPTABLE */}
+          <Route
+            path="/rh/contrats"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'RH_MANAGER', 'COMPTABLE']}>
+                <RhContratsTravail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/rh/structure"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'RH_MANAGER', 'COMPTABLE']}>
+                <RhStructureOrga />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/rh/sanctions-primes"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'RH_MANAGER', 'COMPTABLE']}>
+                <RhSanctionsPrimes />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/rh/bulletins"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'RH_MANAGER', 'COMPTABLE']}>
+                <RhBulletinsPaie />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/rh/paie-tunisie"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'RH_MANAGER', 'COMPTABLE']}>
+                <RhPaieTunisie />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/rh/formations"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'RH_MANAGER', 'COMPTABLE']}>
+                <RhFormations />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* ─── Ventes §8 — Colisage · Palettes · Transporteurs · Paiements · Relances
+              Accès : ADMIN | COMMERCIAL | COMPTABLE */}
+          <Route
+            path="/ventes/colisage"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMMERCIAL', 'COMPTABLE']}>
+                <VentesListeColisage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ventes/palettes"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMMERCIAL', 'COMPTABLE']}>
+                <VentesListePalettes />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ventes/transporteurs"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMMERCIAL', 'COMPTABLE']}>
+                <VentesSuiviTransporteurs />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ventes/paiements-echeances"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMMERCIAL', 'COMPTABLE']}>
+                <VentesPaiementsEcheances />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ventes/relances-factures"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMMERCIAL', 'COMPTABLE']}>
+                <VentesRelancesFactures />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Configurateur personnalisation §5.8 — deux variantes (avec ou sans id) */}
           <Route
             path="/configurateur"
@@ -1023,6 +1152,140 @@ const AppContent: React.FC = () => {
               <PrivateRoute>
                 <ConfigurateurPersonnalisation />
               </PrivateRoute>
+            }
+          />
+
+          {/* ─── Achats & Fournisseurs §9 domain.md ─────────────────────
+              Accès : ADMIN | COMMERCIAL | COMPTABLE */}
+          <Route
+            path="/achats/demandes"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMMERCIAL', 'COMPTABLE']}>
+                <DemandesAchat />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/achats/bc"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMMERCIAL', 'COMPTABLE']}>
+                <BonsCommande />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/achats/receptions"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMMERCIAL', 'COMPTABLE']}>
+                <ReceptionsFF />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/achats/factures-ff"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMMERCIAL', 'COMPTABLE']}>
+                <FacturesFournisseur />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/achats/contrats-services"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMMERCIAL', 'COMPTABLE']}>
+                <ContratsServices />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/achats/depenses-especes"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMMERCIAL', 'COMPTABLE']}>
+                <DepensesEspeces />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/achats/paiements-ff"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMMERCIAL', 'COMPTABLE']}>
+                <PaiementsFournisseurs />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/achats/rapprochement"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMMERCIAL', 'COMPTABLE']}>
+                <RapprochementBcBlFf />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* ─── Comptabilité (Phase 4 · §10 domain.md) ───────────────────
+              SYSCOA simplifié adapté Tunisie · Accès : ADMIN | COMPTABLE */}
+          <Route
+            path="/comptabilite/plan-comptes"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMPTABLE']}>
+                <PlanComptes />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/comptabilite/journal"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMPTABLE']}>
+                <JournalEcritures />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/comptabilite/rapprochement"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMPTABLE']}>
+                <RapprochementBancaire />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/comptabilite/caisse"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMPTABLE']}>
+                <FondCaisse />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/comptabilite/immobilisations"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMPTABLE']}>
+                <Immobilisations />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/comptabilite/tva"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMPTABLE']}>
+                <TvaDeclarations />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/comptabilite/rapports"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMPTABLE']}>
+                <RapportsCompta />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/comptabilite/cloture"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMPTABLE']}>
+                <ClotureExercice />
+              </ProtectedRoute>
             }
           />
         </Routes>
