@@ -291,7 +291,7 @@ const OF: React.FC = () => {
     const colors: { [key: string]: string } = {
       'planifie': 'bg-gray-100 text-gray-800',
       'attribue': 'bg-yellow-100 text-yellow-800',
-      'en_cours': 'bg-blue-100 text-blue-800',
+      'en_cours': 'bg-[#F5EFE5] text-[#4A5D75]',
       'termine': 'bg-green-100 text-green-800',
       'arrete': 'bg-red-100 text-red-800',
       'annule': 'bg-orange-100 text-orange-800'
@@ -325,7 +325,7 @@ const OF: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]"></div>
       </div>
     );
   }
@@ -336,7 +336,7 @@ const OF: React.FC = () => {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-              <FileText className="w-8 h-8 text-blue-600" />
+              <FileText className="w-8 h-8 text-[#C8663D]" />
               Ordres de Fabrication
             </h1>
             <p className="text-gray-600 mt-2">Gestion et suivi de la production</p>
@@ -347,7 +347,7 @@ const OF: React.FC = () => {
               setEditingOF(null);
               resetForm();
             }}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-2 bg-[#C8663D] text-white px-4 py-2 rounded-lg hover:bg-[#a55231] transition-colors"
           >
             <Plus className="w-5 h-5" />
             Nouvel OF
@@ -364,13 +364,13 @@ const OF: React.FC = () => {
                 placeholder="Rechercher..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
               />
             </div>
             <select
               value={filters.statut}
               onChange={(e) => setFilters({ ...filters, statut: e.target.value })}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
             >
               <option value="">Tous les statuts</option>
               <option value="planifie">Planifié</option>
@@ -382,7 +382,7 @@ const OF: React.FC = () => {
             <select
               value={filters.article_id}
               onChange={(e) => setFilters({ ...filters, article_id: e.target.value })}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
             >
               <option value="">Tous les articles</option>
               {articles.map(a => (
@@ -392,7 +392,7 @@ const OF: React.FC = () => {
             <select
               value={filters.commande_id}
               onChange={(e) => setFilters({ ...filters, commande_id: e.target.value })}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
             >
               <option value="">Toutes les commandes</option>
               {commandes.map(c => (
@@ -422,7 +422,7 @@ const OF: React.FC = () => {
                         id_article: cmd?.id_article?.toString() || formData.id_article
                       });
                     }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                   >
                     <option value="">Sélectionner une commande (optionnel)</option>
                     {commandes.filter(c => !['Annuler', 'Solder', 'annulee', 'annulée', 'termine', 'terminée'].includes(c.statut)).map(c => (
@@ -438,7 +438,7 @@ const OF: React.FC = () => {
                     required
                     value={formData.id_article}
                     onChange={(e) => setFormData({ ...formData, id_article: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                   >
                     <option value="">Sélectionner un article</option>
                     {articles.map((article) => (
@@ -456,7 +456,7 @@ const OF: React.FC = () => {
                     required
                     value={formData.quantite_a_produire}
                     onChange={(e) => setFormData({ ...formData, quantite_a_produire: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                     min="0.01"
                   />
                 </div>
@@ -465,7 +465,7 @@ const OF: React.FC = () => {
                   <select
                     value={formData.id_machine}
                     onChange={(e) => setFormData({ ...formData, id_machine: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                   >
                     <option value="">Sélectionner une machine (optionnel)</option>
                     {machines.filter(m => m.statut === 'operationnel').map((machine) => (
@@ -489,7 +489,7 @@ const OF: React.FC = () => {
                         setFormData({ ...formData, date_debut_prevue: date, date_fin_prevue: dateFin.toISOString().split('T')[0] });
                       }
                     }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                   />
                 </div>
                 <div>
@@ -498,7 +498,7 @@ const OF: React.FC = () => {
                     type="date"
                     value={formData.date_fin_prevue}
                     onChange={(e) => setFormData({ ...formData, date_fin_prevue: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                   />
                 </div>
                 <div>
@@ -506,7 +506,7 @@ const OF: React.FC = () => {
                   <select
                     value={formData.priorite}
                     onChange={(e) => setFormData({ ...formData, priorite: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                   >
                     <option value="normale">Normale</option>
                     <option value="haute">Haute</option>
@@ -518,7 +518,7 @@ const OF: React.FC = () => {
                   <textarea
                     value={formData.observations}
                     onChange={(e) => setFormData({ ...formData, observations: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                     rows={3}
                     placeholder="Notes et observations..."
                   />
@@ -528,7 +528,7 @@ const OF: React.FC = () => {
               <div className="flex gap-2">
                 <button
                   type="submit"
-                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  className="bg-[#C8663D] text-white px-6 py-2 rounded-lg hover:bg-[#a55231] transition-colors"
                 >
                   {editingOF ? 'Modifier' : 'Créer'}
                 </button>
@@ -592,7 +592,7 @@ const OF: React.FC = () => {
                       <div className="flex items-center gap-2">
                         <div className="flex-1 bg-gray-200 rounded-full h-2">
                           <div 
-                            className="bg-blue-600 h-2 rounded-full transition-all"
+                            className="bg-[#C8663D] h-2 rounded-full transition-all"
                             style={{ width: `${calculerAvancement(of)}%` }}
                           ></div>
                         </div>
@@ -659,7 +659,7 @@ const OF: React.FC = () => {
                             e.stopPropagation();
                             handleEdit(of);
                           }}
-                          className="text-blue-600 hover:text-blue-700"
+                          className="text-[#C8663D] hover:text-[#a55231]"
                           title="Modifier"
                         >
                           <Edit className="w-4 h-4" />
@@ -691,7 +691,7 @@ const OF: React.FC = () => {
             <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
               <div className="sticky top-0 bg-white border-b p-6 flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                  <FileText className="w-6 h-6 text-blue-600" />
+                  <FileText className="w-6 h-6 text-[#C8663D]" />
                   OF {selectedOF.numero_of}
                 </h2>
                 <button
@@ -706,7 +706,7 @@ const OF: React.FC = () => {
                 {/* Informations générales */}
                 <div>
                   <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <Package className="w-5 h-5 text-blue-600" />
+                    <Package className="w-5 h-5 text-[#C8663D]" />
                     Informations Générales
                   </h3>
                   <div className="grid grid-cols-2 gap-4">
@@ -731,7 +731,7 @@ const OF: React.FC = () => {
                       <div className="flex items-center gap-2 mt-1">
                         <div className="flex-1 bg-gray-200 rounded-full h-3">
                           <div 
-                            className="bg-blue-600 h-3 rounded-full transition-all"
+                            className="bg-[#C8663D] h-3 rounded-full transition-all"
                             style={{ width: `${calculerAvancement(selectedOF)}%` }}
                           ></div>
                         </div>
@@ -799,7 +799,7 @@ const OF: React.FC = () => {
                 {selectedOF.operations && selectedOF.operations.length > 0 && (
                   <div>
                     <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                      <Settings className="w-5 h-5 text-blue-600" />
+                      <Settings className="w-5 h-5 text-[#C8663D]" />
                       Opérations
                     </h3>
                     <div className="border rounded-lg overflow-hidden">
@@ -901,7 +901,7 @@ const OF: React.FC = () => {
                         alert(error.response?.data?.error?.message || 'Erreur lors du chargement');
                       }
                     }}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                    className="px-4 py-2 bg-[#C8663D] text-white rounded-lg hover:bg-[#a55231] flex items-center gap-2"
                   >
                     <Edit className="w-4 h-4" />
                     Modifier

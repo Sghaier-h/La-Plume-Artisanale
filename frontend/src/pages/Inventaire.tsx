@@ -160,7 +160,7 @@ const Inventaire: React.FC = () => {
   const getStatutColor = (statut: string) => {
     switch (statut) {
       case 'VALIDE': return 'bg-green-100 text-green-800';
-      case 'TERMINE': return 'bg-blue-100 text-blue-800';
+      case 'TERMINE': return 'bg-[#F5EFE5] text-[#4A5D75]';
       case 'EN_COURS': return 'bg-yellow-100 text-yellow-800';
       case 'BROUILLON': return 'bg-gray-100 text-gray-800';
       case 'ANNULE': return 'bg-red-100 text-red-800';
@@ -177,7 +177,7 @@ const Inventaire: React.FC = () => {
   if (loading) {
     return (
       <div className="ml-64 p-6 flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]"></div>
       </div>
     );
   }
@@ -188,7 +188,7 @@ const Inventaire: React.FC = () => {
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
-              <ClipboardList className="w-8 h-8 text-blue-600" />
+              <ClipboardList className="w-8 h-8 text-[#C8663D]" />
               Inventaires
             </h1>
             <p className="text-gray-600 mt-2">Gestion des inventaires de stock</p>
@@ -199,7 +199,7 @@ const Inventaire: React.FC = () => {
               setEditingInventaire(null);
               setShowForm(true);
             }}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            className="flex items-center gap-2 bg-[#C8663D] text-white px-4 py-2 rounded-lg hover:bg-[#a55231]"
           >
             <Plus className="w-5 h-5" />
             Nouvel Inventaire
@@ -214,7 +214,7 @@ const Inventaire: React.FC = () => {
               <button
                 onClick={() => setAffichageMode('ligne')}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                  affichageMode === 'ligne' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  affichageMode === 'ligne' ? 'bg-[#C8663D] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
               >
                 <List className="w-4 h-4" />
@@ -223,7 +223,7 @@ const Inventaire: React.FC = () => {
               <button
                 onClick={() => setAffichageMode('catalogue')}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                  affichageMode === 'catalogue' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  affichageMode === 'catalogue' ? 'bg-[#C8663D] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
               >
                 <Grid className="w-4 h-4" />
@@ -334,7 +334,7 @@ const Inventaire: React.FC = () => {
                 />
               </div>
               <div className="flex gap-4">
-                <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+                <button type="submit" className="bg-[#C8663D] text-white px-6 py-2 rounded hover:bg-[#a55231]">
                   {editingInventaire ? 'Modifier' : 'Créer'}
                 </button>
                 <button
@@ -391,7 +391,7 @@ const Inventaire: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex gap-2">
-                        <button onClick={() => handleEdit(inventaire)} className="text-blue-600 hover:text-blue-800">
+                        <button onClick={() => handleEdit(inventaire)} className="text-[#C8663D] hover:text-[#4A5D75]">
                           <Edit className="w-4 h-4" />
                         </button>
                       </div>
@@ -405,8 +405,8 @@ const Inventaire: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredInventaires.map((inventaire) => (
               <div key={inventaire.id_inventaire} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="h-32 bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
-                  <ClipboardList className="w-16 h-16 text-blue-600" />
+                <div className="h-32 bg-gradient-to-br from-[#F5EFE5] to-[#EDE3CE] flex items-center justify-center">
+                  <ClipboardList className="w-16 h-16 text-[#C8663D]" />
                 </div>
                 <div className="p-4">
                   <h3 className="font-bold text-lg text-gray-800 mb-2">{inventaire.numero_inventaire}</h3>
@@ -430,7 +430,7 @@ const Inventaire: React.FC = () => {
                   <div className="flex gap-2 pt-3 border-t">
                     <button
                       onClick={() => handleEdit(inventaire)}
-                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-[#C8663D] text-white rounded hover:bg-[#a55231] text-sm"
                     >
                       <Edit className="w-4 h-4" />
                       Modifier

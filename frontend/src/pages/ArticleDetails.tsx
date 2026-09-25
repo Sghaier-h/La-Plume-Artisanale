@@ -177,7 +177,7 @@ const ArticleDetails: React.FC = () => {
   if (loading) {
     return (
       <div className="ml-64 p-6 flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]"></div>
       </div>
     );
   }
@@ -198,7 +198,7 @@ const ArticleDetails: React.FC = () => {
             <div className="mt-4 flex gap-2">
               <Link
                 to="/articles"
-                className="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                className="inline-block px-4 py-2 bg-[#C8663D] text-white rounded hover:bg-[#a55231]"
               >
                 ← Retour à la liste
               </Link>
@@ -250,7 +250,7 @@ const ArticleDetails: React.FC = () => {
         <div className="flex gap-2">
           <button
             onClick={() => navigate(`/articles?edit=${article.id_article}`)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="flex items-center gap-2 px-4 py-2 bg-[#C8663D] text-white rounded-lg hover:bg-[#a55231]"
           >
             <Edit className="w-4 h-4" />
             Modifier
@@ -337,7 +337,7 @@ const ArticleDetails: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Dimensions</label>
-                  <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded text-sm">
+                  <span className="px-3 py-1 bg-[#F5EFE5] text-[#4A5D75] rounded text-sm">
                     {article.dimensions} ({article.code_dimensions})
                   </span>
                 </div>
@@ -351,7 +351,7 @@ const ArticleDetails: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Nombre de couleurs</label>
-                  <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded text-sm">
+                  <span className="px-3 py-1 bg-[#EFF3E7] text-[#4A6C5B] rounded text-sm">
                     {article.nombre_couleur} ({article.code_nombre_couleur})
                   </span>
                 </div>
@@ -375,7 +375,7 @@ const ArticleDetails: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Codes sélecteurs</label>
                   <div className="flex flex-wrap gap-2">
                     {selecteurs.map((sel, idx) => (
-                      <span key={idx} className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded text-sm">
+                      <span key={idx} className="px-3 py-1 bg-[#E8EFF6] text-[#4A5D75] rounded text-sm">
                         S{String(idx + 1).padStart(2, '0')}: {sel}
                       </span>
                     ))}
@@ -457,7 +457,7 @@ const ArticleDetails: React.FC = () => {
               <div className="flex justify-between">
                 <span className="text-gray-600">Dans catalogue</span>
                 {article.dans_catalogue_produit ? (
-                  <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">Oui</span>
+                  <span className="px-2 py-1 bg-[#F5EFE5] text-[#4A5D75] rounded text-xs">Oui</span>
                 ) : (
                   <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs">Non</span>
                 )}
@@ -487,20 +487,20 @@ const ArticleDetails: React.FC = () => {
               {article.id_modele && (
                 <Link
                   to={`/modeles/${article.id_modele}`}
-                  className="block w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded"
+                  className="block w-full text-left px-4 py-2 text-sm text-[#C8663D] hover:bg-[#F5EFE5] rounded"
                 >
                   Voir le modèle
                 </Link>
               )}
               <Link
                 to={`/of?article=${article.id_article}`}
-                className="block w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded"
+                className="block w-full text-left px-4 py-2 text-sm text-[#C8663D] hover:bg-[#F5EFE5] rounded"
               >
                 Voir les OF de cet article
               </Link>
               <Link
                 to={`/mouvement?article=${article.id_article}`}
-                className="block w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded"
+                className="block w-full text-left px-4 py-2 text-sm text-[#C8663D] hover:bg-[#F5EFE5] rounded"
               >
                 Voir les mouvements de stock
               </Link>

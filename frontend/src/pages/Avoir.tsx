@@ -197,7 +197,7 @@ const Avoir: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]"></div>
       </div>
     );
   }
@@ -208,7 +208,7 @@ const Avoir: React.FC = () => {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-              <ArrowLeft className="w-8 h-8 text-blue-600" />
+              <ArrowLeft className="w-8 h-8 text-[#C8663D]" />
               Avoirs
             </h1>
             <p className="text-gray-600 mt-2">Gestion des avoirs et crédits clients</p>
@@ -219,7 +219,7 @@ const Avoir: React.FC = () => {
               setEditingAvoir(null);
               resetForm();
             }}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-2 bg-[#C8663D] text-white px-4 py-2 rounded-lg hover:bg-[#a55231] transition-colors"
           >
             <Plus className="w-5 h-5" />
             Nouvel Avoir
@@ -236,13 +236,13 @@ const Avoir: React.FC = () => {
                 placeholder="Rechercher..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
               />
             </div>
             <select
               value={filters.statut}
               onChange={(e) => setFilters({ ...filters, statut: e.target.value })}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
             >
               <option value="">Tous les statuts</option>
               <option value="BROUILLON">Brouillon</option>
@@ -253,7 +253,7 @@ const Avoir: React.FC = () => {
             <select
               value={filters.client_id}
               onChange={(e) => setFilters({ ...filters, client_id: e.target.value })}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
             >
               <option value="">Tous les clients</option>
               {clients.map(c => (
@@ -286,7 +286,7 @@ const Avoir: React.FC = () => {
                         handleGenerateFromFacture(parseInt(e.target.value));
                       }
                     }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                   >
                     <option value="">Sélectionner une facture (optionnel)</option>
                     {factures.filter(f => f.statut === 'REGLEE' || f.statut === 'EN_ATTENTE').map(f => (
@@ -301,7 +301,7 @@ const Avoir: React.FC = () => {
                   <select
                     value={formData.id_client}
                     onChange={(e) => setFormData({ ...formData, id_client: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                     required
                   >
                     <option value="">Sélectionner un client</option>
@@ -316,7 +316,7 @@ const Avoir: React.FC = () => {
                     type="date"
                     value={formData.date_avoir}
                     onChange={(e) => setFormData({ ...formData, date_avoir: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                     required
                   />
                 </div>
@@ -325,7 +325,7 @@ const Avoir: React.FC = () => {
                   <select
                     value={formData.statut}
                     onChange={(e) => setFormData({ ...formData, statut: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                   >
                     <option value="BROUILLON">Brouillon</option>
                     <option value="EN_ATTENTE">En attente</option>
@@ -338,7 +338,7 @@ const Avoir: React.FC = () => {
                     type="text"
                     value={formData.motif_avoir}
                     onChange={(e) => setFormData({ ...formData, motif_avoir: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                     placeholder="Ex: Retour marchandise, Erreur facturation..."
                     required
                   />
@@ -349,7 +349,7 @@ const Avoir: React.FC = () => {
                     type="number"
                     value={formData.taux_tva}
                     onChange={(e) => setFormData({ ...formData, taux_tva: parseFloat(e.target.value) || 20 })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                     min="0"
                     max="100"
                     step="0.01"
@@ -361,7 +361,7 @@ const Avoir: React.FC = () => {
                     type="number"
                     value={formData.remise_globale}
                     onChange={(e) => setFormData({ ...formData, remise_globale: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                     min="0"
                     max="100"
                     step="0.01"
@@ -373,7 +373,7 @@ const Avoir: React.FC = () => {
                     type="text"
                     value={formData.reference_client}
                     onChange={(e) => setFormData({ ...formData, reference_client: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                     placeholder="Réf. avoir client"
                   />
                 </div>
@@ -382,7 +382,7 @@ const Avoir: React.FC = () => {
                   <textarea
                     value={formData.notes}
                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                     rows={3}
                     placeholder="Notes additionnelles..."
                   />
@@ -396,7 +396,7 @@ const Avoir: React.FC = () => {
                   <button
                     type="button"
                     onClick={addLigne}
-                    className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                    className="text-[#C8663D] hover:text-[#a55231] text-sm font-medium"
                   >
                     + Ajouter une ligne
                   </button>
@@ -528,7 +528,7 @@ const Avoir: React.FC = () => {
               <div className="flex gap-2">
                 <button
                   type="submit"
-                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  className="bg-[#C8663D] text-white px-6 py-2 rounded-lg hover:bg-[#a55231] transition-colors"
                 >
                   Enregistrer
                 </button>
@@ -596,7 +596,7 @@ const Avoir: React.FC = () => {
                               alert(error.response?.data?.error?.message || 'Erreur lors du chargement');
                             }
                           }}
-                          className="text-blue-600 hover:text-blue-700"
+                          className="text-[#C8663D] hover:text-[#a55231]"
                           title="Consulter"
                         >
                           <Eye className="w-4 h-4" />
@@ -824,7 +824,7 @@ const Avoir: React.FC = () => {
                         alert(error.response?.data?.error?.message || 'Erreur lors du chargement');
                       }
                     }}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    className="px-4 py-2 bg-[#C8663D] text-white rounded-lg hover:bg-[#a55231]"
                   >
                     <Edit className="w-4 h-4 inline mr-2" />
                     Modifier

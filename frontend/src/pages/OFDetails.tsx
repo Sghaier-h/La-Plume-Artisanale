@@ -146,7 +146,7 @@ const OFDetails: React.FC = () => {
   const getStatutBadge = (statut: string) => {
     const badges: { [key: string]: { color: string; icon: any; label: string } } = {
       'en_attente': { color: 'bg-gray-100 text-gray-800', icon: Clock, label: 'En attente' },
-      'attribue': { color: 'bg-blue-100 text-blue-800', icon: FileText, label: 'Attribué' },
+      'attribue': { color: 'bg-[#F5EFE5] text-[#4A5D75]', icon: FileText, label: 'Attribué' },
       'en_cours': { color: 'bg-yellow-100 text-yellow-800', icon: Play, label: 'En cours' },
       'termine': { color: 'bg-green-100 text-green-800', icon: CheckCircle, label: 'Terminé' },
       'suspendu': { color: 'bg-orange-100 text-orange-800', icon: AlertCircle, label: 'Suspendu' },
@@ -165,7 +165,7 @@ const OFDetails: React.FC = () => {
   if (loading) {
     return (
       <div className="ml-64 p-6 flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]"></div>
       </div>
     );
   }
@@ -175,7 +175,7 @@ const OFDetails: React.FC = () => {
       <div className="ml-64 p-6">
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <p className="text-red-800">{error || 'Ordre de fabrication non trouvé'}</p>
-          <Link to="/of" className="mt-4 inline-block text-blue-600 hover:underline">
+          <Link to="/of" className="mt-4 inline-block text-[#C8663D] hover:underline">
             ← Retour à la liste
           </Link>
         </div>
@@ -227,7 +227,7 @@ const OFDetails: React.FC = () => {
           </Link>
           <div className="h-6 w-px bg-gray-300"></div>
           <div className="flex items-center gap-3">
-            <FileText className="w-8 h-8 text-blue-600" />
+            <FileText className="w-8 h-8 text-[#C8663D]" />
             <div>
               <h1 className="text-3xl font-bold text-gray-900">{of.numero_of}</h1>
               <p className="text-sm text-gray-500">{of.article_designation || of.code_article}</p>
@@ -247,7 +247,7 @@ const OFDetails: React.FC = () => {
           ) : null}
           <button
             onClick={() => navigate(`/of?edit=${of.id_of}`)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="flex items-center gap-2 px-4 py-2 bg-[#C8663D] text-white rounded-lg hover:bg-[#a55231]"
           >
             <Edit className="w-4 h-4" />
             Modifier
@@ -553,7 +553,7 @@ const OFDetails: React.FC = () => {
                 {of.numero_commande && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Commande associée</label>
-                    <Link to={`/commandes?search=${of.numero_commande}`} className="text-blue-600 hover:underline font-mono">
+                    <Link to={`/commandes?search=${of.numero_commande}`} className="text-[#C8663D] hover:underline font-mono">
                       {of.numero_commande}
                     </Link>
                   </div>
@@ -565,7 +565,7 @@ const OFDetails: React.FC = () => {
                   <Package className="w-4 h-4 text-gray-400" />
                   <p className="text-gray-900">{of.article_designation || of.code_article}</p>
                   {of.id_article && (
-                    <Link to={`/articles/${of.id_article}`} className="text-blue-600 hover:underline text-sm">
+                    <Link to={`/articles/${of.id_article}`} className="text-[#C8663D] hover:underline text-sm">
                       Voir l'article
                     </Link>
                   )}
@@ -599,7 +599,7 @@ const OFDetails: React.FC = () => {
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-4">
                   <div
-                    className="bg-blue-600 h-4 rounded-full transition-all"
+                    className="bg-[#C8663D] h-4 rounded-full transition-all"
                     style={{ width: `${Math.min(100, pourcentageAvancement)}%` }}
                   ></div>
                 </div>
@@ -614,7 +614,7 @@ const OFDetails: React.FC = () => {
                   <p className="text-xs text-gray-500">Restante</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-blue-600">{of.quantite_a_produire}</p>
+                  <p className="text-2xl font-bold text-[#C8663D]">{of.quantite_a_produire}</p>
                   <p className="text-xs text-gray-500">Totale</p>
                 </div>
               </div>
@@ -759,7 +759,7 @@ const OFDetails: React.FC = () => {
               <div className="p-6">
                 <p className="text-gray-900 font-medium">{of.machine_designation}</p>
                 {of.id_machine && (
-                  <Link to={`/machines/${of.id_machine}`} className="mt-2 inline-block text-sm text-blue-600 hover:underline">
+                  <Link to={`/machines/${of.id_machine}`} className="mt-2 inline-block text-sm text-[#C8663D] hover:underline">
                     Voir la machine
                   </Link>
                 )}
@@ -780,7 +780,7 @@ const OFDetails: React.FC = () => {
                 <span className="text-gray-600">Priorité</span>
                 <span className={`px-2 py-1 rounded text-xs font-medium ${
                   of.priorite === 'haute' ? 'bg-red-100 text-red-800' :
-                  of.priorite === 'normale' ? 'bg-blue-100 text-blue-800' :
+                  of.priorite === 'normale' ? 'bg-[#F5EFE5] text-[#4A5D75]' :
                   'bg-gray-100 text-gray-800'
                 }`}>
                   {of.priorite || 'normale'}
@@ -809,21 +809,21 @@ const OFDetails: React.FC = () => {
               {of.id_article && (
                 <Link
                   to={`/articles/${of.id_article}`}
-                  className="block w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded"
+                  className="block w-full text-left px-4 py-2 text-sm text-[#C8663D] hover:bg-[#F5EFE5] rounded"
                 >
                   Voir l'article
                 </Link>
               )}
               <Link
                 to={`/suivi-fabrication?of=${of.id_of}`}
-                className="block w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded"
+                className="block w-full text-left px-4 py-2 text-sm text-[#C8663D] hover:bg-[#F5EFE5] rounded"
               >
                 Voir les suivis de fabrication
               </Link>
               {of.id_commande && (
                 <Link
                   to={`/commandes?search=${of.numero_commande}`}
-                  className="block w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded"
+                  className="block w-full text-left px-4 py-2 text-sm text-[#C8663D] hover:bg-[#F5EFE5] rounded"
                 >
                   Voir la commande
                 </Link>

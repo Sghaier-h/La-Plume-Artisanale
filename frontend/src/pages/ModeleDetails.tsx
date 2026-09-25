@@ -261,7 +261,7 @@ const ModeleDetails: React.FC = () => {
   if (loading) {
     return (
       <div className="ml-64 p-6 flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]" />
       </div>
     );
   }
@@ -271,7 +271,7 @@ const ModeleDetails: React.FC = () => {
       <div className="ml-64 p-6">
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <p className="text-red-800">{error || 'Modèle non trouvé'}</p>
-          <Link to="/modeles" className="mt-4 inline-block text-blue-600 hover:underline">
+          <Link to="/modeles" className="mt-4 inline-block text-[#C8663D] hover:underline">
             &larr; Retour à la liste
           </Link>
         </div>
@@ -329,7 +329,7 @@ const ModeleDetails: React.FC = () => {
         <div className="flex gap-2">
           <button
             onClick={() => navigate(`/modeles?edit=${modeleId}`)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="flex items-center gap-2 px-4 py-2 bg-[#C8663D] text-white rounded-lg hover:bg-[#a55231]"
           >
             <Edit className="w-4 h-4" />
             Modifier
@@ -401,11 +401,11 @@ const ModeleDetails: React.FC = () => {
           </h2>
         </div>
         <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {renderAttrGroup('Dimensions', attributs.dimensions, 'bg-blue-100 text-blue-800')}
+          {renderAttrGroup('Dimensions', attributs.dimensions, 'bg-[#F5EFE5] text-[#4A5D75]')}
           {renderAttrGroup('Couleurs', attributs.couleurs, 'bg-pink-100 text-pink-800')}
           {renderAttrGroup('Finitions', attributs.finitions, 'bg-orange-100 text-orange-800')}
           {renderAttrGroup('Tissages', attributs.tissages, 'bg-green-100 text-green-800')}
-          {renderAttrGroup('Nombres de couleurs', attributs.nombres_couleurs, 'bg-purple-100 text-purple-800')}
+          {renderAttrGroup('Nombres de couleurs', attributs.nombres_couleurs, 'bg-[#EFF3E7] text-[#4A6C5B]')}
           {renderAttrGroup('Personnalisations', attributs.personnalisations, 'bg-yellow-100 text-yellow-800')}
         </div>
       </div>
@@ -504,7 +504,7 @@ const ModeleDetails: React.FC = () => {
                     setSel(prev => ({ ...prev, [key]: v }));
                     setCreateMsg(null);
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                   disabled={!Array.isArray(opts) || opts.length === 0}
                 >
                   <option value="">— Aucun —</option>

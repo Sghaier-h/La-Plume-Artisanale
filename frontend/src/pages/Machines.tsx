@@ -103,7 +103,7 @@ const Machines: React.FC = () => {
   };
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>;
+    return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]"></div></div>;
   }
 
   return (
@@ -114,7 +114,7 @@ const Machines: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-800">⚙️ Machines</h1>
           <button
             onClick={() => { setShowForm(true); setEditingMachine(null); resetForm(); }}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="bg-[#C8663D] text-white px-4 py-2 rounded hover:bg-[#a55231]"
           >
             + Nouvelle Machine
           </button>
@@ -224,7 +224,7 @@ const Machines: React.FC = () => {
                 </div>
               </div>
               <div className="flex gap-4">
-                <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+                <button type="submit" className="bg-[#C8663D] text-white px-6 py-2 rounded hover:bg-[#a55231]">
                   {editingMachine ? 'Modifier' : 'Créer'}
                 </button>
                 <button type="button" onClick={() => { setShowForm(false); setEditingMachine(null); resetForm(); }} className="bg-gray-300 text-gray-700 px-6 py-2 rounded hover:bg-gray-400">
@@ -278,7 +278,7 @@ const Machines: React.FC = () => {
                             setSelectedMachine(machine);
                           }
                         }}
-                        className="text-blue-600 hover:text-blue-700"
+                        className="text-[#C8663D] hover:text-[#a55231]"
                         title="Consulter"
                       >
                         <Eye className="w-4 h-4" />
@@ -304,7 +304,7 @@ const Machines: React.FC = () => {
             <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
               <div className="sticky top-0 bg-white border-b p-6 flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                  <Settings className="w-6 h-6 text-blue-600" />
+                  <Settings className="w-6 h-6 text-[#C8663D]" />
                   Machine {selectedMachine.numero_machine}
                 </h2>
                 <button
@@ -319,7 +319,7 @@ const Machines: React.FC = () => {
                 {/* Informations générales */}
                 <div>
                   <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <Activity className="w-5 h-5 text-blue-600" />
+                    <Activity className="w-5 h-5 text-[#C8663D]" />
                     Informations Générales
                   </h3>
                   <div className="grid grid-cols-2 gap-4">
@@ -377,7 +377,7 @@ const Machines: React.FC = () => {
                 {(selectedMachine.vitesse_nominale || selectedMachine.largeur_utile || selectedMachine.capacite_production) && (
                   <div>
                     <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                      <TrendingUp className="w-5 h-5 text-blue-600" />
+                      <TrendingUp className="w-5 h-5 text-[#C8663D]" />
                       Caractéristiques Techniques
                     </h3>
                     <div className="grid grid-cols-2 gap-4">
@@ -407,7 +407,7 @@ const Machines: React.FC = () => {
                 {(selectedMachine.annee_fabrication || selectedMachine.date_mise_service) && (
                   <div>
                     <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                      <Calendar className="w-5 h-5 text-blue-600" />
+                      <Calendar className="w-5 h-5 text-[#C8663D]" />
                       Dates
                     </h3>
                     <div className="grid grid-cols-2 gap-4">
@@ -437,7 +437,7 @@ const Machines: React.FC = () => {
                       handleEdit(selectedMachine);
                       setSelectedMachine(null);
                     }}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                    className="px-4 py-2 bg-[#C8663D] text-white rounded-lg hover:bg-[#a55231] flex items-center gap-2"
                   >
                     <Edit className="w-4 h-4" />
                     Modifier

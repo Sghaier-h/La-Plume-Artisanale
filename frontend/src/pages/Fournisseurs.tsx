@@ -111,7 +111,7 @@ const Fournisseurs: React.FC = () => {
   if (loading) {
     return (
       <div className="ml-64 p-6 flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]"></div>
       </div>
     );
   }
@@ -127,7 +127,7 @@ const Fournisseurs: React.FC = () => {
             </h1>
             <button
               onClick={() => { setShowForm(true); setEditingFournisseur(null); resetForm(); }}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
+              className="bg-[#C8663D] text-white px-4 py-2 rounded-lg hover:bg-[#a55231] flex items-center gap-2"
             >
               <PlusCircle className="w-5 h-5" />
               Nouveau Fournisseur
@@ -148,7 +148,7 @@ const Fournisseurs: React.FC = () => {
                 <button
                   onClick={() => setAffichageMode('ligne')}
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                    affichageMode === 'ligne' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    affichageMode === 'ligne' ? 'bg-[#C8663D] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                   }`}
                 >
                   <List className="w-4 h-4" />
@@ -157,7 +157,7 @@ const Fournisseurs: React.FC = () => {
                 <button
                   onClick={() => setAffichageMode('catalogue')}
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                    affichageMode === 'catalogue' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    affichageMode === 'catalogue' ? 'bg-[#C8663D] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                   }`}
                 >
                   <Grid className="w-4 h-4" />
@@ -277,7 +277,7 @@ const Fournisseurs: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex gap-4">
-                  <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+                  <button type="submit" className="bg-[#C8663D] text-white px-6 py-2 rounded-lg hover:bg-[#a55231]">
                     {editingFournisseur ? 'Modifier' : 'Créer'}
                   </button>
                   <button
@@ -335,7 +335,7 @@ const Fournisseurs: React.FC = () => {
                                 setSelectedFournisseur(fournisseur);
                               }
                             }}
-                            className="text-blue-600 hover:text-blue-900"
+                            className="text-[#C8663D] hover:text-[#4A5D75]"
                             title="Consulter"
                           >
                             <Eye className="w-4 h-4" />
@@ -386,7 +386,7 @@ const Fournisseurs: React.FC = () => {
                           setSelectedFournisseur(fournisseur);
                         }
                       }}
-                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-[#C8663D] text-white rounded hover:bg-[#a55231] text-sm"
                     >
                       <Eye className="w-4 h-4" />
                       Consulter
@@ -545,7 +545,7 @@ const Fournisseurs: React.FC = () => {
                       handleEdit(selectedFournisseur);
                       setSelectedFournisseur(null);
                     }}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                    className="px-4 py-2 bg-[#C8663D] text-white rounded-lg hover:bg-[#a55231] flex items-center gap-2"
                   >
                     <Edit className="w-4 h-4" />
                     Modifier

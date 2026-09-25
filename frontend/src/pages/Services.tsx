@@ -149,7 +149,7 @@ const Services: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]"></div>
       </div>
     );
   }
@@ -160,7 +160,7 @@ const Services: React.FC = () => {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-              <Briefcase className="w-8 h-8 text-blue-600" />
+              <Briefcase className="w-8 h-8 text-[#C8663D]" />
               Gestion des Services
             </h1>
             <p className="text-gray-600 mt-2">Création et gestion des services proposés</p>
@@ -180,7 +180,7 @@ const Services: React.FC = () => {
                 categorie: ''
               });
             }}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-2 bg-[#C8663D] text-white px-4 py-2 rounded-lg hover:bg-[#a55231] transition-colors"
           >
             <Plus className="w-5 h-5" />
             Nouveau Service
@@ -195,7 +195,7 @@ const Services: React.FC = () => {
               <button
                 onClick={() => setAffichageMode('ligne')}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                  affichageMode === 'ligne' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  affichageMode === 'ligne' ? 'bg-[#C8663D] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
               >
                 <List className="w-4 h-4" />
@@ -204,7 +204,7 @@ const Services: React.FC = () => {
               <button
                 onClick={() => setAffichageMode('catalogue')}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                  affichageMode === 'catalogue' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  affichageMode === 'catalogue' ? 'bg-[#C8663D] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
               >
                 <Grid className="w-4 h-4" />
@@ -220,13 +220,13 @@ const Services: React.FC = () => {
                 placeholder="Rechercher..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
               />
             </div>
             <select
               value={filters.categorie}
               onChange={(e) => setFilters({ ...filters, categorie: e.target.value })}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
             >
               <option value="">Toutes les catégories</option>
               {categories.map(cat => (
@@ -236,7 +236,7 @@ const Services: React.FC = () => {
             <select
               value={filters.actif}
               onChange={(e) => setFilters({ ...filters, actif: e.target.value })}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
             >
               <option value="">Tous</option>
               <option value="true">Actifs</option>
@@ -259,7 +259,7 @@ const Services: React.FC = () => {
                     type="text"
                     value={formData.code}
                     onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                     required
                   />
                 </div>
@@ -269,7 +269,7 @@ const Services: React.FC = () => {
                     type="text"
                     value={formData.libelle}
                     onChange={(e) => setFormData({ ...formData, libelle: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                     required
                   />
                 </div>
@@ -278,7 +278,7 @@ const Services: React.FC = () => {
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                     rows={3}
                   />
                 </div>
@@ -288,7 +288,7 @@ const Services: React.FC = () => {
                     type="number"
                     value={formData.prix_unitaire}
                     onChange={(e) => setFormData({ ...formData, prix_unitaire: parseFloat(e.target.value) })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                     min="0"
                     step="0.01"
                     required
@@ -300,7 +300,7 @@ const Services: React.FC = () => {
                     type="text"
                     value={formData.categorie}
                     onChange={(e) => setFormData({ ...formData, categorie: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                   />
                 </div>
                 <div>
@@ -309,7 +309,7 @@ const Services: React.FC = () => {
                     type="number"
                     value={formData.duree_estimee}
                     onChange={(e) => setFormData({ ...formData, duree_estimee: parseFloat(e.target.value) })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                     min="0"
                     step="0.1"
                   />
@@ -319,7 +319,7 @@ const Services: React.FC = () => {
                   <select
                     value={formData.unite_duree}
                     onChange={(e) => setFormData({ ...formData, unite_duree: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                   >
                     <option value="heure">Heure</option>
                     <option value="jour">Jour</option>
@@ -333,7 +333,7 @@ const Services: React.FC = () => {
                       type="checkbox"
                       checked={formData.actif}
                       onChange={(e) => setFormData({ ...formData, actif: e.target.checked })}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      className="w-4 h-4 text-[#C8663D] border-gray-300 rounded focus:ring-[#C8663D]"
                     />
                     <span className="text-sm font-medium text-gray-700">Service actif</span>
                   </label>
@@ -342,7 +342,7 @@ const Services: React.FC = () => {
               <div className="flex gap-2">
                 <button
                   type="submit"
-                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  className="bg-[#C8663D] text-white px-6 py-2 rounded-lg hover:bg-[#a55231] transition-colors"
                 >
                   Enregistrer
                 </button>
@@ -389,7 +389,7 @@ const Services: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {service.categorie ? (
-                        <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs">{service.categorie}</span>
+                        <span className="px-2 py-1 bg-[#F5EFE5] text-[#4A5D75] rounded text-xs">{service.categorie}</span>
                       ) : '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -401,7 +401,7 @@ const Services: React.FC = () => {
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleEdit(service)}
-                          className="text-blue-600 hover:text-blue-800"
+                          className="text-[#C8663D] hover:text-[#4A5D75]"
                           title="Modifier"
                         >
                           <Edit className="w-4 h-4" />
@@ -426,8 +426,8 @@ const Services: React.FC = () => {
             <div key={service.id} className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    <Briefcase className="w-6 h-6 text-blue-600" />
+                  <div className="w-12 h-12 bg-[#F5EFE5] rounded-full flex items-center justify-center">
+                    <Briefcase className="w-6 h-6 text-[#C8663D]" />
                   </div>
                   <div>
                     <h3 className="font-bold text-gray-800">{service.libelle}</h3>
@@ -450,13 +450,13 @@ const Services: React.FC = () => {
                 </div>
                 {service.duree_estimee && (
                   <div className="flex items-center gap-2 text-gray-700">
-                    <Clock className="w-4 h-4 text-blue-600" />
+                    <Clock className="w-4 h-4 text-[#C8663D]" />
                     <span>{service.duree_estimee} {service.unite_duree}(s)</span>
                   </div>
                 )}
                 {service.categorie && (
                   <div className="mt-2">
-                    <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs">{service.categorie}</span>
+                    <span className="px-2 py-1 bg-[#F5EFE5] text-[#4A5D75] rounded text-xs">{service.categorie}</span>
                   </div>
                 )}
               </div>
@@ -464,7 +464,7 @@ const Services: React.FC = () => {
               <div className="mt-4 flex gap-2">
                 <button
                   onClick={() => handleEdit(service)}
-                  className="flex-1 flex items-center justify-center gap-2 bg-blue-50 text-blue-600 px-3 py-2 rounded-lg hover:bg-blue-100 transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 bg-[#F5EFE5] text-[#C8663D] px-3 py-2 rounded-lg hover:bg-[#F0E9DA] transition-colors"
                 >
                   <Edit className="w-4 h-4" />
                   Modifier

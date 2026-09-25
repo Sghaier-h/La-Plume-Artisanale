@@ -403,7 +403,7 @@ const CommandeDetails: React.FC = () => {
       case 'validee':
         return 'bg-green-100 text-green-800';
       case 'en_production':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-[#F5EFE5] text-[#4A5D75]';
       case 'livree':
         return 'bg-gray-100 text-gray-800';
       case 'annulee':
@@ -427,7 +427,7 @@ const CommandeDetails: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]"></div>
       </div>
     );
   }
@@ -473,7 +473,7 @@ const CommandeDetails: React.FC = () => {
           <div className="max-w-7xl mx-auto">
             <div className="bg-white rounded-lg shadow p-6">
               <p className="text-gray-600">Commande non trouvée.</p>
-              <Link to="/commandes" className="text-blue-600 hover:text-blue-700 mt-4 inline-block">
+              <Link to="/commandes" className="text-[#C8663D] hover:text-[#a55231] mt-4 inline-block">
                 Retour à la liste
               </Link>
             </div>
@@ -523,7 +523,7 @@ const CommandeDetails: React.FC = () => {
               )}
               <Link
                 to={`/commandes?edit=${commande.id_commande}`}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className="flex items-center gap-2 px-4 py-2 bg-[#C8663D] text-white rounded-lg hover:bg-[#a55231]"
               >
                 <Edit className="w-4 h-4" />
                 Modifier
@@ -609,7 +609,7 @@ const CommandeDetails: React.FC = () => {
                 )}
                 <Link
                   to={`/clients/${commande.id_client}`}
-                  className="text-blue-600 hover:text-blue-700 text-sm"
+                  className="text-[#C8663D] hover:text-[#a55231] text-sm"
                 >
                   Voir les détails du client →
                 </Link>
@@ -828,7 +828,7 @@ const CommandeDetails: React.FC = () => {
                             {ligne.ref_commerciale ? (
                               <Link
                                 to={`/articles?ref=${ligne.ref_commerciale}`}
-                                className="text-blue-600 hover:text-blue-700 font-medium"
+                                className="text-[#C8663D] hover:text-[#a55231] font-medium"
                               >
                                 {ligne.ref_commerciale}
                               </Link>
@@ -874,7 +874,7 @@ const CommandeDetails: React.FC = () => {
                           <td className="px-4 py-3 whitespace-nowrap">
                             {ligne.personnalisation ? (
                               <div>
-                                <span className="px-2 py-1 text-xs rounded bg-blue-100 text-blue-800">Oui</span>
+                                <span className="px-2 py-1 text-xs rounded bg-[#F5EFE5] text-[#4A5D75]">Oui</span>
                                 {ligne.details_personnalisation && (
                                   <div className="mt-1 text-xs text-gray-600 max-w-xs truncate" title={ligne.details_personnalisation}>
                                     {ligne.details_personnalisation}

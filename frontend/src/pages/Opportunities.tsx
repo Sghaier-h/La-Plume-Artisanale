@@ -40,8 +40,8 @@ const statutColor = (statut?: string): string => {
   const s = (statut || '').toLowerCase();
   if (s.includes('gagn')) return 'bg-emerald-100 text-emerald-800';
   if (s.includes('perdu')) return 'bg-red-100 text-red-800';
-  if (s.includes('nouveau')) return 'bg-blue-100 text-blue-800';
-  if (s.includes('negoc') || s.includes('négoc')) return 'bg-purple-100 text-purple-800';
+  if (s.includes('nouveau')) return 'bg-[#E8EFF6] text-[#4A5D75]';
+  if (s.includes('negoc') || s.includes('négoc')) return 'bg-[#F0E9DA] text-[#6B4E31]';
   return 'bg-amber-100 text-amber-800';
 };
 

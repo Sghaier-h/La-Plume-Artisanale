@@ -99,7 +99,7 @@ const Fourniture: React.FC = () => {
   if (loading) {
     return (
       <div className="ml-64 p-6 flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]"></div>
       </div>
     );
   }
@@ -110,7 +110,7 @@ const Fourniture: React.FC = () => {
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
-              <ShoppingBag className="w-8 h-8 text-blue-600" />
+              <ShoppingBag className="w-8 h-8 text-[#C8663D]" />
               Fournitures
             </h1>
             <p className="text-gray-600 mt-2">Gestion du stock des fournitures et consommables</p>
@@ -125,7 +125,7 @@ const Fourniture: React.FC = () => {
               <button
                 onClick={() => setAffichageMode('ligne')}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                  affichageMode === 'ligne' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  affichageMode === 'ligne' ? 'bg-[#C8663D] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
               >
                 <List className="w-4 h-4" />
@@ -134,7 +134,7 @@ const Fourniture: React.FC = () => {
               <button
                 onClick={() => setAffichageMode('catalogue')}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                  affichageMode === 'catalogue' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  affichageMode === 'catalogue' ? 'bg-[#C8663D] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
               >
                 <Grid className="w-4 h-4" />
@@ -172,7 +172,7 @@ const Fourniture: React.FC = () => {
               <tbody className="divide-y divide-gray-200">
                 {filteredFournitures.map((fourniture) => (
                   <tr key={fourniture.id_fourniture} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap font-mono text-sm font-medium text-blue-600">{fourniture.code_fourniture}</td>
+                    <td className="px-6 py-4 whitespace-nowrap font-mono text-sm font-medium text-[#C8663D]">{fourniture.code_fourniture}</td>
                     <td className="px-6 py-4 text-sm">{fourniture.designation}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">{fourniture.categorie || '-'}</td>
                     <td className="px-6 py-4 whitespace-nowrap">

@@ -86,7 +86,7 @@ const ProduitFini: React.FC = () => {
   if (loading) {
     return (
       <div className="ml-64 p-6 flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]"></div>
       </div>
     );
   }
@@ -97,7 +97,7 @@ const ProduitFini: React.FC = () => {
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
-              <Package className="w-8 h-8 text-blue-600" />
+              <Package className="w-8 h-8 text-[#C8663D]" />
               Produits Finis
             </h1>
             <p className="text-gray-600 mt-2">Gestion du stock des produits finis</p>
@@ -112,7 +112,7 @@ const ProduitFini: React.FC = () => {
               <button
                 onClick={() => setAffichageMode('ligne')}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                  affichageMode === 'ligne' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  affichageMode === 'ligne' ? 'bg-[#C8663D] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
               >
                 <List className="w-4 h-4" />
@@ -121,7 +121,7 @@ const ProduitFini: React.FC = () => {
               <button
                 onClick={() => setAffichageMode('catalogue')}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                  affichageMode === 'catalogue' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  affichageMode === 'catalogue' ? 'bg-[#C8663D] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
               >
                 <Grid className="w-4 h-4" />
@@ -160,7 +160,7 @@ const ProduitFini: React.FC = () => {
               <tbody className="divide-y divide-gray-200">
                 {filteredProduits.map((produit) => (
                   <tr key={produit.id_article} onClick={() => produit.id_article && navigate(`/articles/${produit.id_article}`)} className="hover:bg-gray-50 cursor-pointer">
-                    <td className="px-6 py-4 whitespace-nowrap font-mono text-sm font-medium text-blue-600">{produit.ref_commercial}</td>
+                    <td className="px-6 py-4 whitespace-nowrap font-mono text-sm font-medium text-[#C8663D]">{produit.ref_commercial}</td>
                     <td className="px-6 py-4 whitespace-nowrap font-mono text-sm text-gray-600">{produit.ref_fabrication}</td>
                     <td className="px-6 py-4 text-sm">{produit.designation}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">{produit.modele || '-'}</td>
@@ -189,8 +189,8 @@ const ProduitFini: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredProduits.map((produit) => (
               <div key={produit.id_article} onClick={() => produit.id_article && navigate(`/articles/${produit.id_article}`)} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
-                <div className="h-32 bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
-                  <Package className="w-16 h-16 text-blue-600" />
+                <div className="h-32 bg-gradient-to-br from-[#F5EFE5] to-[#EDE3CE] flex items-center justify-center">
+                  <Package className="w-16 h-16 text-[#C8663D]" />
                 </div>
                 <div className="p-4">
                   <h3 className="font-bold text-lg text-gray-800 mb-2">{produit.designation}</h3>

@@ -153,7 +153,7 @@ const MatieresPremieres: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]"></div>
       </div>
     );
   }
@@ -169,7 +169,7 @@ const MatieresPremieres: React.FC = () => {
             </h1>
             <button
               onClick={handleCreate}
-              className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              className="flex items-center gap-2 px-6 py-2 bg-[#C8663D] text-white rounded-md hover:bg-[#a55231]"
             >
               <Plus className="w-5 h-5" />
               Ajouter
@@ -185,7 +185,7 @@ const MatieresPremieres: React.FC = () => {
                   <button
                     onClick={() => setAffichageMode('ligne')}
                     className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                      affichageMode === 'ligne' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      affichageMode === 'ligne' ? 'bg-[#C8663D] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                     }`}
                   >
                     <List className="w-4 h-4" />
@@ -194,7 +194,7 @@ const MatieresPremieres: React.FC = () => {
                   <button
                     onClick={() => setAffichageMode('catalogue')}
                     className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                      affichageMode === 'catalogue' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      affichageMode === 'catalogue' ? 'bg-[#C8663D] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                     }`}
                   >
                     <Grid className="w-4 h-4" />
@@ -213,7 +213,7 @@ const MatieresPremieres: React.FC = () => {
                   setSearch(e.target.value);
                   loadData();
                 }}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#C8663D]"
               />
             </div>
           </div>
@@ -240,7 +240,7 @@ const MatieresPremieres: React.FC = () => {
                   const status = getStockStatus(matiere);
                   return (
                     <tr key={matiere.id_mp} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap font-mono text-xs font-medium text-blue-600">
+                      <td className="px-6 py-4 whitespace-nowrap font-mono text-xs font-medium text-[#C8663D]">
                         {matiere.qr_mp || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap font-medium">{matiere.code_couleur || matiere.code_mp || '-'}</td>
@@ -279,7 +279,7 @@ const MatieresPremieres: React.FC = () => {
                                 setSelectedMatiere(matiere);
                               }
                             }}
-                            className="text-blue-600 hover:text-blue-800"
+                            className="text-[#C8663D] hover:text-[#4A5D75]"
                             title="Consulter"
                           >
                             <Eye className="w-4 h-4" />
@@ -306,10 +306,10 @@ const MatieresPremieres: React.FC = () => {
                 const status = getStockStatus(matiere);
                 return (
                   <div key={matiere.id_mp} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                    <div className="h-32 bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
+                    <div className="h-32 bg-gradient-to-br from-[#F5EFE5] to-[#EDE3CE] flex items-center justify-center">
                       <div className="text-center">
-                        <Package className="w-12 h-12 text-blue-600 mx-auto mb-2" />
-                        <span className="font-mono text-xs font-bold text-blue-800">{matiere.qr_mp || matiere.code_couleur || '-'}</span>
+                        <Package className="w-12 h-12 text-[#C8663D] mx-auto mb-2" />
+                        <span className="font-mono text-xs font-bold text-[#4A5D75]">{matiere.qr_mp || matiere.code_couleur || '-'}</span>
                       </div>
                     </div>
                     <div className="p-4">
@@ -343,7 +343,7 @@ const MatieresPremieres: React.FC = () => {
                               setSelectedMatiere(matiere);
                             }
                           }}
-                          className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                          className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-[#C8663D] text-white rounded hover:bg-[#a55231] text-sm"
                         >
                           <Eye className="w-4 h-4" />
                           Consulter
@@ -535,7 +535,7 @@ const MatieresPremieres: React.FC = () => {
                   </button>
                   <button
                     onClick={handleSave}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                    className="px-4 py-2 bg-[#C8663D] text-white rounded-md hover:bg-[#a55231]"
                   >
                     Enregistrer
                   </button>
@@ -550,7 +550,7 @@ const MatieresPremieres: React.FC = () => {
               <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
                 <div className="sticky top-0 bg-white border-b p-6 flex justify-between items-center">
                   <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                    <Package className="w-6 h-6 text-blue-600" />
+                    <Package className="w-6 h-6 text-[#C8663D]" />
                     Matière Première - {selectedMatiere.couleur || selectedMatiere.designation || selectedMatiere.code_couleur}
                   </h2>
                   <button
@@ -565,7 +565,7 @@ const MatieresPremieres: React.FC = () => {
                   {/* Informations générales */}
                   <div>
                     <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                      <Tag className="w-5 h-5 text-blue-600" />
+                      <Tag className="w-5 h-5 text-[#C8663D]" />
                       Informations Générales
                     </h3>
                     <div className="grid grid-cols-2 gap-4">
@@ -629,7 +629,7 @@ const MatieresPremieres: React.FC = () => {
                   {/* Stock et Prix */}
                   <div>
                     <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                      <BarChart3 className="w-5 h-5 text-blue-600" />
+                      <BarChart3 className="w-5 h-5 text-[#C8663D]" />
                       Stock et Prix
                     </h3>
                     <div className="grid grid-cols-2 gap-4">
@@ -681,7 +681,7 @@ const MatieresPremieres: React.FC = () => {
                         handleEdit(selectedMatiere);
                         setSelectedMatiere(null);
                       }}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                      className="px-4 py-2 bg-[#C8663D] text-white rounded-lg hover:bg-[#a55231] flex items-center gap-2"
                     >
                       <Edit className="w-4 h-4" />
                       Modifier
