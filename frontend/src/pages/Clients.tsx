@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { clientsService, utilisateursService } from '../services/api';
-import { List, Grid, Eye, X, User, Mail, Phone, MapPin, Building, CreditCard, Percent, Edit, Trash2, Filter, Tag, Briefcase, Globe, FileText } from 'lucide-react';
+import { List, Grid, Eye, X, User, Mail, Phone, MapPin, Building, CreditCard, Percent, Edit, Trash2, Filter, Tag, Briefcase, Globe, FileText, Users, UserCheck, UserX, Award } from 'lucide-react';
+import KpiCard from '../components/ecommerce/KpiCard';
 
 const Clients: React.FC = () => {
   const navigate = useNavigate();
@@ -316,22 +317,63 @@ const Clients: React.FC = () => {
     });
   };
 
+  const kpis = useMemo(() => {
+    const total = clients.length;
+    const actifs = clients.filter((c: any) => c.actif).length;
+    const inactifs = total - actifs;
+    const prospects = clients.filter((c: any) => c.type_client === 'PROSPECT').length;
+    return { total, actifs, inactifs, prospects };
+  }, [clients]);
+
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-app)' }}>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: 'var(--accent-terracotta)' }}></div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen" style={{ background: 'var(--bg-app)' }}>
       <div className="ml-64 p-6">
         <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-800">👥 Clients</h1>
-          <button
-            onClick={() => { setShowForm(true); setEditingClient(null); resetForm(); }}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          >
-            + Nouveau Client
-          </button>
+        <div style={{ marginBottom: 'var(--s-6)' }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 'var(--s-2)' }}>
+            CRM · CLIENTS
+          </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 500, fontSize: 'var(--text-3xl)', color: 'var(--fg-primary)', marginBottom: 'var(--s-2)' }}>
+                Clients
+              </h1>
+              <p style={{ color: 'var(--fg-secondary)', fontSize: 'var(--text-md)' }}>
+                Fiches clients et prospects — coordonnées, conditions commerciales et suivi.
+              </p>
+            </div>
+            <button
+              onClick={() => { setShowForm(true); setEditingClient(null); resetForm(); }}
+              className="inline-flex items-center gap-2 transition-shadow"
+              style={{
+                background: 'var(--accent-terracotta)',
+                color: 'var(--fg-inverse)',
+                padding: '0.6rem 1.1rem',
+                borderRadius: 'var(--radius-full)',
+                boxShadow: 'var(--shadow-md)',
+                fontWeight: 600,
+                fontSize: 'var(--text-sm)',
+              }}
+            >
+              + Nouveau client
+            </button>
+          </div>
+        </div>
+
+        {/* KPI row */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <KpiCard label="Total fiches" value={kpis.total} icon={<Users className="w-5 h-5" />} color="terracotta" />
+          <KpiCard label="Clients actifs" value={kpis.actifs} icon={<UserCheck className="w-5 h-5" />} color="sage" />
+          <KpiCard label="Inactifs" value={kpis.inactifs} icon={<UserX className="w-5 h-5" />} color={kpis.inactifs > 0 ? 'neutral' : 'neutral'} />
+          <KpiCard label="Prospects" value={kpis.prospects} icon={<Award className="w-5 h-5" />} color="indigo" />
         </div>
 
         {/* Toggle Affichage et Recherche */}
@@ -341,18 +383,20 @@ const Clients: React.FC = () => {
               <span className="text-sm font-medium text-gray-700">Affichage:</span>
               <button
                 onClick={() => setAffichageMode('ligne')}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                  affichageMode === 'ligne' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors"
+                style={affichageMode === 'ligne'
+                  ? { background: 'var(--accent-terracotta)', color: 'var(--fg-inverse)' }
+                  : { background: 'var(--bg-canvas)', color: 'var(--fg-secondary)' }}
               >
                 <List className="w-4 h-4" />
                 Ligne
               </button>
               <button
                 onClick={() => setAffichageMode('catalogue')}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                  affichageMode === 'catalogue' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors"
+                style={affichageMode === 'catalogue'
+                  ? { background: 'var(--accent-terracotta)', color: 'var(--fg-inverse)' }
+                  : { background: 'var(--bg-canvas)', color: 'var(--fg-secondary)' }}
               >
                 <Grid className="w-4 h-4" />
                 Catalogue
@@ -360,9 +404,10 @@ const Clients: React.FC = () => {
             </div>
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                showFilters ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors"
+              style={showFilters
+                ? { background: 'var(--accent-terracotta)', color: 'var(--fg-inverse)' }
+                : { background: 'var(--bg-canvas)', color: 'var(--fg-secondary)' }}
             >
               <Filter className="w-4 h-4" />
               Filtres
@@ -438,7 +483,7 @@ const Clients: React.FC = () => {
               {/* Informations générales */}
               <div>
                 <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <Building className="w-5 h-5 text-blue-600" />
+                  <Building className="w-5 h-5 " style={{ color: 'var(--accent-terracotta)' }} />
                   Informations générales
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -527,7 +572,7 @@ const Clients: React.FC = () => {
               {/* Commercial */}
               <div>
                 <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <Briefcase className="w-5 h-5 text-blue-600" />
+                  <Briefcase className="w-5 h-5 " style={{ color: 'var(--accent-terracotta)' }} />
                   Commercial
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -567,7 +612,7 @@ const Clients: React.FC = () => {
               {/* Adresse de facturation */}
               <div>
                 <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <MapPin className="w-5 h-5 text-blue-600" />
+                  <MapPin className="w-5 h-5 " style={{ color: 'var(--accent-terracotta)' }} />
                   Adresse de facturation
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -677,7 +722,7 @@ const Clients: React.FC = () => {
               {/* Contact principal */}
               <div>
                 <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <User className="w-5 h-5 text-blue-600" />
+                  <User className="w-5 h-5 " style={{ color: 'var(--accent-terracotta)' }} />
                   Contact principal
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -795,7 +840,7 @@ const Clients: React.FC = () => {
               {/* Conditions commerciales */}
               <div>
                 <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <CreditCard className="w-5 h-5 text-blue-600" />
+                  <CreditCard className="w-5 h-5 " style={{ color: 'var(--accent-terracotta)' }} />
                   Conditions commerciales
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -850,7 +895,7 @@ const Clients: React.FC = () => {
               </div>
 
               <div className="flex gap-4 pt-4 border-t">
-                <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+                <button type="submit" className="px-6 py-2 rounded hover:opacity-90 transition" style={{ background: 'var(--accent-terracotta)', color: 'var(--fg-inverse)', fontWeight: 600 }}>
                   {editingClient ? 'Modifier' : 'Créer'}
                 </button>
                 <button
@@ -889,7 +934,7 @@ const Clients: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{client.raison_sociale}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {client.type_client === 'CLIENT' ? (
-                      <span className="px-2 py-1 text-xs rounded bg-blue-100 text-blue-800">Client</span>
+                      <span className="px-2 py-1 text-xs rounded bg-[#EDF0F5] text-[#3B4E68]">Client</span>
                     ) : (
                       <span className="px-2 py-1 text-xs rounded bg-yellow-100 text-yellow-800">Prospect</span>
                     )}
@@ -920,7 +965,8 @@ const Clients: React.FC = () => {
                           e.stopPropagation();
                           handleEdit(client);
                         }} 
-                        className="text-blue-600 hover:text-blue-900" 
+                        className="hover:opacity-70 transition"
+                        style={{ color: 'var(--accent-indigo)' }}
                         title="Modifier"
                       >
                         <Edit className="w-4 h-4" />
@@ -952,10 +998,10 @@ const Clients: React.FC = () => {
                   if (client.id_client) navigate(`/clients/${client.id_client}`);
                 }}
               >
-                <div className="h-32 bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
+                <div className="h-32 flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #F5EFE5 0%, #EBE2CE 100%)' }}>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-800">{client.raison_sociale?.charAt(0) || 'C'}</div>
-                    <span className="text-xs font-mono text-blue-600">{client.code_client}</span>
+                    <div className="text-2xl font-bold" style={{ color: 'var(--accent-terracotta)', fontFamily: 'var(--font-serif)' }}>{client.raison_sociale?.charAt(0) || 'C'}</div>
+                    <span className="text-xs font-mono" style={{ color: 'var(--fg-secondary)' }}>{client.code_client}</span>
                   </div>
                 </div>
                 <div className="p-4">
@@ -963,7 +1009,7 @@ const Clients: React.FC = () => {
                   <div className="space-y-1 text-sm text-gray-600 mb-3">
                     <div className="flex items-center gap-2 mb-2">
                       {client.type_client === 'CLIENT' ? (
-                        <span className="px-2 py-1 text-xs rounded bg-blue-100 text-blue-800">Client</span>
+                        <span className="px-2 py-1 text-xs rounded bg-[#EDF0F5] text-[#3B4E68]">Client</span>
                       ) : (
                         <span className="px-2 py-1 text-xs rounded bg-yellow-100 text-yellow-800">Prospect</span>
                       )}
@@ -992,7 +1038,8 @@ const Clients: React.FC = () => {
                     </button>
                     <button
                       onClick={() => handleEdit(client)}
-                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded hover:opacity-90 transition text-sm"
+                      style={{ background: 'var(--accent-indigo)', color: 'var(--fg-inverse)', fontWeight: 600 }}
                     >
                       <Edit className="w-4 h-4" />
                       Modifier
@@ -1012,11 +1059,11 @@ const Clients: React.FC = () => {
 
         {/* Modal de consultation */}
         {selectedClient && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 flex items-center justify-center z-50" style={{ background: 'rgba(20,12,6,0.45)', backdropFilter: 'blur(6px)' }}>
+            <div className="rounded-lg max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto" style={{ background: 'var(--bg-elevated)', boxShadow: 'var(--shadow-xl)' }}>
               <div className="sticky top-0 bg-white border-b p-6 flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                  <Building className="w-6 h-6 text-blue-600" />
+                  <Building className="w-6 h-6 " style={{ color: 'var(--accent-terracotta)' }} />
                   {selectedClient.raison_sociale}
                 </h2>
                 <button
@@ -1031,7 +1078,7 @@ const Clients: React.FC = () => {
                 {/* Informations générales */}
                 <div>
                   <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <User className="w-5 h-5 text-blue-600" />
+                    <User className="w-5 h-5 " style={{ color: 'var(--accent-terracotta)' }} />
                     Informations Générales
                   </h3>
                   <div className="grid grid-cols-2 gap-4">
@@ -1061,7 +1108,7 @@ const Clients: React.FC = () => {
                 {/* Coordonnées */}
                 <div>
                   <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <MapPin className="w-5 h-5 text-blue-600" />
+                    <MapPin className="w-5 h-5 " style={{ color: 'var(--accent-terracotta)' }} />
                     Coordonnées
                   </h3>
                   <div className="grid grid-cols-2 gap-4">
@@ -1113,7 +1160,7 @@ const Clients: React.FC = () => {
                 {/* Informations commerciales */}
                 <div>
                   <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <CreditCard className="w-5 h-5 text-blue-600" />
+                    <CreditCard className="w-5 h-5 " style={{ color: 'var(--accent-terracotta)' }} />
                     Informations Commerciales
                   </h3>
                   <div className="grid grid-cols-2 gap-4">
@@ -1154,7 +1201,8 @@ const Clients: React.FC = () => {
                       handleEdit(selectedClient);
                       setSelectedClient(null);
                     }}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                    className="px-4 py-2 rounded-lg hover:opacity-90 transition flex items-center gap-2"
+                    style={{ background: 'var(--accent-terracotta)', color: 'var(--fg-inverse)', fontWeight: 600 }}
                   >
                     <Edit className="w-4 h-4" />
                     Modifier

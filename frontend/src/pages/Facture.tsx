@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { Receipt, Plus, Edit, Trash2, Search, Download, Eye, Send, X, CheckCircle, FileText, ArrowLeft } from 'lucide-react';
+import React, { useEffect, useState, useMemo } from 'react';
+import { Receipt, Plus, Edit, Trash2, Search, Download, Eye, Send, X, CheckCircle, FileText, ArrowLeft, TrendingUp, AlertCircle, Clock, Wallet } from 'lucide-react';
 import { facturesService, clientsService, commandesService, bonsLivraisonService, avoirsService } from '../services/api';
+import KpiCard from '../components/ecommerce/KpiCard';
 
 interface LigneFacture {
   id_article?: number;
@@ -205,8 +206,8 @@ const Facture: React.FC = () => {
       'payee': 'bg-green-100 text-green-800',
       'payée': 'bg-green-100 text-green-800',
       'reglee': 'bg-green-100 text-green-800',
-      'partiellement_payee': 'bg-blue-100 text-blue-800',
-      'partiellement_payée': 'bg-blue-100 text-blue-800',
+      'partiellement_payee': 'bg-[#EDF0F5] text-[#3B4E68]',
+      'partiellement_payée': 'bg-[#EDF0F5] text-[#3B4E68]',
       'impayee': 'bg-red-100 text-red-800',
       'impayée': 'bg-red-100 text-red-800',
       'annulee': 'bg-orange-100 text-orange-800',
@@ -229,36 +230,67 @@ const Facture: React.FC = () => {
     return true;
   });
 
+  const kpis = useMemo(() => {
+    const total = factures.length;
+    const totalTtc = factures.reduce((s, f) => s + Number(f.montant_ttc || 0), 0);
+    const impayees = factures.filter(f => ['IMPAYEE', 'EN_ATTENTE', 'PARTIELLEMENT_REGLEE'].includes(String(f.statut || '').toUpperCase())).length;
+    const restant = factures.reduce((s, f) => s + Number(f.montant_restant || 0), 0);
+    return { total, totalTtc, impayees, restant };
+  }, [factures]);
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-app)' }}>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: 'var(--accent-terracotta)' }}></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 ml-64 p-6">
+    <div className="min-h-screen ml-64 p-6" style={{ background: 'var(--bg-app)' }}>
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-              <Receipt className="w-8 h-8 text-blue-600" />
-              Factures
-            </h1>
-            <p className="text-gray-600 mt-2">Gestion et suivi des factures clients</p>
+        <div style={{ marginBottom: 'var(--s-6)' }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 'var(--s-2)' }}>
+            VENTES · FACTURATION
           </div>
-          <button
-            onClick={() => {
-              setShowForm(true);
-              setEditingFacture(null);
-              resetForm();
-            }}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            Nouvelle Facture
-          </button>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 500, fontSize: 'var(--text-3xl)', color: 'var(--fg-primary)', marginBottom: 'var(--s-2)' }}>
+                Factures
+              </h1>
+              <p style={{ color: 'var(--fg-secondary)', fontSize: 'var(--text-md)' }}>
+                Gestion et suivi des factures clients — encaissements et échéances.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setShowForm(true);
+                setEditingFacture(null);
+                resetForm();
+              }}
+              className="inline-flex items-center gap-2 transition-shadow"
+              style={{
+                background: 'var(--accent-terracotta)',
+                color: 'var(--fg-inverse)',
+                padding: '0.6rem 1.1rem',
+                borderRadius: 'var(--radius-full)',
+                boxShadow: 'var(--shadow-md)',
+                fontWeight: 600,
+                fontSize: 'var(--text-sm)',
+              }}
+            >
+              <Plus className="w-4 h-4" />
+              Nouvelle facture
+            </button>
+          </div>
+        </div>
+
+        {/* KPI row */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <KpiCard label="Total factures" value={kpis.total} icon={<Receipt className="w-5 h-5" />} color="terracotta" />
+          <KpiCard label="CA facturé" value={kpis.totalTtc.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} suffix="TND" icon={<TrendingUp className="w-5 h-5" />} color="sage" />
+          <KpiCard label="En attente / impayées" value={kpis.impayees} icon={<Clock className="w-5 h-5" />} color={kpis.impayees > 0 ? 'warning' : 'neutral'} />
+          <KpiCard label="Reste à encaisser" value={kpis.restant.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} suffix="TND" icon={<Wallet className="w-5 h-5" />} color="indigo" />
         </div>
 
         {/* Filtres */}
@@ -271,13 +303,13 @@ const Facture: React.FC = () => {
                 placeholder="Rechercher..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
               />
             </div>
             <select
               value={filters.statut}
               onChange={(e) => setFilters({ ...filters, statut: e.target.value })}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
             >
               <option value="">Tous les statuts</option>
               <option value="BROUILLON">Brouillon</option>
@@ -290,7 +322,7 @@ const Facture: React.FC = () => {
             <select
               value={filters.client_id}
               onChange={(e) => setFilters({ ...filters, client_id: e.target.value })}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
             >
               <option value="">Tous les clients</option>
               {clients.map(c => (
@@ -323,7 +355,7 @@ const Facture: React.FC = () => {
                         handleGenerateFromCommande(parseInt(e.target.value));
                       }
                     }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                   >
                     <option value="">Sélectionner une commande (optionnel)</option>
                     {commandes.filter(c => c.statut === 'validee' || c.statut === 'livree').map(c => (
@@ -349,7 +381,7 @@ const Facture: React.FC = () => {
                         handleGenerateFromBL(parseInt(e.target.value));
                       }
                     }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                   >
                     <option value="">Sélectionner un BL (optionnel)</option>
                     {bonsLivraison.filter(b => b.statut === 'LIVREE').map(b => (
@@ -364,7 +396,7 @@ const Facture: React.FC = () => {
                   <select
                     value={formData.id_client}
                     onChange={(e) => setFormData({ ...formData, id_client: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                     required
                   >
                     <option value="">Sélectionner un client</option>
@@ -388,7 +420,7 @@ const Facture: React.FC = () => {
                         date_echeance: dateEcheance.toISOString().split('T')[0]
                       });
                     }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                     required
                   />
                 </div>
@@ -398,7 +430,7 @@ const Facture: React.FC = () => {
                     type="date"
                     value={formData.date_echeance}
                     onChange={(e) => setFormData({ ...formData, date_echeance: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                   />
                 </div>
                 <div>
@@ -406,7 +438,7 @@ const Facture: React.FC = () => {
                   <select
                     value={formData.statut}
                     onChange={(e) => setFormData({ ...formData, statut: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                   >
                     <option value="BROUILLON">Brouillon</option>
                     <option value="EN_ATTENTE">En attente</option>
@@ -421,7 +453,7 @@ const Facture: React.FC = () => {
                     type="number"
                     value={formData.taux_tva}
                     onChange={(e) => setFormData({ ...formData, taux_tva: parseFloat(e.target.value) || 20 })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                     min="0"
                     max="100"
                     step="0.01"
@@ -433,7 +465,7 @@ const Facture: React.FC = () => {
                     type="number"
                     value={formData.remise_globale}
                     onChange={(e) => setFormData({ ...formData, remise_globale: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                     min="0"
                     max="100"
                     step="0.01"
@@ -445,7 +477,7 @@ const Facture: React.FC = () => {
                     type="text"
                     value={formData.reference_client}
                     onChange={(e) => setFormData({ ...formData, reference_client: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                     placeholder="Réf. commande client"
                   />
                 </div>
@@ -455,7 +487,7 @@ const Facture: React.FC = () => {
                     type="text"
                     value={formData.conditions_paiement}
                     onChange={(e) => setFormData({ ...formData, conditions_paiement: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                     placeholder="Ex: 30 jours"
                   />
                 </div>
@@ -464,7 +496,7 @@ const Facture: React.FC = () => {
                   <textarea
                     value={formData.notes}
                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                     rows={3}
                     placeholder="Notes additionnelles..."
                   />
@@ -478,7 +510,8 @@ const Facture: React.FC = () => {
                   <button
                     type="button"
                     onClick={addLigne}
-                    className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                    className="text-sm font-medium hover:underline"
+                    style={{ color: 'var(--accent-terracotta)' }}
                   >
                     + Ajouter une ligne
                   </button>
@@ -590,7 +623,8 @@ const Facture: React.FC = () => {
               <div className="flex gap-2">
                 <button
                   type="submit"
-                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  className="px-6 py-2 rounded-lg transition-colors"
+                  style={{ background: 'var(--accent-terracotta)', color: 'var(--fg-inverse)', fontWeight: 600 }}
                 >
                   Enregistrer
                 </button>
@@ -662,7 +696,8 @@ const Facture: React.FC = () => {
                               alert(error.response?.data?.error?.message || 'Erreur lors du chargement');
                             }
                           }}
-                          className="text-blue-600 hover:text-blue-700"
+                          className="hover:opacity-70 transition"
+                          style={{ color: 'var(--accent-indigo)' }}
                           title="Consulter"
                         >
                           <Eye className="w-4 h-4" />
@@ -751,8 +786,8 @@ const Facture: React.FC = () => {
 
         {/* Modal de consultation */}
         {selectedFacture && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 flex items-center justify-center z-50" style={{ background: 'rgba(20,12,6,0.45)', backdropFilter: 'blur(6px)' }}>
+            <div className="rounded-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto" style={{ background: 'var(--bg-elevated)', boxShadow: 'var(--shadow-xl)' }}>
               <div className="sticky top-0 bg-white border-b p-6 flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-gray-800">
                   Facture {selectedFacture.numero_facture}
@@ -915,7 +950,8 @@ const Facture: React.FC = () => {
                         alert(error.response?.data?.error?.message || 'Erreur lors du chargement');
                       }
                     }}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    className="px-4 py-2 rounded-lg hover:opacity-90 transition"
+                    style={{ background: 'var(--accent-terracotta)', color: 'var(--fg-inverse)', fontWeight: 600 }}
                   >
                     <Edit className="w-4 h-4 inline mr-2" />
                     Modifier

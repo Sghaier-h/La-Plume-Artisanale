@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { commandesService, clientsService, articlesService, bonsLivraisonService, parametresCatalogueService } from '../services/api';
-import { ShoppingCart, Plus, Edit, Trash2, Search, Eye, X, CheckCircle, Package, Calendar, User, DollarSign, Truck, Upload, File } from 'lucide-react';
+import { ShoppingCart, Plus, Edit, Trash2, Search, Eye, X, CheckCircle, Package, Calendar, User, DollarSign, Truck, Upload, File, Clock, TrendingUp, Zap } from 'lucide-react';
 import ArticlePicker from '../components/ArticlePicker';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
+import KpiCard from '../components/ecommerce/KpiCard';
 
 const Commandes: React.FC = () => {
   const [commandes, setCommandes] = useState<any[]>([]);
@@ -186,22 +187,64 @@ const Commandes: React.FC = () => {
     });
   };
 
+  const kpis = useMemo(() => {
+    const total = commandes.length;
+    const enAttente = commandes.filter(c => c.statut === 'en_attente').length;
+    const enProduction = commandes.filter(c => c.statut === 'en_production' || c.statut === 'validee').length;
+    const caTotal = commandes.reduce((s, c) => s + Number(c.montant_total || 0), 0);
+    return { total, enAttente, enProduction, caTotal };
+  }, [commandes]);
+
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-app)' }}>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: 'var(--accent-terracotta)' }}></div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen" style={{ background: 'var(--bg-app)' }}>
       <div className="ml-64 p-6">
         <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-800">🛒 Commandes</h1>
-          <button
-            onClick={() => { setShowForm(true); setEditingCommande(null); resetForm(); }}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          >
-            + Nouvelle Commande
-          </button>
+        <div style={{ marginBottom: 'var(--s-6)' }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 'var(--s-2)' }}>
+            VENTES · COMMANDES
+          </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 500, fontSize: 'var(--text-3xl)', color: 'var(--fg-primary)', marginBottom: 'var(--s-2)' }}>
+                Commandes
+              </h1>
+              <p style={{ color: 'var(--fg-secondary)', fontSize: 'var(--text-md)' }}>
+                Suivi des commandes clients — de la prise de commande à la livraison.
+              </p>
+            </div>
+            <button
+              onClick={() => { setShowForm(true); setEditingCommande(null); resetForm(); }}
+              className="inline-flex items-center gap-2 transition-shadow"
+              style={{
+                background: 'var(--accent-terracotta)',
+                color: 'var(--fg-inverse)',
+                padding: '0.6rem 1.1rem',
+                borderRadius: 'var(--radius-full)',
+                boxShadow: 'var(--shadow-md)',
+                fontWeight: 600,
+                fontSize: 'var(--text-sm)',
+              }}
+            >
+              <Plus className="w-4 h-4" />
+              Nouvelle commande
+            </button>
+          </div>
+        </div>
+
+        {/* KPI row */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <KpiCard label="Total commandes" value={kpis.total} icon={<ShoppingCart className="w-5 h-5" />} color="terracotta" />
+          <KpiCard label="En attente" value={kpis.enAttente} icon={<Clock className="w-5 h-5" />} color={kpis.enAttente > 0 ? 'warning' : 'neutral'} />
+          <KpiCard label="En production" value={kpis.enProduction} icon={<Zap className="w-5 h-5" />} color="indigo" />
+          <KpiCard label="CA cumulé" value={kpis.caTotal.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} suffix="TND" icon={<TrendingUp className="w-5 h-5" />} color="sage" />
         </div>
 
         {/* Filtres */}
@@ -355,7 +398,7 @@ const Commandes: React.FC = () => {
               <div>
                 <div className="flex justify-between items-center mb-2">
                   <label className="block text-sm font-medium">Lignes de Commande *</label>
-                  <button type="button" onClick={addLigne} className="text-blue-600 hover:text-blue-800 text-sm">+ Ajouter ligne</button>
+                  <button type="button" onClick={addLigne} className="text-sm font-medium hover:underline" style={{ color: 'var(--accent-terracotta)' }}>+ Ajouter ligne</button>
                 </div>
                 {formData.lignes.map((ligne, index) => {
                   const selectedArticle = articles.find(a => a.id_article === parseInt(ligne.id_article) || a.ref_commercial === ligne.ref_commerciale);
@@ -373,7 +416,7 @@ const Commandes: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => setPickerIndex(index)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-left bg-white hover:bg-gray-50"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40 text-left bg-white hover:bg-gray-50"
                           >
                             {ligne.description_article || ligne.ref_commerciale || (ligne.id_article ? `Article #${ligne.id_article}` : 'Sélectionner un article...')}
                           </button>
@@ -430,7 +473,7 @@ const Commandes: React.FC = () => {
                               const rem = parseFloat(ligne.remise) || 0;
                               updateLigne(index, 'prix_total_ht', (prix * qte * (1 - rem / 100)).toFixed(2));
                             }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                           />
                         </div>
 
@@ -449,7 +492,7 @@ const Commandes: React.FC = () => {
                               const rem = parseFloat(ligne.remise) || 0;
                               updateLigne(index, 'prix_total_ht', (prix * qte * (1 - rem / 100)).toFixed(2));
                             }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                           />
                         </div>
 
@@ -467,7 +510,7 @@ const Commandes: React.FC = () => {
                               const qte = parseFloat(ligne.quantite_commandee) || 0;
                               updateLigne(index, 'prix_total_ht', (prix * qte * (1 - rem / 100)).toFixed(2));
                             }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                           />
                         </div>
 
@@ -494,7 +537,7 @@ const Commandes: React.FC = () => {
                                 updateLigne(index, 'details_personnalisation', '');
                               }
                             }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                           >
                             <option value="non">Non</option>
                             <option value="oui">Oui</option>
@@ -509,7 +552,7 @@ const Commandes: React.FC = () => {
                               required
                               value={ligne.details_personnalisation || ''}
                               onChange={(e) => updateLigne(index, 'details_personnalisation', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                               rows={2}
                               placeholder="Décrire les détails de la personnalisation..."
                             />
@@ -523,7 +566,7 @@ const Commandes: React.FC = () => {
                             type="date"
                             value={ligne.date_livraison_prevue || formData.date_livraison_prevue}
                             onChange={(e) => updateLigne(index, 'date_livraison_prevue', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                           />
                         </div>
                       </div>
@@ -543,7 +586,7 @@ const Commandes: React.FC = () => {
               </div>
 
               <div className="flex gap-4">
-                <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+                <button type="submit" className="px-6 py-2 rounded hover:opacity-90 transition" style={{ background: 'var(--accent-terracotta)', color: 'var(--fg-inverse)', fontWeight: 600 }}>
                   {editingCommande ? 'Modifier' : 'Créer'}
                 </button>
                 <button type="button" onClick={() => { setShowForm(false); setEditingCommande(null); resetForm(); }} className="bg-gray-300 text-gray-700 px-6 py-2 rounded hover:bg-gray-400">
@@ -577,7 +620,7 @@ const Commandes: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 text-xs rounded ${
                       commande.statut === 'validee' ? 'bg-green-100 text-green-800' :
-                      commande.statut === 'en_production' ? 'bg-blue-100 text-blue-800' :
+                      commande.statut === 'en_production' ? 'bg-[#EDF0F5] text-[#3B4E68]' :
                       commande.statut === 'livree' ? 'bg-gray-100 text-gray-800' :
                       'bg-yellow-100 text-yellow-800'
                     }`}>
@@ -587,7 +630,7 @@ const Commandes: React.FC = () => {
                       <span
                         className={`ml-2 px-2 py-1 text-xs rounded ${
                           commande.nb_ofs > 0
-                            ? 'bg-indigo-100 text-indigo-800'
+                            ? 'bg-[#EFF3E7] text-[#3F5E29]'
                             : commande.statut === 'validee'
                               ? 'bg-orange-100 text-orange-800'
                               : 'bg-gray-100 text-gray-600'
@@ -602,7 +645,8 @@ const Commandes: React.FC = () => {
                     <div className="flex gap-2">
                       <Link
                         to={`/commandes/${commande.id_commande}`}
-                        className="text-blue-600 hover:text-blue-900"
+                        className="hover:opacity-70 transition"
+                        style={{ color: 'var(--accent-indigo)' }}
                         title="Consulter"
                       >
                         <Eye className="w-4 h-4" />
@@ -635,11 +679,11 @@ const Commandes: React.FC = () => {
 
         {/* Modal de consultation */}
         {selectedCommande && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 flex items-center justify-center z-50" style={{ background: 'rgba(20,12,6,0.45)', backdropFilter: 'blur(6px)' }}>
+            <div className="rounded-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto" style={{ background: 'var(--bg-elevated)', boxShadow: 'var(--shadow-xl)' }}>
               <div className="sticky top-0 bg-white border-b p-6 flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                  <ShoppingCart className="w-6 h-6 text-blue-600" />
+                <h2 className="text-2xl font-bold flex items-center gap-2" style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 500, color: 'var(--fg-primary)' }}>
+                  <ShoppingCart className="w-6 h-6" style={{ color: 'var(--accent-terracotta)' }} />
                   Commande {selectedCommande.numero_commande}
                 </h2>
                 <button
@@ -653,8 +697,8 @@ const Commandes: React.FC = () => {
               <div className="p-6 space-y-6">
                 {/* Informations générales */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <User className="w-5 h-5 text-blue-600" />
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--fg-primary)' }}>
+                    <User className="w-5 h-5" style={{ color: 'var(--accent-terracotta)' }} />
                     Informations Générales
                   </h3>
                   <div className="grid grid-cols-2 gap-4">
@@ -682,7 +726,7 @@ const Commandes: React.FC = () => {
                       <label className="text-sm font-medium text-gray-500">Statut</label>
                       <span className={`px-2 py-1 rounded text-xs font-medium ${
                         selectedCommande.statut === 'validee' ? 'bg-green-100 text-green-800' :
-                        selectedCommande.statut === 'en_production' ? 'bg-blue-100 text-blue-800' :
+                        selectedCommande.statut === 'en_production' ? 'bg-[#EDF0F5] text-[#3B4E68]' :
                         selectedCommande.statut === 'livree' ? 'bg-gray-100 text-gray-800' :
                         'bg-yellow-100 text-yellow-800'
                       }`}>
@@ -763,7 +807,8 @@ const Commandes: React.FC = () => {
                       handleEdit(selectedCommande);
                       setSelectedCommande(null);
                     }}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                    className="px-4 py-2 rounded-lg hover:opacity-90 transition flex items-center gap-2"
+                    style={{ background: 'var(--accent-terracotta)', color: 'var(--fg-inverse)', fontWeight: 600 }}
                   >
                     <Edit className="w-4 h-4" />
                     Modifier
@@ -785,7 +830,8 @@ const Commandes: React.FC = () => {
                       onClick={() => {
                         handleCreerBL(selectedCommande.id_commande);
                       }}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                      className="px-4 py-2 rounded-lg hover:opacity-90 transition flex items-center gap-2"
+                      style={{ background: 'var(--accent-indigo)', color: 'var(--fg-inverse)', fontWeight: 600 }}
                     >
                       <Truck className="w-4 h-4" />
                       Créer BL
