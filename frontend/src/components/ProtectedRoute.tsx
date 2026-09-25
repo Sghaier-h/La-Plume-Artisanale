@@ -6,28 +6,23 @@ import TabletteLayout from './TabletteLayout';
 import UserBar from './UserBar';
 
 /**
- * Rôles POSTE OPÉRATIONNEL — mode kiosque sans sidebar (§14.7 → §14.13).
- * Chaque poste ne voit QUE son dashboard/tablette dédié, pas le menu §15.
- * Header épuré avec logo, poste, heure, notif, bouton "Mon poste", déconnexion.
+ * Rôles TABLETTE ATELIER — mode kiosque terrain sans sidebar.
+ * Alignement strict sur docs/domain.md §15 qui marque explicitement
+ * « (tablette) » uniquement pour Tisseur / Coupeur / Ourdisseur.
  *
- * Les rôles BUREAU (ADMIN, COMPTABLE, COMMERCIAL, RH_MANAGER, RH_ASSISTANT,
- * MARKETING, RESPONSABLE_SECURITE) gardent le menu latéral §15 complet.
+ * Ces postes ont une **application terrain** (interface tactile, gros
+ * boutons XL, saisie chiffres au pavé, scan QR). Ils naviguent depuis
+ * l'écran métier lui-même (pas de menu §15 gauche).
+ *
+ * Tous les autres postes (Chef Production, Chef Atelier, Magasiniers,
+ * Contrôleur Qualité, Mécanicien, Commercial, Comptable, RH Manager,
+ * Marketing, Sécurité) sont sur PC de bureau : ils voient le menu §15
+ * latéral, filtré par leurs permissions (§2.4 + rolePermissions.ts).
  */
 const TABLETTE_ROLES = new Set([
-  // Tablettes atelier
   'TISSEUR',
   'COUPEUR',
   'OURDISSEUR',
-  'CONTROLEUR_QUALITE',
-  'MECANICIEN',
-  // Magasiniers terrain
-  'MAGASINIER_PREPARATION',
-  'MAGASINIER_MP',
-  'MAGASINIER_STOCK',
-  'MAGASINIER_SOUSTRAITANTS',
-  // Chefs supervision atelier
-  'CHEF_PRODUCTION',
-  'CHEF_ATELIER',
 ]);
 
 interface ProtectedRouteProps {
