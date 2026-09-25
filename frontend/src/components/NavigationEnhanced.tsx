@@ -641,7 +641,7 @@ const NavigationEnhanced: React.FC<NavigationEnhancedProps> = ({ onNavigate }) =
   }, [location.pathname]);
 
   return (
-    <nav className={`bg-gradient-to-b from-slate-50 via-white to-slate-100 shadow-2xl border-r-2 border-slate-200 w-64 h-screen fixed left-0 top-0 transition-all duration-300 z-50 flex flex-col ${state.ui.sidebarCollapsed ? '-translate-x-full' : 'translate-x-0'}`}>
+    <nav className={`bg-gradient-to-b from-slate-50 via-white to-slate-100 shadow-2xl border-r-2 border-slate-200 w-72 h-screen fixed left-0 top-0 transition-all duration-300 z-50 flex flex-col ${state.ui.sidebarCollapsed ? '-translate-x-full' : 'translate-x-0'}`}>
       <div className="px-3 pt-3 pb-0 flex-1 min-h-0 flex flex-col overflow-y-auto">
         {/* Header doré + gris métallique */}
         <div className="mb-4">

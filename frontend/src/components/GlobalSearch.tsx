@@ -294,7 +294,7 @@ const GlobalSearch: React.FC = () => {
             background: 'rgba(20, 12, 6, 0.45)',
             backdropFilter: 'blur(6px)',
             WebkitBackdropFilter: 'blur(6px)',
-            zIndex: 'var(--z-modal)' as unknown as number,
+            zIndex: 1000,
             display: 'flex',
             alignItems: 'flex-start',
             justifyContent: 'center',
@@ -329,7 +329,7 @@ const GlobalSearch: React.FC = () => {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={onInputKeyDown}
-                placeholder="Rechercher client, commande, article, OF... (Ctrl+K)"
+                placeholder="Rechercher… (Ctrl+K)"
                 style={{
                   flex: 1,
                   border: 'none',

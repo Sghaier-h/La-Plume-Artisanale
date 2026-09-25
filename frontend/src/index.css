@@ -2,7 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Import du thème ERP La Plume Artisanale */
+/* Design system artisanal (terracotta / sage / indigo / crème) — source de vérité */
+@import './styles/design-system.css';
+/* Ancien thème conservé pour compat des anciennes pages qui utilisent --erp-* */
 @import './styles/erp-theme.css';
 
 * {
@@ -35,12 +37,12 @@ code {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: linear-gradient(to bottom, #3b82f6, #8b5cf6);
+  background: linear-gradient(to bottom, var(--accent-terracotta), var(--accent-gold));
   border-radius: 10px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(to bottom, #2563eb, #7c3aed);
+  background: linear-gradient(to bottom, var(--accent-gold), var(--accent-terracotta));
 }
 
 @keyframes fade-in {

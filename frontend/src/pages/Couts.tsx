@@ -209,8 +209,8 @@ const Couts: React.FC = () => {
                       <YAxis />
                       <Tooltip formatter={(value: number) => `${value.toLocaleString('fr-FR')} TND`} />
                       <Legend />
-                      <Bar dataKey="théorique" fill="#3b82f6" />
-                      <Bar dataKey="réel" fill="#10b981" />
+                      <Bar dataKey="théorique" fill="#4A5D75" />
+                      <Bar dataKey="réel" fill="#6B8E4E" />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>

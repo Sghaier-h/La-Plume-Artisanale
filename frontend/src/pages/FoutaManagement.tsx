@@ -643,9 +643,9 @@ export default function FoutaManagementApp() {
   ]);
 
   const [theme, setTheme] = useState({
-    primaryColor: '#2563eb',
-    secondaryColor: '#10b981',
-    accentColor: '#f59e0b',
+    primaryColor: '#C8663D',
+    secondaryColor: '#7A8C6A',
+    accentColor: '#C89B3C',
     dangerColor: '#ef4444',
     darkMode: false,
     companyName: 'FOUTA Manufacturing',
@@ -1062,8 +1062,8 @@ export default function FoutaManagementApp() {
                   <AreaChart data={consoData}>
                     <defs>
                       <linearGradient id="colorTheo" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                        <stop offset="5%" stopColor="#4A5D75" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="#4A5D75" stopOpacity={0}/>
                       </linearGradient>
                       <linearGradient id="colorReel" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
@@ -1075,7 +1075,7 @@ export default function FoutaManagementApp() {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Area type="monotone" dataKey="theorique" stroke="#3b82f6" fillOpacity={1} fill="url(#colorTheo)" name="Théorique (m)" />
+                    <Area type="monotone" dataKey="theorique" stroke="#4A5D75" fillOpacity={1} fill="url(#colorTheo)" name="Théorique (m)" />
                     <Area type="monotone" dataKey="reel" stroke="#10b981" fillOpacity={1} fill="url(#colorReel)" name="Réel (m)" />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -1832,7 +1832,7 @@ export default function FoutaManagementApp() {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Line type="monotone" dataKey="theorique" stroke="#3b82f6" strokeWidth={2} name="Théorique" />
+                    <Line type="monotone" dataKey="theorique" stroke="#4A5D75" strokeWidth={2} name="Théorique" />
                     <Line type="monotone" dataKey="reel" stroke="#10b981" strokeWidth={2} name="Réel" />
                   </LineChart>
                 </ResponsiveContainer>

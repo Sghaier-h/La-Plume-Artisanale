@@ -229,7 +229,7 @@ const NotificationCenter: React.FC = () => {
             borderRadius: 'var(--radius-md)',
             boxShadow: 'var(--shadow-lg)',
             overflow: 'hidden',
-            zIndex: 'var(--z-dropdown)' as unknown as number,
+            zIndex: 30,
             fontFamily: 'var(--font-sans)',
           }}
         >

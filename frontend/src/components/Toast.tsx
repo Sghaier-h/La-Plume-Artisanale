@@ -121,7 +121,7 @@ const ToastViewport: React.FC<{ toasts: ToastItem[]; onClose: (id: string) => vo
         display: 'flex',
         flexDirection: 'column',
         gap: 'var(--s-2)',
-        zIndex: 'var(--z-toast)' as unknown as number,
+        zIndex: 1100,
         pointerEvents: 'none',
         maxWidth: 380,
       }}
