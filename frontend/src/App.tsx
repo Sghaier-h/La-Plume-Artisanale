@@ -370,8 +370,8 @@ const AppContent: React.FC = () => {
           <Route path="/stock-pickings" element={<Navigate to="/bon-livraison" replace />} />
           <Route path="/hr/employees" element={<Navigate to="/equipe" replace />} />
           <Route path="/hr/recruitment" element={<Navigate to="/rh-recrutement" replace />} />
-          <Route path="/hr/payslips" element={<Navigate to="/rh/pointage-timemoto" replace />} />
-          <Route path="/payroll-tunisia" element={<Navigate to="/rh/pointage-timemoto" replace />} />
+          <Route path="/hr/payslips" element={<Navigate to="/rh/bulletins" replace />} />
+          <Route path="/payroll-tunisia" element={<Navigate to="/rh/paie-tunisie" replace />} />
           <Route path="/companies" element={<Navigate to="/multisociete" replace />} />
           <Route path="/settings" element={<Navigate to="/parametrage" replace />} />
           <Route path="/account-moves" element={<Navigate to="/facture" replace />} />
