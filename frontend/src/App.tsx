@@ -346,12 +346,13 @@ const NavigationWrapper: React.FC = () => {
 };
 
 const ContentWrapper: React.FC<{ showNav: boolean; children: React.ReactNode }> = ({ showNav, children }) => {
-  // La hauteur du NavigationTopBar est dynamique (wrap sur plusieurs lignes
-  // si écran étroit). Elle est publiée dans la CSS var --nav-height par
-  // NavigationTopBar via ResizeObserver. UserBar fait 48px fixe.
+  // La hauteur du NavigationTopBar ET de la UserBar est dynamique (wrap sur
+  // plusieurs lignes si écran étroit). Elles publient chacune leur hauteur
+  // dans --nav-height / --userbar-height via ResizeObserver. On somme les
+  // deux pour éviter que le contenu se cache sous les barres fixes.
   const paddingTop = showNav
-    ? 'calc(var(--nav-height, 48px) + 48px)'   // menu + UserBar
-    : '48px';                                    // UserBar seule
+    ? 'calc(var(--nav-height, 48px) + var(--userbar-height, 48px))'
+    : 'var(--userbar-height, 48px)';
   return (
     <div
       style={{

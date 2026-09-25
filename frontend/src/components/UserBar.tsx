@@ -218,8 +218,29 @@ const UserBar: React.FC<UserBarProps> = ({ topOffset = 0, leftOffset = 0 }) => {
     ? `calc(var(--nav-height, 48px) + ${topOffset}px)`
     : 'var(--nav-height, 48px)';
 
+  // Publie sa propre hauteur dans --userbar-height afin que le layout
+  // principal puisse réserver l'espace correct pour que RIEN ne se cache
+  // sous la UserBar quand elle wrap sur 2 lignes (petits écrans).
+  const barRef = React.useRef<HTMLDivElement | null>(null);
+  React.useEffect(() => {
+    const el = barRef.current;
+    if (!el) return;
+    const publish = () => {
+      document.documentElement.style.setProperty('--userbar-height', `${el.offsetHeight}px`);
+    };
+    publish();
+    const obs = new ResizeObserver(publish);
+    obs.observe(el);
+    window.addEventListener('resize', publish);
+    return () => {
+      obs.disconnect();
+      window.removeEventListener('resize', publish);
+    };
+  }, []);
+
   return (
     <div
+      ref={barRef}
       style={{
         position: 'fixed',
         top: computedTop,
