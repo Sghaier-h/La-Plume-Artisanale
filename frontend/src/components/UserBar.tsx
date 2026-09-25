@@ -101,9 +101,9 @@ const UserBar: React.FC<UserBarProps> = ({ topOffset = 0, leftOffset = 0 }) => {
       style={{
         position: 'fixed',
         top: topOffset,
-        left: leftOffset,
+        left: leftOffset,      // décalé de la largeur sidebar
         right: 0,
-        zIndex: 30,   // sous la sidebar (z-50) pour que la sidebar la couvre à gauche
+        zIndex: 30,            // sous la sidebar (z-50) pour qu'elle passe par-dessus
         background: 'var(--bg-elevated, #FFFFFF)',
         borderBottom: '1px solid var(--border-subtle, #EDE3CE)',
         padding: '8px 20px',

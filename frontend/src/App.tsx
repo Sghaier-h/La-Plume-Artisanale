@@ -321,16 +321,10 @@ const PrivateRoute: React.FC<{ children: React.ReactNode; showNav?: boolean }> =
   );
 };
 
-// Sépare le body pour pouvoir utiliser useApp() (les hooks doivent être
-// dans un composant, pas dans un branchement conditionnel).
+// Sidebar occupe toute la hauteur à gauche, UserBar apparaît à sa droite.
 const PrivateRouteBody: React.FC<{ showNav: boolean; children: React.ReactNode }> = ({ showNav, children }) => {
-  let sidebarCollapsed = false;
-  try {
-    const { state } = useApp();
-    sidebarCollapsed = state?.ui?.sidebarCollapsed || false;
-  } catch {
-    // pas d'AppContext (rare)
-  }
+  const { state } = useApp();
+  const sidebarCollapsed = state?.ui?.sidebarCollapsed || false;
   const sidebarWidth = showNav && !sidebarCollapsed ? 288 : 0;
   return (
     <>
