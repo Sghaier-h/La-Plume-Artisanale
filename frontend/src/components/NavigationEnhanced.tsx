@@ -125,6 +125,18 @@ const NavigationEnhanced: React.FC<NavigationEnhancedProps> = ({ onNavigate }) =
     );
   };
 
+  // Parse `module.sub.action` en (module='module.sub', action='action').
+  // Sinon `module.action` en (module='module', action='action'). Sinon (module, 'read').
+  const parsePermission = (perm: string): [string, string] => {
+    const parts = perm.split('.');
+    if (parts.length >= 2) {
+      const action = parts[parts.length - 1];
+      const mod = parts.slice(0, -1).join('.');
+      return [mod, action];
+    }
+    return [parts[0], 'read'];
+  };
+
   // Filtre récursif par permissions (admin voit tout)
   const filterByPermissions = (items: MenuItem[]): MenuItem[] => {
     return items.filter((item) => {
@@ -136,8 +148,8 @@ const NavigationEnhanced: React.FC<NavigationEnhancedProps> = ({ onNavigate }) =
       }
       if (item.permission && hasPermission) {
         try {
-          const [module, action] = item.permission.split('.');
-          if (!hasPermission(module, action || 'read')) return false;
+          const [mod, action] = parsePermission(item.permission);
+          if (!hasPermission(mod, action)) return false;
         } catch {
           // en cas d'erreur, on autorise pour éviter d'effacer le menu en dev
         }
@@ -482,8 +494,8 @@ const NavigationEnhanced: React.FC<NavigationEnhancedProps> = ({ onNavigate }) =
       if (isAdmin) return category.items.length > 0;
       if (category.permission && hasPermission) {
         try {
-          const [module, action] = category.permission.split('.');
-          if (!hasPermission(module, action || 'read')) return false;
+          const [mod, action] = parsePermission(category.permission);
+          if (!hasPermission(mod, action)) return false;
         } catch {
           // tolère
         }

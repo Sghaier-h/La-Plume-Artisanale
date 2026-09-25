@@ -3,22 +3,31 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import Navigation from './NavigationEnhanced';
 import TabletteLayout from './TabletteLayout';
+import UserBar from './UserBar';
 
 /**
- * Rôles opérant sur tablette atelier (§14.9-14.13).
- * Pour ces rôles, on remplace la sidebar PC par un layout tablette
- * (header sticky top avec logo, poste, heure, notif, mon poste, déconnexion).
+ * Rôles POSTE OPÉRATIONNEL — mode kiosque sans sidebar (§14.7 → §14.13).
+ * Chaque poste ne voit QUE son dashboard/tablette dédié, pas le menu §15.
+ * Header épuré avec logo, poste, heure, notif, bouton "Mon poste", déconnexion.
+ *
+ * Les rôles BUREAU (ADMIN, COMPTABLE, COMMERCIAL, RH_MANAGER, RH_ASSISTANT,
+ * MARKETING, RESPONSABLE_SECURITE) gardent le menu latéral §15 complet.
  */
 const TABLETTE_ROLES = new Set([
+  // Tablettes atelier
   'TISSEUR',
   'COUPEUR',
   'OURDISSEUR',
   'CONTROLEUR_QUALITE',
   'MECANICIEN',
+  // Magasiniers terrain
   'MAGASINIER_PREPARATION',
   'MAGASINIER_MP',
   'MAGASINIER_STOCK',
   'MAGASINIER_SOUSTRAITANTS',
+  // Chefs supervision atelier
+  'CHEF_PRODUCTION',
+  'CHEF_ATELIER',
 ]);
 
 interface ProtectedRouteProps {
@@ -140,11 +149,17 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const isTabletteRole = TABLETTE_ROLES.has(roleUpper);
 
   if (showNav && isTabletteRole) {
-    return <TabletteLayout>{children}</TabletteLayout>;
+    return (
+      <>
+        <UserBar />
+        <TabletteLayout>{children}</TabletteLayout>
+      </>
+    );
   }
 
   return (
     <>
+      {showNav && <UserBar />}
       {showNav && <Navigation />}
       {children}
     </>
