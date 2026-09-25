@@ -520,10 +520,12 @@ const NavigationEnhanced: React.FC<NavigationEnhancedProps> = ({ onNavigate }) =
 
   return (
     <nav
-      className={`w-72 h-screen fixed left-0 top-0 flex flex-col z-50 transition-transform duration-300 shadow-xl border-r ${
+      className={`w-72 fixed left-0 flex flex-col z-40 transition-transform duration-300 shadow-xl border-r ${
         state.ui.sidebarCollapsed ? '-translate-x-full' : 'translate-x-0'
       }`}
       style={{
+        top: 48,               // laisse la place à UserBar (48px sticky top)
+        height: 'calc(100vh - 48px)',
         backgroundColor: 'var(--bg-app, #FBF8F3)',
         borderColor: 'var(--border-default, #DFD3B8)',
       }}
