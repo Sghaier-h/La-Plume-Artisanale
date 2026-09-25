@@ -1,8 +1,7 @@
 import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ChevronRight, ChevronLeft } from 'lucide-react';
 import { useAuth } from './hooks/useAuth';
-import NavigationEnhanced from './components/NavigationEnhanced';
+import NavigationTopBar from './components/NavigationTopBar';
 import DashboardSwitcher from './components/DashboardSwitcher';
 import ErrorBoundary from './components/ErrorBoundary';
 import LoadingSpinner from './components/LoadingSpinner';
@@ -11,7 +10,6 @@ import ProtectedRoute from './components/ProtectedRoute';
 import UserBar from './components/UserBar';
 import TabletteLayout from './components/TabletteLayout';
 import { AppProvider } from './store/AppContext';
-import { useApp } from './store/AppContext';
 import { NotificationProvider } from './components/erp';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { NavigationProvider } from './components/NavigationContext';
@@ -321,16 +319,13 @@ const PrivateRoute: React.FC<{ children: React.ReactNode; showNav?: boolean }> =
   );
 };
 
-// Sidebar occupe toute la hauteur à gauche, UserBar apparaît à sa droite.
+// NavigationTopBar occupe le haut (48px), UserBar juste dessous (48px).
+// Le contenu commence à 96px du haut (48 + 48) et prend toute la largeur.
 const PrivateRouteBody: React.FC<{ showNav: boolean; children: React.ReactNode }> = ({ showNav, children }) => {
-  const { state } = useApp();
-  const sidebarCollapsed = state?.ui?.sidebarCollapsed || false;
-  const sidebarWidth = showNav && !sidebarCollapsed ? 288 : 0;
   return (
     <>
-      <UserBar leftOffset={sidebarWidth} />
       {showNav && <NavigationWrapper />}
-      {showNav && <SidebarToggleButton />}
+      <UserBar topOffset={showNav ? 48 : 0} leftOffset={0} />
       <ContentWrapper showNav={showNav}>
         <Breadcrumbs />
         {children}
@@ -340,54 +335,22 @@ const PrivateRouteBody: React.FC<{ showNav: boolean; children: React.ReactNode }
 };
 
 const NavigationWrapper: React.FC = () => {
-  return <NavigationEnhanced />;
-};
-
-/** Bouton flèche pour afficher / masquer le menu gauche (toujours visible) */
-const SidebarToggleButton: React.FC = () => {
-  let state: any = null;
-  let toggleSidebar: (() => void) | undefined;
-  try {
-    const appContext = useApp();
-    state = appContext?.state;
-    toggleSidebar = appContext?.toggleSidebar;
-  } catch {
-    return null;
-  }
-  const collapsed = state?.ui?.sidebarCollapsed ?? false;
-  if (!toggleSidebar) return null;
-  return (
-    <button
-      type="button"
-      onClick={toggleSidebar}
-      className={`fixed z-[60] top-1/2 -translate-y-1/2 flex items-center justify-center w-10 h-14 rounded-r-lg shadow-md transition-all duration-300 bg-gradient-to-r from-slate-600 to-amber-600 text-white hover:from-slate-500 hover:to-amber-500 ${
-        collapsed ? 'left-0' : 'left-72'
-      }`}
-      aria-label={collapsed ? 'Ouvrir le menu' : 'Fermer le menu'}
-      title={collapsed ? 'Ouvrir le menu' : 'Fermer le menu'}
-    >
-      {collapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
-    </button>
-  );
+  return <NavigationTopBar />;
 };
 
 const ContentWrapper: React.FC<{ showNav: boolean; children: React.ReactNode }> = ({ showNav, children }) => {
-  let state: any = null;
-  try {
-    const appContext = useApp();
-    state = appContext?.state;
-  } catch {
-    // Context not available, use defaults
-  }
-
-  const sidebarOpen = showNav && !state?.ui?.sidebarCollapsed;
+  // La hauteur du NavigationTopBar est dynamique (wrap sur plusieurs lignes
+  // si écran étroit). Elle est publiée dans la CSS var --nav-height par
+  // NavigationTopBar via ResizeObserver. UserBar fait 48px fixe.
+  const paddingTop = showNav
+    ? 'calc(var(--nav-height, 48px) + 48px)'   // menu + UserBar
+    : '48px';                                    // UserBar seule
   return (
     <div
       style={{
-        marginLeft: sidebarOpen ? 288 : 0,
-        paddingTop: 48, // hauteur UserBar
+        marginLeft: 0,
+        paddingTop,
         minHeight: '100vh',
-        transition: 'margin-left 0.3s',
       }}
     >
       {children}

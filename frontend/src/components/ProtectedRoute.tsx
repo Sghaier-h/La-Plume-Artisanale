@@ -1,7 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import Navigation from './NavigationEnhanced';
+import Navigation from './NavigationTopBar';
 import TabletteLayout from './TabletteLayout';
 import UserBar from './UserBar';
 
@@ -161,12 +161,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
-  // Sidebar prend toute la hauteur à gauche, UserBar apparaît à droite (décalée 288px).
-  // showNav=false → UserBar pleine largeur (dashboards §14 dédiés)
+  // NavigationTopBar occupe le haut (48px). UserBar juste dessous (topOffset=48).
+  // showNav=false → UserBar seule tout en haut (dashboards §14 dédiés)
   return (
     <>
-      <UserBar leftOffset={showNav ? 288 : 0} />
       {showNav && <Navigation />}
+      <UserBar topOffset={showNav ? 48 : 0} leftOffset={0} />
       {children}
     </>
   );
