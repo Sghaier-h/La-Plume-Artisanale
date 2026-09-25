@@ -396,14 +396,12 @@ const NavigationEnhanced: React.FC<NavigationEnhancedProps> = ({ onNavigate }) =
       ],
     },
 
-    // 13. Dashboards — visibles pour tous SAUF l'admin (qui gère le système,
-    //     pas les vues opérationnelles métier)
+    // 13. Dashboards — visibles pour tous (admin inclus pour supervision)
     {
       id: 'dashboards',
       label: 'Dashboards',
       icon: LayoutDashboard,
       permission: 'dashboard.read',
-      hideForAdmin: true,
       items: [
         { path: '/dashboard-admin', label: 'Admin', icon: LayoutDashboard, permission: 'dashboard.read' },
         { path: '/dashboard-commercial', label: 'Commercial', icon: TrendingUp, permission: 'dashboard.commercial' },
