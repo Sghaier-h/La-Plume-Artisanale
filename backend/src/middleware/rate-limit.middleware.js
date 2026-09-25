@@ -56,18 +56,32 @@ function makeLimiter({ windowMs, max, keyPrefix, message }) {
   };
 }
 
+// En développement les limites sont volontairement laxistes pour ne pas
+// bloquer les tests par erreur de saisie. En production on garde 5/15min.
+const isDev = process.env.NODE_ENV !== 'production';
+
 export const loginRateLimit = makeLimiter({
-  windowMs: 15 * 60 * 1000,
-  max: 5,
+  windowMs: isDev ? 60 * 1000 : 15 * 60 * 1000,   // 1 min dev, 15 min prod
+  max: isDev ? 100 : 5,                            // 100 essais dev, 5 prod
   keyPrefix: 'login',
-  message: 'Trop de tentatives de connexion. Réessayez dans 15 minutes.'
+  message: isDev
+    ? 'Trop de tentatives de connexion. Réessayez dans 1 minute.'
+    : 'Trop de tentatives de connexion. Réessayez dans 15 minutes.'
 });
 
 export const apiRateLimit = makeLimiter({
   windowMs: 60 * 1000,
-  max: 300,
+  max: isDev ? 3000 : 300,   // 3000/min dev, 300/min prod
   keyPrefix: 'api',
   message: 'Trop de requêtes. Veuillez patienter.'
 });
 
-export default { loginRateLimit, apiRateLimit };
+/**
+ * Purge tous les compteurs (utile en dev pour débloquer immédiatement
+ * un login rate-limité sans redémarrer le backend).
+ */
+export function resetRateLimits() {
+  buckets.clear();
+}
+
+export default { loginRateLimit, apiRateLimit, resetRateLimits };
