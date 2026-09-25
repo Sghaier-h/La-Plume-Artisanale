@@ -166,7 +166,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   return (
     <>
       {showNav && <Navigation />}
-      <UserBar topOffset={showNav ? 48 : 0} leftOffset={0} />
+      {/* topOffset=0 → suit --nav-height dynamique. showNav=false → CSS var reste à 0 (pas de NavigationTopBar rendu) */}
+      <UserBar />
       {children}
     </>
   );

@@ -325,7 +325,8 @@ const PrivateRouteBody: React.FC<{ showNav: boolean; children: React.ReactNode }
   return (
     <>
       {showNav && <NavigationWrapper />}
-      <UserBar topOffset={showNav ? 48 : 0} leftOffset={0} />
+      {/* topOffset=0 → UserBar utilise var(--nav-height) publiée par NavigationTopBar */}
+      <UserBar />
       <ContentWrapper showNav={showNav}>
         <Breadcrumbs />
         {children}

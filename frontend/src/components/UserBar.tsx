@@ -166,9 +166,13 @@ const UserBar: React.FC<UserBarProps> = ({ topOffset = 0, leftOffset = 0 }) => {
     marginLeft: 4,
   };
 
-  // Si topOffset non fourni, on suit la hauteur dynamique du NavigationTopBar
-  // via la CSS var --nav-height (mise à jour par ResizeObserver).
-  const computedTop = topOffset > 0 ? `${topOffset}px` : 'var(--nav-height, 48px)';
+  // La UserBar se positionne toujours SOUS la NavigationTopBar dont la
+  // hauteur est publiée dans la CSS var --nav-height (via ResizeObserver
+  // dans NavigationTopBar). Elle suit donc automatiquement le wrap sur
+  // plusieurs lignes. topOffset est un décalage additionnel (rare).
+  const computedTop = topOffset > 0
+    ? `calc(var(--nav-height, 48px) + ${topOffset}px)`
+    : 'var(--nav-height, 48px)';
 
   return (
     <div
