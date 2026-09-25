@@ -383,7 +383,7 @@ const PaiementsEcheances: React.FC = () => {
                   </tr>
                 ) : (
                   filtered.map((p) => (
-                    <tr key={p.id_paiement} className="border-t border-[#EDE3CE] hover:bg-[#FBF8F3]">
+                    <tr key={p.id_paiement} className="border-t border-[#EDE3CE] hover:bg-[#FBF8F3] group">
                       <td className="px-4 py-3 font-mono text-xs text-[#4A5D75] font-semibold">{p.numero_facture}</td>
                       <td className="px-4 py-3 font-medium">{p.nom_client}</td>
                       <td className="px-4 py-3 text-xs">{p.date_facture}</td>

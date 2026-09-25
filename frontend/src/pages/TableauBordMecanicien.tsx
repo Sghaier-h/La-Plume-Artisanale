@@ -485,7 +485,7 @@ const TableauBordMecanicien = () => {
             </thead>
             <tbody className="divide-y divide-gray-200">
               {alertesPannes.map(panne => (
-                <tr key={panne.id} className="hover:bg-gray-50">
+                <tr key={panne.id} className="hover:bg-gray-50 group">
                   <td className="px-6 py-4 whitespace-nowrap font-bold text-gray-900">{panne.machine}</td>
                   <td className="px-6 py-4 text-sm text-gray-600">{panne.cause}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -632,7 +632,7 @@ const TableauBordMecanicien = () => {
           </thead>
           <tbody className="divide-y divide-gray-200">
             {demandes.map(demande => (
-              <tr key={demande.id} className="hover:bg-gray-50">
+              <tr key={demande.id} className="hover:bg-gray-50 group">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`px-2 py-1 text-xs rounded-full font-semibold ${
                     demande.type === 'Risque' ? 'bg-[#FDF2ED] text-[#A2502E]' :
@@ -824,7 +824,7 @@ const TableauBordMecanicien = () => {
           </thead>
           <tbody className="divide-y divide-gray-200">
             {ensouples.map(ensouple => (
-              <tr key={ensouple.id} className="hover:bg-gray-50">
+              <tr key={ensouple.id} className="hover:bg-gray-50 group">
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{ensouple.id}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{ensouple.modele}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{ensouple.metrage}m</td>
@@ -1353,7 +1353,7 @@ Service Maintenance`}
   };
 
   return (
-    <div className="min-h-screen ml-64" style={{ background: 'var(--bg-app)' }}>
+    <div className="min-h-screen" style={{ background: 'var(--bg-app)' }}>
       {/* Header artisanal */}
       <div className="px-8 pt-8 pb-4 max-w-7xl mx-auto">
         <div

@@ -271,7 +271,7 @@ const NavigationTopBar: React.FC = () => {
       permission: 'mrp.read',
       items: [
         { path: '/bom', label: 'BOM (nomenclatures)', icon: Layers3, permission: 'mrp.bom.read' },
-        { path: '_todo/fabrication/gammes', label: 'Gammes', icon: ScrollText, badge: '_todo' },
+        { path: '/fabrication/gammes', label: 'Gammes', icon: ScrollText },
         { path: '/fabrication/postes', label: 'Postes de travail', icon: HardHat },
         {
           path: '/machines',
@@ -284,9 +284,9 @@ const NavigationTopBar: React.FC = () => {
           ],
         },
         { path: '/of', label: 'Ordres de fabrication (OF)', icon: FileText, permission: 'mrp.production.read' },
-        { path: '_todo/fabrication/of-stock-ca', label: 'OF Stock catalogue (CA)', icon: FileText, badge: '_todo' },
-        { path: '_todo/fabrication/ourdissage', label: 'Ourdissage', icon: Ruler, badge: '_todo' },
-        { path: '_todo/fabrication/preparation-mp', label: 'Préparation MP', icon: Scissors, badge: '_todo' },
+        { path: '/fabrication/of-stock-ca', label: 'OF Stock catalogue (CA)', icon: FileText },
+        { path: '/fabrication/ourdissage', label: 'Ourdissage', icon: Ruler },
+        { path: '/fabrication/preparation-mp', label: 'Préparation MP', icon: Scissors },
         { path: '/planification-gantt', label: 'Planning atelier (Gantt)', icon: Calendar, permission: 'mrp.production.read' },
         { path: '/suivi-fabrication', label: 'Suivi temps réel', icon: Activity, permission: 'mrp.production.read' },
         { path: '/qualite-avance', label: 'Contrôle qualité', icon: CheckCircle, permission: 'quality.read' },
@@ -433,41 +433,8 @@ const NavigationTopBar: React.FC = () => {
     // 12. Messagerie inter-postes → intégrée dans la UserBar (bouton Messages)
     // avec canaux WhatsApp / Telegram / email / SMS
 
-    // 13. Dashboards
-    {
-      id: 'dashboards',
-      label: 'Dashboards',
-      icon: LayoutDashboard,
-      permission: 'dashboard.read',
-      items: [
-        { path: '/dashboard-admin', label: 'Admin', icon: LayoutDashboard, permission: 'dashboard.read' },
-        { path: '/dashboard-commercial', label: 'Commercial', icon: TrendingUp, permission: 'dashboard.commercial' },
-        { path: '/tablette/magasinier', label: 'Magasinier Préparation', icon: Package, permission: 'dashboard.magasinier' },
-        { path: '/dashboard-magasinier-mp', label: 'Magasinier MP', icon: Boxes, permission: 'dashboard.magasinier-mp' },
-        { path: '/magasin-pf', label: 'Magasinier Stock (PF)', icon: Package2, permission: 'dashboard.magasin-pf' },
-        { path: '/dashboard-magasinier-soustraitants', label: 'Magasinier Sous-Traitants', icon: Truck, permission: 'dashboard.magasinier-soustraitants' },
-        { path: '/dashboard-chef-production', label: 'Chef Production', icon: Factory, permission: 'dashboard.chef-production' },
-        { path: '/chef-atelier-dashboard', label: "Chef d'Atelier", icon: HardHat, permission: 'dashboard.chef-atelier' },
-        {
-          path: '/dashboard-tisseur',
-          label: 'Tisseur / Coupeur / Ourdisseur',
-          icon: Activity,
-          permission: 'dashboard.tisseur',
-          children: [
-            { path: '/dashboard-tisseur', label: 'Tisseur', icon: Activity, permission: 'dashboard.tisseur' },
-            { path: '/dashboard-post-coupe', label: 'Post-Coupe', icon: Scissors, permission: 'dashboard.coupe' },
-            { path: '/tablette/tisseur', label: 'Tablette tisseur', icon: Activity, permission: 'dashboard.tisseur' },
-            { path: '/tablette/coupeur', label: 'Tablette coupeur', icon: Scissors, permission: 'dashboard.coupe' },
-          ],
-        },
-        { path: '/dashboard-controle-central', label: 'Contrôle Qualité', icon: CheckCircle, permission: 'dashboard.controle-central' },
-        { path: '/mecanicien', label: 'Mécanicien / Maintenance', icon: Wrench, permission: 'dashboard.mecanicien' },
-        { path: '/dashboard-comptable', label: 'Comptable', icon: BookOpen },
-        { path: '_todo/dashboards/rh-manager', label: 'RH Manager', icon: Briefcase, badge: '_todo' },
-        { path: '_todo/dashboards/ia', label: 'IA (agents & rapports)', icon: BrainCircuit, badge: '_todo' },
-        { path: '/planning', label: 'Planification & Suivis', icon: Calendar, permission: 'mrp.production.read' },
-      ],
-    },
+    // 13. Dashboards → intégrés dans la UserBar (bouton Dashboards)
+    //     Accès rapide aux 16 dashboards §14 depuis la barre système.
 
     // 14. Mon compte
     {

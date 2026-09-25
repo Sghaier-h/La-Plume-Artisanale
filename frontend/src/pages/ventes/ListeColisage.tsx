@@ -258,7 +258,7 @@ const ListeColisage: React.FC = () => {
                   </tr>
                 ) : (
                   filtered.map((c) => (
-                    <tr key={c.id_colis} className="border-t border-[#EDE3CE] hover:bg-[#FBF8F3]">
+                    <tr key={c.id_colis} className="border-t border-[#EDE3CE] hover:bg-[#FBF8F3] group">
                       <td className="px-4 py-3 font-mono text-xs text-[#4A5D75] font-semibold">{c.numero_colis}</td>
                       <td className="px-4 py-3 font-mono text-xs">{c.numero_commande || '—'}</td>
                       <td className="px-4 py-3">{c.nom_client || '—'}</td>

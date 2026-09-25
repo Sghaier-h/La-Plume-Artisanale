@@ -398,7 +398,7 @@ const PaieTunisie: React.FC = () => {
               </thead>
               <tbody>
                 {GRILLE_SALAIRES.map((g) => (
-                  <tr key={g.coeff} className="border-t border-[#EDE3CE] hover:bg-[#FBF8F3]">
+                  <tr key={g.coeff} className="border-t border-[#EDE3CE] hover:bg-[#FBF8F3] group">
                     <td className="px-4 py-3 font-mono text-xs text-[#4A5D75] font-semibold">{g.coeff}</td>
                     <td className="px-4 py-3 text-[#6B4E31]">{g.categorie}</td>
                     <td className="px-4 py-3 font-medium">{g.libelle}</td>

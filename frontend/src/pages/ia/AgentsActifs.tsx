@@ -282,7 +282,7 @@ const AgentsActifs: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="ml-72 p-6 flex items-center justify-center min-h-screen">
+      <div className="p-6 flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]" />
       </div>
     );
@@ -290,7 +290,7 @@ const AgentsActifs: React.FC = () => {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-app, #FBF8F3)' }}>
-      <div className="ml-72 p-6">
+      <div className="p-6">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-6">
@@ -365,7 +365,7 @@ const AgentsActifs: React.FC = () => {
                   const st = STATUT_CFG[a.statut];
                   const budgetPct = (a.cout_mois_usd / a.budget_mensuel_usd) * 100;
                   return (
-                    <tr key={a.id_agent} className="hover:bg-[#FDF2ED]/40">
+                    <tr key={a.id_agent} className="hover:bg-[#FDF2ED]/40 group">
                       <td className="px-4 py-3">
                         <div className="font-semibold" style={{ color: 'var(--fg-primary, #2F2A26)' }}>{a.nom}</div>
                         <div className="text-xs" style={{ color: 'var(--fg-muted, #8A6E4A)' }}>{a.domaine}</div>

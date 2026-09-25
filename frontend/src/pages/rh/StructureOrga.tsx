@@ -235,7 +235,7 @@ const StructureOrga: React.FC = () => {
               </thead>
               <tbody>
                 {fonctions.map((f) => (
-                  <tr key={f.id_fonction} className="border-t border-[#EDE3CE] hover:bg-[#FBF8F3]">
+                  <tr key={f.id_fonction} className="border-t border-[#EDE3CE] hover:bg-[#FBF8F3] group">
                     <td className="px-4 py-3 font-mono text-xs text-[#4A5D75] font-semibold">{f.coefficient_convention}</td>
                     <td className="px-4 py-3 text-[#6B4E31]">{f.categorie}</td>
                     <td className="px-4 py-3 font-medium">{f.libelle}</td>

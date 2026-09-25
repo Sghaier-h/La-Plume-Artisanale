@@ -298,7 +298,7 @@ const Immobilisations: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="ml-64 p-6 flex items-center justify-center min-h-screen">
+      <div className="p-6 flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]" />
       </div>
     );
@@ -306,7 +306,7 @@ const Immobilisations: React.FC = () => {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-app, #FBF8F3)' }}>
-      <div className="ml-64 p-6">
+      <div className="p-6">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="flex flex-wrap justify-between items-center mb-6 gap-3">
@@ -398,7 +398,7 @@ const Immobilisations: React.FC = () => {
                   const cat = CATEGORIES[i.categorie || 'materiel_industriel'];
                   const pctAmorti = (Number(i.amortissement_cumule || 0) / Math.max(1, Number(i.valeur_acquisition_ht || 1))) * 100;
                   return (
-                    <tr key={i.id_immobilisation} className="hover:bg-[#FDF2ED]/40">
+                    <tr key={i.id_immobilisation} className="hover:bg-[#FDF2ED]/40 group">
                       <td
                         className="px-4 py-3 font-mono text-xs font-semibold text-[#3B4E68]"
                         style={{ fontFamily: 'var(--font-mono, JetBrains Mono, monospace)' }}

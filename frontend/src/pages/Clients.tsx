@@ -335,7 +335,7 @@ const Clients: React.FC = () => {
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg-app)' }}>
-      <div className="ml-64 p-6">
+      <div className="p-6">
         <div className="max-w-7xl mx-auto">
         <div style={{ marginBottom: 'var(--s-6)' }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 'var(--s-2)' }}>
@@ -929,7 +929,7 @@ const Clients: React.FC = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {clients.map((client) => (
-                <tr key={client.id_client} className="hover:bg-gray-50">
+                <tr key={client.id_client} className="hover:bg-gray-50 group">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium font-mono">{client.code_client}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{client.raison_sociale}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -949,7 +949,7 @@ const Clients: React.FC = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button 
                         onClick={(e) => {
                           e.stopPropagation();

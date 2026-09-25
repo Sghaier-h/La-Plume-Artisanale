@@ -694,7 +694,7 @@ const Modeles: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 ml-64 p-6">
+    <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -1353,7 +1353,7 @@ const Modeles: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-gray-200">
               {filteredModeles.map((modele) => (
-                <tr key={modele.id_modele} onClick={() => modele.id_modele && navigate(`/modeles/${modele.id_modele}`)} className="hover:bg-gray-50 cursor-pointer">
+                <tr key={modele.id_modele} onClick={() => modele.id_modele && navigate(`/modeles/${modele.id_modele}`)} className="hover:bg-gray-50 cursor-pointer group">
                   <td className="px-6 py-4">
                     {modele.photo_modele ? (
                       <img src={modele.photo_modele} alt={modele.designation} className="w-12 h-12 object-cover rounded" />
@@ -1381,7 +1381,7 @@ const Modeles: React.FC = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();

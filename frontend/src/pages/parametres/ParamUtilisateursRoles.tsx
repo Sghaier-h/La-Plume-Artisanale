@@ -105,7 +105,7 @@ const ParamUtilisateursRoles: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="ml-72 p-6 flex items-center justify-center min-h-screen">
+      <div className="p-6 flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]" />
       </div>
     );
@@ -117,7 +117,7 @@ const ParamUtilisateursRoles: React.FC = () => {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-app, #FBF8F3)' }}>
-      <div className="ml-72 p-6">
+      <div className="p-6">
         <div className="max-w-7xl mx-auto">
           <div className="mb-6 flex items-center justify-between">
             <div>
@@ -174,7 +174,7 @@ const ParamUtilisateursRoles: React.FC = () => {
                 </thead>
                 <tbody className="divide-y divide-[#F0E7D4]">
                   {users.map(u => (
-                    <tr key={u.id} className="hover:bg-[#FDF2ED]/40">
+                    <tr key={u.id} className="hover:bg-[#FDF2ED]/40 group">
                       <td className="px-4 py-3 font-semibold">{u.nom}</td>
                       <td className="px-4 py-3 text-xs font-mono" style={{ color: 'var(--fg-secondary, #5D4E42)' }}>{u.email}</td>
                       <td className="px-4 py-3">

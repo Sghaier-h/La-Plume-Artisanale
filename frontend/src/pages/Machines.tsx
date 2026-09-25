@@ -108,7 +108,7 @@ const Machines: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="ml-64 p-6">
+      <div className="p-6">
         <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-800">⚙️ Machines</h1>
@@ -265,7 +265,7 @@ const Machines: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">{machine.emplacement || '-'}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button 
                         onClick={async () => {
                           try {

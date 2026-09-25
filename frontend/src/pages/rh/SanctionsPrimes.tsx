@@ -328,7 +328,7 @@ const SanctionsPrimes: React.FC = () => {
                   filtered.map((l) => {
                     const isSanction = l.type_ligne === 'sanction';
                     return (
-                      <tr key={l.id_ligne} className="border-t border-[#EDE3CE] hover:bg-[#FBF8F3]">
+                      <tr key={l.id_ligne} className="border-t border-[#EDE3CE] hover:bg-[#FBF8F3] group">
                         <td className="px-4 py-3 text-xs">{l.date_evenement}</td>
                         <td className="px-4 py-3">
                           <span

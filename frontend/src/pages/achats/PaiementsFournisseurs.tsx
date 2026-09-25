@@ -186,7 +186,7 @@ const PaiementsFournisseurs: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="ml-64 p-6 flex items-center justify-center min-h-screen">
+      <div className="p-6 flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]" />
       </div>
     );
@@ -194,7 +194,7 @@ const PaiementsFournisseurs: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#FBF8F3]">
-      <div className="ml-64 p-6">
+      <div className="p-6">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-wrap justify-between items-center mb-6 gap-3">
             <div>
@@ -300,7 +300,7 @@ const PaiementsFournisseurs: React.FC = () => {
                     return (
                       <tr
                         key={p.id_paiement_fournisseur}
-                        className="border-b border-gray-100 hover:bg-[#FBF8F3]/60"
+                        className="border-b border-gray-100 hover:bg-[#FBF8F3]/60 group"
                       >
                         <td className="px-4 py-3 font-mono text-xs text-[#4A5D75] font-semibold">
                           {p.numero_paiement}

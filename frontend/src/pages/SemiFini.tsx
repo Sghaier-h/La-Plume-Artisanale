@@ -77,14 +77,14 @@ const SemiFini: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="ml-64 p-6 flex items-center justify-center min-h-screen">
+      <div className="p-6 flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]"></div>
       </div>
     );
   }
 
   return (
-    <div className="ml-64 p-6">
+    <div className="p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <div>
@@ -150,7 +150,7 @@ const SemiFini: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {filteredProduits.map((produit) => (
-                  <tr key={produit.id_article} className="hover:bg-gray-50">
+                  <tr key={produit.id_article} className="hover:bg-gray-50 group">
                     <td className="px-6 py-4 whitespace-nowrap font-mono text-sm font-medium text-[#C8663D]">{produit.ref_commercial}</td>
                     <td className="px-6 py-4 whitespace-nowrap font-mono text-sm text-gray-600">{produit.ref_fabrication}</td>
                     <td className="px-6 py-4 text-sm">{produit.designation}</td>

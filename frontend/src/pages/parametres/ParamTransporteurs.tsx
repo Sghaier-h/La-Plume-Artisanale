@@ -65,7 +65,7 @@ const ParamTransporteurs: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="ml-72 p-6 flex items-center justify-center min-h-screen">
+      <div className="p-6 flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]" />
       </div>
     );
@@ -77,7 +77,7 @@ const ParamTransporteurs: React.FC = () => {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-app, #FBF8F3)' }}>
-      <div className="ml-72 p-6">
+      <div className="p-6">
         <div className="max-w-7xl mx-auto">
           <div className="mb-6 flex items-center justify-between">
             <div>
@@ -112,7 +112,7 @@ const ParamTransporteurs: React.FC = () => {
                 {items.map(t => {
                   const cfg = TYPE_CFG[t.type];
                   return (
-                    <tr key={t.id} className="hover:bg-[#FDF2ED]/40">
+                    <tr key={t.id} className="hover:bg-[#FDF2ED]/40 group">
                       <td className="px-4 py-3 font-semibold">{t.nom}</td>
                       <td className="px-4 py-3"><span className="inline-flex text-[10px] font-semibold px-2 py-0.5 rounded uppercase" style={{ backgroundColor: cfg.bg, color: cfg.color }}>{cfg.label}</span></td>
                       <td className="px-4 py-3 text-xs">

@@ -184,14 +184,14 @@ const SuiviFabrication: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="ml-64 p-6 flex items-center justify-center min-h-screen">
+      <div className="p-6 flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 ml-64 p-6">
+    <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <div>
@@ -460,7 +460,7 @@ const SuiviFabrication: React.FC = () => {
                   filteredSuivis.map((suivi) => {
                     const rendement = calculerRendement(suivi.quantite_bonne || 0, suivi.quantite_produite || 0);
                     return (
-                      <tr key={suivi.id_suivi} className="hover:bg-gray-50">
+                      <tr key={suivi.id_suivi} className="hover:bg-gray-50 group">
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{suivi.numero_suivi}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">{suivi.numero_of}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">{suivi.machine_designation}</td>
@@ -483,7 +483,7 @@ const SuiviFabrication: React.FC = () => {
                           {getStatutBadge(suivi.statut)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex gap-2">
+                          <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button 
                               onClick={async () => {
                                 try {

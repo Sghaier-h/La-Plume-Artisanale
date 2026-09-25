@@ -188,7 +188,7 @@ const DashboardComptable: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--bg-app, #FBF8F3)' }}>
-        <div className="ml-72 animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]" />
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]" />
       </div>
     );
   }
@@ -201,7 +201,7 @@ const DashboardComptable: React.FC = () => {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-app, #FBF8F3)' }}>
-      <div className="ml-72 p-6">
+      <div className="p-6">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-6">
@@ -268,7 +268,7 @@ const DashboardComptable: React.FC = () => {
                 </thead>
                 <tbody className="divide-y" style={{ borderColor: 'var(--border-subtle, #E7DFD3)' }}>
                   {ecritures.map((e) => (
-                    <tr key={e.id_ecriture} className="hover:bg-[#FDF2ED]/50">
+                    <tr key={e.id_ecriture} className="hover:bg-[#FDF2ED]/50 group">
                       <td
                         className="px-4 py-3 text-xs font-semibold"
                         style={{
@@ -391,7 +391,7 @@ const DashboardComptable: React.FC = () => {
                   {actions.map((a) => {
                     const days = Math.ceil((new Date(a.echeance).getTime() - Date.now()) / 86400_000);
                     return (
-                      <tr key={a.id} className="hover:bg-[#FDF2ED]/50">
+                      <tr key={a.id} className="hover:bg-[#FDF2ED]/50 group">
                         <td className="px-4 py-3" style={{ color: 'var(--fg-primary, #2F2A26)' }}>
                           {a.titre}
                         </td>

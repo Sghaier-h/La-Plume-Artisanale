@@ -247,7 +247,7 @@ const Facture: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen ml-64 p-6" style={{ background: 'var(--bg-app)' }}>
+    <div className="min-h-screen p-6" style={{ background: 'var(--bg-app)' }}>
       <div className="max-w-7xl mx-auto">
         <div style={{ marginBottom: 'var(--s-6)' }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 'var(--s-2)' }}>
@@ -668,7 +668,7 @@ const Facture: React.FC = () => {
                 </tr>
               ) : (
                 filteredFactures.map((facture) => (
-                  <tr key={facture.id_facture} className="hover:bg-gray-50">
+                  <tr key={facture.id_facture} className="hover:bg-gray-50 group">
                     <td className="px-6 py-4 whitespace-nowrap font-medium">{facture.numero_facture}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{facture.client_nom}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{facture.date_facture}</td>
@@ -683,7 +683,7 @@ const Facture: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button 
                           onClick={async () => {
                             try {

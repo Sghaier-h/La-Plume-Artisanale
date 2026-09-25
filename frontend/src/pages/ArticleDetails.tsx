@@ -176,7 +176,7 @@ const ArticleDetails: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="ml-64 p-6 flex items-center justify-center min-h-screen">
+      <div className="p-6 flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]"></div>
       </div>
     );
@@ -184,7 +184,7 @@ const ArticleDetails: React.FC = () => {
 
   if (error || !article) {
     return (
-      <div className="ml-64 p-6">
+      <div className="p-6">
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <h3 className="text-red-800 font-semibold mb-2">Erreur de chargement</h3>
           <p className="text-red-700 mb-4">{error || 'Article non trouvé'}</p>
@@ -225,7 +225,7 @@ const ArticleDetails: React.FC = () => {
   ].filter(s => s);
 
   return (
-    <div className="ml-64 p-6">
+    <div className="p-6">
       {/* Header avec boutons d'action */}
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-4">

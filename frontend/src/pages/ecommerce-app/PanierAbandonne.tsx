@@ -358,7 +358,7 @@ const PanierAbandonne: React.FC = () => {
                     return (
                       <tr
                         key={p.id_panier}
-                        className="border-t hover:bg-[var(--bg-hover)]"
+                        className="border-t hover:bg-[var(--bg-hover)] group"
                         style={{ borderColor: 'var(--border-subtle)' }}
                       >
                         <td className="px-4 py-3">

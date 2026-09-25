@@ -183,14 +183,14 @@ const ListePalettes: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="ml-64 p-6 flex items-center justify-center min-h-screen">
+      <div className="p-6 flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]"></div>
       </div>
     );
   }
 
   return (
-    <div className="ml-64 p-6">
+    <div className="p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <div>
@@ -396,7 +396,7 @@ const ListePalettes: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {filteredListes.map((liste) => (
-                  <tr key={liste.id_liste} className="hover:bg-gray-50">
+                  <tr key={liste.id_liste} className="hover:bg-gray-50 group">
                     <td className="px-6 py-4 whitespace-nowrap font-mono text-sm font-medium">{liste.numero_liste}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">{liste.date_liste}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">{liste.numero_commande || '-'}</td>
@@ -411,7 +411,7 @@ const ListePalettes: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button onClick={() => handleEdit(liste)} className="text-[#C8663D] hover:text-[#4A5D75]">
                           <Edit className="w-4 h-4" />
                         </button>

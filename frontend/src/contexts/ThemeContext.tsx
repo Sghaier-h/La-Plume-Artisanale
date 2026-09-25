@@ -272,8 +272,29 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const themeColors = isDark ? darkThemes[theme.color] : themes[theme.color];
 
   // Appliquer le thème au document
+  //
+  // 1. Stamp data-theme sur <html> pour piloter le design system La Plume
+  //    (design-system.css redéfinit --bg-app, --fg-primary, etc. sous
+  //    :root[data-theme="dark"] ou :root[data-theme="light"]).
+  //    mode === 'auto' → on ne stamp rien, prefers-color-scheme prend le relais.
+  //
+  // 2. Publier les CSS vars --theme-* pour les composants qui les utilisent
+  //    (compat rétro — le design system moderne n'en dépend plus).
   useEffect(() => {
     const root = document.documentElement;
+
+    // (1) Stamp data-theme
+    if (theme.mode === 'light') {
+      root.setAttribute('data-theme', 'light');
+    } else if (theme.mode === 'dark') {
+      root.setAttribute('data-theme', 'dark');
+    } else {
+      root.removeAttribute('data-theme');
+    }
+    // color-scheme aligne les contrôles natifs (scrollbars, form controls)
+    root.style.colorScheme = isDark ? 'dark' : 'light';
+
+    // (2) CSS vars compat
     root.style.setProperty('--theme-primary', themeColors.primary);
     root.style.setProperty('--theme-secondary', themeColors.secondary);
     root.style.setProperty('--theme-accent', themeColors.accent);
@@ -288,7 +309,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     if (themeColors.gradient.via) {
       root.style.setProperty('--theme-gradient-via', themeColors.gradient.via);
     }
-  }, [themeColors]);
+  }, [theme.mode, isDark, themeColors]);
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);

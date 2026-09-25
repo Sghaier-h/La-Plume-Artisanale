@@ -81,14 +81,14 @@ const MatierePremiereStock: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="ml-64 p-6 flex items-center justify-center min-h-screen">
+      <div className="p-6 flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]"></div>
       </div>
     );
   }
 
   return (
-    <div className="ml-64 p-6">
+    <div className="p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <div>
@@ -154,7 +154,7 @@ const MatierePremiereStock: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {filteredMatieres.map((matiere) => (
-                  <tr key={matiere.id_mp} className="hover:bg-gray-50">
+                  <tr key={matiere.id_mp} className="hover:bg-gray-50 group">
                     <td className="px-6 py-4 whitespace-nowrap font-mono text-sm font-medium text-[#C8663D]">{matiere.code_mp}</td>
                     <td className="px-6 py-4 text-sm">{matiere.designation}</td>
                     <td className="px-6 py-4 whitespace-nowrap font-mono text-xs text-gray-600">{matiere.qr_mp || '-'}</td>

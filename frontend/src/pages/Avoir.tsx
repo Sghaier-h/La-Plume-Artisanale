@@ -203,7 +203,7 @@ const Avoir: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 ml-64 p-6">
+    <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -571,7 +571,7 @@ const Avoir: React.FC = () => {
                 </tr>
               ) : (
                 filteredAvoirs.map((avoir) => (
-                  <tr key={avoir.id_avoir} className="hover:bg-gray-50">
+                  <tr key={avoir.id_avoir} className="hover:bg-gray-50 group">
                     <td className="px-6 py-4 whitespace-nowrap font-medium">{avoir.numero_avoir}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{avoir.numero_facture || '-'}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{avoir.client_nom}</td>
@@ -583,7 +583,7 @@ const Avoir: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button 
                           onClick={async () => {
                             try {

@@ -146,8 +146,14 @@ const VueParCategorie = React.lazy(() => import('./pages/stock/VueParCategorie')
 const PostesTravail = React.lazy(() => import('./pages/fabrication/PostesTravail'));
 const MachinesMaintenance = React.lazy(() => import('./pages/fabrication/MachinesMaintenance'));
 const SuiviTempsReel = React.lazy(() => import('./pages/fabrication/SuiviTempsReel'));
+const FabricationGammes = React.lazy(() => import('./pages/fabrication/Gammes'));
+const FabricationOFStockCatalogue = React.lazy(() => import('./pages/fabrication/OFStockCatalogue'));
+const FabricationOurdissage = React.lazy(() => import('./pages/fabrication/Ourdissage'));
+const FabricationPreparationMP = React.lazy(() => import('./pages/fabrication/PreparationMP'));
 const DashboardOurdisseur = React.lazy(() => import('./pages/dashboards/DashboardOurdisseur'));
 const DashboardComptable = React.lazy(() => import('./pages/dashboards/DashboardComptable'));
+const DashboardRHManager = React.lazy(() => import('./pages/DashboardRHManager'));
+const DashboardIA = React.lazy(() => import('./pages/DashboardIA'));
 
 // ── Marketing / E-commerce / Mon compte ──────────────────────────────
 const MarketingSegments = React.lazy(() => import('./pages/marketing/SegmentsClients'));
@@ -1353,10 +1359,16 @@ const AppContent: React.FC = () => {
           <Route path="/fabrication/postes" element={<ProtectedRoute requiredRole={['ADMIN', 'CHEF_PRODUCTION', 'CHEF_ATELIER']}><PostesTravail /></ProtectedRoute>} />
           <Route path="/fabrication/machines-maintenance" element={<ProtectedRoute requiredRole={['ADMIN', 'CHEF_PRODUCTION', 'MECANICIEN']}><MachinesMaintenance /></ProtectedRoute>} />
           <Route path="/fabrication/temps-reel" element={<ProtectedRoute requiredRole={['ADMIN', 'CHEF_PRODUCTION', 'CHEF_ATELIER']}><SuiviTempsReel /></ProtectedRoute>} />
+          <Route path="/fabrication/gammes" element={<ProtectedRoute requiredRole={['ADMIN', 'CHEF_PRODUCTION', 'CHEF_ATELIER']}><FabricationGammes /></ProtectedRoute>} />
+          <Route path="/fabrication/of-stock-ca" element={<ProtectedRoute requiredRole={['ADMIN', 'CHEF_PRODUCTION', 'CHEF_ATELIER']}><FabricationOFStockCatalogue /></ProtectedRoute>} />
+          <Route path="/fabrication/ourdissage" element={<ProtectedRoute requiredRole={['ADMIN', 'CHEF_PRODUCTION', 'CHEF_ATELIER']}><FabricationOurdissage /></ProtectedRoute>} />
+          <Route path="/fabrication/preparation-mp" element={<ProtectedRoute requiredRole={['ADMIN', 'CHEF_PRODUCTION', 'CHEF_ATELIER']}><FabricationPreparationMP /></ProtectedRoute>} />
 
           {/* ── Dashboards manquants §14 ───────────────────────────── */}
           <Route path="/dashboard-ourdisseur" element={<ProtectedRoute requiredRole={['ADMIN', 'OURDISSEUR', 'CHEF_PRODUCTION']}><DashboardOurdisseur /></ProtectedRoute>} />
           <Route path="/dashboard-comptable" element={<ProtectedRoute requiredRole={['ADMIN', 'COMPTABLE']}><DashboardComptable /></ProtectedRoute>} />
+          <Route path="/dashboard-rh-manager" element={<ProtectedRoute requiredRole={['ADMIN', 'RH_MANAGER', 'RH_ASSISTANT']}><DashboardRHManager /></ProtectedRoute>} />
+          <Route path="/dashboard-ia" element={<ProtectedRoute requiredRole={['ADMIN', 'COMMERCIAL', 'CHEF_PRODUCTION', 'CHEF_ATELIER', 'RH_MANAGER']}><DashboardIA /></ProtectedRoute>} />
 
           {/* ── Marketing (§11.3-5) ────────────────────────────────── */}
           <Route path="/marketing/segments" element={<ProtectedRoute requiredRole={['ADMIN', 'MARKETING']}><MarketingSegments /></ProtectedRoute>} />

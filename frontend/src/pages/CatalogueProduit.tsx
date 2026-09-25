@@ -192,14 +192,14 @@ const CatalogueProduit: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="ml-64 p-6 flex items-center justify-center min-h-screen">
+      <div className="p-6 flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="ml-64 p-6">
+    <div className="p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <div>
@@ -289,7 +289,7 @@ const CatalogueProduit: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {filteredArticles.map((article) => (
-                  <tr key={article.id_article} className="hover:bg-gray-50">
+                  <tr key={article.id_article} className="hover:bg-gray-50 group">
                     <td className="px-6 py-4">
                       {article.photo_article ? (
                         <img src={article.photo_article} alt={article.designation_article} className="w-16 h-16 object-cover rounded" />

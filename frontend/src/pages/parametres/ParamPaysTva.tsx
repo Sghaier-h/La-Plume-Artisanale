@@ -61,7 +61,7 @@ const ParamPaysTva: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="ml-72 p-6 flex items-center justify-center min-h-screen">
+      <div className="p-6 flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]" />
       </div>
     );
@@ -73,7 +73,7 @@ const ParamPaysTva: React.FC = () => {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-app, #FBF8F3)' }}>
-      <div className="ml-72 p-6">
+      <div className="p-6">
         <div className="max-w-7xl mx-auto">
           <div className="mb-6 flex items-center justify-between">
             <div>
@@ -107,7 +107,7 @@ const ParamPaysTva: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-[#F0E7D4]">
                 {items.map(p => (
-                  <tr key={p.id} className="hover:bg-[#FDF2ED]/40">
+                  <tr key={p.id} className="hover:bg-[#FDF2ED]/40 group">
                     <td className="px-4 py-3 font-mono font-bold">
                       <span className="inline-flex items-center gap-1"><Globe className="w-3 h-3" style={{ color: '#C8663D' }} /> {p.code_iso2}</span>
                     </td>

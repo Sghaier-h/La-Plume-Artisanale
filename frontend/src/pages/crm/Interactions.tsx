@@ -187,14 +187,14 @@ const Interactions: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--bg-app, #FBF8F3)' }}>
-        <div className="ml-72 animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]" />
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]" />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-app, #FBF8F3)' }}>
-      <div className="ml-72 p-6">
+      <div className="p-6">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-6">
@@ -285,7 +285,7 @@ const Interactions: React.FC = () => {
                 {filtered.map((r) => {
                   const meta = TYPE_META[r.type];
                   return (
-                    <tr key={r.id_interaction} className="hover:bg-[#FDF2ED]/50 transition-colors">
+                    <tr key={r.id_interaction} className="hover:bg-[#FDF2ED]/50 transition-colors group">
                       <td
                         className="px-4 py-3 text-xs whitespace-nowrap"
                         style={{

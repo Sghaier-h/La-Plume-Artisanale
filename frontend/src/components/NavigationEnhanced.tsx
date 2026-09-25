@@ -238,7 +238,7 @@ const NavigationEnhanced: React.FC<NavigationEnhancedProps> = ({ onNavigate }) =
       permission: 'mrp.read',
       items: [
         { path: '/bom', label: 'BOM (nomenclatures)', icon: Layers3, permission: 'mrp.bom.read' },
-        { path: '_todo/fabrication/gammes', label: 'Gammes', icon: ScrollText, badge: '_todo' },
+        { path: '/fabrication/gammes', label: 'Gammes', icon: ScrollText },
         { path: '/fabrication/postes', label: 'Postes de travail', icon: HardHat },
         {
           path: '/machines',
@@ -251,9 +251,9 @@ const NavigationEnhanced: React.FC<NavigationEnhancedProps> = ({ onNavigate }) =
           ],
         },
         { path: '/of', label: 'Ordres de fabrication (OF)', icon: FileText, permission: 'mrp.production.read' },
-        { path: '_todo/fabrication/of-stock-ca', label: 'OF Stock catalogue (CA)', icon: FileText, badge: '_todo' },
-        { path: '_todo/fabrication/ourdissage', label: 'Ourdissage', icon: Ruler, badge: '_todo' },
-        { path: '_todo/fabrication/preparation-mp', label: 'Préparation MP', icon: Scissors, badge: '_todo' },
+        { path: '/fabrication/of-stock-ca', label: 'OF Stock catalogue (CA)', icon: FileText },
+        { path: '/fabrication/ourdissage', label: 'Ourdissage', icon: Ruler },
+        { path: '/fabrication/preparation-mp', label: 'Préparation MP', icon: Scissors },
         { path: '/planification-gantt', label: 'Planning atelier (Gantt)', icon: Calendar, permission: 'mrp.production.read' },
         { path: '/suivi-fabrication', label: 'Suivi temps réel', icon: Activity, permission: 'mrp.production.read' },
         { path: '/qualite-avance', label: 'Contrôle qualité', icon: CheckCircle, permission: 'quality.read' },

@@ -2221,7 +2221,7 @@ export default function FoutaManagementApp() {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {bomData.map((bom, idx) => (
-                      <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                      <tr key={idx} className="hover:bg-gray-50 transition-colors group">
                         <td className="px-6 py-4">
                           <span className="font-mono text-sm font-semibold text-[#4A5D75]">{bom.codeParametrage}</span>
                         </td>

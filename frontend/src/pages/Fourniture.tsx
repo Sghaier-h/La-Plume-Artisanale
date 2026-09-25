@@ -98,14 +98,14 @@ const Fourniture: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="ml-64 p-6 flex items-center justify-center min-h-screen">
+      <div className="p-6 flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]"></div>
       </div>
     );
   }
 
   return (
-    <div className="ml-64 p-6">
+    <div className="p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <div>
@@ -171,7 +171,7 @@ const Fourniture: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {filteredFournitures.map((fourniture) => (
-                  <tr key={fourniture.id_fourniture} className="hover:bg-gray-50">
+                  <tr key={fourniture.id_fourniture} className="hover:bg-gray-50 group">
                     <td className="px-6 py-4 whitespace-nowrap font-mono text-sm font-medium text-[#C8663D]">{fourniture.code_fourniture}</td>
                     <td className="px-6 py-4 text-sm">{fourniture.designation}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">{fourniture.categorie || '-'}</td>

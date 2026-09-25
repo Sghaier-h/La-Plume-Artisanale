@@ -192,7 +192,7 @@ const BonRetour: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 ml-64 p-6">
+    <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -504,7 +504,7 @@ const BonRetour: React.FC = () => {
                 </tr>
               ) : (
                 filteredBR.map((br) => (
-                  <tr key={br.id_retour} className="hover:bg-gray-50">
+                  <tr key={br.id_retour} className="hover:bg-gray-50 group">
                     <td className="px-6 py-4 whitespace-nowrap font-medium">{br.numero_retour}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{br.numero_bl || '-'}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{br.client_nom}</td>
@@ -516,7 +516,7 @@ const BonRetour: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button 
                           onClick={async () => {
                             try {

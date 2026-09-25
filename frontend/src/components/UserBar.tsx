@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme, ThemeMode } from '../contexts/ThemeContext';
 import PlumeLogo from './PlumeLogo';
+import type { LucideIcon } from 'lucide-react';
 import {
   Search,
   Sparkles,
@@ -25,6 +26,21 @@ import {
   Moon,
   Monitor,
   Mail,
+  LayoutDashboard,
+  TrendingUp,
+  Package,
+  Package2,
+  Boxes,
+  Truck,
+  Factory,
+  HardHat,
+  Activity,
+  CheckCircle,
+  Wrench,
+  BookOpen,
+  Briefcase,
+  BrainCircuit,
+  Calendar,
 } from 'lucide-react';
 
 const CREAM = '#FBF8F3';
@@ -92,6 +108,33 @@ const channelColor: Record<MessageChannel, string> = {
   sms: 'var(--accent-sage, #7A8C6A)',
 };
 
+// Dashboards §14 (16 dashboards + planification centrale)
+type DashboardEntry = {
+  path: string;
+  label: string;
+  icon: LucideIcon;
+  perm?: string;
+  todo?: boolean;
+};
+const DASHBOARDS: DashboardEntry[] = [
+  { path: '/dashboard-admin', label: 'Admin', icon: LayoutDashboard, perm: 'dashboard.read' },
+  { path: '/dashboard-commercial', label: 'Commercial', icon: TrendingUp, perm: 'dashboard.commercial' },
+  { path: '/tablette/magasinier', label: 'Magasinier Préparation', icon: Package, perm: 'dashboard.magasinier' },
+  { path: '/dashboard-magasinier-mp', label: 'Magasinier MP', icon: Boxes, perm: 'dashboard.magasinier-mp' },
+  { path: '/magasin-pf', label: 'Magasinier Stock (PF)', icon: Package2, perm: 'dashboard.magasin-pf' },
+  { path: '/dashboard-magasinier-soustraitants', label: 'Magasinier Sous-Traitants', icon: Truck, perm: 'dashboard.magasinier-soustraitants' },
+  { path: '/dashboard-chef-production', label: 'Chef Production', icon: Factory, perm: 'dashboard.chef-production' },
+  { path: '/chef-atelier-dashboard', label: "Chef d'Atelier", icon: HardHat, perm: 'dashboard.chef-atelier' },
+  { path: '/dashboard-tisseur', label: 'Tisseur', icon: Activity, perm: 'dashboard.tisseur' },
+  { path: '/dashboard-post-coupe', label: 'Post-Coupe', icon: Activity, perm: 'dashboard.coupe' },
+  { path: '/dashboard-controle-central', label: 'Contrôle Qualité', icon: CheckCircle, perm: 'dashboard.controle-central' },
+  { path: '/mecanicien', label: 'Mécanicien / Maintenance', icon: Wrench, perm: 'dashboard.mecanicien' },
+  { path: '/dashboard-comptable', label: 'Comptable', icon: BookOpen },
+  { path: '/dashboard-rh-manager', label: 'RH Manager', icon: Briefcase },
+  { path: '/dashboard-ia', label: 'IA (agents & rapports)', icon: BrainCircuit },
+  { path: '/planning', label: 'Planification & Suivis', icon: Calendar, perm: 'mrp.production.read' },
+];
+
 const MOCK_NOTIFS = [
   { id: 1, title: 'Facture impayée', body: 'Hotel Marina Djerba · échéance dépassée de 15 j', time: 'il y a 12 min', level: 'danger' },
   { id: 2, title: 'OF terminé', body: 'OF-2609015 finalisé, 180 pcs 1er choix', time: 'il y a 45 min', level: 'success' },
@@ -107,6 +150,7 @@ const UserBar: React.FC<UserBarProps> = ({ topOffset = 0, leftOffset = 0 }) => {
   const [themeOpen, setThemeOpen] = React.useState(false);
   const [messagesOpen, setMessagesOpen] = React.useState(false);
   const [notifsOpen, setNotifsOpen] = React.useState(false);
+  const [dashboardsOpen, setDashboardsOpen] = React.useState(false);
   const [notifCount] = React.useState(MOCK_NOTIFS.length);
   const [messageCount] = React.useState(MOCK_MESSAGES.length);
 
@@ -543,6 +587,111 @@ const UserBar: React.FC<UserBarProps> = ({ topOffset = 0, leftOffset = 0 }) => {
             >
               Tout marquer comme lu →
             </button>
+          </div>
+        )}
+      </div>
+
+      {/* Dashboards §14 — dropdown scrollable */}
+      <div style={{ position: 'relative' }}>
+        <button
+          type="button"
+          onClick={() => setDashboardsOpen((v) => !v)}
+          onBlur={() => setTimeout(() => setDashboardsOpen(false), 200)}
+          aria-label="Dashboards"
+          style={btnGhost}
+        >
+          <LayoutDashboard size={14} style={{ color: 'var(--accent-indigo, #4A5D75)' }} />
+          <span>Dashboards</span>
+          <ChevronDown size={12} />
+        </button>
+        {dashboardsOpen && (
+          <div
+            style={{
+              position: 'absolute',
+              top: 'calc(100% + 6px)',
+              right: 0,
+              width: 300,
+              maxHeight: 480,
+              background: 'var(--bg-elevated, #FFFFFF)',
+              border: '1px solid var(--border-default, #DFD3B8)',
+              borderRadius: 8,
+              boxShadow: 'var(--shadow-xl, 0 20px 25px rgba(0,0,0,0.15))',
+              zIndex: 210,
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <div
+              style={{
+                padding: '10px 14px',
+                borderBottom: '1px solid var(--border-subtle, #EDE3CE)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <div style={{ fontFamily: 'var(--font-serif, Fraunces, serif)', fontStyle: 'italic', fontWeight: 500, fontSize: 15, color: 'var(--fg-primary)' }}>
+                Dashboards §14
+              </div>
+              <div style={{ fontFamily: 'var(--font-mono, monospace)', fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase' }}>
+                {DASHBOARDS.length} vues
+              </div>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: 4 }}>
+              {DASHBOARDS.map((d) => {
+                const Icon = d.icon;
+                return (
+                  <button
+                    key={d.path}
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      setDashboardsOpen(false);
+                      navigate(d.path);
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      width: '100%',
+                      padding: '8px 12px',
+                      background: 'transparent',
+                      border: 'none',
+                      borderRadius: 6,
+                      fontFamily: 'var(--font-sans, Inter, sans-serif)',
+                      fontSize: 13,
+                      color: 'var(--fg-primary, #2F1F12)',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-hover, #F0E9DA)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                  >
+                    <Icon size={14} style={{ color: 'var(--accent-indigo, #4A5D75)', flexShrink: 0 }} />
+                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {d.label}
+                    </span>
+                    {d.todo && (
+                      <span
+                        style={{
+                          flexShrink: 0,
+                          padding: '1px 6px',
+                          background: 'var(--accent-gold, #C89B3C)',
+                          color: CREAM,
+                          borderRadius: 6,
+                          fontFamily: 'var(--font-mono, monospace)',
+                          fontSize: 9,
+                          fontWeight: 700,
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        TODO
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>

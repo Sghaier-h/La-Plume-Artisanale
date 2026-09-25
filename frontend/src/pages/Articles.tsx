@@ -692,7 +692,7 @@ const Articles: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen ml-64 p-6" style={{ background: 'var(--bg-app)' }}>
+    <div className="min-h-screen p-6" style={{ background: 'var(--bg-app)' }}>
       <div className="max-w-7xl mx-auto">
         <div style={{ marginBottom: 'var(--s-6)' }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 'var(--s-2)' }}>
@@ -1533,7 +1533,7 @@ const Articles: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-gray-200">
               {filteredArticles.map((article) => (
-                <tr key={article.id_article} className="hover:bg-gray-50">
+                <tr key={article.id_article} className="hover:bg-gray-50 group">
                   <td className="px-6 py-4">
                     {article.photo_article ? (
                       <img src={article.photo_article} alt={article.ref_commercial} className="w-12 h-12 object-cover rounded" />
@@ -1606,7 +1606,7 @@ const Articles: React.FC = () => {
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1966,7 +1966,7 @@ const Articles: React.FC = () => {
                         </thead>
                         <tbody className="divide-y divide-gray-200">
                           {selectedArticleForStock.stock_par_entrepot.map((stock, index) => (
-                            <tr key={index} className="hover:bg-gray-50">
+                            <tr key={index} className="hover:bg-gray-50 group">
                               <td className="px-4 py-3 font-medium">{stock.entrepot}</td>
                               <td className="px-4 py-3">
                                 <span className="font-semibold" style={{ color: 'var(--accent-indigo)' }}>{stock.quantite}</span>
@@ -2019,7 +2019,7 @@ const Articles: React.FC = () => {
                         </thead>
                         <tbody className="divide-y divide-gray-200">
                           {selectedArticleForStock.historique_mouvements.map((mouvement, index) => (
-                            <tr key={index} className="hover:bg-gray-50">
+                            <tr key={index} className="hover:bg-gray-50 group">
                               <td className="px-4 py-3 text-sm">
                                 {new Date(mouvement.date_mouvement).toLocaleString('fr-FR')}
                               </td>

@@ -232,7 +232,7 @@ const ListePalettes: React.FC = () => {
                   </tr>
                 ) : (
                   filtered.map((p) => (
-                    <tr key={p.id_palette} className="border-t border-[#EDE3CE] hover:bg-[#FBF8F3]">
+                    <tr key={p.id_palette} className="border-t border-[#EDE3CE] hover:bg-[#FBF8F3] group">
                       <td className="px-4 py-3 font-mono text-xs text-[#4A5D75] font-semibold">{p.numero_palette}</td>
                       <td className="px-4 py-3 font-mono text-xs">{p.numero_commande || '—'}</td>
                       <td className="px-4 py-3 text-right font-mono">{p.nb_colis}</td>

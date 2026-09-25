@@ -233,7 +233,7 @@ const BonLivraison: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 ml-64 p-6">
+    <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -552,7 +552,7 @@ const BonLivraison: React.FC = () => {
                 </tr>
               ) : (
                 filteredBL.map((bl) => (
-                  <tr key={bl.id_bl} className="hover:bg-gray-50">
+                  <tr key={bl.id_bl} className="hover:bg-gray-50 group">
                     <td className="px-6 py-4 whitespace-nowrap font-medium">{bl.numero_bl}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{bl.numero_commande || '-'}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{bl.client_nom}</td>
@@ -564,7 +564,7 @@ const BonLivraison: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button 
                           onClick={async () => {
                             try {

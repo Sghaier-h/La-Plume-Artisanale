@@ -260,7 +260,7 @@ const ModeleDetails: React.FC = () => {
   // ─── Render ───────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="ml-64 p-6 flex items-center justify-center min-h-screen">
+      <div className="p-6 flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]" />
       </div>
     );
@@ -268,7 +268,7 @@ const ModeleDetails: React.FC = () => {
 
   if (error || !modele) {
     return (
-      <div className="ml-64 p-6">
+      <div className="p-6">
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <p className="text-red-800">{error || 'Modèle non trouvé'}</p>
           <Link to="/modeles" className="mt-4 inline-block text-[#C8663D] hover:underline">
@@ -307,7 +307,7 @@ const ModeleDetails: React.FC = () => {
   );
 
   return (
-    <div className="ml-64 p-6">
+    <div className="p-6">
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -443,7 +443,7 @@ const ModeleDetails: React.FC = () => {
                   <tr
                     key={v.id_article}
                     onClick={() => navigate(`/articles/${v.id_article}`)}
-                    className="hover:bg-gray-50 cursor-pointer"
+                    className="hover:bg-gray-50 cursor-pointer group"
                   >
                     <td className="px-4 py-2 font-mono text-sm">{v.code_article}</td>
                     <td className="px-4 py-2 text-sm">{v.designation || '—'}</td>

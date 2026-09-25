@@ -314,7 +314,7 @@ const Formations: React.FC = () => {
                     </tr>
                   ) : (
                     filtered.map((f) => (
-                      <tr key={f.id_formation} className="border-t border-[#EDE3CE] hover:bg-[#FBF8F3]">
+                      <tr key={f.id_formation} className="border-t border-[#EDE3CE] hover:bg-[#FBF8F3] group">
                         <td className="px-4 py-3">
                           <div className="font-medium">{f.intitule}</div>
                           {f.certifiante && (

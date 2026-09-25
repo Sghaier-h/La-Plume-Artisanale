@@ -395,7 +395,7 @@ const ContratsTravail: React.FC = () => {
                   </tr>
                 ) : (
                   filtered.map((c) => (
-                    <tr key={c.id_contrat} className="border-t border-[#EDE3CE] hover:bg-[#FDF2ED]/30">
+                    <tr key={c.id_contrat} className="border-t border-[#EDE3CE] hover:bg-[#FDF2ED]/30 group">
                       <td className="px-4 py-3 font-mono text-xs text-[#4A5D75]">{c.numero_contrat}</td>
                       <td className="px-4 py-3 font-medium">
                         {c.employe_prenom} {c.employe_nom}

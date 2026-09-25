@@ -219,7 +219,7 @@ const MachinesMaintenance: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--bg-app, #FBF8F3)' }}>
-        <div className="ml-72 animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]" />
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]" />
       </div>
     );
   }
@@ -233,7 +233,7 @@ const MachinesMaintenance: React.FC = () => {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-app, #FBF8F3)' }}>
-      <div className="ml-72 p-6">
+      <div className="p-6">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-6">
@@ -315,7 +315,7 @@ const MachinesMaintenance: React.FC = () => {
                     {filteredMachines.map((m) => {
                       const meta = STATUT_META[m.statut];
                       return (
-                        <tr key={m.id_machine} className="hover:bg-[#FDF2ED]/50">
+                        <tr key={m.id_machine} className="hover:bg-[#FDF2ED]/50 group">
                           <td
                             className="px-4 py-3 text-xs font-semibold"
                             style={{
@@ -381,7 +381,7 @@ const MachinesMaintenance: React.FC = () => {
                 </thead>
                 <tbody className="divide-y" style={{ borderColor: 'var(--border-subtle, #E7DFD3)' }}>
                   {entretiens.map((e) => (
-                    <tr key={e.id_entretien} className="hover:bg-[#FDF2ED]/50">
+                    <tr key={e.id_entretien} className="hover:bg-[#FDF2ED]/50 group">
                       <td
                         className="px-4 py-3 text-xs"
                         style={{ fontFamily: 'var(--font-mono, JetBrains Mono, monospace)', color: 'var(--fg-primary, #2F2A26)' }}
@@ -456,7 +456,7 @@ const MachinesMaintenance: React.FC = () => {
                     </tr>
                   )}
                   {interventions.map((i) => (
-                    <tr key={i.id_intervention} className="hover:bg-[#FDF2ED]/50">
+                    <tr key={i.id_intervention} className="hover:bg-[#FDF2ED]/50 group">
                       <td
                         className="px-4 py-3 text-xs"
                         style={{ fontFamily: 'var(--font-mono, JetBrains Mono, monospace)', color: 'var(--fg-primary, #2F2A26)' }}
@@ -516,7 +516,7 @@ const MachinesMaintenance: React.FC = () => {
                   {pieces.map((p) => {
                     const alerte = p.stock < p.seuil_min;
                     return (
-                      <tr key={p.id_piece} className="hover:bg-[#FDF2ED]/50">
+                      <tr key={p.id_piece} className="hover:bg-[#FDF2ED]/50 group">
                         <td
                           className="px-4 py-3 text-xs font-semibold"
                           style={{

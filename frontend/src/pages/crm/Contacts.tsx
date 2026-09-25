@@ -173,14 +173,14 @@ const Contacts: React.FC = () => {
         className="min-h-screen flex items-center justify-center"
         style={{ backgroundColor: 'var(--bg-app, #FBF8F3)' }}
       >
-        <div className="ml-72 animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]" />
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]" />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-app, #FBF8F3)' }}>
-      <div className="ml-72 p-6">
+      <div className="p-6">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-6">
@@ -278,7 +278,7 @@ const Contacts: React.FC = () => {
               </thead>
               <tbody className="divide-y" style={{ borderColor: 'var(--border-subtle, #E7DFD3)' }}>
                 {filtered.map((c) => (
-                  <tr key={c.id_contact} className="hover:bg-[#FDF2ED]/50 transition-colors">
+                  <tr key={c.id_contact} className="hover:bg-[#FDF2ED]/50 transition-colors group">
                     <td className="px-4 py-3">
                       <div className="font-medium" style={{ color: 'var(--fg-primary, #2F2A26)' }}>
                         {c.prenom} {c.nom}

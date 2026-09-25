@@ -232,7 +232,7 @@ const Devis: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen ml-64 p-6" style={{ background: 'var(--bg-app)' }}>
+    <div className="min-h-screen p-6" style={{ background: 'var(--bg-app)' }}>
       <div className="max-w-7xl mx-auto">
         <div style={{ marginBottom: 'var(--s-6)' }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 'var(--s-2)' }}>
@@ -621,7 +621,7 @@ const Devis: React.FC = () => {
                 };
                 const dejaTransforme = devis.statut && ['transforme', 'transformé', 'TRANSFORME'].includes(devis.statut);
                 return (
-                <tr key={devis.id_devis} onClick={openDevisView} className="hover:bg-gray-50 cursor-pointer">
+                <tr key={devis.id_devis} onClick={openDevisView} className="hover:bg-gray-50 cursor-pointer group">
                   <td className="px-6 py-4 whitespace-nowrap font-medium">{devis.numero_devis}</td>
                   <td className="px-6 py-4 whitespace-nowrap">{devis.client_nom}</td>
                   <td className="px-6 py-4 whitespace-nowrap">{devis.date_devis}</td>

@@ -333,7 +333,7 @@ const Equipe: React.FC = () => {
   const echelons = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
   return (
-    <div className="min-h-screen bg-gray-50 ml-64 p-6">
+    <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>

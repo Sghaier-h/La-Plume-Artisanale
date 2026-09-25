@@ -160,7 +160,7 @@ const MatieresPremieres: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="ml-64 p-6">
+      <div className="p-6">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
@@ -239,7 +239,7 @@ const MatieresPremieres: React.FC = () => {
                 {matieres.map((matiere) => {
                   const status = getStockStatus(matiere);
                   return (
-                    <tr key={matiere.id_mp} className="hover:bg-gray-50">
+                    <tr key={matiere.id_mp} className="hover:bg-gray-50 group">
                       <td className="px-6 py-4 whitespace-nowrap font-mono text-xs font-medium text-[#C8663D]">
                         {matiere.qr_mp || '-'}
                       </td>
@@ -266,7 +266,7 @@ const MatieresPremieres: React.FC = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={async () => {
                               try {

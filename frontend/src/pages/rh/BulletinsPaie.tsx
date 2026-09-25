@@ -330,7 +330,7 @@ const BulletinsPaie: React.FC = () => {
                   </tr>
                 ) : (
                   filtered.map((b) => (
-                    <tr key={b.id_bulletin} className="border-t border-[#EDE3CE] hover:bg-[#FBF8F3]">
+                    <tr key={b.id_bulletin} className="border-t border-[#EDE3CE] hover:bg-[#FBF8F3] group">
                       <td className="px-4 py-3 font-mono text-xs text-[#4A5D75]">{b.numero_bulletin}</td>
                       <td className="px-4 py-3 font-medium">
                         {b.employe_prenom} {b.employe_nom}

@@ -167,14 +167,14 @@ const Entrepot: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="ml-64 p-6 flex items-center justify-center min-h-screen">
+      <div className="p-6 flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]"></div>
       </div>
     );
   }
 
   return (
-    <div className="ml-64 p-6">
+    <div className="p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <div>
@@ -385,7 +385,7 @@ const Entrepot: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {filteredEntrepots.map((entrepot) => (
-                  <tr key={entrepot.id_entrepot} className="hover:bg-gray-50">
+                  <tr key={entrepot.id_entrepot} className="hover:bg-gray-50 group">
                     <td className="px-6 py-4 whitespace-nowrap font-mono text-sm font-medium">{entrepot.code_entrepot}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold">{entrepot.nom_entrepot}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">{entrepot.type_entrepot}</td>
@@ -398,7 +398,7 @@ const Entrepot: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button onClick={() => handleEdit(entrepot)} className="text-[#C8663D] hover:text-[#4A5D75]">
                           <Edit className="w-4 h-4" />
                         </button>

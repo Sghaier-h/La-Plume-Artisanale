@@ -412,7 +412,7 @@ const StatsPerformance: React.FC = () => {
                 {top.map((t) => (
                   <tr
                     key={t.id}
-                    className="border-t hover:bg-[var(--bg-hover)]"
+                    className="border-t hover:bg-[var(--bg-hover)] group"
                     style={{ borderColor: 'var(--border-subtle)' }}
                   >
                     <td className="px-4 py-3 font-medium" style={{ color: 'var(--fg-primary)' }}>

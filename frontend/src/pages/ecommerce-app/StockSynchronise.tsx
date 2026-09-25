@@ -330,7 +330,7 @@ const StockSynchronise: React.FC = () => {
                     return (
                       <tr
                         key={r.id_article}
-                        className="border-t hover:bg-[var(--bg-hover)]"
+                        className="border-t hover:bg-[var(--bg-hover)] group"
                         style={{ borderColor: 'var(--border-subtle)' }}
                       >
                         <td className="px-4 py-3">

@@ -281,7 +281,7 @@ const RelancesFactures: React.FC = () => {
                   </tr>
                 ) : (
                   filtered.map((r) => (
-                    <tr key={r.id_relance} className="border-t border-[#EDE3CE] hover:bg-[#FBF8F3]">
+                    <tr key={r.id_relance} className="border-t border-[#EDE3CE] hover:bg-[#FBF8F3] group">
                       <td className="px-4 py-3 font-mono text-xs text-[#4A5D75] font-semibold">{r.numero_facture}</td>
                       <td className="px-4 py-3">
                         <div className="font-medium">{r.nom_client}</div>

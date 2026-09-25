@@ -100,7 +100,7 @@ const CrmLeads: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {leads.map((o) => (
-                  <tr key={o.id ?? o.id_opportunite} className="hover:bg-slate-50">
+                  <tr key={o.id ?? o.id_opportunite} className="hover:bg-slate-50 group">
                     <td className="px-4 py-3 font-medium text-slate-800">{o.nom}</td>
                     <td className="px-4 py-3 text-slate-600">{o.client_nom || '-'}</td>
                     <td className="px-4 py-3 text-slate-600">{fmtDate(o.created_at)}</td>

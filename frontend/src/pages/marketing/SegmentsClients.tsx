@@ -383,7 +383,7 @@ const SegmentsClients: React.FC = () => {
                   filtered.map((seg) => (
                     <tr
                       key={seg.id_segment}
-                      className="border-t hover:bg-[var(--bg-hover)]"
+                      className="border-t hover:bg-[var(--bg-hover)] group"
                       style={{ borderColor: 'var(--border-subtle)' }}
                     >
                       <td

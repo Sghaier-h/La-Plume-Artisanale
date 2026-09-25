@@ -155,7 +155,7 @@ const Services: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 ml-64 p-6">
+    <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -379,7 +379,7 @@ const Services: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {filteredServices.map((service) => (
-                  <tr key={service.id} className="hover:bg-gray-50">
+                  <tr key={service.id} className="hover:bg-gray-50 group">
                     <td className="px-6 py-4 whitespace-nowrap font-mono text-sm font-medium">{service.code}</td>
                     <td className="px-6 py-4 whitespace-nowrap font-semibold">{service.libelle}</td>
                     <td className="px-6 py-4 text-sm text-gray-600">{service.description || '-'}</td>
@@ -398,7 +398,7 @@ const Services: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => handleEdit(service)}
                           className="text-[#C8663D] hover:text-[#4A5D75]"
