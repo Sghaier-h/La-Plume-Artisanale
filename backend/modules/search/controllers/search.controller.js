@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Contrôleur Search — recherche transversale
  *
  * Endpoints :
@@ -26,7 +26,7 @@ const SOURCES = [
     type: 'client',
     sql: (q, l) => ({
       text: `SELECT id_client AS id, raison_sociale AS title, code_client AS subtitle
-             FROM clients
+             FROM comptes
              WHERE raison_sociale ILIKE $1 OR code_client ILIKE $1
              LIMIT $2`,
       params: [`%${q}%`, l],

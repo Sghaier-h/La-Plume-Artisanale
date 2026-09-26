@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Contrôleur Notifications — notifications in-app
  *
  * Endpoints:
@@ -194,7 +194,7 @@ export const broadcast = async (req, res) => {
     if (!Array.isArray(roles) || roles.length === 0) return sendError(res, 'roles (array) requis', 400);
 
     const users = await pool.query(
-      `SELECT id_utilisateur FROM utilisateurs WHERE role = ANY($1::text[]) AND actif = true`,
+      `SELECT id_utilisateur FROM users WHERE role = ANY($1::text[]) AND actif = true`,
       [roles]
     );
     const created = [];

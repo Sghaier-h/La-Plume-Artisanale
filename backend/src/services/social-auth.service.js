@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Social Auth Service - Service d'authentification via réseaux sociaux
  * Supporte OAuth pour Facebook, Google, LinkedIn, Twitter, etc.
  */
@@ -175,7 +175,7 @@ class SocialAuthService {
     try {
       // Vérifier si l'utilisateur existe déjà
       const existingUser = await pool.query(
-        `SELECT * FROM utilisateurs 
+        `SELECT * FROM users 
          WHERE email = $1 OR (social_provider = $2 AND social_id = $3)`,
         [userInfo.email, provider, userInfo.id]
       );
@@ -184,7 +184,7 @@ class SocialAuthService {
         // Mettre à jour l'utilisateur existant
         const user = existingUser.rows[0];
         await pool.query(
-          `UPDATE utilisateurs 
+          `UPDATE users 
            SET social_provider = $1, 
                social_id = $2, 
                social_picture = $3,
@@ -198,7 +198,7 @@ class SocialAuthService {
 
       // Créer un nouvel utilisateur
       const result = await pool.query(
-        `INSERT INTO utilisateurs (
+        `INSERT INTO users (
           email, 
           nom, 
           prenom,
@@ -236,7 +236,7 @@ class SocialAuthService {
   async linkSocialAccount(userId, provider, userInfo) {
     try {
       await pool.query(
-        `UPDATE utilisateurs 
+        `UPDATE users 
          SET social_provider = $1, 
              social_id = $2, 
              social_picture = $3,
@@ -258,7 +258,7 @@ class SocialAuthService {
   async unlinkSocialAccount(userId, provider) {
     try {
       await pool.query(
-        `UPDATE utilisateurs 
+        `UPDATE users 
          SET social_provider = NULL, 
              social_id = NULL, 
              social_picture = NULL,
@@ -281,7 +281,7 @@ class SocialAuthService {
     try {
       const result = await pool.query(
         `SELECT social_provider, social_id, social_picture 
-         FROM utilisateurs 
+         FROM users 
          WHERE id = $1 AND social_provider IS NOT NULL`,
         [userId]
       );

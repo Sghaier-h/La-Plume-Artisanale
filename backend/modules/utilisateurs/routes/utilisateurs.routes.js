@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Routes Utilisateurs — Gestion complète des comptes
  */
 
@@ -49,8 +49,8 @@ router.get('/commerciaux', async (req, res) => {
   try {
     const r = await pool.query(`
       SELECT u.id_utilisateur, u.email, u.nom, u.prenom, u.nom_utilisateur, u.actif, r.code_role AS role
-      FROM utilisateurs u
-      LEFT JOIN utilisateurs_roles ur ON u.id_utilisateur = ur.id_utilisateur
+      FROM users u
+      LEFT JOIN users_roles ur ON u.id_utilisateur = ur.id_utilisateur
       LEFT JOIN roles r ON ur.id_role = r.id_role
       WHERE r.code_role IN ('COMMERCIAL','commercial')
       ORDER BY u.id_utilisateur DESC
@@ -71,7 +71,7 @@ router.post('/equipe/:id_operateur(\\d+)/creer-utilisateur', async (req, res) =>
     const op = opRes.rows[0];
     const hash = await bcrypt.hash(mot_de_passe, 10);
     const insert = await pool.query(
-      `INSERT INTO utilisateurs (email, mot_de_passe, nom, prenom, id_operateur, actif, date_creation)
+      `INSERT INTO users (email, mot_de_passe, nom, prenom, id_operateur, actif, date_creation)
        VALUES ($1, $2, $3, $4, $5, true, NOW()) RETURNING id_utilisateur, email, nom, prenom, id_operateur`,
       [email, hash, op.nom || null, op.prenom || null, op.id_operateur]
     );
@@ -205,7 +205,7 @@ router.get('/:id(\\d+)/permissions', async (req, res) => {
     const r = await pool.query(
       `SELECT DISTINCT p.id_permission, p.code, p.libelle, p.module, p.description,
               r.code_role AS source_role
-       FROM utilisateurs_roles ur
+       FROM users_roles ur
        JOIN role_permissions rp ON rp.id_role = ur.id_role
        JOIN permissions p ON p.id_permission = rp.id_permission
        JOIN roles r ON r.id_role = ur.id_role

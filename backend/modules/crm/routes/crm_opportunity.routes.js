@@ -1,4 +1,4 @@
-/**
+﻿/**
  * CRM Opportunity Routes — table réelle `opportunites_crm`
  * Colonnes: id_opportunite, nom, id_client, montant_prevue, probabilite,
  *           date_fermeture_prevue, statut, created_at, ...
@@ -26,8 +26,8 @@ router.get('/', authenticate, async (req, res) => {
       SELECT o.id_opportunite AS id, o.nom, o.id_client, o.montant_prevue, o.probabilite,
              o.date_fermeture_prevue, o.statut, o.created_at, o.updated_at,
              c.raison_sociale AS client_nom
-      FROM opportunites_crm o
-      LEFT JOIN clients c ON o.id_client = c.id_client
+      FROM opportunites o
+      LEFT JOIN comptes c ON o.id_client = c.id_client
       ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
       ORDER BY o.created_at DESC NULLS LAST, o.id_opportunite DESC
     `;
@@ -42,8 +42,8 @@ router.get('/:id(\\d+)', authenticate, async (req, res) => {
   try {
     const r = await pool.query(
       `SELECT o.*, c.raison_sociale AS client_nom
-       FROM opportunites_crm o
-       LEFT JOIN clients c ON o.id_client = c.id_client
+       FROM opportunites o
+       LEFT JOIN comptes c ON o.id_client = c.id_client
        WHERE o.id_opportunite = $1 LIMIT 1`,
       [req.params.id]
     );
@@ -59,7 +59,7 @@ router.post('/', authenticate, async (req, res) => {
     const { nom, id_client, montant_prevue, probabilite, date_fermeture_prevue, statut } = req.body || {};
     if (!nom) return sendError(res, 'nom requis', 400);
     const r = await pool.query(
-      `INSERT INTO opportunites_crm (nom, id_client, montant_prevue, probabilite, date_fermeture_prevue, statut, created_by)
+      `INSERT INTO opportunites (nom, id_client, montant_prevue, probabilite, date_fermeture_prevue, statut, created_by)
        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
       [nom, id_client || null, montant_prevue || 0, probabilite || 0, date_fermeture_prevue || null, statut || 'nouveau', req.user?.id || null]
     );
@@ -113,7 +113,7 @@ router.put('/:id(\\d+)/lose', authenticate, async (req, res) => {
 
 router.delete('/:id(\\d+)', authenticate, async (req, res) => {
   try {
-    const r = await pool.query(`DELETE FROM opportunites_crm WHERE id_opportunite = $1 RETURNING id_opportunite`, [req.params.id]);
+    const r = await pool.query(`DELETE FROM opportunites WHERE id_opportunite = $1 RETURNING id_opportunite`, [req.params.id]);
     if (!r.rows[0]) return sendError(res, 'Opportunité introuvable', 404);
     return sendSuccess(res, { id: r.rows[0].id_opportunite }, 'Supprimée');
   } catch (error) { return handleError(res, error, 'deleteOpp'); }

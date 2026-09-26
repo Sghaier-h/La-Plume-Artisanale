@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Contrôleur Commercial — équipe commerciale et objectifs
  *
  * Endpoints:
@@ -44,7 +44,7 @@ export const getCommercial = async (req, res) => {
               c.taux_commission, c.actif, c.created_at,
               u.email, u.nom, u.prenom
        FROM commercial c
-       LEFT JOIN utilisateurs u ON u.id_utilisateur = c.id_commercial
+       LEFT JOIN users u ON u.id_utilisateur = c.id_commercial
        WHERE c.id_commercial IS NOT NULL
        ORDER BY c.created_at DESC`
     );
@@ -71,7 +71,7 @@ export const getStatsGlobal = async (req, res) => {
     } catch {}
     const commerciaux = await pool.query(
       `SELECT c.id_commercial, u.email, u.nom, u.prenom, c.objectif_mensuel
-       FROM commercial c LEFT JOIN utilisateurs u ON u.id_utilisateur = c.id_commercial
+       FROM commercial c LEFT JOIN users u ON u.id_utilisateur = c.id_commercial
        WHERE c.actif = true AND c.id_commercial IS NOT NULL`
     );
     const top5 = commerciaux.rows.slice(0, 5).map((c) => ({ ...c, ca_mois: 0 }));
@@ -108,7 +108,7 @@ export const getPerformance = async (req, res) => {
            COALESCE(SUM(f.total_ttc) FILTER (WHERE f.created_at >= date_trunc('month', NOW())), 0)::float AS ca_mois,
            COALESCE(SUM(f.total_ttc) FILTER (WHERE f.created_at >= date_trunc('year', NOW())), 0)::float AS ca_annee
          FROM factures f
-         LEFT JOIN clients cl ON cl.id_client = f.id_client
+         LEFT JOIN comptes cl ON cl.id_client = f.id_client
          WHERE cl.id_commercial = $1`,
         [id]
       );
@@ -119,7 +119,7 @@ export const getPerformance = async (req, res) => {
     try {
       const r = await pool.query(
         `SELECT COUNT(*)::int AS c FROM commandes co
-         LEFT JOIN clients cl ON cl.id_client = co.id_client
+         LEFT JOIN comptes cl ON cl.id_client = co.id_client
          WHERE cl.id_commercial = $1 AND co.created_at >= date_trunc('month', NOW())`,
         [id]
       );
@@ -146,7 +146,7 @@ export const getCommercialById = async (req, res) => {
   try {
     const r = await pool.query(
       `SELECT c.*, c.id_commercial AS id, u.email, u.nom, u.prenom
-       FROM commercial c LEFT JOIN utilisateurs u ON u.id_utilisateur = c.id_commercial
+       FROM commercial c LEFT JOIN users u ON u.id_utilisateur = c.id_commercial
        WHERE c.id_commercial = $1 LIMIT 1`,
       [req.params.id]
     );
@@ -227,7 +227,7 @@ export const getDashboard = async (req, res) => {
               c.objectif_annuel, c.taux_commission,
               u.nom, u.prenom, u.email
        FROM commercial c
-       LEFT JOIN utilisateurs u ON u.id_utilisateur = c.id_commercial
+       LEFT JOIN users u ON u.id_utilisateur = c.id_commercial
        WHERE c.id_commercial = $1 LIMIT 1`,
       [id]
     );
@@ -241,7 +241,7 @@ export const getDashboard = async (req, res) => {
            COALESCE(SUM(f.total_ttc) FILTER (WHERE f.created_at >= date_trunc('quarter', NOW())), 0)::float AS ca_trimestre,
            COALESCE(SUM(f.total_ttc) FILTER (WHERE f.created_at >= date_trunc('year', NOW())), 0)::float AS ca_annee
          FROM factures f
-         LEFT JOIN clients cl ON cl.id_client = f.id_client
+         LEFT JOIN comptes cl ON cl.id_client = f.id_client
          WHERE cl.id_commercial = $1`,
         [id]
       );
@@ -260,8 +260,8 @@ export const getDashboard = async (req, res) => {
         `SELECT COALESCE(o.statut, 'new') AS stage,
                 COUNT(*)::int AS count,
                 COALESCE(SUM(o.montant_prevue), 0)::float AS montant
-         FROM opportunites_crm o
-         LEFT JOIN clients cl ON cl.id_client = o.id_client
+         FROM opportunites o
+         LEFT JOIN comptes cl ON cl.id_client = o.id_client
          WHERE (cl.id_commercial = $1 OR o.created_by = $1)
            AND COALESCE(o.statut, 'new') NOT IN ('won', 'lost', 'closed')
          GROUP BY COALESCE(o.statut, 'new')`,
@@ -289,7 +289,7 @@ export const getDashboard = async (req, res) => {
         `SELECT cl.id_client, cl.raison_sociale,
                 COALESCE(SUM(f.total_ttc), 0)::float AS ca_mois,
                 COUNT(DISTINCT co.id_commande)::int AS nb_commandes
-         FROM clients cl
+         FROM comptes cl
          LEFT JOIN factures f ON f.id_client = cl.id_client
               AND f.created_at >= date_trunc('month', NOW())
          LEFT JOIN commandes co ON co.id_client = cl.id_client
@@ -309,7 +309,7 @@ export const getDashboard = async (req, res) => {
       const relances = await safe(async () => {
         const r = await pool.query(
           `SELECT COUNT(*)::int AS c FROM factures f
-           LEFT JOIN clients cl ON cl.id_client = f.id_client
+           LEFT JOIN comptes cl ON cl.id_client = f.id_client
            WHERE cl.id_commercial = $1 AND COALESCE(f.statut,'') <> 'payee'
              AND f.date_echeance < NOW()`,
           [id]
@@ -321,7 +321,7 @@ export const getDashboard = async (req, res) => {
       const devis = await safe(async () => {
         const r = await pool.query(
           `SELECT COUNT(*)::int AS c FROM devis d
-           LEFT JOIN clients cl ON cl.id_client = d.id_client
+           LEFT JOIN comptes cl ON cl.id_client = d.id_client
            WHERE cl.id_commercial = $1 AND COALESCE(d.statut,'brouillon') = 'brouillon'`,
           [id]
         );
@@ -379,14 +379,14 @@ export const getLeaderboard = async (req, res) => {
   try {
     const list = await pool.query(
       `SELECT c.id_commercial, u.nom, u.prenom, c.objectif_mensuel
-       FROM commercial c LEFT JOIN utilisateurs u ON u.id_utilisateur = c.id_commercial
+       FROM commercial c LEFT JOIN users u ON u.id_utilisateur = c.id_commercial
        WHERE c.actif = true AND c.id_commercial IS NOT NULL`
     );
     const enriched = await Promise.all(list.rows.map(async (c) => {
       const ca = await safe(async () => {
         const r = await pool.query(
           `SELECT COALESCE(SUM(f.total_ttc), 0)::float AS ca
-           FROM factures f LEFT JOIN clients cl ON cl.id_client = f.id_client
+           FROM factures f LEFT JOIN comptes cl ON cl.id_client = f.id_client
            WHERE cl.id_commercial = $1 AND f.created_at >= date_trunc('month', NOW())`,
           [c.id_commercial]
         );
@@ -395,7 +395,7 @@ export const getLeaderboard = async (req, res) => {
       const nb = await safe(async () => {
         const r = await pool.query(
           `SELECT COUNT(*)::int AS c FROM commandes co
-           LEFT JOIN clients cl ON cl.id_client = co.id_client
+           LEFT JOIN comptes cl ON cl.id_client = co.id_client
            WHERE cl.id_commercial = $1 AND co.created_at >= date_trunc('month', NOW())`,
           [c.id_commercial]
         );
@@ -427,8 +427,8 @@ export const getPipeline = async (req, res) => {
                 COUNT(*)::int AS count,
                 COALESCE(SUM(o.montant_prevue), 0)::float AS montant,
                 COALESCE(AVG(o.probabilite), 0)::float AS probabilite_moyenne
-         FROM opportunites_crm o
-         LEFT JOIN clients cl ON cl.id_client = o.id_client
+         FROM opportunites o
+         LEFT JOIN comptes cl ON cl.id_client = o.id_client
          WHERE (cl.id_commercial = $1 OR o.created_by = $1)
          GROUP BY COALESCE(o.statut, 'new')
          ORDER BY montant DESC`,
@@ -494,7 +494,7 @@ export const getTeamPerformance = async (req, res) => {
     const list = await pool.query(
       `SELECT c.id_commercial, c.objectif_mensuel, c.objectif_annuel, c.taux_commission,
               u.nom, u.prenom
-       FROM commercial c LEFT JOIN utilisateurs u ON u.id_utilisateur = c.id_commercial
+       FROM commercial c LEFT JOIN users u ON u.id_utilisateur = c.id_commercial
        WHERE c.actif = true AND c.id_commercial IS NOT NULL`
     );
     const team = await Promise.all(list.rows.map(async (c) => {
@@ -503,7 +503,7 @@ export const getTeamPerformance = async (req, res) => {
           `SELECT
              COALESCE(SUM(f.total_ttc) FILTER (WHERE f.created_at >= date_trunc('month', NOW())), 0)::float AS ca_mois,
              COALESCE(SUM(f.total_ttc) FILTER (WHERE f.created_at >= date_trunc('year', NOW())), 0)::float AS ca_annee
-           FROM factures f LEFT JOIN clients cl ON cl.id_client = f.id_client
+           FROM factures f LEFT JOIN comptes cl ON cl.id_client = f.id_client
            WHERE cl.id_commercial = $1`,
           [c.id_commercial]
         );

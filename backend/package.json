@@ -16,6 +16,8 @@
     "seed": "node database/seed.js",
     "seed:demo": "node scripts/seed-demo.js",
     "seed:demo:dry": "node scripts/seed-demo.js --dry",
+    "migrate:crm-v2": "node scripts/migrate-crm-to-schema-v2.js",
+    "migrate:crm-v2:dry": "node scripts/migrate-crm-to-schema-v2.js --dry",
     "test:db": "node src/utils/test-db.js",
     "create:admin": "node src/utils/create-admin.js",
     "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest",

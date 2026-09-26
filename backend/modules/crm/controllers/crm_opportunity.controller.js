@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Contrôleur CrmOpportunityController - Module crm
  */
 
@@ -9,7 +9,7 @@ import { sendError, sendSuccess, handleError } from '../../../src/utils/error.he
 // GET /api/crm/opportunites_crm - Liste tous les enregistrements
 export const getCrmOpportunity = async (req, res) => {
   try {
-    const query = `SELECT * FROM opportunites_crm ORDER BY created_at DESC`;
+    const query = `SELECT * FROM opportunites ORDER BY created_at DESC`;
     const result = await pool.query(query);
     return sendSuccess(res, result.rows, 'CrmOpportunity récupérés avec succès');
   } catch (error) {
@@ -21,7 +21,7 @@ export const getCrmOpportunity = async (req, res) => {
 export const getCrmOpportunityById = async (req, res) => {
   try {
     const { id } = req.params;
-    const query = `SELECT * FROM opportunites_crm WHERE id = $1`;
+    const query = `SELECT * FROM opportunites WHERE id = $1`;
     const result = await pool.query(query, [id]);
     
     if (result.rows.length === 0) {
@@ -53,7 +53,7 @@ export const createCrmOpportunity = async (req, res) => {
     const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
     
     const query = `
-      INSERT INTO opportunites_crm (${fields.join(', ')}, created_at, created_by)
+      INSERT INTO opportunites (${fields.join(', ')}, created_at, created_by)
       VALUES (${placeholders}, NOW(), $${values.length + 1})
       RETURNING *
     `;
@@ -133,7 +133,7 @@ export const deleteCrmOpportunity = async (req, res) => {
         params = [userId, id];
       } else {
         query = `
-          DELETE FROM opportunites_crm
+          DELETE FROM opportunites
           WHERE id = $1
           RETURNING *
         `;
@@ -141,7 +141,7 @@ export const deleteCrmOpportunity = async (req, res) => {
       }
     } catch (checkError) {
       query = `
-        DELETE FROM opportunites_crm
+        DELETE FROM opportunites
         WHERE id = $1
         RETURNING *
       `;

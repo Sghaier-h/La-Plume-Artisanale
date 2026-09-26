@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Contrôleur Commandes — Module modulaire
  * CRUD commandes avec lignes d'articles
  */
@@ -26,7 +26,7 @@ export const getCommandes = async (req, res) => {
              SELECT ac.id_article_commande FROM articles_commande ac WHERE ac.id_commande = c.id_commande
            )) AS nb_ofs`
       ])
-      .join('LEFT JOIN clients cl ON c.id_client = cl.id_client')
+      .join('LEFT JOIN comptes cl ON c.id_client = cl.id_client')
       .search(['c.numero_commande', 'cl.raison_sociale'], search)
       .whereIf('c.statut = $?', statut)
       .whereIf('c.id_client = $?', client_id)
@@ -55,7 +55,7 @@ export const getCommande = async (req, res) => {
     const commande = await pool.query(
       `SELECT c.*, cl.raison_sociale as client_nom, cl.code_client as client_code
        FROM commandes c
-       LEFT JOIN clients cl ON c.id_client = cl.id_client
+       LEFT JOIN comptes cl ON c.id_client = cl.id_client
        WHERE c.id_commande = $1`,
       [id]
     );
@@ -94,7 +94,7 @@ export const createCommande = async (req, res) => {
 
     // Vérifier client
     const clientCheck = await client.query(
-      'SELECT id_client FROM clients WHERE id_client = $1 AND actif = true',
+      'SELECT id_client FROM comptes WHERE id_client = $1 AND actif = true',
       [client_id]
     );
     if (clientCheck.rows.length === 0) {
@@ -151,7 +151,7 @@ export const createCommande = async (req, res) => {
 
     const result = await pool.query(
       `SELECT c.*, cl.raison_sociale as client_nom
-       FROM commandes c LEFT JOIN clients cl ON c.id_client = cl.id_client
+       FROM commandes c LEFT JOIN comptes cl ON c.id_client = cl.id_client
        WHERE c.id_commande = $1`, [idCommande]
     );
 
@@ -246,7 +246,7 @@ export const updateCommande = async (req, res) => {
 
     const result = await pool.query(
       `SELECT c.*, cl.raison_sociale as client_nom
-       FROM commandes c LEFT JOIN clients cl ON c.id_client = cl.id_client
+       FROM commandes c LEFT JOIN comptes cl ON c.id_client = cl.id_client
        WHERE c.id_commande = $1`, [id]
     );
 
@@ -288,7 +288,7 @@ async function computePreviewOfs(idCommande, dbClient = null) {
     `SELECT c.id_commande, c.numero_commande, c.id_client, c.statut, c.date_livraison_prevue,
             cl.raison_sociale
      FROM commandes c
-     LEFT JOIN clients cl ON c.id_client = cl.id_client
+     LEFT JOIN comptes cl ON c.id_client = cl.id_client
      WHERE c.id_commande = $1`,
     [idCommande]
   );
@@ -725,7 +725,7 @@ export const analyseStock = async (req, res) => {
       `SELECT c.id_commande, c.numero_commande, c.id_client, c.statut,
               cl.raison_sociale
          FROM commandes c
-         LEFT JOIN clients cl ON c.id_client = cl.id_client
+         LEFT JOIN comptes cl ON c.id_client = cl.id_client
         WHERE c.id_commande = $1`,
       [id]
     );
@@ -1019,7 +1019,7 @@ export const getCommandeWithOFs = async (req, res) => {
     const cmdRes = await pool.query(
       `SELECT c.*, cl.raison_sociale, cl.email, cl.telephone, cl.code_client
          FROM commandes c
-         LEFT JOIN clients cl ON c.id_client = cl.id_client
+         LEFT JOIN comptes cl ON c.id_client = cl.id_client
         WHERE c.id_commande = $1`,
       [id]
     );

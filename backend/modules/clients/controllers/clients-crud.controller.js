@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Contrôleur Clients CRUD — Fonctionnel (pg pool direct)
  * Remplace le controller Odoo-style qui dépend de Environment.get()
  */
@@ -62,7 +62,7 @@ export const getClient = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const result = await pool.query('SELECT * FROM clients WHERE id_client = $1', [id]);
+    const result = await pool.query('SELECT * FROM comptes WHERE id_client = $1', [id]);
     if (result.rows.length === 0) {
       return sendError(res, HTTP_STATUS.NOT_FOUND, ERROR_MESSAGES.NOT_FOUND('Client'));
     }
@@ -96,7 +96,7 @@ export const createClient = async (req, res) => {
 
     // Vérifier code unique
     if (code_client) {
-      const existing = await pool.query('SELECT id_client FROM clients WHERE code_client = $1', [code_client]);
+      const existing = await pool.query('SELECT id_client FROM comptes WHERE code_client = $1', [code_client]);
       if (existing.rows.length > 0) {
         return sendError(res, 'Ce code client existe déjà', HTTP_STATUS.CONFLICT);
       }
@@ -104,7 +104,7 @@ export const createClient = async (req, res) => {
 
     const userId = getUserId(req);
     const result = await pool.query(
-      `INSERT INTO clients
+      `INSERT INTO comptes
         (code_client, raison_sociale, type_client, id_categorie, id_commercial,
          adresse, code_postal, ville, pays, telephone, email, contact_principal,
          conditions_paiement, plafond_credit, devise, taux_remise, actif, created_by)
@@ -133,7 +133,7 @@ export const updateClient = async (req, res) => {
     const { id } = req.params;
     const updateData = req.body;
 
-    const existing = await pool.query('SELECT id_client FROM clients WHERE id_client = $1', [id]);
+    const existing = await pool.query('SELECT id_client FROM comptes WHERE id_client = $1', [id]);
     if (existing.rows.length === 0) {
       return sendError(res, HTTP_STATUS.NOT_FOUND, ERROR_MESSAGES.NOT_FOUND('Client'));
     }
@@ -141,7 +141,7 @@ export const updateClient = async (req, res) => {
     // Vérifier unicité du code
     if (updateData.code_client) {
       const codeExists = await pool.query(
-        'SELECT id_client FROM clients WHERE code_client = $1 AND id_client != $2',
+        'SELECT id_client FROM comptes WHERE code_client = $1 AND id_client != $2',
         [updateData.code_client, id]
       );
       if (codeExists.rows.length > 0) {
@@ -175,7 +175,7 @@ export const updateClient = async (req, res) => {
     values.push(id);
 
     const result = await pool.query(
-      `UPDATE clients SET ${fields.join(', ')} WHERE id_client = $${paramCount} RETURNING *`,
+      `UPDATE comptes SET ${fields.join(', ')} WHERE id_client = $${paramCount} RETURNING *`,
       values
     );
 
@@ -196,7 +196,7 @@ export const getClientStats = async (req, res) => {
         (SELECT COALESCE(SUM(montant_ttc), 0) FROM factures WHERE id_client = $1) as chiffre_affaires,
         (SELECT COALESCE(SUM(montant_ttc), 0) FROM factures WHERE id_client = $1 AND statut = 'PAYEE') as montant_paye,
         (SELECT COUNT(*) FROM adresses_client WHERE id_client = $1 AND actif = true) as nb_adresses,
-        (SELECT COUNT(*) FROM contacts_client WHERE id_client = $1 AND actif = true) as nb_contacts
+        (SELECT COUNT(*) FROM contacts WHERE id_client = $1 AND actif = true) as nb_contacts
     `, [id]);
     return sendSuccess(res, result.rows[0]);
   } catch (error) {
@@ -212,7 +212,7 @@ export const determinerTypeClient = async (req, res) => {
     const nbCommandes = parseInt(countResult.rows[0].nb);
     const type = nbCommandes > 0 ? 'CLIENT' : 'PROSPECT';
 
-    await pool.query('UPDATE clients SET type_client = $1 WHERE id_client = $2', [type, id]);
+    await pool.query('UPDATE comptes SET type_client = $1 WHERE id_client = $2', [type, id]);
     return sendSuccess(res, { type_client: type });
   } catch (error) {
     return handleError(res, error, 'determinerTypeClient');
@@ -225,7 +225,7 @@ export const deleteClient = async (req, res) => {
     const { id } = req.params;
 
     const result = await pool.query(
-      'UPDATE clients SET actif = false WHERE id_client = $1 RETURNING *',
+      'UPDATE comptes SET actif = false WHERE id_client = $1 RETURNING *',
       [id]
     );
     if (result.rows.length === 0) {

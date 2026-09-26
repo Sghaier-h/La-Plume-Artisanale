@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Contrôleur Whatsapp — envoi et suivi de messages WhatsApp (stub)
  *
  * Endpoints:
@@ -203,7 +203,7 @@ export const envoyerFacture = async (req, res) => {
     try {
       const r = await pool.query(
         `SELECT f.*, c.telephone AS client_phone
-         FROM factures f LEFT JOIN clients c ON c.id_client = f.id_client
+         FROM factures f LEFT JOIN comptes c ON c.id_client = f.id_client
          WHERE f.id_factures = $1 OR f.id_facture = $1 LIMIT 1`,
         [id_facture]
       );
@@ -229,7 +229,7 @@ export const envoyerBL = async (req, res) => {
     try {
       const r = await pool.query(
         `SELECT b.*, c.telephone AS client_phone
-         FROM bons_livraison b LEFT JOIN clients c ON c.id_client = b.id_client
+         FROM bons_livraison b LEFT JOIN comptes c ON c.id_client = b.id_client
          WHERE b.id_bons_livraison = $1 OR b.id_bl = $1 LIMIT 1`,
         [id_bl]
       );
@@ -255,7 +255,7 @@ export const envoyerCommandeConfirmation = async (req, res) => {
     try {
       const r = await pool.query(
         `SELECT co.*, c.telephone AS client_phone
-         FROM commandes co LEFT JOIN clients c ON c.id_client = co.id_client
+         FROM commandes co LEFT JOIN comptes c ON c.id_client = co.id_client
          WHERE co.id_commandes = $1 OR co.id_commande = $1 LIMIT 1`,
         [id_commande]
       );
@@ -306,7 +306,7 @@ export const orderConfirmationByBody = async (req, res) => {
     try {
       const r = await pool.query(
         `SELECT co.*, c.telephone AS client_phone
-         FROM commandes co LEFT JOIN clients c ON c.id_client = co.id_client
+         FROM commandes co LEFT JOIN comptes c ON c.id_client = co.id_client
          WHERE co.id_commandes = $1 OR co.id_commande = $1 LIMIT 1`,
         [id_commande]
       );
@@ -333,7 +333,7 @@ export const taskNotification = async (req, res) => {
     try {
       const r = await pool.query(
         `SELECT o.*, u.telephone AS user_phone, u.nom, u.prenom
-         FROM operateurs o LEFT JOIN utilisateurs u ON u.id_utilisateur = o.id_utilisateur
+         FROM operateurs o LEFT JOIN users u ON u.id_utilisateur = o.id_utilisateur
          WHERE o.id_operateurs = $1 OR o.id_operateur = $1 LIMIT 1`,
         [id_operateur]
       );
@@ -345,7 +345,7 @@ export const taskNotification = async (req, res) => {
     if (!phone) {
       try {
         const r2 = await pool.query(
-          `SELECT telephone, nom, prenom FROM utilisateurs WHERE id_utilisateur = $1 LIMIT 1`,
+          `SELECT telephone, nom, prenom FROM users WHERE id_utilisateur = $1 LIMIT 1`,
           [id_operateur]
         );
         if (r2.rows[0]) { phone = r2.rows[0].telephone; nom = `${r2.rows[0].prenom || ''} ${r2.rows[0].nom || ''}`.trim(); }
@@ -373,7 +373,7 @@ export const dashboardContacts = async (req, res) => {
       const r = await pool.query(
         `SELECT u.id_utilisateur AS id_operateur, u.nom, u.prenom, u.email,
                 u.telephone AS phone, u.role, u.poste
-         FROM utilisateurs u
+         FROM users u
          WHERE u.actif = true
            AND (LOWER(u.role) = $1 OR LOWER(u.poste) = $1)
            AND u.telephone IS NOT NULL`,
@@ -384,7 +384,7 @@ export const dashboardContacts = async (req, res) => {
       try {
         const r2 = await pool.query(
           `SELECT id_utilisateur AS id_operateur, nom, prenom, email, telephone AS phone, role
-           FROM utilisateurs WHERE LOWER(role) = $1 AND telephone IS NOT NULL`,
+           FROM users WHERE LOWER(role) = $1 AND telephone IS NOT NULL`,
           [role]
         );
         rows = r2.rows;
@@ -406,7 +406,7 @@ export const dashboardSend = async (req, res) => {
     let contacts = [];
     try {
       const r = await pool.query(
-        `SELECT telephone AS phone FROM utilisateurs
+        `SELECT telephone AS phone FROM users
          WHERE actif = true AND (LOWER(role) = $1 OR LOWER(poste) = $1)
            AND telephone IS NOT NULL`,
         [role]
@@ -415,7 +415,7 @@ export const dashboardSend = async (req, res) => {
     } catch {
       try {
         const r2 = await pool.query(
-          `SELECT telephone AS phone FROM utilisateurs WHERE LOWER(role) = $1 AND telephone IS NOT NULL`,
+          `SELECT telephone AS phone FROM users WHERE LOWER(role) = $1 AND telephone IS NOT NULL`,
           [role]
         );
         contacts = r2.rows;

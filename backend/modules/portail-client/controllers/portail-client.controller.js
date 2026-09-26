@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Contrôleur Portail Client
  * Endpoints sous /api/portail — voir routes/portail-client.routes.js
  */
@@ -23,7 +23,7 @@ export const login = async (req, res) => {
 
     const r = await pool.query(
       `SELECT id_client, raison_sociale, email, portail_password_hash, portail_activated
-         FROM clients WHERE LOWER(email) = LOWER($1) LIMIT 1`,
+         FROM comptes WHERE LOWER(email) = LOWER($1) LIMIT 1`,
       [email]
     );
     const client = r.rows[0];
@@ -39,7 +39,7 @@ export const login = async (req, res) => {
       { expiresIn: JWT_TTL }
     );
     await pool.query(
-      `UPDATE clients SET portail_last_login = CURRENT_TIMESTAMP WHERE id_client = $1`,
+      `UPDATE comptes SET portail_last_login = CURRENT_TIMESTAMP WHERE id_client = $1`,
       [client.id_client]
     );
     return sendSuccess(res, {
@@ -69,7 +69,7 @@ export const forgotPassword = async (req, res) => {
     const token = crypto.randomBytes(32).toString('hex');
     const expires = new Date(Date.now() + 60 * 60 * 1000); // 1h
     await pool.query(
-      `UPDATE clients SET portail_reset_token = $1, portail_reset_expires = $2
+      `UPDATE comptes SET portail_reset_token = $1, portail_reset_expires = $2
          WHERE LOWER(email) = LOWER($3)`,
       [token, expires, email]
     );
@@ -86,14 +86,14 @@ export const resetPassword = async (req, res) => {
     if (new_password.length < 8) return sendError(res, 'Mot de passe trop court (min 8)', 400);
 
     const r = await pool.query(
-      `SELECT id_client FROM clients
+      `SELECT id_client FROM comptes
         WHERE portail_reset_token = $1 AND portail_reset_expires > CURRENT_TIMESTAMP LIMIT 1`,
       [token]
     );
     if (!r.rows[0]) return sendError(res, 'Token invalide ou expiré', 400);
     const hash = await bcrypt.hash(new_password, BCRYPT_ROUNDS);
     await pool.query(
-      `UPDATE clients SET portail_password_hash = $1, portail_reset_token = NULL,
+      `UPDATE comptes SET portail_password_hash = $1, portail_reset_token = NULL,
          portail_reset_expires = NULL, portail_activated = true WHERE id_client = $2`,
       [hash, r.rows[0].id_client]
     );
@@ -106,7 +106,7 @@ export const me = async (req, res) => {
     const r = await pool.query(
       `SELECT id_client, code_client, raison_sociale, email, telephone, adresse, ville,
               code_postal, pays, matricule_fiscal, portail_last_login
-         FROM clients WHERE id_client = $1 LIMIT 1`,
+         FROM comptes WHERE id_client = $1 LIMIT 1`,
       [req.portail.id_client]
     );
     if (!r.rows[0]) return sendError(res, 'Client introuvable', 404);
@@ -119,14 +119,14 @@ export const changePassword = async (req, res) => {
     const { current_password, new_password } = req.body || {};
     if (!new_password || new_password.length < 8) return sendError(res, 'Mot de passe trop court (min 8)', 400);
     const r = await pool.query(
-      `SELECT portail_password_hash FROM clients WHERE id_client = $1 LIMIT 1`,
+      `SELECT portail_password_hash FROM comptes WHERE id_client = $1 LIMIT 1`,
       [req.portail.id_client]
     );
     if (!r.rows[0]) return sendError(res, 'Client introuvable', 404);
     const ok = await bcrypt.compare(current_password || '', r.rows[0].portail_password_hash || '');
     if (!ok) return sendError(res, 'Mot de passe actuel incorrect', 400);
     const hash = await bcrypt.hash(new_password, BCRYPT_ROUNDS);
-    await pool.query(`UPDATE clients SET portail_password_hash = $1 WHERE id_client = $2`,
+    await pool.query(`UPDATE comptes SET portail_password_hash = $1 WHERE id_client = $2`,
       [hash, req.portail.id_client]);
     return sendSuccess(res, { changed: true }, 'Mot de passe changé');
   } catch (error) { return handleError(res, error, 'portail.changePassword'); }
@@ -355,7 +355,7 @@ export const adminSetPortailAccess = async (req, res) => {
     }
     if (!updates.length) return sendError(res, 'Aucun changement demandé', 400);
     const r = await pool.query(
-      `UPDATE clients SET ${updates.join(', ')} WHERE id_client = $1
+      `UPDATE comptes SET ${updates.join(', ')} WHERE id_client = $1
        RETURNING id_client, raison_sociale, email, portail_activated`,
       params
     );
@@ -370,7 +370,7 @@ export const adminResetPortail = async (req, res) => {
     const token = crypto.randomBytes(32).toString('hex');
     const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
     const r = await pool.query(
-      `UPDATE clients SET portail_reset_token = $1, portail_reset_expires = $2
+      `UPDATE comptes SET portail_reset_token = $1, portail_reset_expires = $2
          WHERE id_client = $3 RETURNING id_client, email`,
       [token, expires, id_client]
     );

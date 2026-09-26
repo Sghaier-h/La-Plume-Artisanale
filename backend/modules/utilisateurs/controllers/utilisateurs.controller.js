@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Contrôleur Utilisateurs — Gestion complète des comptes ERP
  *
  * Endpoints:
@@ -57,7 +57,7 @@ export const getUtilisateurs = async (req, res) => {
     if (role) {
       params.push(role);
       where.push(`EXISTS (
-        SELECT 1 FROM utilisateurs_roles ur
+        SELECT 1 FROM users_roles ur
         LEFT JOIN roles r ON ur.id_role = r.id_role
         WHERE ur.id_utilisateur = u.id_utilisateur
           AND (r.code_role = $${params.length} OR r.nom = $${params.length})
@@ -69,11 +69,11 @@ export const getUtilisateurs = async (req, res) => {
       SELECT ${SAFE_COLUMNS},
         COALESCE((
           SELECT string_agg(r.code_role, ',')
-          FROM utilisateurs_roles ur
+          FROM users_roles ur
           LEFT JOIN roles r ON ur.id_role = r.id_role
           WHERE ur.id_utilisateur = u.id_utilisateur
         ), '') AS roles
-      FROM utilisateurs u
+      FROM users u
       ${whereSql}
       ORDER BY u.date_creation DESC
     `;
@@ -87,15 +87,15 @@ export const getUtilisateurs = async (req, res) => {
 // ─── GET /api/utilisateurs/stats/global ───────────────────────────
 export const getStatsGlobal = async (req, res) => {
   try {
-    const total = await pool.query(`SELECT COUNT(*)::int AS total FROM utilisateurs WHERE actif = true`);
-    const verrouilles = await pool.query(`SELECT COUNT(*)::int AS total FROM utilisateurs WHERE compte_verrouille = true`);
+    const total = await pool.query(`SELECT COUNT(*)::int AS total FROM users WHERE actif = true`);
+    const verrouilles = await pool.query(`SELECT COUNT(*)::int AS total FROM users WHERE compte_verrouille = true`);
 
     let parRole = { rows: [] };
     try {
       parRole = await pool.query(`
         SELECT COALESCE(r.code_role, r.nom, 'SANS_ROLE') AS role, COUNT(*)::int AS count
-        FROM utilisateurs u
-        LEFT JOIN utilisateurs_roles ur ON u.id_utilisateur = ur.id_utilisateur
+        FROM users u
+        LEFT JOIN users_roles ur ON u.id_utilisateur = ur.id_utilisateur
         LEFT JOIN roles r ON ur.id_role = r.id_role
         WHERE u.actif = true
         GROUP BY COALESCE(r.code_role, r.nom, 'SANS_ROLE')
@@ -104,7 +104,7 @@ export const getStatsGlobal = async (req, res) => {
     } catch {}
 
     const recentes = await pool.query(`
-      SELECT COUNT(*)::int AS total FROM utilisateurs
+      SELECT COUNT(*)::int AS total FROM users
       WHERE derniere_connexion >= NOW() - INTERVAL '7 days'
     `);
 
@@ -137,7 +137,7 @@ export const getGroupes = async (req, res) => {
 export const getUtilisateursById = async (req, res) => {
   try {
     const r = await pool.query(
-      `SELECT ${SAFE_COLUMNS} FROM utilisateurs u WHERE u.id_utilisateur = $1 LIMIT 1`,
+      `SELECT ${SAFE_COLUMNS} FROM users u WHERE u.id_utilisateur = $1 LIMIT 1`,
       [req.params.id]
     );
     if (!r.rows[0]) return sendError(res, 'Utilisateur introuvable', 404);
@@ -165,7 +165,7 @@ export const createUtilisateurs = async (req, res) => {
       await client.query('BEGIN');
 
       const ins = await client.query(
-        `INSERT INTO utilisateurs
+        `INSERT INTO users
            (email, nom, prenom, nom_utilisateur, mot_de_passe_hash,
             id_operateur, id_groupe, numero_employe, photo_emoji, photo_url,
             actif, tentatives_connexion, compte_verrouille, force_changement_mdp,
@@ -182,7 +182,7 @@ export const createUtilisateurs = async (req, res) => {
       if (role) {
         try {
           await client.query(
-            `INSERT INTO utilisateurs_roles (id_utilisateur, id_role)
+            `INSERT INTO users_roles (id_utilisateur, id_role)
              SELECT $1, r.id_role FROM roles r WHERE r.code_role = $2 OR r.nom = $2 LIMIT 1
              ON CONFLICT DO NOTHING`,
             [newUser.id, role]
@@ -220,7 +220,7 @@ export const updateUtilisateurs = async (req, res) => {
     values.push(author, req.params.id);
 
     const r = await pool.query(
-      `UPDATE utilisateurs SET ${setSql}, date_modification = NOW(), updated_by = $${values.length - 1}
+      `UPDATE users SET ${setSql}, date_modification = NOW(), updated_by = $${values.length - 1}
        WHERE id_utilisateur = $${values.length}
        RETURNING ${SAFE_COLUMNS.replace(/u\./g, '')}`,
       values
@@ -245,7 +245,7 @@ export const changeMotDePasse = async (req, res) => {
     }
 
     const cur = await pool.query(
-      `SELECT mot_de_passe_hash FROM utilisateurs WHERE id_utilisateur = $1`,
+      `SELECT mot_de_passe_hash FROM users WHERE id_utilisateur = $1`,
       [targetId]
     );
     if (!cur.rows[0]) return sendError(res, 'Utilisateur introuvable', 404);
@@ -305,7 +305,7 @@ export const resetMotDePasse = async (req, res) => {
 export const desactiver = async (req, res) => {
   try {
     const r = await pool.query(
-      `UPDATE utilisateurs SET actif = false, date_modification = NOW(), updated_by = $1
+      `UPDATE users SET actif = false, date_modification = NOW(), updated_by = $1
        WHERE id_utilisateur = $2 RETURNING id_utilisateur AS id, actif`,
       [currentUserId(req), req.params.id]
     );
@@ -320,7 +320,7 @@ export const desactiver = async (req, res) => {
 export const activer = async (req, res) => {
   try {
     const r = await pool.query(
-      `UPDATE utilisateurs SET actif = true, date_modification = NOW(), updated_by = $1
+      `UPDATE users SET actif = true, date_modification = NOW(), updated_by = $1
        WHERE id_utilisateur = $2 RETURNING id_utilisateur AS id, actif`,
       [currentUserId(req), req.params.id]
     );
@@ -372,7 +372,7 @@ export const deleteUtilisateurs = async (req, res) => {
   try {
     if (!isAdmin(req)) return sendError(res, 'Réservé aux administrateurs', 403);
     const r = await pool.query(
-      `UPDATE utilisateurs SET actif = false, date_modification = NOW(), updated_by = $1
+      `UPDATE users SET actif = false, date_modification = NOW(), updated_by = $1
        WHERE id_utilisateur = $2 RETURNING id_utilisateur AS id`,
       [currentUserId(req), req.params.id]
     );
@@ -388,7 +388,7 @@ export const getRoles = async (req, res) => {
   try {
     const r = await pool.query(
       `SELECT r.id_role AS id, r.code_role, r.nom, r.description
-       FROM utilisateurs_roles ur
+       FROM users_roles ur
        JOIN roles r ON ur.id_role = r.id_role
        WHERE ur.id_utilisateur = $1`,
       [req.params.id]
@@ -406,7 +406,7 @@ export const addRole = async (req, res) => {
     const { id_role } = req.body || {};
     if (!id_role) return sendError(res, 'id_role requis', 400);
     await pool.query(
-      `INSERT INTO utilisateurs_roles (id_utilisateur, id_role)
+      `INSERT INTO users_roles (id_utilisateur, id_role)
        VALUES ($1, $2) ON CONFLICT DO NOTHING`,
       [req.params.id, id_role]
     );
@@ -421,7 +421,7 @@ export const removeRole = async (req, res) => {
   try {
     if (!isAdmin(req)) return sendError(res, 'Réservé aux administrateurs', 403);
     const r = await pool.query(
-      `DELETE FROM utilisateurs_roles WHERE id_utilisateur = $1 AND id_role = $2 RETURNING id_role`,
+      `DELETE FROM users_roles WHERE id_utilisateur = $1 AND id_role = $2 RETURNING id_role`,
       [req.params.id, req.params.id_role]
     );
     if (!r.rows[0]) return sendError(res, 'Rôle non attribué', 404);

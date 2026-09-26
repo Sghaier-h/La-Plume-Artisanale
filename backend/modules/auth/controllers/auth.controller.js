@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Contrôleur Auth — Module modulaire
  * Login, logout, me (session courante)
  */
@@ -46,9 +46,9 @@ export const login = async (req, res) => {
         `SELECT u.id_utilisateur, u.email, u.nom_utilisateur, u.mot_de_passe_hash, u.actif,
                 u.derniere_connexion, e.nom, e.prenom, e.fonction,
                 r.code_role as role
-         FROM utilisateurs u
+         FROM users u
          LEFT JOIN equipe_fabrication e ON u.id_operateur = e.id_operateur
-         LEFT JOIN utilisateurs_roles ur ON u.id_utilisateur = ur.id_utilisateur
+         LEFT JOIN users_roles ur ON u.id_utilisateur = ur.id_utilisateur
          LEFT JOIN roles r ON ur.id_role = r.id_role
          WHERE u.email = $1 LIMIT 1`,
         [email]
@@ -97,7 +97,7 @@ export const login = async (req, res) => {
 
       // Mise à jour dernière connexion (non bloquant)
       pool.query(
-        'UPDATE utilisateurs SET derniere_connexion = CURRENT_TIMESTAMP WHERE id_utilisateur = $1',
+        'UPDATE users SET derniere_connexion = CURRENT_TIMESTAMP WHERE id_utilisateur = $1',
         [user.id_utilisateur]
       ).catch(err => logger.warn('Impossible de mettre à jour la dernière connexion', { error: err.message }));
 
@@ -163,9 +163,9 @@ export const me = async (req, res) => {
       const result = await pool.query(
         `SELECT u.id_utilisateur, u.email, u.nom_utilisateur, u.derniere_connexion, u.actif,
                 e.nom, e.prenom, e.fonction, r.code_role as role
-         FROM utilisateurs u
+         FROM users u
          LEFT JOIN equipe_fabrication e ON u.id_operateur = e.id_operateur
-         LEFT JOIN utilisateurs_roles ur ON u.id_utilisateur = ur.id_utilisateur
+         LEFT JOIN users_roles ur ON u.id_utilisateur = ur.id_utilisateur
          LEFT JOIN roles r ON ur.id_role = r.id_role
          WHERE u.id_utilisateur = $1 LIMIT 1`,
         [req.user.id]

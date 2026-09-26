@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Contrôleur Dashboard KPIs — Agrégations et indicateurs en temps réel
  * Alimente les dashboards opérateurs avec des vraies données BDD
  */
@@ -15,7 +15,7 @@ export const getKpisAdmin = async (req, res) => {
         COUNT(*) FILTER (WHERE actif = true) as total_actifs,
         COUNT(*) FILTER (WHERE type_client = 'CLIENT' AND actif = true) as clients,
         COUNT(*) FILTER (WHERE type_client = 'PROSPECT' AND actif = true) as prospects
-        FROM clients`),
+        FROM comptes`),
       pool.query(`SELECT
         COUNT(*) as total,
         COUNT(*) FILTER (WHERE statut = 'en_attente') as en_attente,
@@ -75,7 +75,7 @@ export const getActiviteRecente = async (req, res) => {
                 c.raison_sociale as client, cmd.statut, cmd.montant_total as montant,
                 cmd.date_creation as date
          FROM commandes cmd
-         LEFT JOIN clients c ON cmd.id_client = c.id_client
+         LEFT JOIN comptes c ON cmd.id_client = c.id_client
          ORDER BY cmd.date_creation DESC LIMIT $1`, [limit]
       ),
       pool.query(
@@ -83,7 +83,7 @@ export const getActiviteRecente = async (req, res) => {
                 c.raison_sociale as client, d.statut, d.montant_ttc as montant,
                 d.created_at as date
          FROM devis d
-         LEFT JOIN clients c ON d.id_client = c.id_client
+         LEFT JOIN comptes c ON d.id_client = c.id_client
          ORDER BY d.created_at DESC LIMIT $1`, [limit]
       ),
       pool.query(
@@ -91,7 +91,7 @@ export const getActiviteRecente = async (req, res) => {
                 c.raison_sociale as client, f.statut, f.montant_ttc as montant,
                 f.created_at as date
          FROM factures f
-         LEFT JOIN clients c ON f.id_client = c.id_client
+         LEFT JOIN comptes c ON f.id_client = c.id_client
          ORDER BY f.created_at DESC LIMIT $1`, [limit]
       )
     ]);
@@ -138,7 +138,7 @@ export const getTopClients = async (req, res) => {
         c.id_client, c.code_client, c.raison_sociale,
         COUNT(DISTINCT f.id_facture) as nb_factures,
         COALESCE(SUM(f.montant_ttc), 0) as ca_total
-      FROM clients c
+      FROM comptes c
       LEFT JOIN factures f ON c.id_client = f.id_client
       WHERE c.actif = true AND c.type_client = 'CLIENT'
       GROUP BY c.id_client, c.code_client, c.raison_sociale
