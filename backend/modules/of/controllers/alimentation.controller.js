@@ -41,7 +41,7 @@ export const creerOfArticle = async (req, res) => {
     const userId = getUserId(req) || 1;
 
     if (!quantite || quantite <= 0) {
-      return sendError(res, HTTP_STATUS.BAD_REQUEST, 'Quantité > 0 requise');
+      return sendError(res, 'Quantité > 0 requise', HTTP_STATUS.BAD_REQUEST);
     }
 
     const of = await creerOfAlimentation({

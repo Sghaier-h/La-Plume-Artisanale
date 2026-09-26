@@ -111,7 +111,7 @@ const Equipe: React.FC = () => {
       setLoading(true);
       const response = await utilisateursService.getEquipe();
       if (response.data.success) {
-        const membresData = response.data.data.membres.map((m: any) => ({
+        const membresData = (response.data?.data?.membres || []).map((m: any) => ({
           id: m.id,
           nom: m.nom,
           prenom: m.prenom,
@@ -333,7 +333,7 @@ const Equipe: React.FC = () => {
   const echelons = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
   return (
-    <div className="min-h-screen bg-gray-50 ml-64 p-6">
+    <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -584,7 +584,7 @@ const Equipe: React.FC = () => {
                 <div className="grid grid-cols-2 gap-2">
                   <div className="bg-blue-50 p-2 rounded">
                     <p className="text-xs text-blue-600">Horaire Brut</p>
-                    <p className="font-bold text-blue-900">{membre.horaireBrut.toFixed(2)} DT</p>
+                    <p className="font-bold text-blue-900">{Number(membre.horaireBrut || 0).toFixed(2)} DT</p>
                   </div>
                   <div className="bg-green-50 p-2 rounded">
                     <p className="text-xs text-green-600">Salaire Brut</p>

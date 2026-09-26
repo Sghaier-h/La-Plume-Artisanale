@@ -1,0 +1,490 @@
+/**
+ * La Plume Artisanale — Design System
+ * Palette artisanale chaleureuse (terre / crème / or / indigo)
+ * Desktop-first, responsive tablette, mobile-friendly
+ */
+
+:root {
+  /* === COLORS — LIGHT MODE === */
+  /* Backgrounds */
+  --bg-app: #FBF8F3;           /* crème parchemin */
+  --bg-canvas: #F5EFE5;        /* beige plus dense */
+  --bg-elevated: #FFFFFF;      /* cartes */
+  --bg-hover: #F0E9DA;         /* hover */
+  --bg-sunken: #EBE2CE;        /* zones renfoncées */
+
+  /* Foreground */
+  --fg-primary: #2F1F12;       /* espresso */
+  --fg-secondary: #6B4E31;     /* brun tissage */
+  --fg-muted: #9B8874;         /* taupe */
+  --fg-inverse: #FBF8F3;
+
+  /* Borders */
+  --border-subtle: #EDE3CE;
+  --border-default: #DFD3B8;
+  --border-strong: #C4B394;
+
+  /* Brand accents — palette fouta traditionnelle */
+  --accent-terracotta: #C8663D;   /* terre cuite */
+  --accent-gold: #C89B3C;         /* fil d'or */
+  --accent-sage: #7A8C6A;         /* teinture végétale */
+  --accent-indigo: #4A5D75;       /* indigo tunisien */
+  --accent-rose: #B57B7B;         /* garance */
+
+  /* Feedback */
+  --color-success: #6B8E4E;
+  --color-success-bg: #EFF3E7;
+  --color-warning: #D4A038;
+  --color-warning-bg: #FBF3DE;
+  --color-danger: #B84A2F;
+  --color-danger-bg: #FBEBE4;
+  --color-info: #5C7A97;
+  --color-info-bg: #E8EFF6;
+
+  /* KPI tile accents (chart palette) */
+  --kpi-1: var(--accent-terracotta);
+  --kpi-2: var(--accent-gold);
+  --kpi-3: var(--accent-sage);
+  --kpi-4: var(--accent-indigo);
+  --kpi-5: var(--accent-rose);
+  --kpi-6: #8B6F47;              /* brun clair */
+
+  /* === TYPOGRAPHY === */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-serif: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', Menlo, monospace;
+
+  --text-xs: 0.75rem;      /* 12px */
+  --text-sm: 0.875rem;     /* 14px */
+  --text-base: 1rem;       /* 16px */
+  --text-md: 1.0625rem;    /* 17px */
+  --text-lg: 1.25rem;      /* 20px */
+  --text-xl: 1.5rem;       /* 24px */
+  --text-2xl: 1.875rem;    /* 30px */
+  --text-3xl: 2.25rem;     /* 36px */
+  --text-4xl: 3rem;        /* 48px */
+
+  --leading-tight: 1.2;
+  --leading-snug: 1.35;
+  --leading-normal: 1.55;
+
+  /* === SPACING (4-based) === */
+  --s-1: 0.25rem;   /* 4 */
+  --s-2: 0.5rem;    /* 8 */
+  --s-3: 0.75rem;   /* 12 */
+  --s-4: 1rem;      /* 16 */
+  --s-5: 1.25rem;   /* 20 */
+  --s-6: 1.5rem;    /* 24 */
+  --s-8: 2rem;      /* 32 */
+  --s-10: 2.5rem;   /* 40 */
+  --s-12: 3rem;     /* 48 */
+  --s-16: 4rem;     /* 64 */
+
+  /* === RADIUS === */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 999px;
+
+  /* === SHADOWS (warm-toned) === */
+  --shadow-xs: 0 1px 2px rgba(75, 45, 20, 0.06);
+  --shadow-sm: 0 2px 4px rgba(75, 45, 20, 0.06), 0 1px 2px rgba(75, 45, 20, 0.04);
+  --shadow-md: 0 4px 12px rgba(75, 45, 20, 0.08), 0 2px 4px rgba(75, 45, 20, 0.04);
+  --shadow-lg: 0 12px 24px rgba(75, 45, 20, 0.10), 0 4px 8px rgba(75, 45, 20, 0.06);
+  --shadow-xl: 0 24px 48px rgba(75, 45, 20, 0.14);
+  --shadow-inner: inset 0 1px 2px rgba(75, 45, 20, 0.05);
+
+  /* === TRANSITIONS === */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast: 120ms;
+  --duration: 180ms;
+  --duration-slow: 300ms;
+
+  /* === LAYOUT === */
+  --header-h: 64px;
+  --sidebar-w: 240px;
+  --sidebar-w-collapsed: 64px;
+  --container-max: 1440px;
+  --content-gutter: var(--s-6);
+
+  /* === Z-INDEX === */
+  --z-base: 1;
+  --z-elevated: 10;
+  --z-sticky: 20;
+  --z-dropdown: 30;
+  --z-modal: 100;
+  --z-toast: 110;
+}
+
+/* === DARK MODE === */
+:root[data-theme="dark"],
+:root:not([data-theme="light"]) {
+  /* By default follow system, unless explicit override */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg-app: #1A130C;
+    --bg-canvas: #241A11;
+    --bg-elevated: #2E2317;
+    --bg-hover: #382B1D;
+    --bg-sunken: #14100A;
+
+    --fg-primary: #F5EFE5;
+    --fg-secondary: #D4C4A8;
+    --fg-muted: #8A7660;
+    --fg-inverse: #2F1F12;
+
+    --border-subtle: #382B1D;
+    --border-default: #4A3928;
+    --border-strong: #695036;
+
+    --accent-terracotta: #E27952;
+    --accent-gold: #DDB456;
+    --accent-sage: #9BAD87;
+    --accent-indigo: #7691AE;
+    --accent-rose: #C99696;
+
+    --color-success: #8AB068;
+    --color-success-bg: rgba(107, 142, 78, 0.15);
+    --color-warning: #E5B85D;
+    --color-warning-bg: rgba(212, 160, 56, 0.15);
+    --color-danger: #D66852;
+    --color-danger-bg: rgba(184, 74, 47, 0.15);
+    --color-info: #85A2BE;
+    --color-info-bg: rgba(92, 122, 151, 0.15);
+
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.35);
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.5);
+    --shadow-xl: 0 24px 48px rgba(0, 0, 0, 0.6);
+  }
+}
+
+/* Explicit dark mode (overrides system) */
+:root[data-theme="dark"] {
+  --bg-app: #1A130C;
+  --bg-canvas: #241A11;
+  --bg-elevated: #2E2317;
+  --bg-hover: #382B1D;
+  --bg-sunken: #14100A;
+
+  --fg-primary: #F5EFE5;
+  --fg-secondary: #D4C4A8;
+  --fg-muted: #8A7660;
+  --fg-inverse: #2F1F12;
+
+  --border-subtle: #382B1D;
+  --border-default: #4A3928;
+  --border-strong: #695036;
+
+  --accent-terracotta: #E27952;
+  --accent-gold: #DDB456;
+  --accent-sage: #9BAD87;
+  --accent-indigo: #7691AE;
+  --accent-rose: #C99696;
+
+  --color-success: #8AB068;
+  --color-success-bg: rgba(107, 142, 78, 0.15);
+  --color-warning: #E5B85D;
+  --color-warning-bg: rgba(212, 160, 56, 0.15);
+  --color-danger: #D66852;
+  --color-danger-bg: rgba(184, 74, 47, 0.15);
+  --color-info: #85A2BE;
+  --color-info-bg: rgba(92, 122, 151, 0.15);
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 24px 48px rgba(0, 0, 0, 0.6);
+}
+
+/* === BASE === */
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg-app);
+  color: var(--fg-primary);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--fg-primary);
+  margin: 0;
+  line-height: var(--leading-tight);
+}
+
+/* === DASHBOARD UTILITIES === */
+.lp-container {
+  width: 100%;
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: 0 var(--content-gutter);
+}
+
+.lp-stack { display: flex; flex-direction: column; gap: var(--s-4); }
+.lp-stack--tight { gap: var(--s-2); }
+.lp-stack--loose { gap: var(--s-6); }
+.lp-row { display: flex; align-items: center; gap: var(--s-3); }
+
+/* Responsive KPI grid */
+.lp-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--s-4);
+}
+@media (min-width: 1280px) {
+  .lp-metric-grid {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: var(--s-5);
+  }
+}
+
+/* Content grids */
+.lp-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--s-5);
+}
+@media (min-width: 1024px) {
+  .lp-grid-2 { grid-template-columns: repeat(2, 1fr); }
+}
+
+.lp-grid-3 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--s-5);
+}
+@media (min-width: 768px) {
+  .lp-grid-3 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 1280px) {
+  .lp-grid-3 { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* ==============================================================
+ * DARK MODE — Tailwind utility class overrides
+ * --------------------------------------------------------------
+ * Beaucoup de pages métier historiques utilisent des utilitaires
+ * Tailwind avec couleurs hardcodées (bg-white, bg-gray-50,
+ * text-gray-800, bg-orange-100 …). Sous data-theme="dark" ces
+ * fonds clairs ne suivent pas le thème. On les remappe ici vers
+ * les CSS vars du design system pour que TOUTES les pages basculent
+ * correctement, sans avoir à toucher chaque fichier.
+ *
+ * !important est nécessaire car Tailwind utilise des classes
+ * plates que le sélecteur de spécificité ne peut battre autrement.
+ * ============================================================== */
+
+:root[data-theme="dark"] .bg-white,
+:root[data-theme="dark"] .dark\:bg-white,
+:root:not([data-theme="light"]) .bg-white {
+  background-color: var(--bg-elevated) !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .bg-white {
+    background-color: var(--bg-elevated) !important;
+  }
+}
+
+/* Fonds gris clairs → canvas / hover */
+:root[data-theme="dark"] .bg-gray-50,
+:root[data-theme="dark"] .bg-gray-100,
+:root[data-theme="dark"] .bg-slate-50,
+:root[data-theme="dark"] .bg-slate-100,
+:root[data-theme="dark"] .bg-neutral-50,
+:root[data-theme="dark"] .bg-neutral-100,
+:root[data-theme="dark"] .bg-stone-50,
+:root[data-theme="dark"] .bg-stone-100,
+:root[data-theme="dark"] .bg-zinc-50,
+:root[data-theme="dark"] .bg-zinc-100 {
+  background-color: var(--bg-canvas) !important;
+}
+:root[data-theme="dark"] .bg-gray-200,
+:root[data-theme="dark"] .bg-gray-300,
+:root[data-theme="dark"] .bg-slate-200,
+:root[data-theme="dark"] .bg-neutral-200,
+:root[data-theme="dark"] .bg-stone-200,
+:root[data-theme="dark"] .bg-zinc-200,
+:root[data-theme="dark"] .hover\:bg-gray-100:hover,
+:root[data-theme="dark"] .hover\:bg-gray-200:hover,
+:root[data-theme="dark"] .hover\:bg-slate-100:hover {
+  background-color: var(--bg-hover) !important;
+}
+
+/* Textes gris → fg vars */
+:root[data-theme="dark"] .text-gray-400,
+:root[data-theme="dark"] .text-slate-400,
+:root[data-theme="dark"] .text-neutral-400,
+:root[data-theme="dark"] .text-stone-400,
+:root[data-theme="dark"] .text-zinc-400 {
+  color: var(--fg-muted) !important;
+}
+:root[data-theme="dark"] .text-gray-500,
+:root[data-theme="dark"] .text-gray-600,
+:root[data-theme="dark"] .text-slate-500,
+:root[data-theme="dark"] .text-slate-600,
+:root[data-theme="dark"] .text-neutral-500,
+:root[data-theme="dark"] .text-neutral-600,
+:root[data-theme="dark"] .text-stone-500,
+:root[data-theme="dark"] .text-stone-600,
+:root[data-theme="dark"] .text-zinc-500,
+:root[data-theme="dark"] .text-zinc-600 {
+  color: var(--fg-secondary) !important;
+}
+:root[data-theme="dark"] .text-gray-700,
+:root[data-theme="dark"] .text-gray-800,
+:root[data-theme="dark"] .text-gray-900,
+:root[data-theme="dark"] .text-slate-700,
+:root[data-theme="dark"] .text-slate-800,
+:root[data-theme="dark"] .text-slate-900,
+:root[data-theme="dark"] .text-neutral-800,
+:root[data-theme="dark"] .text-neutral-900,
+:root[data-theme="dark"] .text-stone-800,
+:root[data-theme="dark"] .text-stone-900,
+:root[data-theme="dark"] .text-black {
+  color: var(--fg-primary) !important;
+}
+
+/* KPI cards colorés (Tailwind bg-*-50 / bg-*-100 → teintes dark harmonisées) */
+:root[data-theme="dark"] .bg-orange-50,
+:root[data-theme="dark"] .bg-orange-100,
+:root[data-theme="dark"] .bg-amber-50,
+:root[data-theme="dark"] .bg-amber-100,
+:root[data-theme="dark"] .bg-red-50,
+:root[data-theme="dark"] .bg-rose-50 {
+  background-color: color-mix(in srgb, var(--accent-terracotta) 20%, var(--bg-elevated)) !important;
+}
+:root[data-theme="dark"] .bg-yellow-50,
+:root[data-theme="dark"] .bg-yellow-100 {
+  background-color: color-mix(in srgb, var(--accent-gold) 20%, var(--bg-elevated)) !important;
+}
+:root[data-theme="dark"] .bg-green-50,
+:root[data-theme="dark"] .bg-green-100,
+:root[data-theme="dark"] .bg-emerald-50,
+:root[data-theme="dark"] .bg-emerald-100,
+:root[data-theme="dark"] .bg-lime-50,
+:root[data-theme="dark"] .bg-lime-100,
+:root[data-theme="dark"] .bg-teal-50 {
+  background-color: color-mix(in srgb, var(--accent-sage) 20%, var(--bg-elevated)) !important;
+}
+:root[data-theme="dark"] .bg-blue-50,
+:root[data-theme="dark"] .bg-blue-100,
+:root[data-theme="dark"] .bg-sky-50,
+:root[data-theme="dark"] .bg-indigo-50,
+:root[data-theme="dark"] .bg-indigo-100,
+:root[data-theme="dark"] .bg-cyan-50 {
+  background-color: color-mix(in srgb, var(--accent-indigo) 20%, var(--bg-elevated)) !important;
+}
+:root[data-theme="dark"] .bg-purple-50,
+:root[data-theme="dark"] .bg-purple-100,
+:root[data-theme="dark"] .bg-pink-50,
+:root[data-theme="dark"] .bg-pink-100,
+:root[data-theme="dark"] .bg-fuchsia-50 {
+  background-color: color-mix(in srgb, var(--accent-rose) 20%, var(--bg-elevated)) !important;
+}
+
+/* Textes colorés (200/300) → réhaussés */
+:root[data-theme="dark"] .text-orange-800,
+:root[data-theme="dark"] .text-orange-700,
+:root[data-theme="dark"] .text-amber-800,
+:root[data-theme="dark"] .text-amber-700 {
+  color: var(--accent-terracotta) !important;
+}
+:root[data-theme="dark"] .text-green-700,
+:root[data-theme="dark"] .text-green-800,
+:root[data-theme="dark"] .text-emerald-700,
+:root[data-theme="dark"] .text-emerald-800 {
+  color: var(--color-success) !important;
+}
+:root[data-theme="dark"] .text-blue-700,
+:root[data-theme="dark"] .text-blue-800,
+:root[data-theme="dark"] .text-indigo-700 {
+  color: var(--accent-indigo) !important;
+}
+:root[data-theme="dark"] .text-red-700,
+:root[data-theme="dark"] .text-red-800 {
+  color: var(--color-danger) !important;
+}
+:root[data-theme="dark"] .text-yellow-700,
+:root[data-theme="dark"] .text-yellow-800 {
+  color: var(--accent-gold) !important;
+}
+
+/* Bordures grises → theme */
+:root[data-theme="dark"] .border-gray-100,
+:root[data-theme="dark"] .border-gray-200,
+:root[data-theme="dark"] .border-slate-200,
+:root[data-theme="dark"] .border-neutral-200,
+:root[data-theme="dark"] .border-stone-200,
+:root[data-theme="dark"] .divide-gray-100 > * + *,
+:root[data-theme="dark"] .divide-gray-200 > * + * {
+  border-color: var(--border-subtle) !important;
+}
+:root[data-theme="dark"] .border-gray-300,
+:root[data-theme="dark"] .border-slate-300,
+:root[data-theme="dark"] .border-neutral-300 {
+  border-color: var(--border-default) !important;
+}
+
+/* Champs de saisie natifs — dark mode readable */
+:root[data-theme="dark"] input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="range"]),
+:root[data-theme="dark"] textarea,
+:root[data-theme="dark"] select {
+  background-color: var(--bg-canvas) !important;
+  color: var(--fg-primary) !important;
+  border-color: var(--border-default) !important;
+}
+:root[data-theme="dark"] input::placeholder,
+:root[data-theme="dark"] textarea::placeholder {
+  color: var(--fg-muted) !important;
+  opacity: 1;
+}
+:root[data-theme="dark"] select option {
+  background-color: var(--bg-elevated);
+  color: var(--fg-primary);
+}
+
+/* Shadow → adoucis en dark (les shadows sm avec bg blanche perdent le contraste) */
+:root[data-theme="dark"] .shadow,
+:root[data-theme="dark"] .shadow-sm,
+:root[data-theme="dark"] .shadow-md,
+:root[data-theme="dark"] .shadow-lg,
+:root[data-theme="dark"] .shadow-xl {
+  box-shadow: var(--shadow-md) !important;
+}
+
+/* Scroll niceties */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: var(--radius-full);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-strong);
+}
+
+/* Google Fonts import */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap');

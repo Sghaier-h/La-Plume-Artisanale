@@ -179,6 +179,29 @@ export const commandesService = {
   createCommande: (data: any) => api.post('/commandes', data),
   updateCommande: (id: number, data: any) => api.put(`/commandes/${id}`, data),
   validerCommande: (id: number) => api.post(`/commandes/${id}/valider`),
+  previewOFs: (id: number) => api.get(`/commandes/${id}/preview-ofs`),
+  generateOFs: (id: number, payload?: { overrides?: any[]; force?: boolean }) =>
+    api.post(`/commandes/${id}/generer-ofs`, payload || {}),
+  analyseStock: (id: number) => api.get(`/commandes/${id}/analyse-stock`),
+  executerChoix: (id: number, decisions: any[]) =>
+    api.post(`/commandes/${id}/executer-choix`, { decisions }),
+  getWithOFs: (id: number) => api.get(`/commandes/${id}/with-ofs`),
+};
+
+/**
+ * Télécharge un PDF depuis une URL d'API et déclenche le save-as navigateur.
+ */
+export const downloadPdf = async (url: string, filename: string) => {
+  const res = await api.get(url, { responseType: 'blob' });
+  const blob = new Blob([res.data], { type: 'application/pdf' });
+  const objectUrl = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = objectUrl;
+  a.download = `${filename}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
 };
 
 export const devisService = {
@@ -188,6 +211,7 @@ export const devisService = {
   updateDevis: (id: number, data: any) => api.put(`/devis/${id}`, data),
   deleteDevis: (id: number) => api.delete(`/devis/${id}`),
   transformerEnCommande: (id: number, data?: any) => api.post(`/devis/${id}/transformer`, data),
+  downloadPDF: (id: number, numero?: string) => downloadPdf(`/devis/${id}/pdf`, `devis-${numero || id}`),
 };
 
 export const bonsLivraisonService = {
@@ -197,6 +221,7 @@ export const bonsLivraisonService = {
   createFromCommande: (id: number, data?: any) => api.post(`/bons-livraison/from-commande/${id}`, data),
   updateBonLivraison: (id: number, data: any) => api.put(`/bons-livraison/${id}`, data),
   deleteBonLivraison: (id: number) => api.delete(`/bons-livraison/${id}`),
+  downloadPDF: (id: number, numero?: string) => downloadPdf(`/bons-livraison/${id}/pdf`, `bl-${numero || id}`),
 };
 
 export const facturesService = {
@@ -207,6 +232,7 @@ export const facturesService = {
   createFromBL: (id: number, data?: any) => api.post(`/factures/from-bl/${id}`, data),
   updateFacture: (id: number, data: any) => api.put(`/factures/${id}`, data),
   deleteFacture: (id: number) => api.delete(`/factures/${id}`),
+  downloadPDF: (id: number, numero?: string) => downloadPdf(`/factures/${id}/pdf`, `facture-${numero || id}`),
 };
 
 export const avoirsService = {
@@ -216,6 +242,7 @@ export const avoirsService = {
   createFromFacture: (id: number, data?: any) => api.post(`/avoirs/from-facture/${id}`, data),
   updateAvoir: (id: number, data: any) => api.put(`/avoirs/${id}`, data),
   deleteAvoir: (id: number) => api.delete(`/avoirs/${id}`),
+  downloadPDF: (id: number, numero?: string) => downloadPdf(`/avoirs/${id}/pdf`, `avoir-${numero || id}`),
 };
 
 export const bonsRetourService = {
@@ -245,6 +272,7 @@ export const ofService = {
   assignerMachine: (id: number, data: any) => api.post(`/of/${id}/assigner-machine`, data),
   demarrerOF: (id: number) => api.post(`/of/${id}/demarrer`),
   terminerOF: (id: number, data?: any) => api.post(`/of/${id}/terminer`, data),
+  getDetailComplet: (id: number) => api.get(`/of/${id}/detail-complet`),
 };
 
 export const soustraitantsService = {
@@ -277,6 +305,8 @@ export const parametrageService = {
   updateParametreSysteme: (cle: string, data: any) => api.put(`/parametrage/systeme/${cle}`, data),
   getParametresModule: (module: string) => api.get(`/parametrage/module/${module}`),
   updateParametresModule: (module: string, data: any) => api.put(`/parametrage/module/${module}`, data),
+  getAll: (params?: any) => api.get('/parametrage', { params }),
+  update: (cle: string, valeur: any) => api.put(`/parametrage/${encodeURIComponent(cle)}`, { valeur }),
 };
 
 export const utilisateursService = {
@@ -289,8 +319,17 @@ export const utilisateursService = {
   getCommerciaux: () => api.get('/utilisateurs/commerciaux'),
   getDashboards: () => api.get('/utilisateurs/dashboards'),
   getEquipe: () => api.get('/utilisateurs/equipe'),
-  creerUtilisateurEquipe: (idOperateur: number, data: { email: string; password: string; dashboards: string[] }) => 
+  creerUtilisateurEquipe: (idOperateur: number, data: { email: string; password: string; dashboards: string[] }) =>
     api.post(`/utilisateurs/equipe/${idOperateur}/creer-utilisateur`, data),
+  // Rôles / Permissions (RBAC)
+  getRolesUtilisateur: (id: number) => api.get(`/utilisateurs/${id}/roles`),
+  addRoleUtilisateur: (id: number, id_role: number) => api.post(`/utilisateurs/${id}/roles`, { id_role }),
+  removeRoleUtilisateur: (id: number, id_role: number) => api.delete(`/utilisateurs/${id}/roles/${id_role}`),
+  getPermissions: () => api.get('/utilisateurs/permissions'),
+  getRolePermissions: (id_role: number) => api.get(`/utilisateurs/roles/${id_role}/permissions`),
+  updateRolePermissions: (id_role: number, codes: string[]) =>
+    api.put(`/utilisateurs/roles/${id_role}/permissions`, { codes }),
+  getUserPermissions: (id: number) => api.get(`/utilisateurs/${id}/permissions`),
 };
 
 export const auditService = {
@@ -351,6 +390,17 @@ export const tracabiliteLotsService = {
   createLot: (data: any) => api.post('/tracabilite-lots', data),
   getQRCodeLot: (id: number) => api.get(`/tracabilite-lots/${id}/qr-code`),
   genererEtiquette: (id: number) => api.post(`/tracabilite-lots/${id}/imprimer-etiquette`),
+  getStatsGlobal: () => api.get('/tracabilite-lots/stats/global'),
+  scanQR: (code: string) => api.get(`/tracabilite-lots/qr/${encodeURIComponent(code)}`),
+  getLotsCoupe: (params?: any) => api.get('/tracabilite-lots/coupe', { params }),
+  getLotCoupe: (id: number) => api.get(`/tracabilite-lots/coupe/${id}`),
+  createLotCoupe: (data: any) => api.post('/tracabilite-lots/coupe', data),
+  updateLotCoupe: (id: number, data: any) => api.put(`/tracabilite-lots/coupe/${id}`, data),
+  updateStatutLot: (id: number, statut: string) =>
+    api.put(`/tracabilite-lots/coupe/${id}/statut`, { statut }),
+  deleteLotCoupe: (id: number) => api.delete(`/tracabilite-lots/coupe/${id}`),
+  getLotsByOF: (id_of: number) => api.get(`/tracabilite-lots/of/${id_of}`),
+  getChaine: (id: number) => api.get(`/tracabilite-lots/${id}/chaine`),
 };
 
 export const qualiteAvanceeService = {
@@ -489,6 +539,8 @@ export const modelesService = {
   uploadPhotoModele: (id: number, formData: FormData) => api.post(`/modeles/${id}/upload-photo`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
+  getVariantes: (id: number) => api.get(`/modeles/${id}/variantes`),
+  getMatrice: (id: number) => api.get(`/modeles/${id}/matrice`),
 };
 
 export const articlesGeneresService = {
@@ -537,58 +589,9 @@ export const articlesService = {
 };
 
 // ===== SERVICES ERP STANDARDS (Odoo-inspired) =====
-
-// Product Templates Service - Corrigé pour utiliser /product/templates
-export const productTemplatesService = {
-  getTemplates: (params?: any) => api.get('/product/templates', { params }),
-  getTemplate: (id: number, options?: { loadRelations?: boolean }) => {
-    const url = `/product/templates/${id}`;
-    return options?.loadRelations 
-      ? api.get(url, { params: { loadRelations: true } })
-      : api.get(url);
-  },
-  createTemplate: (data: any) => api.post('/product/templates', data),
-  updateTemplate: (id: number, data: any) => api.put(`/product/templates/${id}`, data),
-  deleteTemplate: (id: number) => api.delete(`/product/templates/${id}`),
-  getProductStock: (id: number) => api.get(`/product/templates/${id}/stock`),
-  getProductMovements: (id: number) => api.get(`/product/templates/${id}/movements`),
-  uploadImage: (id: number, file: File) => {
-    const formData = new FormData();
-    formData.append('image', file);
-    return api.post(`/product/templates/${id}/image`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
-  },
-  deleteImage: (id: number, imageId?: number) => api.delete(`/product/templates/${id}/image/${imageId || 1}`),
-  getImages: (id: number) => api.get(`/product/templates/${id}/images`),
-};
-
-// Products Service - Alias pour compatibilité
-export const productsService = {
-  getProducts: (params?: any) => api.get('/product/templates', { params }),
-  getProduct: (id: number, options?: { loadRelations?: boolean }) => {
-    const url = `/product/templates/${id}`;
-    return options?.loadRelations 
-      ? api.get(url, { params: { loadRelations: true } })
-      : api.get(url);
-  },
-  createProduct: (data: any) => api.post('/product/templates', data),
-  updateProduct: (id: number, data: any) => api.put(`/product/templates/${id}`, data),
-  deleteProduct: (id: number) => api.delete(`/product/templates/${id}`),
-  // Relations
-  getProductCategories: () => api.get('/product/categories'),
-  getProductStock: (id: number) => api.get(`/product/templates/${id}/stock`),
-  getProductMovements: (id: number) => api.get(`/product/templates/${id}/movements`),
-  uploadImage: (id: number, file: File) => {
-    const formData = new FormData();
-    formData.append('image', file);
-    return api.post(`/product/templates/${id}/image`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
-  },
-  deleteImage: (id: number, imageId?: number) => api.delete(`/product/templates/${id}/image/${imageId || 1}`),
-  getImages: (id: number) => api.get(`/product/templates/${id}/images`),
-};
+// Note: productTemplatesService, productsService, productCategoryService,
+// et pricelistsService supprimés — le module backend /api/product/* et l'arbre
+// frontend pages/erp/ ont été retirés. Utiliser produitsService à la place.
 
 export const saleOrdersService = {
   getOrders: (params?: any) => api.get('/sale/orders', { params }),
@@ -734,9 +737,17 @@ export const hrRecruitmentService = {
   createApplicant: (data: any) => api.post('/hr/recruitments', data),
   updateApplicant: (id: number, data: any) => api.put(`/hr/recruitments/${id}`, data),
   deleteApplicant: (id: number) => api.delete(`/hr/recruitments/${id}`),
-  hireApplicant: (id: number) => api.post(`/hr/recruitments/${id}/hire`),
-  refuseApplicant: (id: number) => api.post(`/hr/recruitments/${id}/refuse`),
+  hireApplicant: (id: number, data?: any) => api.post(`/hr/recruitments/${id}/hire`, data),
+  refuseApplicant: (id: number, data?: any) => api.post(`/hr/recruitments/${id}/refuse`, data),
+  rejectApplicant: (id: number, data?: any) => api.post(`/hr/recruitments/${id}/reject`, data),
   getStages: (params?: any) => api.get('/hr/recruitments/stages', { params }),
+  getStats: () => api.get('/hr/recruitments/stats/global'),
+  getFunnel: (days?: number) => api.get('/hr/recruitments/funnel', { params: days ? { days } : {} }),
+  getTimeline: (id: number) => api.get(`/hr/recruitments/${id}/timeline`),
+  addNote: (id: number, text: string) => api.post(`/hr/recruitments/${id}/notes`, { text }),
+  scheduleInterview: (id: number, data: any) => api.post(`/hr/recruitments/${id}/interview`, data),
+  getPostes: () => api.get('/hr/recruitments/postes'),
+  getAnalytics: () => api.get('/hr/recruitments/analytics/mensuel'),
 };
 
 export const hrPayslipsService = {
@@ -827,15 +838,6 @@ export const settingsService = {
   updateSettings: (module: string, data: any) => api.put(`/settings/${module}`, data),
 };
 
-export const productCategoryService = {
-  getCategories: (params?: any) => api.get('/product/categories', { params }),
-  getCategoryById: (id: number) => api.get(`/product/categories/${id}`),
-  getCategoryTree: (params?: any) => api.get('/product/categories/tree', { params }),
-  createCategory: (data: any) => api.post('/product/categories', data),
-  updateCategory: (id: number, data: any) => api.put(`/product/categories/${id}`, data),
-  deleteCategory: (id: number) => api.delete(`/product/categories/${id}`),
-};
-
 export const payrollTunisiaService = {
   computePayslip: (data: any) => api.post('/payroll-tunisia/compute', data),
   getSalaryRules: (params?: any) => api.get('/payroll-tunisia/salary-rules', { params }),
@@ -877,26 +879,6 @@ export const bomService = {
   deleteBOM: (id: number) => api.delete(`/mrp/boms/${id}`),
   getBOMHierarchy: (id: number) => api.get(`/mrp/boms/${id}/hierarchy`),
   calculateBOMCost: (id: number) => api.get(`/mrp/boms/${id}/cost`),
-};
-
-// Services supplémentaires pour modules ERP
-export const pricelistsService = {
-  getPricelists: (params?: any) => api.get('/product/pricelists', { params }),
-  getPricelist: (id: number, options?: { loadRelations?: boolean }) => {
-    const url = `/product/pricelists/${id}`;
-    return options?.loadRelations 
-      ? api.get(url, { params: { loadRelations: true } })
-      : api.get(url);
-  },
-  createPricelist: (data: any) => api.post('/product/pricelists', data),
-  updatePricelist: (id: number, data: any) => api.put(`/product/pricelists/${id}`, data),
-  deletePricelist: (id: number) => api.delete(`/product/pricelists/${id}`),
-  getPricelistItems: (pricelistId: number) => api.get(`/product/pricelists/${pricelistId}/items`),
-  createPricelistItem: (pricelistId: number, data: any) => api.post(`/product/pricelists/${pricelistId}/items`, data),
-  updatePricelistItem: (pricelistId: number, itemId: number, data: any) => 
-    api.put(`/product/pricelists/${pricelistId}/items/${itemId}`, data),
-  deletePricelistItem: (pricelistId: number, itemId: number) => 
-    api.delete(`/product/pricelists/${pricelistId}/items/${itemId}`),
 };
 
 export const companiesService = {
@@ -1049,4 +1031,20 @@ export const multisocieteCompaniesService = {
   createCompany: (data: any) => api.post('/multisociete/companies', data),
   updateCompany: (id: number, data: any) => api.put(`/multisociete/companies/${id}`, data),
   deleteCompany: (id: number) => api.delete(`/multisociete/companies/${id}`),
+};
+
+export const relancesService = {
+  getRelances: (params?: any) => api.get('/relances', { params }),
+  getRelance: (id: number) => api.get(`/relances/${id}`),
+  getRelancesFacture: (idFacture: number) => api.get(`/relances/facture/${idFacture}`),
+  getFacturesImpayees: () => api.get('/relances/factures-impayees'),
+  getStatsGlobal: () => api.get('/relances/stats/global'),
+  genererRelances: (body?: { dry_run?: boolean; force_all?: boolean }) =>
+    api.post('/relances/generer', body || {}),
+  envoyerRelanceManuelle: (
+    idFacture: number,
+    body: { niveau: number; canal?: string; destinataire?: string; sujet?: string; contenu?: string },
+  ) => api.post(`/relances/facture/${idFacture}/envoyer`, body),
+  enregistrerReponse: (id: number, body?: { reponse_recue?: boolean; date_reponse?: string }) =>
+    api.put(`/relances/${id}/reponse`, body || {}),
 };

@@ -147,7 +147,7 @@ export const createParametre = async (req, res) => {
     // Préparer les valeurs pour INSERT (seuls les champs autorisés)
     const fields = cfg.fields.filter(f => data[f] !== undefined);
     if (fields.length === 0) {
-      return sendError(res, HTTP_STATUS.BAD_REQUEST, 'Aucune donnée à insérer');
+      return sendError(res, 'Aucune donnée à insérer', HTTP_STATUS.BAD_REQUEST);
     }
 
     const values = fields.map(f => data[f]);
@@ -179,7 +179,7 @@ export const updateParametre = async (req, res) => {
     // Champs autorisés uniquement
     const fieldsToUpdate = cfg.fields.filter(f => data[f] !== undefined);
     if (fieldsToUpdate.length === 0) {
-      return sendError(res, HTTP_STATUS.BAD_REQUEST, 'Aucune donnée à mettre à jour');
+      return sendError(res, 'Aucune donnée à mettre à jour', HTTP_STATUS.BAD_REQUEST);
     }
 
     const values = fieldsToUpdate.map(f => data[f]);

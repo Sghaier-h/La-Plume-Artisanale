@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { suiviFabricationService, ofService, machinesService } from '../services/api';
-import { TrendingUp, Clock, CheckCircle, XCircle, AlertTriangle, Search, Filter, Eye, X, Plus, Edit, Play, Square, Calendar, Package, Settings, User, Percent, BarChart3 } from 'lucide-react';
+import { TrendingUp, Clock, CheckCircle, XCircle, AlertTriangle, Search, Filter, X, Plus, Edit, Play, Square, Calendar, Package, Settings, User, Percent, BarChart3 } from 'lucide-react';
 
 interface SuiviFabrication {
   id_suivi: number;
@@ -58,8 +58,24 @@ const SuiviFabrication: React.FC = () => {
         machinesService.getMachines({ actif: 'true' }).catch(() => ({ data: { data: [] } }))
       ]);
       setSuivis(suivisRes.data?.data?.suivis || []);
-      setOfs(ofsRes.data?.data || []);
-      setMachines(machinesRes.data?.data || []);
+      setOfs((() => {
+        const _r = ofsRes.data?.data;
+        if (Array.isArray(_r)) return _r;
+        if (_r && Array.isArray(_r.data)) return _r.data;
+        if (_r && typeof _r === 'object') {
+          for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+        }
+        return [];
+      })());
+      setMachines((() => {
+        const _r = machinesRes.data?.data;
+        if (Array.isArray(_r)) return _r;
+        if (_r && Array.isArray(_r.data)) return _r.data;
+        if (_r && typeof _r === 'object') {
+          for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+        }
+        return [];
+      })());
     } catch (err: any) {
       console.error('Erreur chargement suivis:', err);
       setError(err.response?.data?.error?.message || 'Erreur lors du chargement');
@@ -168,14 +184,14 @@ const SuiviFabrication: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="ml-64 p-6 flex items-center justify-center min-h-screen">
+      <div className="p-6 flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 ml-64 p-6">
+    <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <div>
@@ -444,7 +460,21 @@ const SuiviFabrication: React.FC = () => {
                   filteredSuivis.map((suivi) => {
                     const rendement = calculerRendement(suivi.quantite_bonne || 0, suivi.quantite_produite || 0);
                     return (
-                      <tr key={suivi.id_suivi} className="hover:bg-gray-50">
+                      <tr
+                        key={suivi.id_suivi}
+                        className="hover:bg-gray-50 group cursor-pointer"
+                        onClick={async () => {
+                          try {
+                            const result = await suiviFabricationService.getSuiviFabrication(suivi.id_suivi);
+                            if (result.data?.data) {
+                              setSelectedSuivi(result.data?.data);
+                            }
+                          } catch (error: any) {
+                            console.error('Erreur chargement suivi:', error);
+                            setSelectedSuivi(suivi);
+                          }
+                        }}
+                      >
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{suivi.numero_suivi}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">{suivi.numero_of}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">{suivi.machine_designation}</td>
@@ -467,26 +497,9 @@ const SuiviFabrication: React.FC = () => {
                           {getStatutBadge(suivi.statut)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex gap-2">
-                            <button 
-                              onClick={async () => {
-                                try {
-                                  const result = await suiviFabricationService.getSuiviFabrication(suivi.id_suivi);
-                                  if (result.data?.data) {
-                                    setSelectedSuivi(result.data.data);
-                                  }
-                                } catch (error: any) {
-                                  console.error('Erreur chargement suivi:', error);
-                                  setSelectedSuivi(suivi);
-                                }
-                              }}
-                              className="text-blue-600 hover:text-blue-700"
-                              title="Consulter"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
-                            <button 
-                              onClick={() => handleEdit(suivi)}
+                          <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleEdit(suivi); }}
                               className="text-gray-600 hover:text-gray-700"
                               title="Modifier"
                             >

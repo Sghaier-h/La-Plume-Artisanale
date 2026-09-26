@@ -1,7 +1,29 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import Navigation from './Navigation';
+import Navigation from './NavigationTopBar';
+import TabletteLayout from './TabletteLayout';
+import UserBar from './UserBar';
+
+/**
+ * Rôles TABLETTE ATELIER — mode kiosque terrain sans sidebar.
+ * Alignement strict sur docs/domain.md §15 qui marque explicitement
+ * « (tablette) » uniquement pour Tisseur / Coupeur / Ourdisseur.
+ *
+ * Ces postes ont une **application terrain** (interface tactile, gros
+ * boutons XL, saisie chiffres au pavé, scan QR). Ils naviguent depuis
+ * l'écran métier lui-même (pas de menu §15 gauche).
+ *
+ * Tous les autres postes (Chef Production, Chef Atelier, Magasiniers,
+ * Contrôleur Qualité, Mécanicien, Commercial, Comptable, RH Manager,
+ * Marketing, Sécurité) sont sur PC de bureau : ils voient le menu §15
+ * latéral, filtré par leurs permissions (§2.4 + rolePermissions.ts).
+ */
+const TABLETTE_ROLES = new Set([
+  'TISSEUR',
+  'COUPEUR',
+  'OURDISSEUR',
+]);
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -28,8 +50,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Chargement...</p>
+          <div className="animate-spin rounded-full h-12 w-12 mx-auto" style={{ borderBottom: '2px solid var(--accent-terracotta)' }}></div>
+          <p className="mt-4" style={{ color: 'var(--fg-secondary)' }}>Chargement...</p>
         </div>
       </div>
     );
@@ -46,14 +68,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     
     if (!hasRole) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-app)' }}>
           <div className="text-center">
-            <div className="text-red-600 text-6xl mb-4">🔒</div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Accès Refusé</h2>
-            <p className="text-gray-600 mb-4">
+            <div className="text-6xl mb-4" style={{ color: 'var(--color-danger)' }}>🔒</div>
+            <h2 className="text-2xl font-bold mb-2" style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', color: 'var(--fg-primary)' }}>Accès Refusé</h2>
+            <p className="mb-4" style={{ color: 'var(--fg-secondary)' }}>
               Vous n'avez pas les permissions nécessaires pour accéder à cette page.
             </p>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm" style={{ color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)' }}>
               Rôle requis: {Array.isArray(requiredRole) ? requiredRole.join(' ou ') : requiredRole}
             </p>
           </div>
@@ -96,17 +118,17 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       
       if (!hasDashboard) {
         return (
-          <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-app)' }}>
             <div className="text-center">
-              <div className="text-orange-600 text-6xl mb-4">🔒</div>
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">Accès Refusé</h2>
-              <p className="text-gray-600">
+              <div className="text-6xl mb-4" style={{ color: 'var(--accent-gold)' }}>🔒</div>
+              <h2 className="text-2xl font-bold mb-2" style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', color: 'var(--fg-primary)' }}>Accès Refusé</h2>
+              <p style={{ color: 'var(--fg-secondary)' }}>
                 Vous n'avez pas accès à ce dashboard.
               </p>
-              <p className="text-sm text-gray-500 mt-2">
+              <p className="text-sm mt-2" style={{ color: 'var(--fg-muted)' }}>
                 Contactez votre administrateur pour obtenir l'accès.
               </p>
-              <p className="text-xs text-gray-400 mt-4">
+              <p className="text-xs mt-4" style={{ color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)', opacity: 0.6 }}>
                 Debug: Rôle={user.role || 'undefined'} | Dashboard requis={requiredDashboard} | Dashboards attribués={JSON.stringify(user.dashboardsAttribues || [])}
               </p>
             </div>
@@ -116,10 +138,36 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     }
   }
 
-  // Si toutes les vérifications passent, afficher le contenu
+  // Si toutes les vérifications passent, afficher le contenu.
+  //
+  // UserBar : TOUJOURS affichée dès qu'on est authentifié (barre système
+  // permanente). Le prop `showNav` ne contrôle QUE le menu latéral —
+  // certaines pages métier (dashboards dédiés, tablettes atelier)
+  // désactivent le menu tout en gardant la barre système.
+  //
+  // Layout gauche :
+  // - Rôles tablette (Tisseur/Coupeur/Ourdisseur) → TabletteLayout kiosque
+  // - Autres rôles (bureau) → NavigationEnhanced sidebar §15 filtrée
+  // - showNav=false → aucun menu à gauche (UserBar seule)
+  const roleUpper = user.role?.toUpperCase() || '';
+  const isTabletteRole = TABLETTE_ROLES.has(roleUpper);
+
+  if (showNav && isTabletteRole) {
+    return (
+      <>
+        <UserBar />
+        <TabletteLayout>{children}</TabletteLayout>
+      </>
+    );
+  }
+
+  // NavigationTopBar occupe le haut (48px). UserBar juste dessous (topOffset=48).
+  // showNav=false → UserBar seule tout en haut (dashboards §14 dédiés)
   return (
     <>
       {showNav && <Navigation />}
+      {/* topOffset=0 → suit --nav-height dynamique. showNav=false → CSS var reste à 0 (pas de NavigationTopBar rendu) */}
+      <UserBar />
       {children}
     </>
   );

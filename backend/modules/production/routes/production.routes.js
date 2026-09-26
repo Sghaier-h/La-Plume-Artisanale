@@ -1,5 +1,5 @@
 /**
- * Routes Production - Module modulaire
+ * Routes Production — Ordres de Fabrication (OF)
  */
 
 import express from 'express';
@@ -9,15 +9,31 @@ import {
   getProductionById,
   createProduction,
   updateProduction,
-  deleteProduction
+  deleteProduction,
+  lancerProduction,
+  terminerProduction,
+  pauseProduction,
+  annulerProduction,
+  getGlobalStats,
 } from '../controllers/production.controller.js';
 
 const router = express.Router();
 
-router.get('/', authenticate, getProduction);
-router.get('/:id', authenticate, getProductionById);
-router.post('/', authenticate, createProduction);
-router.put('/:id', authenticate, updateProduction);
-router.delete('/:id', authenticate, deleteProduction);
+router.use(authenticate);
+
+// Routes spécifiques AVANT /:id
+router.get('/stats/global', getGlobalStats);
+
+router.put('/:id(\\d+)/lancer',   lancerProduction);
+router.put('/:id(\\d+)/terminer', terminerProduction);
+router.put('/:id(\\d+)/pause',    pauseProduction);
+router.put('/:id(\\d+)/annuler',  annulerProduction);
+
+// CRUD standard
+router.get('/',            getProduction);
+router.post('/',           createProduction);
+router.get('/:id(\\d+)',    getProductionById);
+router.put('/:id(\\d+)',    updateProduction);
+router.delete('/:id(\\d+)', deleteProduction);
 
 export default router;

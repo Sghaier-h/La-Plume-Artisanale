@@ -28,6 +28,7 @@ export default {
     'routes/crm_lead.routes.js',
     'routes/crm_opportunity.routes.js',
     'routes/crm_activity.routes.js',
-    'routes/crm_campaign.routes.js'
+    'routes/crm_campaign.routes.js',
+    'routes/crm_stage.routes.js'
   ]
 };

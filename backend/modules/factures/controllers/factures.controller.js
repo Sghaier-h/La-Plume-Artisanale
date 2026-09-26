@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Contrôleur Factures — Module modulaire
  * Gestion complète des factures : CRUD, génération depuis commande/BL
  */
@@ -23,7 +23,7 @@ export const getFactures = async (req, res) => {
         'f.montant_ht', 'f.montant_tva', 'f.montant_ttc',
         'f.montant_regle', 'f.montant_restant', 'f.created_at'
       ])
-      .join('LEFT JOIN clients c ON f.id_client = c.id_client')
+      .join('LEFT JOIN comptes c ON f.id_client = c.id_client')
       .join('LEFT JOIN commandes cmd ON f.id_commande = cmd.id_commande')
       .join('LEFT JOIN bons_livraison bl ON f.id_bl = bl.id_bl')
       .search(['f.numero_facture', 'c.raison_sociale'], search)
@@ -50,7 +50,7 @@ export const getFactureById = async (req, res) => {
       `SELECT f.*, c.raison_sociale as client_nom, c.code_client as client_code,
               cmd.numero_commande, bl.numero_bl
        FROM factures f
-       LEFT JOIN clients c ON f.id_client = c.id_client
+       LEFT JOIN comptes c ON f.id_client = c.id_client
        LEFT JOIN commandes cmd ON f.id_commande = cmd.id_commande
        LEFT JOIN bons_livraison bl ON f.id_bl = bl.id_bl
        WHERE f.id_facture = $1`,
@@ -86,12 +86,12 @@ export const createFacture = async (req, res) => {
 
     if (!id_client || !date_facture || !lignes || lignes.length === 0) {
       await client.query('ROLLBACK');
-      return sendError(res, HTTP_STATUS.BAD_REQUEST, 'Client, date et lignes de facture requis');
+      return sendError(res, 'Client, date et lignes de facture requis', HTTP_STATUS.BAD_REQUEST);
     }
 
     // Vérifier client
     const clientCheck = await client.query(
-      'SELECT id_client FROM clients WHERE id_client = $1 AND actif = true',
+      'SELECT id_client FROM comptes WHERE id_client = $1 AND actif = true',
       [id_client]
     );
     if (clientCheck.rows.length === 0) {
@@ -177,7 +177,7 @@ export const createFacture = async (req, res) => {
     const factureComplet = await pool.query(
       `SELECT f.*, c.raison_sociale as client_nom, cmd.numero_commande, bl.numero_bl
        FROM factures f
-       LEFT JOIN clients c ON f.id_client = c.id_client
+       LEFT JOIN comptes c ON f.id_client = c.id_client
        LEFT JOIN commandes cmd ON f.id_commande = cmd.id_commande
        LEFT JOIN bons_livraison bl ON f.id_bl = bl.id_bl
        WHERE f.id_facture = $1`,
@@ -370,7 +370,7 @@ export const updateFacture = async (req, res) => {
     const factureComplet = await pool.query(
       `SELECT f.*, c.raison_sociale as client_nom, cmd.numero_commande, bl.numero_bl
        FROM factures f
-       LEFT JOIN clients c ON f.id_client = c.id_client
+       LEFT JOIN comptes c ON f.id_client = c.id_client
        LEFT JOIN commandes cmd ON f.id_commande = cmd.id_commande
        LEFT JOIN bons_livraison bl ON f.id_bl = bl.id_bl
        WHERE f.id_facture = $1`,
@@ -405,7 +405,7 @@ export const deleteFacture = async (req, res) => {
     }
 
     if (facture.rows[0].statut === 'REGLEE') {
-      return sendError(res, HTTP_STATUS.BAD_REQUEST, 'Impossible de supprimer une facture déjà réglée');
+      return sendError(res, 'Impossible de supprimer une facture déjà réglée', HTTP_STATUS.BAD_REQUEST);
     }
 
     await pool.query('DELETE FROM factures WHERE id_facture = $1', [id]);

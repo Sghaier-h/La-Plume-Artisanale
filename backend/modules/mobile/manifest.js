@@ -23,6 +23,9 @@ export default {
   routes: [
     'routes/mobile.routes.js'
   ],
+  apiPaths: {
+    'routes/mobile.routes.js': '/api/v1/mobile'
+  },
   security: [
     'security/ir.model.access.json'
   ]

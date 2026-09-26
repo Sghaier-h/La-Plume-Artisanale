@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Contrôleur Dashboard KPIs — Agrégations et indicateurs en temps réel
  * Alimente les dashboards opérateurs avec des vraies données BDD
  */
@@ -15,7 +15,7 @@ export const getKpisAdmin = async (req, res) => {
         COUNT(*) FILTER (WHERE actif = true) as total_actifs,
         COUNT(*) FILTER (WHERE type_client = 'CLIENT' AND actif = true) as clients,
         COUNT(*) FILTER (WHERE type_client = 'PROSPECT' AND actif = true) as prospects
-        FROM clients`),
+        FROM comptes`),
       pool.query(`SELECT
         COUNT(*) as total,
         COUNT(*) FILTER (WHERE statut = 'en_attente') as en_attente,
@@ -75,7 +75,7 @@ export const getActiviteRecente = async (req, res) => {
                 c.raison_sociale as client, cmd.statut, cmd.montant_total as montant,
                 cmd.date_creation as date
          FROM commandes cmd
-         LEFT JOIN clients c ON cmd.id_client = c.id_client
+         LEFT JOIN comptes c ON cmd.id_client = c.id_client
          ORDER BY cmd.date_creation DESC LIMIT $1`, [limit]
       ),
       pool.query(
@@ -83,7 +83,7 @@ export const getActiviteRecente = async (req, res) => {
                 c.raison_sociale as client, d.statut, d.montant_ttc as montant,
                 d.created_at as date
          FROM devis d
-         LEFT JOIN clients c ON d.id_client = c.id_client
+         LEFT JOIN comptes c ON d.id_client = c.id_client
          ORDER BY d.created_at DESC LIMIT $1`, [limit]
       ),
       pool.query(
@@ -91,7 +91,7 @@ export const getActiviteRecente = async (req, res) => {
                 c.raison_sociale as client, f.statut, f.montant_ttc as montant,
                 f.created_at as date
          FROM factures f
-         LEFT JOIN clients c ON f.id_client = c.id_client
+         LEFT JOIN comptes c ON f.id_client = c.id_client
          ORDER BY f.created_at DESC LIMIT $1`, [limit]
       )
     ]);
@@ -138,7 +138,7 @@ export const getTopClients = async (req, res) => {
         c.id_client, c.code_client, c.raison_sociale,
         COUNT(DISTINCT f.id_facture) as nb_factures,
         COALESCE(SUM(f.montant_ttc), 0) as ca_total
-      FROM clients c
+      FROM comptes c
       LEFT JOIN factures f ON c.id_client = f.id_client
       WHERE c.actif = true AND c.type_client = 'CLIENT'
       GROUP BY c.id_client, c.code_client, c.raison_sociale
@@ -149,6 +149,121 @@ export const getTopClients = async (req, res) => {
     return sendSuccess(res, result.rows);
   } catch (error) {
     return handleError(res, error, 'getTopClients');
+  }
+};
+
+// ── Helper : exécuter une requête, retourner 0 si table absente ────────
+const safeCount = async (sql, params = []) => {
+  try {
+    const r = await pool.query(sql, params);
+    return r.rows[0] || {};
+  } catch (err) {
+    logger?.warn?.(`[dashboard] safeCount failed: ${err.message}`);
+    return {};
+  }
+};
+
+// ── GET /api/dashboard/production ──────────────────────────────────────
+export const getProductionStats = async (req, res) => {
+  try {
+    const of_en_cours = await safeCount(
+      `SELECT COUNT(*)::int AS n FROM ordres_fabrication WHERE statut = 'en_cours'`
+    );
+    const of_termines_today = await safeCount(
+      `SELECT COUNT(*)::int AS n FROM ordres_fabrication
+       WHERE statut = 'termine' AND date_fin_reelle::date = CURRENT_DATE`
+    );
+    const machines_actives = await safeCount(
+      `SELECT COUNT(*)::int AS n FROM machines WHERE actif = true AND statut = 'operationnel'`
+    );
+    const rendement = await safeCount(
+      `SELECT COALESCE(AVG(rendement), 0)::numeric(10,2) AS n FROM ordres_fabrication
+       WHERE rendement IS NOT NULL AND date_fin_reelle >= CURRENT_DATE - INTERVAL '30 days'`
+    );
+    return sendSuccess(res, {
+      of_en_cours: of_en_cours.n || 0,
+      of_termines_today: of_termines_today.n || 0,
+      machines_actives: machines_actives.n || 0,
+      rendement_moyen: Number(rendement.n || 0),
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    return handleError(res, error, 'getProductionStats');
+  }
+};
+
+// ── GET /api/dashboard/commandes ───────────────────────────────────────
+export const getCommandesStats = async (req, res) => {
+  try {
+    const stats = await safeCount(
+      `SELECT
+         COUNT(*)::int AS total_mois,
+         COALESCE(SUM(montant_total), 0)::numeric(14,2) AS ca_mois,
+         COUNT(*) FILTER (WHERE statut = 'en_attente')::int AS en_attente,
+         COUNT(*) FILTER (WHERE statut = 'validee')::int AS validees
+       FROM commandes
+       WHERE date_commande >= DATE_TRUNC('month', CURRENT_DATE)`
+    );
+    return sendSuccess(res, {
+      total_mois: stats.total_mois || 0,
+      ca_mois: Number(stats.ca_mois || 0),
+      en_attente: stats.en_attente || 0,
+      validees: stats.validees || 0,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    return handleError(res, error, 'getCommandesStats');
+  }
+};
+
+// ── GET /api/dashboard/alertes ─────────────────────────────────────────
+export const getAlertes = async (req, res) => {
+  try {
+    const alerts = [];
+
+    // Stock bas
+    try {
+      const r = await pool.query(
+        `SELECT COUNT(*)::int AS n FROM matieres_premieres
+         WHERE quantite_stock IS NOT NULL AND seuil_alerte IS NOT NULL
+           AND quantite_stock <= seuil_alerte`
+      );
+      const n = r.rows[0]?.n || 0;
+      if (n > 0) alerts.push({ type: 'stock_bas', level: 'warning', message: `${n} matière(s) en stock bas`, link: '/stock/matieres', count: n });
+    } catch {}
+
+    // OF en retard
+    try {
+      const r = await pool.query(
+        `SELECT COUNT(*)::int AS n FROM ordres_fabrication
+         WHERE date_fin_prevue < CURRENT_DATE AND statut NOT IN ('termine', 'annule')`
+      );
+      const n = r.rows[0]?.n || 0;
+      if (n > 0) alerts.push({ type: 'of_retard', level: 'error', message: `${n} ordre(s) de fabrication en retard`, link: '/production/of', count: n });
+    } catch {}
+
+    // Machines en panne
+    try {
+      const r = await pool.query(
+        `SELECT COUNT(*)::int AS n FROM machines WHERE actif = true AND statut IN ('panne', 'arret')`
+      );
+      const n = r.rows[0]?.n || 0;
+      if (n > 0) alerts.push({ type: 'machines_panne', level: 'error', message: `${n} machine(s) en panne`, link: '/production/machines', count: n });
+    } catch {}
+
+    // Factures impayées
+    try {
+      const r = await pool.query(
+        `SELECT COUNT(*)::int AS n FROM factures
+         WHERE montant_restant > 0 AND date_echeance < CURRENT_DATE`
+      );
+      const n = r.rows[0]?.n || 0;
+      if (n > 0) alerts.push({ type: 'factures_impayees', level: 'warning', message: `${n} facture(s) impayée(s) en retard`, link: '/factures', count: n });
+    } catch {}
+
+    return sendSuccess(res, { items: alerts, total: alerts.length });
+  } catch (error) {
+    return handleError(res, error, 'getAlertes');
   }
 };
 

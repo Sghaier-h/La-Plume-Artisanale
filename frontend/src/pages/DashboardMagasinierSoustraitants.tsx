@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Package, Truck, AlertTriangle, CheckCircle, Clock, Search, Scan,
-  ArrowRight, ArrowLeft, Plus, Filter, FileText, Calendar, Building2,
-  Phone, Mail, MapPin, MessageSquare, Eye, BarChart3, TrendingUp, Bell,
-  X, User, Mail as MailIcon, Phone as PhoneIcon, AlertCircle, Zap
+  ArrowRight, Plus, Building2, MessageSquare, Eye, Bell,
+  X, Mail as MailIcon, Phone as PhoneIcon, MapPin, AlertCircle, Zap, Activity,
 } from 'lucide-react';
-import DashboardLayout from '../components/DashboardLayout';
+import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
 import { soustraitantsService, ofService, messagesService } from '../services/api';
 
 interface Mouvement {
@@ -61,9 +59,10 @@ interface MessageUrgent {
   created_at: string;
 }
 
+type TabKey = 'vue-ensemble' | 'soustraitants' | 'sorties' | 'retours' | 'messages';
+
 const DashboardMagasinierSoustraitants: React.FC = () => {
-  const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'vue-ensemble' | 'soustraitants' | 'sorties' | 'retours' | 'messages'>('vue-ensemble');
+  const [activeTab, setActiveTab] = useState<TabKey>('vue-ensemble');
   const [mouvements, setMouvements] = useState<Mouvement[]>([]);
   const [soustraitants, setSoustraitants] = useState<SoustraitantDetails[]>([]);
   const [soustraitantsList, setSoustraitantsList] = useState<any[]>([]);
@@ -103,7 +102,6 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
 
   useEffect(() => {
     loadData();
-    // Polling toutes les 10 secondes pour les messages
     const interval = setInterval(() => {
       loadMessages();
     }, 10000);
@@ -119,11 +117,18 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
         soustraitantsService.getAlertesRetard()
       ]);
 
-      setSoustraitantsList(soustraitantsRes.data.data);
-      setOfs(ofsRes.data?.data || []);
-      setAlertes(alertesRes.data.data);
+      setSoustraitantsList((() => { const _r = soustraitantsRes.data?.data; return Array.isArray(_r) ? _r : (_r?.data || _r?.soustraitantsList || []); })());
+      setOfs((() => {
+        const _r = ofsRes.data?.data;
+        if (Array.isArray(_r)) return _r;
+        if (_r && Array.isArray(_r.data)) return _r.data;
+        if (_r && typeof _r === 'object') {
+          for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+        }
+        return [];
+      })());
+      setAlertes((() => { const _r = alertesRes.data?.data; return Array.isArray(_r) ? _r : (_r?.data || _r?.alertes || []); })());
 
-      // Charger les détails de chaque sous-traitant
       const soustraitantsDetails: SoustraitantDetails[] = [];
       const mouvementsData: Mouvement[] = [];
 
@@ -154,16 +159,13 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
       setSoustraitants(soustraitantsDetails);
       setMouvements(mouvementsData);
 
-      // Identifier les OF prêts à sortir (non encore envoyés en sous-traitance)
       const ofsIdsEnSousTraitance = new Set(mouvementsData.map(m => m.numero_of));
       const ofsPretesASortir = (ofsRes.data?.data || [])
         .filter((of: any) => {
-          // OF planifiés ou en attente, pas encore envoyés
-          return (of.statut === 'PLANIFIE' || of.statut === 'EN_ATTENTE') && 
+          return (of.statut === 'PLANIFIE' || of.statut === 'EN_ATTENTE') &&
                  !ofsIdsEnSousTraitance.has(of.numero_of);
         })
         .sort((a: any, b: any) => {
-          // Trier par priorité: urgente > haute > normale
           const prioriteOrder: any = { 'urgente': 1, 'haute': 2, 'normale': 3 };
           const orderA = prioriteOrder[a.priorite] || 99;
           const orderB = prioriteOrder[b.priorite] || 99;
@@ -171,10 +173,8 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
         });
       setOfsAPrioriser(ofsPretesASortir);
 
-      // Générer alertes qualité pour les sous-traitants
       const qualiteAlertes = soustraitantsDetails
         .filter(st => {
-          // Alerte si taux qualité < 90% ou si beaucoup de retours en retard
           return (st.taux_qualite !== null && st.taux_qualite !== undefined && st.taux_qualite < 90) ||
                  (st.statistiques && st.statistiques.en_retard > 2);
         })
@@ -202,16 +202,13 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
     try {
       const res = await messagesService.getMessages({ lu: 'false' });
       const allMessages = res.data.data?.messages || [];
-      
-      // Filtrer les messages urgents liés aux OF en sous-traitance
+
       const ofsEnCours = mouvements
         .filter(m => m.statut === 'en_cours')
         .map(m => m.numero_of);
-      
+
       const messagesFiltres = allMessages.filter((msg: MessageUrgent) => {
-        // Messages urgents
         if (msg.urgent) return true;
-        // Messages liés à un OF en sous-traitance
         if (msg.numero_of && ofsEnCours.includes(msg.numero_of)) return true;
         return false;
       });
@@ -327,7 +324,6 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
   const mouvementsEnCours = mouvements.filter(m => m.statut === 'en_cours');
   const mouvementsRetard = alertes;
 
-  // Statistiques globales
   const stats = {
     totalSoustraitants: soustraitants.length,
     totalEnCours: mouvementsEnCours.length,
@@ -338,745 +334,628 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
     alertesQualite: alertesQualite.length
   };
 
-  if (loading) {
+  const nbMessagesNonLus = messagesUrgents.filter(m => !m.lu).length;
+
+  const statutBadge = (statut: string) => {
+    const map: Record<string, { bg: string; c: string }> = {
+      en_cours: { bg: 'var(--color-warning-bg)', c: 'var(--color-warning)' },
+      retourne: { bg: 'var(--color-success-bg)', c: 'var(--color-success)' },
+    };
+    const b = map[statut] || { bg: 'var(--bg-hover)', c: 'var(--fg-secondary)' };
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 ml-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Chargement...</p>
-        </div>
-      </div>
+      <span style={{ ...badgeBase, background: b.bg, color: b.c }}>{statut}</span>
     );
-  }
+  };
+
+  const prioriteBadge = (priorite: string) => {
+    if (priorite === 'urgente') return <span style={{ ...badgeBase, background: 'var(--color-danger-bg)', color: 'var(--color-danger)' }}>URGENTE</span>;
+    if (priorite === 'haute') return <span style={{ ...badgeBase, background: 'var(--color-warning-bg)', color: 'var(--color-warning)' }}>HAUTE</span>;
+    return <span style={{ ...badgeBase, background: 'var(--color-info-bg)', color: 'var(--color-info)' }}>NORMALE</span>;
+  };
+
+  const tabBtn = (key: TabKey, label: string): React.CSSProperties => ({
+    padding: '8px 14px',
+    background: activeTab === key ? 'var(--accent-brown)' : 'var(--bg-hover)',
+    color: activeTab === key ? '#fff' : 'var(--fg-secondary)',
+    border: `1px solid ${activeTab === key ? 'var(--accent-brown)' : 'var(--border-subtle)'}`,
+    borderRadius: 'var(--radius-full)',
+    fontSize: 'var(--text-xs)',
+    fontWeight: 600,
+    cursor: 'pointer',
+  } as React.CSSProperties);
 
   return (
-    <DashboardLayout
-      title="Dashboard Magasinier Sous-Traitants"
-      subtitle="Gestion complète des transferts et retours vers/des sous-traitants"
-      activeSection={activeTab}
-      onSectionChange={(id) => setActiveTab(id as any)}
-    >
-      <div className="flex flex-wrap items-center justify-end gap-4 mb-4">
-        {messagesUrgents.filter(m => !m.lu).length > 0 && (
-          <div className="relative">
-            <Bell className="w-6 h-6 text-red-600 animate-pulse" />
-            <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-              {messagesUrgents.filter(m => !m.lu).length}
-            </span>
+    <>
+      <DashboardShell
+        eyebrow="Poste — Magasinier sous-traitants"
+        title="Tableau de bord — Magasinier sous-traitants"
+        subtitle="Suivi des sorties et retours sous-traitants, contrats et livraisons."
+        headerRight={
+          <>
+            {nbMessagesNonLus > 0 && (
+              <span style={{ position: 'relative', display: 'inline-flex' }}>
+                <Bell size={16} style={{ color: 'var(--color-danger)' }} />
+                <span style={{ position: 'absolute', top: -6, right: -8, background: 'var(--color-danger)', color: '#fff', borderRadius: '50%', width: 16, height: 16, fontSize: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {nbMessagesNonLus}
+                </span>
+              </span>
+            )}
+            <button onClick={loadData} style={btnGhost} title="Actualiser">
+              <Activity size={14} /> Actualiser
+            </button>
+            {activeTab === 'sorties' && (
+              <button onClick={() => setShowModalSortie(true)} style={btnPrimary}>
+                <Plus size={14} /> Nouvelle sortie
+              </button>
+            )}
+            {activeTab === 'retours' && (
+              <button onClick={() => setShowModalRetour(true)} style={btnPrimary}>
+                <Plus size={14} /> Enregistrer retour
+              </button>
+            )}
+            <ThemeToggle />
+          </>
+        }
+      >
+        {/* PRIMARY KPIs */}
+        <div className="lp-metric-grid">
+          <KpiCard
+            label="Sous-traitants actifs"
+            value={stats.totalSoustraitants}
+            hint="Réseau actif"
+            icon={<Building2 size={18} />}
+            tone="brown"
+            loading={loading}
+          />
+          <KpiCard
+            label="Mouvements en cours"
+            value={stats.totalEnCours}
+            hint="Sorties non encore retournées"
+            icon={<Clock size={18} />}
+            tone="gold"
+            loading={loading}
+          />
+          <KpiCard
+            label="Retours en retard"
+            value={stats.totalRetard}
+            hint="Dépassements de délai"
+            icon={<AlertTriangle size={18} />}
+            tone="terracotta"
+            loading={loading}
+          />
+          <KpiCard
+            label="Retournés"
+            value={stats.totalRetournes}
+            hint="Mouvements clôturés"
+            icon={<CheckCircle size={18} />}
+            tone="sage"
+            loading={loading}
+          />
+        </div>
+
+        {/* SECONDARY KPIs */}
+        <div className="lp-metric-grid">
+          <KpiCard
+            label="Messages non lus"
+            value={stats.messagesNonLus}
+            hint="Alertes des autres postes"
+            icon={<MessageSquare size={16} />}
+            tone="indigo"
+            loading={loading}
+          />
+          <KpiCard
+            label="OF à prioriser"
+            value={stats.ofsAPrioriser}
+            hint="Prêts à sortir en sous-traitance"
+            icon={<Zap size={16} />}
+            tone="rose"
+            loading={loading}
+          />
+          <KpiCard
+            label="Alertes qualité"
+            value={stats.alertesQualite}
+            hint="Sous-traitants à surveiller"
+            icon={<AlertCircle size={16} />}
+            tone="terracotta"
+            loading={loading}
+          />
+          <KpiCard
+            label="OF actifs"
+            value={ofs.length}
+            hint="Portefeuille total"
+            icon={<Package size={16} />}
+            tone="brown"
+            loading={loading}
+          />
+        </div>
+
+        {/* TABS */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--s-2)' }}>
+          <button style={tabBtn('vue-ensemble', 'Vue d\'ensemble')} onClick={() => setActiveTab('vue-ensemble')}>Vue d'ensemble</button>
+          <button style={tabBtn('soustraitants', 'Sous-traitants')} onClick={() => setActiveTab('soustraitants')}>Sous-traitants</button>
+          <button style={tabBtn('sorties', 'Sorties')} onClick={() => setActiveTab('sorties')}>Sorties</button>
+          <button style={tabBtn('retours', 'Retours')} onClick={() => setActiveTab('retours')}>Retours</button>
+          <button style={tabBtn('messages', 'Messages')} onClick={() => setActiveTab('messages')}>Messages</button>
+        </div>
+
+        {/* MESSAGES URGENTS + ALERTES QUALITE + RETARDS */}
+        {(nbMessagesNonLus > 0 || alertesQualite.length > 0 || alertes.length > 0) && (
+          <div className="lp-grid-3">
+            {nbMessagesNonLus > 0 && (
+              <SectionCard
+                title={`${nbMessagesNonLus} message(s) urgent(s)`}
+                subtitle="Non lus"
+                icon={<Bell size={16} />}
+                actions={<button onClick={() => setActiveTab('messages')} style={btnGhostSm}>Voir tous</button>}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--s-2)' }}>
+                  {messagesUrgents.filter(m => !m.lu).slice(0, 3).map(msg => (
+                    <div key={msg.id_message} style={alertRowStyle('danger')}>
+                      <div style={{ flex: 1, fontSize: 'var(--text-sm)', color: 'var(--fg-primary)' }}>
+                        <strong>{msg.expediteur_nom || 'Système'} :</strong> {msg.sujet}
+                        {msg.numero_of && <span style={{ marginLeft: 8, color: 'var(--fg-muted)', fontSize: 'var(--text-xs)' }}>(OF: {msg.numero_of})</span>}
+                      </div>
+                      <button onClick={() => handleMarquerMessageLu(msg.id_message)} style={iconBtn}><X size={14} /></button>
+                    </div>
+                  ))}
+                </div>
+              </SectionCard>
+            )}
+            {alertesQualite.length > 0 && (
+              <SectionCard
+                title={`${alertesQualite.length} alerte(s) qualité`}
+                subtitle="Sous-traitants à surveiller"
+                icon={<AlertCircle size={16} />}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--s-2)' }}>
+                  {alertesQualite.slice(0, 5).map((alerte: any) => (
+                    <div key={alerte.id_sous_traitant} style={alertRowStyle('warning')}>
+                      <div style={{ fontSize: 'var(--text-sm)', color: 'var(--fg-primary)' }}>
+                        <strong>{alerte.raison_sociale} :</strong> <span style={{ color: 'var(--fg-secondary)' }}>{alerte.message}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </SectionCard>
+            )}
+            {alertes.length > 0 && (
+              <SectionCard
+                title={`${alertes.length} retour(s) en retard`}
+                subtitle="Dépassements de délai"
+                icon={<AlertTriangle size={16} />}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--s-2)' }}>
+                  {alertes.slice(0, 5).map((alerte: any) => {
+                    const jours = Math.ceil((new Date().getTime() - new Date(alerte.date_retour_prevue).getTime()) / (1000 * 60 * 60 * 24));
+                    return (
+                      <div key={alerte.id_mouvement_st} style={alertRowStyle('warning')}>
+                        <div style={{ fontSize: 'var(--text-sm)', color: 'var(--fg-primary)' }}>
+                          <strong>{alerte.raison_sociale}</strong>
+                          <span style={{ color: 'var(--fg-secondary)' }}> — {alerte.numero_of} · retard de {jours}j</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </SectionCard>
+            )}
           </div>
         )}
-        <button
-          onClick={() => {
-            if (activeTab === 'sorties') setShowModalSortie(true);
-            else if (activeTab === 'retours') setShowModalRetour(true);
-          }}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          {activeTab === 'sorties' ? 'Nouvelle Sortie' : activeTab === 'retours' ? 'Enregistrer Retour' : 'Action'}
-        </button>
-      </div>
-      {/* Messages Urgents Banner */}
-      {messagesUrgents.filter(m => !m.lu).length > 0 && (
-        <div className="max-w-7xl mx-auto px-4 py-3">
-          <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <Bell className="w-5 h-5 text-red-600 mr-2 animate-pulse" />
-                <h3 className="text-lg font-bold text-red-800">
-                  {messagesUrgents.filter(m => !m.lu).length} Message(s) Urgent(s)
-                </h3>
-              </div>
-              <button
-                onClick={() => setActiveTab('messages')}
-                className="text-red-700 hover:text-red-900 underline text-sm"
-              >
-                Voir tous les messages
-              </button>
-            </div>
-            <div className="mt-2 space-y-2">
-              {messagesUrgents.filter(m => !m.lu).slice(0, 3).map((msg) => (
-                <div key={msg.id_message} className="text-sm text-red-700 bg-white p-2 rounded">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <span className="font-semibold">{msg.expediteur_nom || 'Système'}: </span>
-                      <span>{msg.sujet}</span>
-                      {msg.numero_of && <span className="ml-2 text-xs">(OF: {msg.numero_of})</span>}
-                    </div>
-                    <button
-                      onClick={() => handleMarquerMessageLu(msg.id_message)}
-                      className="ml-2 text-red-600 hover:text-red-800"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* Alertes Qualité Sous-Traitants */}
-      {alertesQualite.length > 0 && (
-        <div className="max-w-7xl mx-auto px-4 py-3">
-          <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
-            <div className="flex items-center">
-              <AlertCircle className="w-5 h-5 text-red-600 mr-2" />
-              <h3 className="text-lg font-bold text-red-800">
-                {alertesQualite.length} Alerte(s) Qualité Sous-Traitant
-              </h3>
-            </div>
-            <div className="mt-2 space-y-2">
-              {alertesQualite.slice(0, 5).map((alerte: any) => (
-                <div key={alerte.id_sous_traitant} className="text-sm text-red-700 bg-white p-2 rounded">
-                  <span className="font-semibold">{alerte.raison_sociale}:</span> {alerte.message}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Alertes Retards */}
-      {alertes.length > 0 && (
-        <div className="max-w-7xl mx-auto px-4 py-3">
-          <div className="bg-orange-50 border-l-4 border-orange-500 p-4 rounded">
-            <div className="flex items-center">
-              <AlertTriangle className="w-5 h-5 text-orange-600 mr-2" />
-              <h3 className="text-lg font-bold text-orange-800">
-                {alertes.length} Retour(s) en retard
-              </h3>
-            </div>
-            <div className="mt-2 space-y-1">
-              {alertes.slice(0, 3).map((alerte: any) => (
-                <div key={alerte.id_mouvement_st} className="text-sm text-orange-700">
-                  {alerte.raison_sociale} - {alerte.numero_of} - Retard de{' '}
-                  {Math.ceil((new Date().getTime() - new Date(alerte.date_retour_prevue).getTime()) / (1000 * 60 * 60 * 24))} jours
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Statistiques Rapides */}
-      {activeTab === 'vue-ensemble' && (
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Sous-Traitants</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.totalSoustraitants}</p>
-                </div>
-                <Building2 className="w-8 h-8 text-blue-600" />
-              </div>
-            </div>
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">En Cours</p>
-                  <p className="text-2xl font-bold text-yellow-600">{stats.totalEnCours}</p>
-                </div>
-                <Clock className="w-8 h-8 text-yellow-600" />
-              </div>
-            </div>
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">En Retard</p>
-                  <p className="text-2xl font-bold text-orange-600">{stats.totalRetard}</p>
-                </div>
-                <AlertTriangle className="w-8 h-8 text-orange-600" />
-              </div>
-            </div>
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Retournés</p>
-                  <p className="text-2xl font-bold text-green-600">{stats.totalRetournes}</p>
-                </div>
-                <CheckCircle className="w-8 h-8 text-green-600" />
-              </div>
-            </div>
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Messages</p>
-                  <p className="text-2xl font-bold text-red-600">{stats.messagesNonLus}</p>
-                </div>
-                <MessageSquare className="w-8 h-8 text-red-600" />
-              </div>
-            </div>
-            <div className="bg-white rounded-lg shadow p-4 border-2 border-orange-300">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">OF à Prioriser</p>
-                  <p className="text-2xl font-bold text-orange-600">{stats.ofsAPrioriser}</p>
-                </div>
-                <Zap className="w-8 h-8 text-orange-600" />
-              </div>
-            </div>
-            <div className="bg-white rounded-lg shadow p-4 border-2 border-red-300">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Alertes Qualité</p>
-                  <p className="text-2xl font-bold text-red-600">{stats.alertesQualite}</p>
-                </div>
-                <AlertCircle className="w-8 h-8 text-red-600" />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Content selon l'onglet actif */}
-      <div className="space-y-6">
+        {/* VUE D'ENSEMBLE */}
         {activeTab === 'vue-ensemble' && (
-          <div className="space-y-6">
-            {/* OF à Sortir en Priorité */}
+          <>
             {ofsAPrioriser.length > 0 && (
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-bold flex items-center">
-                    <Zap className="w-6 h-6 mr-2 text-orange-600" />
-                    OF à Sortir en Priorité ({ofsAPrioriser.length})
-                  </h2>
+              <SectionCard
+                title={`OF à sortir en priorité (${ofsAPrioriser.length})`}
+                subtitle="Ordres prêts à envoyer en sous-traitance"
+                icon={<Zap size={16} />}
+                actions={
                   <button
                     onClick={() => {
                       if (ofsAPrioriser.length > 0) {
-                        setFormSortie({
-                          ...formSortie,
-                          id_of: ofsAPrioriser[0].id_of.toString()
-                        });
+                        setFormSortie({ ...formSortie, id_of: ofsAPrioriser[0].id_of.toString() });
                         setShowModalSortie(true);
                       }
                     }}
-                    className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center"
+                    style={btnPrimary}
                   >
-                    <ArrowRight className="w-4 h-4 mr-2" />
-                    Sortir le Premier OF
+                    <ArrowRight size={12} /> Sortir le premier OF
                   </button>
-                </div>
-                <div className="bg-white rounded-lg shadow overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-4 py-3 text-left text-sm font-semibold">Priorité</th>
-                          <th className="px-4 py-3 text-left text-sm font-semibold">Numéro OF</th>
-                          <th className="px-4 py-3 text-left text-sm font-semibold">Article</th>
-                          <th className="px-4 py-3 text-left text-sm font-semibold">Quantité</th>
-                          <th className="px-4 py-3 text-left text-sm font-semibold">Date Début Prévue</th>
-                          <th className="px-4 py-3 text-left text-sm font-semibold">Statut</th>
-                          <th className="px-4 py-3 text-center text-sm font-semibold">Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {ofsAPrioriser.slice(0, 10).map((of: any) => (
-                          <tr key={of.id_of} className={`border-b hover:bg-gray-50 ${
-                            of.priorite === 'urgente' ? 'bg-red-50' : of.priorite === 'haute' ? 'bg-orange-50' : ''
-                          }`}>
-                            <td className="px-4 py-3">
-                              <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                                of.priorite === 'urgente' ? 'bg-red-100 text-red-800 animate-pulse' :
-                                of.priorite === 'haute' ? 'bg-orange-100 text-orange-800' :
-                                'bg-blue-100 text-blue-800'
-                              }`}>
-                                {of.priorite === 'urgente' ? 'URGENTE' :
-                                 of.priorite === 'haute' ? 'HAUTE' : 'NORMALE'}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 font-medium">{of.numero_of}</td>
-                            <td className="px-4 py-3">
-                              <div>
-                                <div className="font-medium">{of.article_designation || of.code_article || '-'}</div>
-                                {of.code_article && of.article_designation && (
-                                  <div className="text-xs text-gray-500">{of.code_article}</div>
-                                )}
-                              </div>
-                            </td>
-                            <td className="px-4 py-3">{of.quantite_a_produire} {of.unite || ''}</td>
-                            <td className="px-4 py-3 text-sm">
-                              {of.date_debut_prevue ? new Date(of.date_debut_prevue).toLocaleDateString('fr-FR') : '-'}
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className="px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800">
-                                {of.statut}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                              <button
-                                onClick={() => {
-                                  setFormSortie({
-                                    ...formSortie,
-                                    id_of: of.id_of.toString()
-                                  });
-                                  setShowModalSortie(true);
-                                }}
-                                className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm flex items-center mx-auto"
-                              >
-                                <ArrowRight className="w-4 h-4 mr-1" />
-                                Sortir
-                              </button>
-                            </td>
-                          </tr>
+                }
+              >
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={tableStyle}>
+                    <thead>
+                      <tr style={{ background: 'var(--bg-hover)' }}>
+                        {['Priorité', 'N° OF', 'Article', 'Quantité', 'Début prévu', 'Statut', 'Action'].map(h => (
+                          <th key={h} style={thStyle}>{h}</th>
                         ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  {ofsAPrioriser.length > 10 && (
-                    <div className="p-4 bg-gray-50 text-center text-sm text-gray-600">
-                      + {ofsAPrioriser.length - 10} autre(s) OF en attente de sortie
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Liste des Sous-Traitants avec résumé */}
-            <div>
-              <h2 className="text-xl font-bold mb-4">Sous-Traitants Actifs</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {soustraitants.map(st => (
-                  <div key={st.id_sous_traitant} className="bg-white rounded-lg shadow p-4 hover:shadow-lg transition-shadow cursor-pointer"
-                    onClick={() => {
-                      setSelectedSoustraitant(st);
-                      setShowModalDetails(true);
-                    }}
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <h3 className="font-bold text-lg">{st.raison_sociale}</h3>
-                        <p className="text-sm text-gray-600">{st.code_sous_traitant}</p>
-                      </div>
-                      <Eye className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div className="space-y-2 text-sm">
-                      {st.specialite && (
-                        <p><span className="font-semibold">Spécialité:</span> {st.specialite}</p>
-                      )}
-                      {st.statistiques && (
-                        <div className="flex space-x-4 mt-3 pt-3 border-t">
-                          <div>
-                            <span className="text-gray-600">En cours:</span>
-                            <span className="ml-2 font-bold text-yellow-600">{st.statistiques.en_cours || 0}</span>
-                          </div>
-                          <div>
-                            <span className="text-gray-600">Retard:</span>
-                            <span className="ml-2 font-bold text-orange-600">{st.statistiques.en_retard || 0}</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Mouvements récents */}
-            <div>
-              <h2 className="text-xl font-bold mb-4">Mouvements Récents</h2>
-              <div className="bg-white rounded-lg shadow overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="min-w-full">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-sm font-semibold">Numéro</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold">Sous-Traitant</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold">OF</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold">Statut</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold">Date Sortie</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredMouvements.slice(0, 10).map(m => (
-                        <tr key={m.id_mouvement_st} className="border-b hover:bg-gray-50">
-                          <td className="px-4 py-3 text-sm font-medium">{m.numero_mouvement}</td>
-                          <td className="px-4 py-3 text-sm">{m.raison_sociale}</td>
-                          <td className="px-4 py-3 text-sm">{m.numero_of || '-'}</td>
-                          <td className="px-4 py-3">
-                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                              m.statut === 'en_cours' ? 'bg-yellow-100 text-yellow-800' :
-                              m.statut === 'retourne' ? 'bg-green-100 text-green-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {m.statut}
-                            </span>
+                      {ofsAPrioriser.slice(0, 10).map((of: any) => (
+                        <tr key={of.id_of} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                          <td style={tdStyle}>{prioriteBadge(of.priorite)}</td>
+                          <td style={tdStyle}><strong>{of.numero_of}</strong></td>
+                          <td style={tdStyle}>
+                            <div>
+                              <div>{of.article_designation || of.code_article || '-'}</div>
+                              {of.code_article && of.article_designation && (
+                                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-muted)' }}>{of.code_article}</div>
+                              )}
+                            </div>
                           </td>
-                          <td className="px-4 py-3 text-sm">
-                            {new Date(m.date_mouvement).toLocaleDateString('fr-FR')}
+                          <td style={tdStyle}>{of.quantite_a_produire} {of.unite || ''}</td>
+                          <td style={tdStyle}>{of.date_debut_prevue ? new Date(of.date_debut_prevue).toLocaleDateString('fr-FR') : '-'}</td>
+                          <td style={tdStyle}><span style={{ ...badgeBase, background: 'var(--color-warning-bg)', color: 'var(--color-warning)' }}>{of.statut}</span></td>
+                          <td style={tdStyle}>
+                            <button
+                              onClick={() => {
+                                setFormSortie({ ...formSortie, id_of: of.id_of.toString() });
+                                setShowModalSortie(true);
+                              }}
+                              style={btnPrimarySm}
+                            >
+                              <ArrowRight size={12} /> Sortir
+                            </button>
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
+                  {ofsAPrioriser.length > 10 && (
+                    <div style={{ padding: 'var(--s-3) var(--s-4)', fontSize: 'var(--text-xs)', color: 'var(--fg-muted)', textAlign: 'center' }}>
+                      + {ofsAPrioriser.length - 10} autre(s) OF en attente de sortie
+                    </div>
+                  )}
                 </div>
+              </SectionCard>
+            )}
+
+            <SectionCard
+              title="Sous-traitants actifs"
+              subtitle="Résumé rapide"
+              icon={<Building2 size={16} />}
+            >
+              <div className="lp-grid-3">
+                {soustraitants.map(st => (
+                  <div
+                    key={st.id_sous_traitant}
+                    style={cardStyle}
+                    onClick={() => { setSelectedSoustraitant(st); setShowModalDetails(true); }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--s-2)' }}>
+                      <div>
+                        <div style={{ fontWeight: 600, color: 'var(--fg-primary)' }}>{st.raison_sociale}</div>
+                        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-muted)' }}>{st.code_sous_traitant}</div>
+                      </div>
+                      <Eye size={14} style={{ color: 'var(--fg-muted)' }} />
+                    </div>
+                    {st.specialite && (
+                      <div style={{ fontSize: 'var(--text-sm)', color: 'var(--fg-secondary)', marginBottom: 'var(--s-2)' }}>
+                        <strong>Spécialité :</strong> {st.specialite}
+                      </div>
+                    )}
+                    {st.statistiques && (
+                      <div style={{ display: 'flex', gap: 'var(--s-3)', paddingTop: 'var(--s-2)', borderTop: '1px solid var(--border-subtle)', fontSize: 'var(--text-xs)' }}>
+                        <div><span style={{ color: 'var(--fg-muted)' }}>En cours :</span> <strong style={{ color: 'var(--color-warning)' }}>{st.statistiques.en_cours || 0}</strong></div>
+                        <div><span style={{ color: 'var(--fg-muted)' }}>Retard :</span> <strong style={{ color: 'var(--color-danger)' }}>{st.statistiques.en_retard || 0}</strong></div>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
-            </div>
-          </div>
+            </SectionCard>
+
+            <SectionCard
+              title="Mouvements récents"
+              subtitle="Derniers transferts et retours"
+              icon={<Truck size={16} />}
+            >
+              <div style={{ overflowX: 'auto' }}>
+                <table style={tableStyle}>
+                  <thead>
+                    <tr style={{ background: 'var(--bg-hover)' }}>
+                      {['Numéro', 'Sous-traitant', 'OF', 'Statut', 'Date sortie'].map(h => (
+                        <th key={h} style={thStyle}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredMouvements.slice(0, 10).map(m => (
+                      <tr key={m.id_mouvement_st} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                        <td style={tdStyle}><strong>{m.numero_mouvement}</strong></td>
+                        <td style={tdStyle}>{m.raison_sociale}</td>
+                        <td style={tdStyle}>{m.numero_of || '-'}</td>
+                        <td style={tdStyle}>{statutBadge(m.statut)}</td>
+                        <td style={tdStyle}>{new Date(m.date_mouvement).toLocaleDateString('fr-FR')}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </SectionCard>
+          </>
         )}
 
+        {/* SOUS-TRAITANTS */}
         {activeTab === 'soustraitants' && (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold">Liste Complète des Sous-Traitants</h2>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <SectionCard
+            title="Liste complète des sous-traitants"
+            subtitle={`${soustraitants.length} partenaires`}
+            icon={<Building2 size={16} />}
+            actions={
+              <div style={{ position: 'relative' }}>
+                <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--fg-muted)' }} />
                 <input
                   type="text"
                   placeholder="Rechercher..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg"
+                  style={{ ...inputStyle, paddingLeft: 32, width: 220 }}
                 />
               </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            }
+          >
+            <div className="lp-grid-2">
               {soustraitants
                 .filter(st => !search || st.raison_sociale.toLowerCase().includes(search.toLowerCase()))
                 .map(st => (
-                <div key={st.id_sous_traitant} className="bg-white rounded-lg shadow p-6">
-                  <div className="flex items-start justify-between mb-4">
+                <div key={st.id_sous_traitant} style={{ ...cardStyle, cursor: 'default' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--s-3)' }}>
                     <div>
-                      <h3 className="text-xl font-bold">{st.raison_sociale}</h3>
-                      <p className="text-sm text-gray-600">{st.code_sous_traitant}</p>
+                      <div style={{ fontWeight: 600, fontSize: 'var(--text-md)', color: 'var(--fg-primary)' }}>{st.raison_sociale}</div>
+                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-muted)' }}>{st.code_sous_traitant}</div>
                     </div>
                     <button
-                      onClick={() => {
-                        setSelectedSoustraitant(st);
-                        setShowModalDetails(true);
-                      }}
-                      className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                      onClick={() => { setSelectedSoustraitant(st); setShowModalDetails(true); }}
+                      style={btnGhostSm}
                     >
-                      <Eye className="w-4 h-4 inline mr-1" />
-                      Détails
+                      <Eye size={12} /> Détails
                     </button>
                   </div>
-                  
-                  <div className="space-y-2 text-sm mb-4">
-                    {st.specialite && (
-                      <p><span className="font-semibold">Spécialité:</span> {st.specialite}</p>
-                    )}
-                    {st.delai_moyen_jours && (
-                      <p><span className="font-semibold">Délai moyen:</span> {st.delai_moyen_jours} jours</p>
-                    )}
-                    {st.telephone && (
-                      <p className="flex items-center">
-                        <PhoneIcon className="w-4 h-4 mr-2 text-gray-600" />
-                        {st.telephone}
-                      </p>
-                    )}
-                    {st.email && (
-                      <p className="flex items-center">
-                        <MailIcon className="w-4 h-4 mr-2 text-gray-600" />
-                        {st.email}
-                      </p>
-                    )}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 'var(--text-sm)', color: 'var(--fg-secondary)', marginBottom: 'var(--s-3)' }}>
+                    {st.specialite && <div><strong>Spécialité :</strong> {st.specialite}</div>}
+                    {st.delai_moyen_jours && <div><strong>Délai moyen :</strong> {st.delai_moyen_jours} jours</div>}
+                    {st.telephone && <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><PhoneIcon size={12} /> {st.telephone}</div>}
+                    {st.email && <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><MailIcon size={12} /> {st.email}</div>}
                   </div>
-
                   {st.statistiques && (
-                    <div className="pt-4 border-t">
-                      <div className="grid grid-cols-3 gap-2 text-center">
-                        <div>
-                          <p className="text-xs text-gray-600">En cours</p>
-                          <p className="text-lg font-bold text-yellow-600">{st.statistiques.en_cours || 0}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-600">Retard</p>
-                          <p className="text-lg font-bold text-orange-600">{st.statistiques.en_retard || 0}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-600">Total</p>
-                          <p className="text-lg font-bold text-gray-900">{st.statistiques.total_mouvements || 0}</p>
-                        </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--s-2)', paddingTop: 'var(--s-3)', borderTop: '1px solid var(--border-subtle)', textAlign: 'center' }}>
+                      <div>
+                        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-muted)' }}>En cours</div>
+                        <div style={{ fontSize: 'var(--text-md)', fontWeight: 700, color: 'var(--color-warning)' }}>{st.statistiques.en_cours || 0}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-muted)' }}>Retard</div>
+                        <div style={{ fontSize: 'var(--text-md)', fontWeight: 700, color: 'var(--color-danger)' }}>{st.statistiques.en_retard || 0}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-muted)' }}>Total</div>
+                        <div style={{ fontSize: 'var(--text-md)', fontWeight: 700, color: 'var(--fg-primary)' }}>{st.statistiques.total_mouvements || 0}</div>
                       </div>
                     </div>
                   )}
                 </div>
               ))}
             </div>
-          </div>
+          </SectionCard>
         )}
 
+        {/* SORTIES / RETOURS */}
         {(activeTab === 'sorties' || activeTab === 'retours') && (
-          <>
-            <div className="mb-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <SectionCard
+            title={activeTab === 'sorties' ? 'Sorties en cours' : 'Retours à traiter'}
+            subtitle="Mouvements ouverts"
+            icon={activeTab === 'sorties' ? <ArrowRight size={16} /> : <Package size={16} />}
+            actions={
+              <div style={{ position: 'relative' }}>
+                <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--fg-muted)' }} />
                 <input
                   type="text"
-                  placeholder="Rechercher par numéro mouvement, sous-traitant, OF, QR code..."
+                  placeholder="Rechercher mouvement, ST, OF, QR..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  style={{ ...inputStyle, paddingLeft: 32, width: 280 }}
                 />
               </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="min-w-full">
-                  <thead className="bg-gray-50 border-b">
+            }
+          >
+            <div style={{ overflowX: 'auto' }}>
+              <table style={tableStyle}>
+                <thead>
+                  <tr style={{ background: 'var(--bg-hover)' }}>
+                    {['Numéro', 'Sous-traitant', 'OF', 'QR code', 'N° suivi', 'Date sortie', 'Retour prévu', 'Statut', 'Actions'].map(h => (
+                      <th key={h} style={thStyle}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredMouvements.filter(m => activeTab === 'sorties'
+                    ? m.type_mouvement === 'sortie' && m.statut === 'en_cours'
+                    : m.statut === 'en_cours'
+                  ).length === 0 ? (
                     <tr>
-                      <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">Numéro</th>
-                      <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">Sous-Traitant</th>
-                      <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">OF</th>
-                      <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">QR Code</th>
-                      <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">Num. Suivi</th>
-                      <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">Date Sortie</th>
-                      <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">Retour Prévu</th>
-                      <th className="text-center py-3 px-4 font-semibold text-sm text-gray-700">Statut</th>
-                      <th className="text-center py-3 px-4 font-semibold text-sm text-gray-700">Actions</th>
+                      <td colSpan={9} style={{ ...tdStyle, textAlign: 'center', color: 'var(--fg-muted)', padding: 'var(--s-6) var(--s-4)' }}>
+                        Aucun mouvement trouvé
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {filteredMouvements
-                      .filter(m => activeTab === 'sorties' 
+                  ) : (
+                    filteredMouvements
+                      .filter(m => activeTab === 'sorties'
                         ? m.type_mouvement === 'sortie' && m.statut === 'en_cours'
                         : m.statut === 'en_cours'
                       )
-                      .length === 0 ? (
-                      <tr>
-                        <td colSpan={9} className="text-center py-8 text-gray-500">
-                          Aucun mouvement trouvé
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredMouvements
-                        .filter(m => activeTab === 'sorties' 
-                          ? m.type_mouvement === 'sortie' && m.statut === 'en_cours'
-                          : m.statut === 'en_cours'
-                        )
-                        .map((mouvement) => (
-                        <tr key={mouvement.id_mouvement_st} className="border-b hover:bg-gray-50">
-                          <td className="py-3 px-4 font-medium">{mouvement.numero_mouvement}</td>
-                          <td className="py-3 px-4">{mouvement.raison_sociale}</td>
-                          <td className="py-3 px-4">{mouvement.numero_of || '-'}</td>
-                          <td className="py-3 px-4 font-mono text-xs">
-                            {mouvement.qr_code_sortie || mouvement.qr_code_retour || '-'}
-                          </td>
-                          <td className="py-3 px-4 font-mono text-xs">
-                            {mouvement.numero_suivi_transporteur || '-'}
-                          </td>
-                          <td className="py-3 px-4 text-sm">
-                            {new Date(mouvement.date_mouvement).toLocaleDateString('fr-FR')}
-                          </td>
-                          <td className="py-3 px-4 text-sm">
-                            {mouvement.date_retour_prevue ? (
-                              new Date(mouvement.date_retour_prevue).toLocaleDateString('fr-FR')
-                            ) : '-'}
-                          </td>
-                          <td className="py-3 px-4 text-center">
-                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                              mouvement.statut === 'en_cours' ? 'bg-yellow-100 text-yellow-800' :
-                              mouvement.statut === 'retourne' ? 'bg-green-100 text-green-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {mouvement.statut}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 text-center">
+                      .map(mouvement => (
+                        <tr key={mouvement.id_mouvement_st} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                          <td style={tdStyle}><strong>{mouvement.numero_mouvement}</strong></td>
+                          <td style={tdStyle}>{mouvement.raison_sociale}</td>
+                          <td style={tdStyle}>{mouvement.numero_of || '-'}</td>
+                          <td style={{ ...tdStyle, fontFamily: 'monospace', fontSize: 11 }}>{mouvement.qr_code_sortie || mouvement.qr_code_retour || '-'}</td>
+                          <td style={{ ...tdStyle, fontFamily: 'monospace', fontSize: 11 }}>{mouvement.numero_suivi_transporteur || '-'}</td>
+                          <td style={tdStyle}>{new Date(mouvement.date_mouvement).toLocaleDateString('fr-FR')}</td>
+                          <td style={tdStyle}>{mouvement.date_retour_prevue ? new Date(mouvement.date_retour_prevue).toLocaleDateString('fr-FR') : '-'}</td>
+                          <td style={tdStyle}>{statutBadge(mouvement.statut)}</td>
+                          <td style={tdStyle}>
                             {activeTab === 'retours' && mouvement.statut === 'en_cours' && (
                               <button
                                 onClick={() => {
                                   setFormRetour({
                                     ...formRetour,
                                     id_mouvement: mouvement.id_mouvement_st.toString(),
-                                    qr_code_retour: mouvement.qr_code_sortie || ''
+                                    qr_code_retour: mouvement.qr_code_sortie || '',
                                   });
                                   setShowModalRetour(true);
                                 }}
-                                className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
+                                style={btnPrimarySm}
                               >
-                                Enregistrer Retour
+                                Enregistrer retour
                               </button>
                             )}
                           </td>
                         </tr>
                       ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                  )}
+                </tbody>
+              </table>
             </div>
-          </>
+          </SectionCard>
         )}
 
+        {/* MESSAGES */}
         {activeTab === 'messages' && (
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold">Messages et Alertes des Autres Postes</h2>
+          <SectionCard
+            title="Messages et alertes"
+            subtitle="Communications entrantes des autres postes"
+            icon={<MessageSquare size={16} />}
+          >
             {messagesUrgents.length === 0 ? (
-              <div className="bg-white rounded-lg shadow p-8 text-center">
-                <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">Aucun message urgent pour le moment</p>
+              <div style={{ padding: 'var(--s-6) var(--s-4)', textAlign: 'center', color: 'var(--fg-muted)' }}>
+                <MessageSquare size={32} style={{ margin: '0 auto var(--s-3)', display: 'block' }} />
+                Aucun message urgent pour le moment
               </div>
             ) : (
-              <div className="space-y-3">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--s-2)' }}>
                 {messagesUrgents.map(msg => (
-                  <div key={msg.id_message} className={`bg-white rounded-lg shadow p-4 border-l-4 ${
-                    msg.urgent ? 'border-red-500' : 'border-blue-500'
-                  }`}>
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-2">
-                          {msg.urgent && <AlertTriangle className="w-5 h-5 text-red-600" />}
-                          <h3 className="font-bold text-lg">{msg.sujet}</h3>
-                        </div>
-                        <p className="text-sm text-gray-600 mb-2">
-                          De: <span className="font-semibold">{msg.expediteur_nom || 'Système'}</span>
-                          {msg.numero_of && (
-                            <span className="ml-4">OF concerné: <span className="font-semibold">{msg.numero_of}</span></span>
-                          )}
-                        </p>
-                        <p className="text-gray-700 whitespace-pre-wrap">{msg.message}</p>
-                        <p className="text-xs text-gray-500 mt-2">
-                          {new Date(msg.created_at).toLocaleString('fr-FR')}
-                        </p>
+                  <div
+                    key={msg.id_message}
+                    style={{
+                      padding: 'var(--s-3) var(--s-4)',
+                      background: 'var(--bg-elevated)',
+                      border: '1px solid var(--border-subtle)',
+                      borderLeft: `3px solid ${msg.urgent ? 'var(--color-danger)' : 'var(--color-info)'}`,
+                      borderRadius: 'var(--radius-sm)',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                      gap: 'var(--s-3)',
+                    }}
+                  >
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                        {msg.urgent && <AlertTriangle size={14} style={{ color: 'var(--color-danger)' }} />}
+                        <strong style={{ color: 'var(--fg-primary)' }}>{msg.sujet}</strong>
                       </div>
-                      {!msg.lu && (
-                        <button
-                          onClick={() => handleMarquerMessageLu(msg.id_message)}
-                          className="ml-4 px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm"
-                        >
-                          Marquer lu
-                        </button>
-                      )}
+                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-secondary)', marginBottom: 6 }}>
+                        De : <strong>{msg.expediteur_nom || 'Système'}</strong>
+                        {msg.numero_of && <> · OF : <strong>{msg.numero_of}</strong></>}
+                      </div>
+                      <div style={{ fontSize: 'var(--text-sm)', color: 'var(--fg-primary)', whiteSpace: 'pre-wrap' }}>{msg.message}</div>
+                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-muted)', marginTop: 6 }}>
+                        {new Date(msg.created_at).toLocaleString('fr-FR')}
+                      </div>
                     </div>
+                    {!msg.lu && (
+                      <button onClick={() => handleMarquerMessageLu(msg.id_message)} style={btnGhostSm}>
+                        Marquer lu
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
             )}
-          </div>
+          </SectionCard>
         )}
-      </div>
+      </DashboardShell>
 
       {/* Modal Détails Sous-Traitant */}
       {showModalDetails && selectedSoustraitant && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b flex items-center justify-between">
-              <h3 className="text-xl font-bold text-gray-900">Détails Sous-Traitant</h3>
-              <button onClick={() => setShowModalDetails(false)} className="text-gray-400 hover:text-gray-600">
-                <X className="w-6 h-6" />
-              </button>
+        <div style={modalOverlayStyle}>
+          <div style={{ ...modalContentStyle, maxWidth: 800 }}>
+            <div style={modalHeaderStyle}>
+              <h3 style={{ margin: 0, fontSize: 'var(--text-lg)', color: 'var(--fg-primary)' }}>Détails sous-traitant</h3>
+              <button onClick={() => setShowModalDetails(false)} style={iconBtn}><X size={18} /></button>
             </div>
-            <div className="p-6 space-y-6">
+            <div style={{ padding: 'var(--s-4)', display: 'flex', flexDirection: 'column', gap: 'var(--s-4)' }}>
               <div>
-                <h4 className="text-lg font-bold mb-2">{selectedSoustraitant.raison_sociale}</h4>
-                <p className="text-sm text-gray-600">Code: {selectedSoustraitant.code_sous_traitant}</p>
+                <div style={{ fontSize: 'var(--text-md)', fontWeight: 700, color: 'var(--fg-primary)' }}>{selectedSoustraitant.raison_sociale}</div>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-muted)' }}>Code : {selectedSoustraitant.code_sous_traitant}</div>
               </div>
 
-              <div className="grid grid-cols-2 gap-6">
+              <div className="lp-grid-2">
                 <div>
-                  <h5 className="font-semibold mb-3">Informations Contact</h5>
-                  <div className="space-y-2 text-sm">
-                    {selectedSoustraitant.telephone && (
-                      <p className="flex items-center">
-                        <PhoneIcon className="w-4 h-4 mr-2 text-gray-600" />
-                        {selectedSoustraitant.telephone}
-                      </p>
-                    )}
-                    {selectedSoustraitant.email && (
-                      <p className="flex items-center">
-                        <MailIcon className="w-4 h-4 mr-2 text-gray-600" />
-                        {selectedSoustraitant.email}
-                      </p>
-                    )}
-                    {selectedSoustraitant.adresse && (
-                      <p className="flex items-start">
-                        <MapPin className="w-4 h-4 mr-2 text-gray-600 mt-1" />
-                        <span>{selectedSoustraitant.adresse}</span>
-                      </p>
-                    )}
-                    {selectedSoustraitant.contact_principal && (
-                      <p><span className="font-semibold">Contact principal:</span> {selectedSoustraitant.contact_principal}</p>
-                    )}
+                  <h5 style={{ marginTop: 0, marginBottom: 'var(--s-2)', color: 'var(--fg-secondary)', fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Contact</h5>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 'var(--text-sm)', color: 'var(--fg-primary)' }}>
+                    {selectedSoustraitant.telephone && <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><PhoneIcon size={12} /> {selectedSoustraitant.telephone}</div>}
+                    {selectedSoustraitant.email && <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><MailIcon size={12} /> {selectedSoustraitant.email}</div>}
+                    {selectedSoustraitant.adresse && <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}><MapPin size={12} style={{ marginTop: 3 }} /> {selectedSoustraitant.adresse}</div>}
+                    {selectedSoustraitant.contact_principal && <div><strong>Contact principal :</strong> {selectedSoustraitant.contact_principal}</div>}
                   </div>
                 </div>
-
                 <div>
-                  <h5 className="font-semibold mb-3">Informations Techniques</h5>
-                  <div className="space-y-2 text-sm">
-                    {selectedSoustraitant.specialite && (
-                      <p><span className="font-semibold">Spécialité:</span> {selectedSoustraitant.specialite}</p>
-                    )}
-                    {selectedSoustraitant.delai_moyen_jours && (
-                      <p><span className="font-semibold">Délai moyen:</span> {selectedSoustraitant.delai_moyen_jours} jours</p>
-                    )}
-                    {selectedSoustraitant.capacite_production && (
-                      <p><span className="font-semibold">Capacité:</span> {selectedSoustraitant.capacite_production}</p>
-                    )}
-                    {selectedSoustraitant.taux_qualite && (
-                      <p><span className="font-semibold">Taux qualité:</span> {selectedSoustraitant.taux_qualite}%</p>
-                    )}
-                    <p>
-                      <span className="font-semibold">Statut:</span>{' '}
-                      <span className={`px-2 py-1 rounded text-xs ${
-                        selectedSoustraitant.actif ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                      }`}>
+                  <h5 style={{ marginTop: 0, marginBottom: 'var(--s-2)', color: 'var(--fg-secondary)', fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Technique</h5>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 'var(--text-sm)', color: 'var(--fg-primary)' }}>
+                    {selectedSoustraitant.specialite && <div><strong>Spécialité :</strong> {selectedSoustraitant.specialite}</div>}
+                    {selectedSoustraitant.delai_moyen_jours && <div><strong>Délai moyen :</strong> {selectedSoustraitant.delai_moyen_jours} jours</div>}
+                    {selectedSoustraitant.capacite_production && <div><strong>Capacité :</strong> {selectedSoustraitant.capacite_production}</div>}
+                    {selectedSoustraitant.taux_qualite && <div><strong>Taux qualité :</strong> {selectedSoustraitant.taux_qualite}%</div>}
+                    <div>
+                      <strong>Statut :</strong>{' '}
+                      <span style={{ ...badgeBase, background: selectedSoustraitant.actif ? 'var(--color-success-bg)' : 'var(--color-danger-bg)', color: selectedSoustraitant.actif ? 'var(--color-success)' : 'var(--color-danger)' }}>
                         {selectedSoustraitant.actif ? 'Actif' : 'Inactif'}
                       </span>
-                    </p>
+                    </div>
                   </div>
                 </div>
               </div>
 
               {selectedSoustraitant.statistiques && (
                 <div>
-                  <h5 className="font-semibold mb-3">Statistiques</h5>
-                  <div className="grid grid-cols-4 gap-4">
-                    <div className="bg-gray-50 p-3 rounded text-center">
-                      <p className="text-sm text-gray-600">Total</p>
-                      <p className="text-2xl font-bold">{selectedSoustraitant.statistiques.total_mouvements || 0}</p>
-                    </div>
-                    <div className="bg-yellow-50 p-3 rounded text-center">
-                      <p className="text-sm text-gray-600">En cours</p>
-                      <p className="text-2xl font-bold text-yellow-600">{selectedSoustraitant.statistiques.en_cours || 0}</p>
-                    </div>
-                    <div className="bg-orange-50 p-3 rounded text-center">
-                      <p className="text-sm text-gray-600">En retard</p>
-                      <p className="text-2xl font-bold text-orange-600">{selectedSoustraitant.statistiques.en_retard || 0}</p>
-                    </div>
-                    <div className="bg-green-50 p-3 rounded text-center">
-                      <p className="text-sm text-gray-600">Retournés</p>
-                      <p className="text-2xl font-bold text-green-600">{selectedSoustraitant.statistiques.retournes || 0}</p>
-                    </div>
+                  <h5 style={{ marginTop: 0, marginBottom: 'var(--s-2)', color: 'var(--fg-secondary)', fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Statistiques</h5>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--s-2)' }}>
+                    {[
+                      { label: 'Total', value: selectedSoustraitant.statistiques.total_mouvements || 0, color: 'var(--fg-primary)' },
+                      { label: 'En cours', value: selectedSoustraitant.statistiques.en_cours || 0, color: 'var(--color-warning)' },
+                      { label: 'En retard', value: selectedSoustraitant.statistiques.en_retard || 0, color: 'var(--color-danger)' },
+                      { label: 'Retournés', value: selectedSoustraitant.statistiques.retournes || 0, color: 'var(--color-success)' },
+                    ].map(s => (
+                      <div key={s.label} style={{ padding: 'var(--s-3)', background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)', textAlign: 'center' }}>
+                        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-muted)' }}>{s.label}</div>
+                        <div style={{ fontSize: 'var(--text-lg)', fontWeight: 700, color: s.color }}>{s.value}</div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
 
               {selectedSoustraitant.mouvements && selectedSoustraitant.mouvements.length > 0 && (
                 <div>
-                  <h5 className="font-semibold mb-3">OF en Cours chez ce Sous-Traitant</h5>
-                  <div className="bg-gray-50 rounded p-4 max-h-60 overflow-y-auto">
-                    <div className="space-y-2">
-                      {selectedSoustraitant.mouvements.map(mouv => (
-                        <div key={mouv.id_mouvement_st} className="bg-white p-3 rounded border">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-semibold">{mouv.numero_of}</p>
-                              {mouv.article_designation && (
-                                <p className="text-sm text-gray-600">{mouv.article_designation}</p>
-                              )}
-                              <p className="text-xs text-gray-500">
-                                Sortie: {new Date(mouv.date_mouvement).toLocaleDateString('fr-FR')}
-                                {mouv.date_retour_prevue && (
-                                  <> | Retour prévu: {new Date(mouv.date_retour_prevue).toLocaleDateString('fr-FR')}</>
-                                )}
-                              </p>
-                            </div>
-                            <span className={`px-2 py-1 rounded text-xs ${
-                              mouv.statut === 'en_cours' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-green-100 text-green-800'
-                            }`}>
-                              {mouv.statut}
-                            </span>
+                  <h5 style={{ marginTop: 0, marginBottom: 'var(--s-2)', color: 'var(--fg-secondary)', fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>OF chez ce sous-traitant</h5>
+                  <div style={{ maxHeight: 240, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 'var(--s-2)' }}>
+                    {selectedSoustraitant.mouvements.map(mouv => (
+                      <div key={mouv.id_mouvement_st} style={{ padding: 'var(--s-3)', background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <div style={{ fontWeight: 600, color: 'var(--fg-primary)' }}>{mouv.numero_of}</div>
+                          {mouv.article_designation && <div style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-secondary)' }}>{mouv.article_designation}</div>}
+                          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-muted)' }}>
+                            Sortie : {new Date(mouv.date_mouvement).toLocaleDateString('fr-FR')}
+                            {mouv.date_retour_prevue && <> · Retour prévu : {new Date(mouv.date_retour_prevue).toLocaleDateString('fr-FR')}</>}
                           </div>
                         </div>
-                      ))}
-                    </div>
+                        {statutBadge(mouv.statut)}
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -1087,121 +966,75 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
 
       {/* Modal Sortie */}
       {showModalSortie && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b">
-              <h3 className="text-xl font-bold text-gray-900">Enregistrer Sortie vers Sous-Traitant</h3>
+        <div style={modalOverlayStyle}>
+          <div style={modalContentStyle}>
+            <div style={modalHeaderStyle}>
+              <h3 style={{ margin: 0, fontSize: 'var(--text-lg)', color: 'var(--fg-primary)' }}>Enregistrer sortie vers sous-traitant</h3>
+              <button onClick={() => { setShowModalSortie(false); resetFormSortie(); }} style={iconBtn}><X size={18} /></button>
             </div>
-            <div className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <div style={{ padding: 'var(--s-4)', display: 'flex', flexDirection: 'column', gap: 'var(--s-3)' }}>
+              <div className="lp-grid-2">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Sous-Traitant *</label>
-                  <select
-                    value={formSortie.id_sous_traitant}
-                    onChange={(e) => setFormSortie({ ...formSortie, id_sous_traitant: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg"
-                    required
-                  >
+                  <label style={labelStyle}>Sous-traitant *</label>
+                  <select value={formSortie.id_sous_traitant} onChange={(e) => setFormSortie({ ...formSortie, id_sous_traitant: e.target.value })} style={inputStyle} required>
                     <option value="">Sélectionner...</option>
                     {soustraitantsList.map(st => (
-                      <option key={st.id_sous_traitant} value={st.id_sous_traitant}>
-                        {st.raison_sociale}
-                      </option>
+                      <option key={st.id_sous_traitant} value={st.id_sous_traitant}>{st.raison_sociale}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Ordre de Fabrication *</label>
-                  <select
-                    value={formSortie.id_of}
-                    onChange={(e) => setFormSortie({ ...formSortie, id_of: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg"
-                    required
-                  >
+                  <label style={labelStyle}>Ordre de fabrication *</label>
+                  <select value={formSortie.id_of} onChange={(e) => setFormSortie({ ...formSortie, id_of: e.target.value })} style={inputStyle} required>
                     <option value="">Sélectionner...</option>
                     {ofs.map(of => (
-                      <option key={of.id_of} value={of.id_of}>
-                        {of.numero_of}
-                      </option>
+                      <option key={of.id_of} value={of.id_of}>{of.numero_of}</option>
                     ))}
                   </select>
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">
-                  QR Code / Numéro de Suivi (Scanner ou Saisir) *
-                </label>
-                <div className="flex space-x-2">
+                <label style={labelStyle}>QR code / numéro de suivi *</label>
+                <div style={{ display: 'flex', gap: 'var(--s-2)' }}>
                   <input
                     type="text"
                     value={formSortie.qr_code_sortie}
                     onChange={(e) => setFormSortie({ ...formSortie, qr_code_sortie: e.target.value })}
-                    placeholder="Scannez ou saisissez le numéro de suivi"
-                    className="flex-1 px-3 py-2 border rounded-lg"
+                    placeholder="Scanner ou saisir"
+                    style={{ ...inputStyle, flex: 1 }}
                     autoFocus
                   />
-                  <button className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">
-                    <Scan className="w-5 h-5" />
-                  </button>
+                  <button style={btnGhost}><Scan size={14} /></button>
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Numéro de Suivi Transporteur</label>
+                <label style={labelStyle}>Numéro de suivi transporteur</label>
                 <input
                   type="text"
                   value={formSortie.numero_suivi_transporteur}
                   onChange={(e) => setFormSortie({ ...formSortie, numero_suivi_transporteur: e.target.value })}
-                  placeholder="Numéro de suivi du transporteur (optionnel)"
-                  className="w-full px-3 py-2 border rounded-lg"
+                  placeholder="Numéro de suivi (optionnel)"
+                  style={inputStyle}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="lp-grid-2">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Date Sortie *</label>
-                  <input
-                    type="date"
-                    value={formSortie.date_sortie}
-                    onChange={(e) => setFormSortie({ ...formSortie, date_sortie: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg"
-                    required
-                  />
+                  <label style={labelStyle}>Date sortie *</label>
+                  <input type="date" value={formSortie.date_sortie} onChange={(e) => setFormSortie({ ...formSortie, date_sortie: e.target.value })} style={inputStyle} required />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Quantité</label>
-                  <input
-                    type="number"
-                    value={formSortie.quantite}
-                    onChange={(e) => setFormSortie({ ...formSortie, quantite: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg"
-                  />
+                  <label style={labelStyle}>Quantité</label>
+                  <input type="number" value={formSortie.quantite} onChange={(e) => setFormSortie({ ...formSortie, quantite: e.target.value })} style={inputStyle} />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Observations</label>
-                <textarea
-                  value={formSortie.observations}
-                  onChange={(e) => setFormSortie({ ...formSortie, observations: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg"
-                  rows={3}
-                />
+                <label style={labelStyle}>Observations</label>
+                <textarea value={formSortie.observations} onChange={(e) => setFormSortie({ ...formSortie, observations: e.target.value })} style={{ ...inputStyle, minHeight: 80 }} />
               </div>
             </div>
-            <div className="p-6 border-t bg-gray-50 flex justify-end space-x-3">
-              <button
-                onClick={() => {
-                  setShowModalSortie(false);
-                  resetFormSortie();
-                }}
-                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleEnregistrerSortie}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                Enregistrer Sortie
-              </button>
+            <div style={modalFooterStyle}>
+              <button onClick={() => { setShowModalSortie(false); resetFormSortie(); }} style={btnGhost}>Annuler</button>
+              <button onClick={handleEnregistrerSortie} style={btnPrimary}>Enregistrer sortie</button>
             </div>
           </div>
         </div>
@@ -1209,104 +1042,177 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
 
       {/* Modal Retour */}
       {showModalRetour && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b">
-              <h3 className="text-xl font-bold text-gray-900">Enregistrer Retour depuis Sous-Traitant</h3>
+        <div style={modalOverlayStyle}>
+          <div style={modalContentStyle}>
+            <div style={modalHeaderStyle}>
+              <h3 style={{ margin: 0, fontSize: 'var(--text-lg)', color: 'var(--fg-primary)' }}>Enregistrer retour depuis sous-traitant</h3>
+              <button onClick={() => { setShowModalRetour(false); resetFormRetour(); }} style={iconBtn}><X size={18} /></button>
             </div>
-            <div className="p-6 space-y-4">
+            <div style={{ padding: 'var(--s-4)', display: 'flex', flexDirection: 'column', gap: 'var(--s-3)' }}>
               <div>
-                <label className="block text-sm font-medium mb-1">
-                  QR Code / Numéro de Suivi Retour (Scanner ou Saisir) *
-                </label>
-                <div className="flex space-x-2">
+                <label style={labelStyle}>QR code retour *</label>
+                <div style={{ display: 'flex', gap: 'var(--s-2)' }}>
                   <input
                     type="text"
                     value={formRetour.qr_code_retour}
                     onChange={(e) => setFormRetour({ ...formRetour, qr_code_retour: e.target.value })}
-                    placeholder="Scannez ou saisissez le numéro de suivi"
-                    className="flex-1 px-3 py-2 border rounded-lg"
+                    placeholder="Scanner ou saisir"
+                    style={{ ...inputStyle, flex: 1 }}
                     autoFocus
                   />
-                  <button className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">
-                    <Scan className="w-5 h-5" />
-                  </button>
+                  <button style={btnGhost}><Scan size={14} /></button>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="lp-grid-2">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Date Retour *</label>
-                  <input
-                    type="date"
-                    value={formRetour.date_retour}
-                    onChange={(e) => setFormRetour({ ...formRetour, date_retour: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg"
-                    required
-                  />
+                  <label style={labelStyle}>Date retour *</label>
+                  <input type="date" value={formRetour.date_retour} onChange={(e) => setFormRetour({ ...formRetour, date_retour: e.target.value })} style={inputStyle} required />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Quantité Retournée *</label>
-                  <input
-                    type="number"
-                    value={formRetour.quantite_retournee}
-                    onChange={(e) => setFormRetour({ ...formRetour, quantite_retournee: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg"
-                    required
-                  />
+                  <label style={labelStyle}>Quantité retournée *</label>
+                  <input type="number" value={formRetour.quantite_retournee} onChange={(e) => setFormRetour({ ...formRetour, quantite_retournee: e.target.value })} style={inputStyle} required />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="lp-grid-2">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Quantité Conforme</label>
-                  <input
-                    type="number"
-                    value={formRetour.quantite_conforme}
-                    onChange={(e) => setFormRetour({ ...formRetour, quantite_conforme: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg"
-                  />
+                  <label style={labelStyle}>Quantité conforme</label>
+                  <input type="number" value={formRetour.quantite_conforme} onChange={(e) => setFormRetour({ ...formRetour, quantite_conforme: e.target.value })} style={inputStyle} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Quantité Non Conforme</label>
-                  <input
-                    type="number"
-                    value={formRetour.quantite_non_conforme}
-                    onChange={(e) => setFormRetour({ ...formRetour, quantite_non_conforme: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg"
-                  />
+                  <label style={labelStyle}>Quantité non conforme</label>
+                  <input type="number" value={formRetour.quantite_non_conforme} onChange={(e) => setFormRetour({ ...formRetour, quantite_non_conforme: e.target.value })} style={inputStyle} />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Observations</label>
-                <textarea
-                  value={formRetour.observations}
-                  onChange={(e) => setFormRetour({ ...formRetour, observations: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg"
-                  rows={3}
-                />
+                <label style={labelStyle}>Observations</label>
+                <textarea value={formRetour.observations} onChange={(e) => setFormRetour({ ...formRetour, observations: e.target.value })} style={{ ...inputStyle, minHeight: 80 }} />
               </div>
             </div>
-            <div className="p-6 border-t bg-gray-50 flex justify-end space-x-3">
-              <button
-                onClick={() => {
-                  setShowModalRetour(false);
-                  resetFormRetour();
-                }}
-                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleEnregistrerRetour}
-                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-              >
-                Enregistrer Retour
-              </button>
+            <div style={modalFooterStyle}>
+              <button onClick={() => { setShowModalRetour(false); resetFormRetour(); }} style={btnGhost}>Annuler</button>
+              <button onClick={handleEnregistrerRetour} style={btnPrimary}>Enregistrer retour</button>
             </div>
           </div>
         </div>
       )}
-    </DashboardLayout>
+    </>
   );
+};
+
+// Styles
+const badgeBase: React.CSSProperties = { padding: '2px 8px', borderRadius: 'var(--radius-full)', fontSize: 'var(--text-xs)', fontWeight: 600, display: 'inline-block' };
+const thStyle: React.CSSProperties = { textAlign: 'left', padding: 'var(--s-3) var(--s-4)', fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--fg-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', borderBottom: '1px solid var(--border-subtle)' };
+const tdStyle: React.CSSProperties = { padding: 'var(--s-3) var(--s-4)', color: 'var(--fg-primary)', fontSize: 'var(--text-sm)' };
+const tableStyle: React.CSSProperties = { width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' };
+const labelStyle: React.CSSProperties = { display: 'block', fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--fg-secondary)', marginBottom: 4 };
+const inputStyle: React.CSSProperties = { width: '100%', padding: '8px 12px', background: 'var(--bg-elevated)', color: 'var(--fg-primary)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-sm)', fontSize: 'var(--text-sm)', boxSizing: 'border-box' };
+const cardStyle: React.CSSProperties = { padding: 'var(--s-4)', background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)', cursor: 'pointer', transition: 'all var(--duration) var(--ease)' };
+const iconBtn: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: 4, background: 'transparent', color: 'var(--fg-muted)', border: 'none', cursor: 'pointer', borderRadius: 'var(--radius-sm)' };
+
+const alertRowStyle = (tone: 'danger' | 'warning'): React.CSSProperties => ({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 'var(--s-2)',
+  padding: 'var(--s-2) var(--s-3)',
+  background: tone === 'danger' ? 'var(--color-danger-bg)' : 'var(--color-warning-bg)',
+  border: `1px solid ${tone === 'danger' ? 'var(--color-danger)' : 'var(--color-warning)'}`,
+  borderRadius: 'var(--radius-sm)',
+});
+
+const modalOverlayStyle: React.CSSProperties = {
+  position: 'fixed',
+  inset: 0,
+  background: 'rgba(0,0,0,0.5)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  zIndex: 50,
+  padding: 'var(--s-4)',
+};
+
+const modalContentStyle: React.CSSProperties = {
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border-default)',
+  borderRadius: 'var(--radius-md)',
+  width: '100%',
+  maxWidth: 640,
+  maxHeight: '90vh',
+  overflowY: 'auto',
+  boxShadow: 'var(--shadow-lg)',
+};
+
+const modalHeaderStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  padding: 'var(--s-4)',
+  borderBottom: '1px solid var(--border-subtle)',
+};
+
+const modalFooterStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'flex-end',
+  gap: 'var(--s-2)',
+  padding: 'var(--s-4)',
+  borderTop: '1px solid var(--border-subtle)',
+  background: 'var(--bg-hover)',
+};
+
+const btnPrimary: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 6,
+  padding: '8px 14px',
+  background: 'var(--accent-brown)',
+  color: '#fff',
+  border: '1px solid var(--accent-brown)',
+  borderRadius: 'var(--radius-full)',
+  fontSize: 'var(--text-xs)',
+  fontWeight: 600,
+  cursor: 'pointer',
+};
+
+const btnPrimarySm: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 4,
+  padding: '4px 10px',
+  background: 'var(--accent-brown)',
+  color: '#fff',
+  border: '1px solid var(--accent-brown)',
+  borderRadius: 'var(--radius-full)',
+  fontSize: '11px',
+  fontWeight: 600,
+  cursor: 'pointer',
+};
+
+const btnGhost: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 6,
+  padding: '8px 14px',
+  background: 'var(--bg-hover)',
+  color: 'var(--fg-secondary)',
+  border: '1px solid var(--border-subtle)',
+  borderRadius: 'var(--radius-full)',
+  fontSize: 'var(--text-xs)',
+  fontWeight: 600,
+  cursor: 'pointer',
+};
+
+const btnGhostSm: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 4,
+  padding: '4px 10px',
+  background: 'var(--bg-hover)',
+  color: 'var(--fg-muted)',
+  border: '1px solid var(--border-subtle)',
+  borderRadius: 'var(--radius-full)',
+  fontSize: '11px',
+  fontWeight: 500,
+  cursor: 'pointer',
 };
 
 export default DashboardMagasinierSoustraitants;

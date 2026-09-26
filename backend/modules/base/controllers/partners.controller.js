@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Contrôleur Partners - Module base
  */
 
@@ -9,7 +9,7 @@ import { sendError, sendSuccess, handleError } from '../../../src/utils/error.he
 // GET /api/partners - Liste tous les partenaires (clients/fournisseurs)
 export const getPartners = async (req, res) => {
   try {
-    const query = `SELECT * FROM clients ORDER BY date_creation DESC`;
+    const query = `SELECT * FROM comptes ORDER BY date_creation DESC`;
     const result = await pool.query(query);
     return sendSuccess(res, result.rows, 'Partenaires récupérés avec succès');
   } catch (error) {
@@ -21,7 +21,7 @@ export const getPartners = async (req, res) => {
 export const getPartnerById = async (req, res) => {
   try {
     const { id } = req.params;
-    const query = `SELECT * FROM clients WHERE id_client = $1`;
+    const query = `SELECT * FROM comptes WHERE id_client = $1`;
     const result = await pool.query(query, [id]);
     
     if (result.rows.length === 0) {
@@ -53,7 +53,7 @@ export const createPartner = async (req, res) => {
     const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
     
     const query = `
-      INSERT INTO clients (${fields.join(', ')}, date_creation, created_by)
+      INSERT INTO comptes (${fields.join(', ')}, date_creation, created_by)
       VALUES (${placeholders}, NOW(), $${values.length + 1})
       RETURNING *
     `;
@@ -136,7 +136,7 @@ export const deletePartner = async (req, res) => {
       } else {
         // Suppression physique
         query = `
-          DELETE FROM clients
+          DELETE FROM comptes
           WHERE id_client = $1
           RETURNING *
         `;
@@ -145,7 +145,7 @@ export const deletePartner = async (req, res) => {
     } catch (checkError) {
       // En cas d'erreur, utiliser la suppression physique
       query = `
-        DELETE FROM clients
+        DELETE FROM comptes
         WHERE id_client = $1
         RETURNING *
       `;

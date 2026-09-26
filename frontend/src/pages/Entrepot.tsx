@@ -167,19 +167,19 @@ const Entrepot: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="ml-64 p-6 flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="p-6 flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]"></div>
       </div>
     );
   }
 
   return (
-    <div className="ml-64 p-6">
+    <div className="p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
-              <Warehouse className="w-8 h-8 text-blue-600" />
+              <Warehouse className="w-8 h-8 text-[#C8663D]" />
               Entrepôts
             </h1>
             <p className="text-gray-600 mt-2">Gestion des entrepôts et emplacements de stockage</p>
@@ -190,7 +190,7 @@ const Entrepot: React.FC = () => {
               setEditingEntrepot(null);
               setShowForm(true);
             }}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            className="flex items-center gap-2 bg-[#C8663D] text-white px-4 py-2 rounded-lg hover:bg-[#a55231]"
           >
             <Plus className="w-5 h-5" />
             Nouvel Entrepôt
@@ -205,7 +205,7 @@ const Entrepot: React.FC = () => {
               <button
                 onClick={() => setAffichageMode('ligne')}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                  affichageMode === 'ligne' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  affichageMode === 'ligne' ? 'bg-[#C8663D] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
               >
                 <List className="w-4 h-4" />
@@ -214,7 +214,7 @@ const Entrepot: React.FC = () => {
               <button
                 onClick={() => setAffichageMode('catalogue')}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                  affichageMode === 'catalogue' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  affichageMode === 'catalogue' ? 'bg-[#C8663D] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
               >
                 <Grid className="w-4 h-4" />
@@ -348,7 +348,7 @@ const Entrepot: React.FC = () => {
                 </div>
               </div>
               <div className="flex gap-4">
-                <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+                <button type="submit" className="bg-[#C8663D] text-white px-6 py-2 rounded hover:bg-[#a55231]">
                   {editingEntrepot ? 'Modifier' : 'Créer'}
                 </button>
                 <button
@@ -385,7 +385,7 @@ const Entrepot: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {filteredEntrepots.map((entrepot) => (
-                  <tr key={entrepot.id_entrepot} className="hover:bg-gray-50">
+                  <tr key={entrepot.id_entrepot} className="hover:bg-gray-50 group">
                     <td className="px-6 py-4 whitespace-nowrap font-mono text-sm font-medium">{entrepot.code_entrepot}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold">{entrepot.nom_entrepot}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">{entrepot.type_entrepot}</td>
@@ -398,8 +398,8 @@ const Entrepot: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex gap-2">
-                        <button onClick={() => handleEdit(entrepot)} className="text-blue-600 hover:text-blue-800">
+                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => handleEdit(entrepot)} className="text-[#C8663D] hover:text-[#4A5D75]">
                           <Edit className="w-4 h-4" />
                         </button>
                         <button onClick={() => handleDelete(entrepot.id_entrepot!)} className="text-red-600 hover:text-red-800">
@@ -436,7 +436,7 @@ const Entrepot: React.FC = () => {
                   <div className="flex gap-2 pt-3 border-t">
                     <button
                       onClick={() => handleEdit(entrepot)}
-                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-[#C8663D] text-white rounded hover:bg-[#a55231] text-sm"
                     >
                       <Edit className="w-4 h-4" />
                       Modifier

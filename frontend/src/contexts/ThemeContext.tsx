@@ -36,20 +36,21 @@ export interface ThemeColors {
 
 const themes: Record<ThemeColor, ThemeColors> = {
   default: {
-    primary: '#6366f1',
-    secondary: '#8b5cf6',
-    accent: '#ec4899',
-    background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%)',
+    // Palette artisanale La Plume — fouta tunisienne
+    primary: '#C8663D',        // terracotta
+    secondary: '#7A8C6A',      // sage
+    accent: '#C89B3C',         // gold
+    background: 'linear-gradient(135deg, #FBF8F3 0%, #F5EFE5 50%, #EBE2CE 100%)',
     surface: 'rgba(255, 255, 255, 0.95)',
-    text: '#1e293b',
-    textSecondary: '#64748b',
-    textMuted: '#64748b',
-    border: 'rgba(0, 0, 0, 0.06)',
-    shadow: 'rgba(0, 0, 0, 0.08)',
+    text: '#2F1F12',
+    textSecondary: '#6B4E31',
+    textMuted: '#9B8874',
+    border: 'rgba(75, 45, 20, 0.08)',
+    shadow: 'rgba(75, 45, 20, 0.08)',
     gradient: {
-      from: '#6366f1',
-      to: '#8b5cf6',
-      via: '#ec4899'
+      from: '#C8663D',
+      to: '#C89B3C',
+      via: '#4A5D75'
     }
   },
   blue: {
@@ -124,20 +125,21 @@ const themes: Record<ThemeColor, ThemeColors> = {
 
 const darkThemes: Record<ThemeColor, ThemeColors> = {
   default: {
-    primary: '#818cf8',
-    secondary: '#a78bfa',
-    accent: '#f472b6',
-    background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)',
-    surface: 'rgba(30, 41, 59, 0.95)',
-    text: '#f1f5f9',
-    textSecondary: '#94a3b8',
-    textMuted: '#94a3b8',
-    border: 'rgba(255, 255, 255, 0.1)',
+    // Palette artisanale mode sombre — terracotta/gold/indigo réchauffés
+    primary: '#E2896A',
+    secondary: '#9EAF8C',
+    accent: '#E1B857',
+    background: 'linear-gradient(135deg, #1E1610 0%, #2A1F16 50%, #3A2A1E 100%)',
+    surface: 'rgba(42, 31, 22, 0.95)',
+    text: '#FBF8F3',
+    textSecondary: '#DFD3B8',
+    textMuted: '#C4B394',
+    border: 'rgba(226, 137, 106, 0.18)',
     shadow: 'rgba(0, 0, 0, 0.3)',
     gradient: {
-      from: '#6366f1',
-      to: '#8b5cf6',
-      via: '#ec4899'
+      from: '#C8663D',
+      to: '#C89B3C',
+      via: '#4A5D75'
     }
   },
   blue: {
@@ -270,8 +272,29 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const themeColors = isDark ? darkThemes[theme.color] : themes[theme.color];
 
   // Appliquer le thème au document
+  //
+  // 1. Stamp data-theme sur <html> pour piloter le design system La Plume
+  //    (design-system.css redéfinit --bg-app, --fg-primary, etc. sous
+  //    :root[data-theme="dark"] ou :root[data-theme="light"]).
+  //    mode === 'auto' → on ne stamp rien, prefers-color-scheme prend le relais.
+  //
+  // 2. Publier les CSS vars --theme-* pour les composants qui les utilisent
+  //    (compat rétro — le design system moderne n'en dépend plus).
   useEffect(() => {
     const root = document.documentElement;
+
+    // (1) Stamp data-theme
+    if (theme.mode === 'light') {
+      root.setAttribute('data-theme', 'light');
+    } else if (theme.mode === 'dark') {
+      root.setAttribute('data-theme', 'dark');
+    } else {
+      root.removeAttribute('data-theme');
+    }
+    // color-scheme aligne les contrôles natifs (scrollbars, form controls)
+    root.style.colorScheme = isDark ? 'dark' : 'light';
+
+    // (2) CSS vars compat
     root.style.setProperty('--theme-primary', themeColors.primary);
     root.style.setProperty('--theme-secondary', themeColors.secondary);
     root.style.setProperty('--theme-accent', themeColors.accent);
@@ -286,7 +309,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     if (themeColors.gradient.via) {
       root.style.setProperty('--theme-gradient-via', themeColors.gradient.via);
     }
-  }, [themeColors]);
+  }, [theme.mode, isDark, themeColors]);
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);

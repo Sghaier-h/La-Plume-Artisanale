@@ -1,5 +1,5 @@
 /**
- * Routes Commercial - Module modulaire
+ * Routes Commercial
  */
 
 import express from 'express';
@@ -9,15 +9,36 @@ import {
   getCommercialById,
   createCommercial,
   updateCommercial,
-  deleteCommercial
+  deleteCommercial,
+  getStatsGlobal,
+  getPerformance,
+  getDashboard,
+  getLeaderboard,
+  getPipeline,
+  getAgenda,
+  setObjectif,
+  getTeamPerformance,
 } from '../controllers/commercial.controller.js';
 
 const router = express.Router();
+router.use(authenticate);
 
-router.get('/', authenticate, getCommercial);
-router.get('/:id', authenticate, getCommercialById);
-router.post('/', authenticate, createCommercial);
-router.put('/:id', authenticate, updateCommercial);
-router.delete('/:id', authenticate, deleteCommercial);
+// ─── Routes fixes (avant les paramètres dynamiques) ───────────────
+router.get('/stats/global', getStatsGlobal);
+router.get('/leaderboard', getLeaderboard);
+router.get('/team/performance', getTeamPerformance);
+
+// ─── Routes avec paramètre :id ────────────────────────────────────
+router.get('/:id(\\d+)/dashboard', getDashboard);
+router.get('/:id(\\d+)/performance', getPerformance);
+router.get('/:id(\\d+)/pipeline', getPipeline);
+router.get('/:id(\\d+)/agenda', getAgenda);
+router.post('/:id(\\d+)/objectif', setObjectif);
+
+router.get('/', getCommercial);
+router.post('/', createCommercial);
+router.get('/:id(\\d+)', getCommercialById);
+router.put('/:id(\\d+)', updateCommercial);
+router.delete('/:id(\\d+)', deleteCommercial);
 
 export default router;

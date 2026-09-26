@@ -141,7 +141,15 @@ const Modeles: React.FC = () => {
       // Charger les types de produits
       try {
         const typesProduitsRes = await parametresCatalogueService.getTypesProduits();
-        setTypesProduits(typesProduitsRes.data?.data || typesProduitsRes.data || []);
+        setTypesProduits((() => {
+          const _r = typesProduitsRes.data?.data;
+          if (Array.isArray(_r)) return _r;
+          if (_r && Array.isArray(_r.data)) return _r.data;
+          if (_r && typeof _r === 'object') {
+            for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+          }
+          return [];
+        })());
       } catch (error) {
         console.error('Erreur chargement types produits:', error);
       }
@@ -149,7 +157,15 @@ const Modeles: React.FC = () => {
       // Charger les types de tissages
       try {
         const typesTissagesRes = await parametresCatalogueService.getTissages();
-        setTypesTissages(typesTissagesRes.data?.data || typesTissagesRes.data || []);
+        setTypesTissages((() => {
+          const _r = typesTissagesRes.data?.data;
+          if (Array.isArray(_r)) return _r;
+          if (_r && Array.isArray(_r.data)) return _r.data;
+          if (_r && typeof _r === 'object') {
+            for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+          }
+          return [];
+        })());
       } catch (error) {
         console.error('Erreur chargement types tissages:', error);
       }
@@ -157,7 +173,15 @@ const Modeles: React.FC = () => {
       // Charger les modèles
       try {
         const modelesRes = await modelesService.getModeles();
-        setModeles(modelesRes.data?.data || modelesRes.data || []);
+        setModeles((() => {
+          const _r = modelesRes.data?.data;
+          if (Array.isArray(_r)) return _r;
+          if (_r && Array.isArray(_r.data)) return _r.data;
+          if (_r && typeof _r === 'object') {
+            for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+          }
+          return [];
+        })());
       } catch (error) {
         console.error('Erreur chargement modèles:', error);
         // Fallback sur mock data si l'API n'est pas disponible
@@ -165,14 +189,55 @@ const Modeles: React.FC = () => {
         setModeles(mockModeles);
       }
 
-      // Charger les attributs
+      // Charger les attributs (nouveau format: bundle { dimensions, couleurs, finitions, tissages, ... })
       try {
         const attributsRes = await produitsService.getAttributs();
-        // Gérer différents formats de réponse
-        if (attributsRes?.data?.data) {
-          setAttributs(Array.isArray(attributsRes.data.data) ? attributsRes.data.data : []);
-        } else if (attributsRes?.data) {
-          setAttributs(Array.isArray(attributsRes.data) ? attributsRes.data : []);
+        // Extraire le bundle en gérant les enveloppes { data: <bundle> } ou { data: { data: <bundle> } }
+        let bundle: any = attributsRes?.data?.data ?? attributsRes?.data ?? {};
+        if (bundle && bundle.data && !Array.isArray(bundle) && !bundle.dimensions) {
+          bundle = bundle.data;
+        }
+        // Ancien code déjà déployé: c'est peut-être encore un Attribut[]
+        if (Array.isArray(bundle)) {
+          setAttributs(bundle as Attribut[]);
+        } else if (bundle && typeof bundle === 'object') {
+          // Synthétiser un Attribut[] compatible avec le formulaire à partir du bundle
+          const mkAttribut = (
+            code_attribut: string,
+            libelle: string,
+            rows: any[] | undefined,
+            mapper: (r: any) => { code: string; libelle: string; couleur_hex?: string }
+          ): Attribut | null => {
+            if (!Array.isArray(rows) || rows.length === 0) return null;
+            return {
+              id_attribut: 0,
+              code_attribut,
+              libelle,
+              type_attribut: 'liste',
+              valeurs_possibles: rows.map(mapper).filter(v => v.code)
+            };
+          };
+          const synth: Attribut[] = [];
+          const dim = mkAttribut('dimension', 'Dimension', bundle.dimensions,
+            (r) => ({ code: String(r.code ?? r.libelle ?? r.id ?? ''), libelle: String(r.libelle ?? r.code ?? '') }));
+          if (dim) synth.push(dim);
+          const tis = mkAttribut('tissage', 'Type de tissage', bundle.tissages,
+            (r) => ({ code: String(r.code ?? r.libelle ?? r.id ?? ''), libelle: String(r.libelle ?? r.code ?? '') }));
+          if (tis) synth.push(tis);
+          const fin = mkAttribut('finition', 'Type de finition', bundle.finitions,
+            (r) => ({ code: String(r.code ?? r.libelle ?? r.id ?? ''), libelle: String(r.libelle ?? r.code ?? '') }));
+          if (fin) synth.push(fin);
+          const nc = mkAttribut('nombre_couleur', 'Nombre de couleurs', bundle.nombres_couleurs,
+            (r) => ({ code: String(r.code ?? r.libelle ?? r.id ?? ''), libelle: String(r.libelle ?? r.code ?? '') }));
+          if (nc) synth.push(nc);
+          const coul = mkAttribut('couleur', 'Couleur', bundle.couleurs,
+            (r) => ({
+              code: String(r.code_commercial ?? r.code ?? r.id ?? ''),
+              libelle: String(r.nom ?? r.libelle ?? ''),
+              couleur_hex: r.code_hex
+            }));
+          if (coul) synth.push(coul);
+          setAttributs(synth);
         } else {
           setAttributs([]);
         }
@@ -623,18 +688,18 @@ const Modeles: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 ml-64 p-6">
+    <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-              <Layers className="w-8 h-8 text-blue-600" />
+              <Layers className="w-8 h-8 text-[#C8663D]" />
               Gestion des Modèles (Articles Parents)
             </h1>
             <p className="text-gray-600 mt-2">Création et gestion des modèles de base pour générer les articles</p>
@@ -646,7 +711,7 @@ const Modeles: React.FC = () => {
                 setEditingModele(null);
                 resetForm();
               }}
-              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              className="flex items-center gap-2 bg-[#C8663D] text-white px-4 py-2 rounded-lg hover:bg-[#a55231] transition-colors"
             >
               <Plus className="w-5 h-5" />
               Nouveau Modèle
@@ -670,7 +735,7 @@ const Modeles: React.FC = () => {
               <button
                 onClick={() => setAffichageMode('ligne')}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                  affichageMode === 'ligne' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  affichageMode === 'ligne' ? 'bg-[#C8663D] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
               >
                 <List className="w-4 h-4" />
@@ -679,7 +744,7 @@ const Modeles: React.FC = () => {
               <button
                 onClick={() => setAffichageMode('catalogue')}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                  affichageMode === 'catalogue' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  affichageMode === 'catalogue' ? 'bg-[#C8663D] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
               >
                 <Grid className="w-4 h-4" />
@@ -695,13 +760,13 @@ const Modeles: React.FC = () => {
                 placeholder="Rechercher..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
               />
             </div>
             <select
               value={filters.produit}
               onChange={(e) => setFilters({ ...filters, produit: e.target.value })}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
             >
               <option value="">Tous les produits</option>
               {produitsUniques.map(p => (
@@ -711,7 +776,7 @@ const Modeles: React.FC = () => {
             <select
               value={filters.actif}
               onChange={(e) => setFilters({ ...filters, actif: e.target.value })}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
             >
               <option value="">Tous les statuts</option>
               <option value="true">Actifs</option>
@@ -752,7 +817,7 @@ const Modeles: React.FC = () => {
                             }
                           }
                         }}
-                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                         required
                       >
                         <option value="">Sélectionner...</option>
@@ -763,7 +828,7 @@ const Modeles: React.FC = () => {
                           ))}
                       </select>
                       {checkingCode && (
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#C8663D]"></div>
                       )}
                     </div>
                     <p className="text-xs text-gray-500 mt-1">La désignation sera remplie automatiquement. Le code doit être unique.</p>
@@ -774,7 +839,7 @@ const Modeles: React.FC = () => {
                       type="text"
                       value={formData.designation}
                       onChange={(e) => setFormData({ ...formData, designation: e.target.value, description_auto: false })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                       required
                     />
                   </div>
@@ -792,7 +857,7 @@ const Modeles: React.FC = () => {
                           produit: typeProduit?.libelle || ''
                         });
                       }}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                       required
                     >
                       <option value="">Sélectionner un Type de Produit...</option>
@@ -814,7 +879,7 @@ const Modeles: React.FC = () => {
                           code_type_tissage: typeTissage?.code || ''
                         });
                       }}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                       required
                     >
                       <option value="">Sélectionner un Type de Tissage...</option>
@@ -847,7 +912,7 @@ const Modeles: React.FC = () => {
                               description: auto ? genererDescription() : formData.description
                             });
                           }}
-                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          className="w-4 h-4 text-[#C8663D] border-gray-300 rounded focus:ring-[#C8663D]"
                         />
                         <span className="text-xs text-gray-600">Génération automatique</span>
                       </label>
@@ -855,7 +920,7 @@ const Modeles: React.FC = () => {
                     <textarea
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value, description_auto: false })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                       rows={3}
                       placeholder="Ex: Fouta modèle ARTHUR finition Frange (généré automatiquement si activé)"
                     />
@@ -878,7 +943,7 @@ const Modeles: React.FC = () => {
                       <select
                         value={selectedDimensionCode}
                         onChange={(e) => setSelectedDimensionCode(e.target.value)}
-                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                       >
                         <option value="">Sélectionner une dimension...</option>
                         {attributs
@@ -901,12 +966,12 @@ const Modeles: React.FC = () => {
                         const attributDim = attributs.find(a => a.code_attribut.toLowerCase().includes('dim'));
                         const valeur = attributDim?.valeurs_possibles?.find(v => v.code === code);
                         return (
-                          <span key={index} className="flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                          <span key={index} className="flex items-center gap-1 px-3 py-1 bg-[#F5EFE5] text-[#4A5D75] rounded-full text-sm">
                             {code} {valeur && `(${valeur.libelle})`}
                             <button
                               type="button"
                               onClick={() => handleRemoveDimension(code)}
-                              className="text-blue-600 hover:text-blue-800"
+                              className="text-[#C8663D] hover:text-[#4A5D75]"
                             >
                               <X className="w-4 h-4" />
                             </button>
@@ -924,7 +989,7 @@ const Modeles: React.FC = () => {
                       <select
                         value={selectedTypeTissageCode}
                         onChange={(e) => setSelectedTypeTissageCode(e.target.value)}
-                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                       >
                         <option value="">Sélectionner un type de tissage...</option>
                         {attributs
@@ -970,7 +1035,7 @@ const Modeles: React.FC = () => {
                       <select
                         value={selectedNombreCouleurCode}
                         onChange={(e) => setSelectedNombreCouleurCode(e.target.value)}
-                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                       >
                         <option value="">Sélectionner un nombre de couleur...</option>
                         {attributs
@@ -990,12 +1055,12 @@ const Modeles: React.FC = () => {
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {formData.code_nombre_couleur.map((code, index) => (
-                        <span key={index} className="flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
+                        <span key={index} className="flex items-center gap-1 px-3 py-1 bg-[#EFF3E7] text-[#4A6C5B] rounded-full text-sm">
                           {code} {formData.nombre_couleur[index] && `(${formData.nombre_couleur[index]})`}
                           <button
                             type="button"
                             onClick={() => handleRemoveNombreCouleur(code)}
-                            className="text-purple-600 hover:text-purple-800"
+                            className="text-[#7A8C6A] hover:text-[#5F6E52]"
                           >
                             <X className="w-4 h-4" />
                           </button>
@@ -1012,7 +1077,7 @@ const Modeles: React.FC = () => {
                       <select
                         value={selectedTypeFinitionCode}
                         onChange={(e) => setSelectedTypeFinitionCode(e.target.value)}
-                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                       >
                         <option value="">Sélectionner un type de finition...</option>
                         {attributs
@@ -1058,7 +1123,7 @@ const Modeles: React.FC = () => {
                       type="number"
                       value={formData.composition_fabrication}
                       onChange={(e) => setFormData({ ...formData, composition_fabrication: parseInt(e.target.value) })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                       min="1"
                       required
                     />
@@ -1080,7 +1145,7 @@ const Modeles: React.FC = () => {
                       step="0.01"
                       value={formData.prix_reviens}
                       onChange={(e) => setFormData({ ...formData, prix_reviens: parseFloat(e.target.value) })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                       required
                     />
                   </div>
@@ -1091,7 +1156,7 @@ const Modeles: React.FC = () => {
                       step="0.01"
                       value={formData.prix_vente}
                       onChange={(e) => setFormData({ ...formData, prix_vente: parseFloat(e.target.value) })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                       required
                     />
                   </div>
@@ -1147,7 +1212,7 @@ const Modeles: React.FC = () => {
                   {/* Liste des prix multiples */}
                   <div className="space-y-2">
                     {(formData.prix_multiple || []).map((prix, index) => (
-                      <div key={index} className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg">
+                      <div key={index} className="flex items-center gap-2 p-2 bg-[#F5EFE5] rounded-lg">
                         <span className="flex-1 font-medium">{prix.montant} {prix.devise}</span>
                         <span className="flex-1 text-sm text-gray-600">{prix.libelle}</span>
                         <label className="flex items-center gap-2">
@@ -1195,7 +1260,7 @@ const Modeles: React.FC = () => {
                   <div className="flex-1">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Télécharger une photo</label>
                     <div className="flex items-center gap-2">
-                      <label className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors">
+                      <label className="flex items-center gap-2 px-4 py-2 bg-[#F5EFE5] text-[#C8663D] rounded-lg cursor-pointer hover:bg-[#F0E9DA] transition-colors">
                         <Upload className="w-5 h-5" />
                         Choisir une photo
                         <input
@@ -1226,7 +1291,7 @@ const Modeles: React.FC = () => {
                       type="checkbox"
                       checked={formData.dans_catalogue_produit}
                       onChange={(e) => setFormData({ ...formData, dans_catalogue_produit: e.target.checked })}
-                      className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      className="w-5 h-5 text-[#C8663D] border-gray-300 rounded focus:ring-[#C8663D]"
                     />
                     <span className="text-sm font-medium text-gray-700">
                       Appartient au catalogue produit
@@ -1238,7 +1303,7 @@ const Modeles: React.FC = () => {
                       type="checkbox"
                       checked={formData.actif}
                       onChange={(e) => setFormData({ ...formData, actif: e.target.checked })}
-                      className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      className="w-5 h-5 text-[#C8663D] border-gray-300 rounded focus:ring-[#C8663D]"
                     />
                     <span className="text-sm font-medium text-gray-700">Modèle actif</span>
                   </label>
@@ -1248,7 +1313,7 @@ const Modeles: React.FC = () => {
               <div className="flex gap-2 pt-4">
                 <button
                   type="submit"
-                  className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  className="flex items-center gap-2 bg-[#C8663D] text-white px-6 py-2 rounded-lg hover:bg-[#a55231] transition-colors"
                 >
                   <Save className="w-5 h-5" />
                   Enregistrer
@@ -1288,7 +1353,7 @@ const Modeles: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-gray-200">
               {filteredModeles.map((modele) => (
-                <tr key={modele.id_modele} className="hover:bg-gray-50">
+                <tr key={modele.id_modele} onClick={() => modele.id_modele && navigate(`/modeles/${modele.id_modele}`)} className="hover:bg-gray-50 cursor-pointer group">
                   <td className="px-6 py-4">
                     {modele.photo_modele ? (
                       <img src={modele.photo_modele} alt={modele.designation} className="w-12 h-12 object-cover rounded" />
@@ -1301,8 +1366,8 @@ const Modeles: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap font-medium">{modele.code_modele}</td>
                   <td className="px-6 py-4 whitespace-nowrap">{modele.designation}</td>
                   <td className="px-6 py-4 whitespace-nowrap">{modele.produit}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">{modele.prix_reviens?.toFixed(2)} TND</td>
-                  <td className="px-6 py-4 whitespace-nowrap font-semibold text-green-600">{modele.prix_vente?.toFixed(2)} TND</td>
+                  <td className="px-6 py-4 whitespace-nowrap">{Number(modele.prix_reviens || 0).toFixed(2)} TND</td>
+                  <td className="px-6 py-4 whitespace-nowrap font-semibold text-green-600">{Number(modele.prix_vente || 0).toFixed(2)} TND</td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {modele.dans_catalogue_produit ? (
                       <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">Oui</span>
@@ -1316,30 +1381,20 @@ const Modeles: React.FC = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex gap-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (modele.id_modele) navigate(`/modeles/${modele.id_modele}`);
-                        }}
-                        className="text-green-600 hover:text-green-700"
-                        title="Voir les détails"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
+                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleEdit(modele);
                         }}
-                        className="text-blue-600 hover:text-blue-700"
+                        className="text-[#C8663D] hover:text-[#a55231]"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          modele.id_modele && handleDelete(modele.id_modele);
+                          const _id = modele.id_modele ?? modele.id_modele; if (_id != null) handleDelete(_id);
                         }}
                         className="text-red-600 hover:text-red-700"
                       >
@@ -1386,10 +1441,10 @@ const Modeles: React.FC = () => {
                   <div className="flex items-center justify-between mb-3">
                     <div>
                       <p className="text-xs text-gray-500">Prix de vente</p>
-                      <p className="font-semibold text-green-600">{modele.prix_vente?.toFixed(2)} TND</p>
+                      <p className="font-semibold text-green-600">{Number(modele.prix_vente || 0).toFixed(2)} TND</p>
                     </div>
                     {modele.dans_catalogue_produit && (
-                      <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">Catalogue</span>
+                      <span className="px-2 py-1 bg-[#F5EFE5] text-[#4A5D75] rounded text-xs">Catalogue</span>
                     )}
                   </div>
                   <div className="flex gap-2 pt-3 border-t" onClick={(e) => e.stopPropagation()}>
@@ -1404,7 +1459,7 @@ const Modeles: React.FC = () => {
                     </button>
                     <button
                       onClick={() => handleEdit(modele)}
-                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-[#C8663D] text-white rounded hover:bg-[#a55231] text-sm"
                     >
                       <Edit className="w-4 h-4" />
                       Modifier

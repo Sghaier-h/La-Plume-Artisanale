@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Contrôleur Users - Module base
  */
 
@@ -9,7 +9,7 @@ import { sendError, sendSuccess, handleError } from '../../../src/utils/error.he
 // GET /api/users - Liste tous les utilisateurs
 export const getUsers = async (req, res) => {
   try {
-    const query = `SELECT * FROM utilisateurs ORDER BY date_creation DESC`;
+    const query = `SELECT * FROM users ORDER BY date_creation DESC`;
     const result = await pool.query(query);
     // Ne pas retourner les mots de passe
     const users = result.rows.map(user => {
@@ -26,7 +26,7 @@ export const getUsers = async (req, res) => {
 export const getUserById = async (req, res) => {
   try {
     const { id } = req.params;
-    const query = `SELECT * FROM utilisateurs WHERE id_utilisateur = $1`;
+    const query = `SELECT * FROM users WHERE id_utilisateur = $1`;
     const result = await pool.query(query, [id]);
     
     if (result.rows.length === 0) {
@@ -63,7 +63,7 @@ export const createUser = async (req, res) => {
     const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
     
     const query = `
-      INSERT INTO utilisateurs (${fields.join(', ')}, date_creation, created_by)
+      INSERT INTO users (${fields.join(', ')}, date_creation, created_by)
       VALUES (${placeholders}, NOW(), $${values.length + 1})
       RETURNING *
     `;
@@ -157,7 +157,7 @@ export const deleteUser = async (req, res) => {
       } else {
         // Suppression physique
         query = `
-          DELETE FROM utilisateurs
+          DELETE FROM users
           WHERE id_utilisateur = $1
           RETURNING *
         `;
@@ -166,7 +166,7 @@ export const deleteUser = async (req, res) => {
     } catch (checkError) {
       // En cas d'erreur, utiliser la suppression physique
       query = `
-        DELETE FROM utilisateurs
+        DELETE FROM users
         WHERE id_utilisateur = $1
         RETURNING *
       `;

@@ -1,23 +1,35 @@
 /**
- * Routes AccountingTunisia - Module modulaire
+ * Routes Accounting Tunisia
  */
 
 import express from 'express';
 import { authenticate } from '../../../src/middleware/auth.middleware.js';
 import {
-  getAccountingTunisia,
-  getAccountingTunisiaById,
-  createAccountingTunisia,
-  updateAccountingTunisia,
-  deleteAccountingTunisia
+  getTaxes,
+  getTaxById,
+  getFiscalPositions,
+  getTaxReports,
+  generateTaxReport,
+  validateTaxReport,
+  getChartOfAccounts,
+  initChartOfAccounts,
 } from '../controllers/accounting-tunisia.controller.js';
 
 const router = express.Router();
 
-router.get('/', authenticate, getAccountingTunisia);
-router.get('/:id', authenticate, getAccountingTunisiaById);
-router.post('/', authenticate, createAccountingTunisia);
-router.put('/:id', authenticate, updateAccountingTunisia);
-router.delete('/:id', authenticate, deleteAccountingTunisia);
+router.use(authenticate);
+
+router.get('/taxes', getTaxes);
+router.get('/taxes/:id', getTaxById);
+
+router.get('/fiscal-positions', getFiscalPositions);
+
+router.get('/tax-reports', getTaxReports);
+router.post('/tax-reports/generate', generateTaxReport);
+router.put('/tax-reports/:id(\\d+)/validate', validateTaxReport);
+router.post('/tax-reports/:id(\\d+)/validate', validateTaxReport);
+
+router.get('/chart-of-accounts', getChartOfAccounts);
+router.post('/chart-of-accounts/init', initChartOfAccounts);
 
 export default router;

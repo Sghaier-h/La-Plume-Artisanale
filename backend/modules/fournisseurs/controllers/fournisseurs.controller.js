@@ -97,7 +97,7 @@ export const updateFournisseur = async (req, res) => {
     }
 
     if (fields.length === 0) {
-      return sendError(res, HTTP_STATUS.BAD_REQUEST, 'Aucun champ à mettre à jour');
+      return sendError(res, 'Aucun champ à mettre à jour', HTTP_STATUS.BAD_REQUEST);
     }
 
     if (userId !== null) {

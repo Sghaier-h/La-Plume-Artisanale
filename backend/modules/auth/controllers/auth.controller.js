@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Contrôleur Auth — Module modulaire
  * Login, logout, me (session courante)
  */
@@ -16,7 +16,7 @@ export const login = async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return sendError(res, HTTP_STATUS.BAD_REQUEST, 'Email et mot de passe requis');
+      return sendError(res, 'Email et mot de passe requis', HTTP_STATUS.BAD_REQUEST);
     }
 
     // Mode mock : strictement NODE_ENV=development + USE_MOCK_AUTH=true
@@ -37,7 +37,7 @@ export const login = async (req, res) => {
         return sendSuccess(res, { token, user: mockUser.user });
       }
 
-      return sendError(res, HTTP_STATUS.UNAUTHORIZED, 'Identifiants invalides (mode développement)');
+      return sendError(res, 'Identifiants invalides (mode développement)', HTTP_STATUS.UNAUTHORIZED);
     }
 
     // Mode production — connexion BDD
@@ -46,22 +46,22 @@ export const login = async (req, res) => {
         `SELECT u.id_utilisateur, u.email, u.nom_utilisateur, u.mot_de_passe_hash, u.actif,
                 u.derniere_connexion, e.nom, e.prenom, e.fonction,
                 r.code_role as role
-         FROM utilisateurs u
+         FROM users u
          LEFT JOIN equipe_fabrication e ON u.id_operateur = e.id_operateur
-         LEFT JOIN utilisateurs_roles ur ON u.id_utilisateur = ur.id_utilisateur
+         LEFT JOIN users_roles ur ON u.id_utilisateur = ur.id_utilisateur
          LEFT JOIN roles r ON ur.id_role = r.id_role
          WHERE u.email = $1 LIMIT 1`,
         [email]
       );
 
       if (result.rows.length === 0) {
-        return sendError(res, HTTP_STATUS.UNAUTHORIZED, 'Identifiants invalides');
+        return sendError(res, 'Identifiants invalides', HTTP_STATUS.UNAUTHORIZED);
       }
 
       const user = result.rows[0];
 
       if (!user.actif) {
-        return sendError(res, HTTP_STATUS.UNAUTHORIZED, 'Compte inactif');
+        return sendError(res, 'Compte inactif', HTTP_STATUS.UNAUTHORIZED);
       }
 
       // Vérifier mot de passe (bcrypt puis fallback crypt() PostgreSQL)
@@ -79,7 +79,7 @@ export const login = async (req, res) => {
       }
 
       if (!isValid) {
-        return sendError(res, HTTP_STATUS.UNAUTHORIZED, 'Identifiants invalides');
+        return sendError(res, 'Identifiants invalides', HTTP_STATUS.UNAUTHORIZED);
       }
 
       const roleMap = {
@@ -97,7 +97,7 @@ export const login = async (req, res) => {
 
       // Mise à jour dernière connexion (non bloquant)
       pool.query(
-        'UPDATE utilisateurs SET derniere_connexion = CURRENT_TIMESTAMP WHERE id_utilisateur = $1',
+        'UPDATE users SET derniere_connexion = CURRENT_TIMESTAMP WHERE id_utilisateur = $1',
         [user.id_utilisateur]
       ).catch(err => logger.warn('Impossible de mettre à jour la dernière connexion', { error: err.message }));
 
@@ -130,7 +130,7 @@ export const login = async (req, res) => {
         }
       }
 
-      return sendError(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, 'Erreur serveur');
+      return sendError(res, 'Erreur serveur', HTTP_STATUS.INTERNAL_SERVER_ERROR);
     }
   } catch (error) {
     return handleError(res, error, 'login');
@@ -163,16 +163,16 @@ export const me = async (req, res) => {
       const result = await pool.query(
         `SELECT u.id_utilisateur, u.email, u.nom_utilisateur, u.derniere_connexion, u.actif,
                 e.nom, e.prenom, e.fonction, r.code_role as role
-         FROM utilisateurs u
+         FROM users u
          LEFT JOIN equipe_fabrication e ON u.id_operateur = e.id_operateur
-         LEFT JOIN utilisateurs_roles ur ON u.id_utilisateur = ur.id_utilisateur
+         LEFT JOIN users_roles ur ON u.id_utilisateur = ur.id_utilisateur
          LEFT JOIN roles r ON ur.id_role = r.id_role
          WHERE u.id_utilisateur = $1 LIMIT 1`,
         [req.user.id]
       );
 
       if (result.rows.length === 0) {
-        return sendError(res, HTTP_STATUS.NOT_FOUND, 'Utilisateur non trouvé');
+        return sendError(res, 'Utilisateur non trouvé', HTTP_STATUS.NOT_FOUND);
       }
 
       const user = result.rows[0];
@@ -205,7 +205,7 @@ export const me = async (req, res) => {
         });
       }
 
-      return sendError(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, 'Erreur serveur');
+      return sendError(res, 'Erreur serveur', HTTP_STATUS.INTERNAL_SERVER_ERROR);
     }
   } catch (error) {
     return handleError(res, error, 'me');

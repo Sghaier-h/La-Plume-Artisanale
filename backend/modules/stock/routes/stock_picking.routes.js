@@ -22,6 +22,7 @@ router.get('/:id', getStockPicking);
 router.post('/:id/confirm', confirmStockPicking);
 router.post('/:id/assign', assignStockPicking);
 router.post('/:id/done', doneStockPicking);
+router.post('/:id/validate', doneStockPicking);
 
 // Routes pour les relations
 router.get('/:id/moves', getPickingMoves);

@@ -1,4 +1,4 @@
-// Script de test de connexion à la base de données
+﻿// Script de test de connexion à la base de données
 import pg from 'pg';
 import dotenv from 'dotenv';
 
@@ -78,14 +78,14 @@ async function testConnection() {
     console.log('5️⃣ Vérification des utilisateurs existants...');
     try {
       const usersCheck = await testPool.query(`
-        SELECT COUNT(*) as count FROM utilisateurs
+        SELECT COUNT(*) as count FROM users
       `);
       console.log(`✅ ${usersCheck.rows[0].count} utilisateur(s) trouvé(s)\n`);
       
       if (parseInt(usersCheck.rows[0].count) > 0) {
         const usersList = await testPool.query(`
           SELECT email, actif 
-          FROM utilisateurs 
+          FROM users 
           LIMIT 5
         `);
         console.log('📋 Utilisateurs trouvés:');

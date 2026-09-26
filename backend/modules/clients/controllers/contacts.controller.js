@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Contrôleur Contacts Client
  */
 
@@ -20,7 +20,7 @@ export const getContactsClient = async (req, res) => {
         c.*,
         a.type_adresse,
         a.nom_adresse as nom_adresse_associee
-      FROM contacts_client c
+      FROM contacts c
       LEFT JOIN adresses_client a ON c.id_adresse = a.id_adresse
       WHERE c.id_client = $1 AND c.actif = true
       ORDER BY c.contact_principal DESC, c.date_creation ASC`,
@@ -62,7 +62,7 @@ export const createContactClient = async (req, res) => {
     // Si contact principal, désactiver les autres
     if (contact_principal) {
       await pool.query(
-        `UPDATE contacts_client 
+        `UPDATE contacts 
          SET contact_principal = false 
          WHERE id_client = $1 AND actif = true`,
         [id]
@@ -81,7 +81,7 @@ export const createContactClient = async (req, res) => {
     }
 
     const result = await pool.query(
-      `INSERT INTO contacts_client 
+      `INSERT INTO contacts 
         (id_client, id_adresse, civilite, nom, prenom, fonction, service_bureau,
          email, telephone_fixe, telephone_portable, fax, contact_principal, actif)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, true)
@@ -122,7 +122,7 @@ export const updateContactClient = async (req, res) => {
 
     // Vérifier que le contact appartient au client
     const check = await pool.query(
-      'SELECT id_client FROM contacts_client WHERE id_contact = $1 AND id_client = $2',
+      'SELECT id_client FROM contacts WHERE id_contact = $1 AND id_client = $2',
       [id_contact, id]
     );
 
@@ -133,7 +133,7 @@ export const updateContactClient = async (req, res) => {
     // Si contact principal, désactiver les autres
     if (contact_principal) {
       await pool.query(
-        `UPDATE contacts_client 
+        `UPDATE contacts 
          SET contact_principal = false 
          WHERE id_client = $1 AND id_contact != $2 AND actif = true`,
         [id, id_contact]
@@ -176,7 +176,7 @@ export const updateContactClient = async (req, res) => {
     values.push(id_contact, id);
 
     const query = `
-      UPDATE contacts_client
+      UPDATE contacts
       SET ${updates.join(', ')}
       WHERE id_contact = $${paramIndex++} AND id_client = $${paramIndex++}
       RETURNING *
@@ -201,7 +201,7 @@ export const deleteContactClient = async (req, res) => {
 
     // Vérifier que le contact appartient au client
     const check = await pool.query(
-      'SELECT id_client FROM contacts_client WHERE id_contact = $1 AND id_client = $2',
+      'SELECT id_client FROM contacts WHERE id_contact = $1 AND id_client = $2',
       [id_contact, id]
     );
 
@@ -211,7 +211,7 @@ export const deleteContactClient = async (req, res) => {
 
     // Soft delete
     await pool.query(
-      `UPDATE contacts_client
+      `UPDATE contacts
        SET actif = false, date_modification = NOW()
        WHERE id_contact = $1 AND id_client = $2`,
       [id_contact, id]

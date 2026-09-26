@@ -1,18 +1,19 @@
 import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ChevronRight, ChevronLeft } from 'lucide-react';
 import { useAuth } from './hooks/useAuth';
-import NavigationEnhanced from './components/NavigationEnhanced';
+import NavigationTopBar from './components/NavigationTopBar';
 import DashboardSwitcher from './components/DashboardSwitcher';
 import ErrorBoundary from './components/ErrorBoundary';
 import LoadingSpinner from './components/LoadingSpinner';
 import Login from './pages/Login';
 import ProtectedRoute from './components/ProtectedRoute';
+import UserBar from './components/UserBar';
+import TabletteLayout from './components/TabletteLayout';
 import { AppProvider } from './store/AppContext';
-import { useApp } from './store/AppContext';
 import { NotificationProvider } from './components/erp';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { NavigationProvider } from './components/NavigationContext';
+import { BreadcrumbProvider } from './components/BreadcrumbContext';
 import ContextActions from './components/ContextActions';
 import Breadcrumbs from './components/Breadcrumbs';
 import NotificationCenter from './components/NotificationCenter';
@@ -22,15 +23,16 @@ import TaskNotification from './components/TaskNotification';
 // ── Lazy-loaded pages (code splitting) ─────────────────────────────────
 // Pages principales (chargées à la demande)
 const DashboardAdministrateur = React.lazy(() => import('./pages/DashboardAdministrateur'));
+const DashboardCommercial = React.lazy(() => import('./pages/DashboardCommercial'));
 const Articles = React.lazy(() => import('./pages/Articles'));
 const Clients = React.lazy(() => import('./pages/Clients'));
+const ClientForm = React.lazy(() => import('./pages/ClientForm'));
 const Commandes = React.lazy(() => import('./pages/Commandes'));
 const CommandeDetails = React.lazy(() => import('./pages/CommandeDetails'));
 const Machines = React.lazy(() => import('./pages/Machines'));
 const OF = React.lazy(() => import('./pages/OF'));
 const Soustraitants = React.lazy(() => import('./pages/Soustraitants'));
 const Parametrage = React.lazy(() => import('./pages/Parametrage'));
-const ParametrageComplet = React.lazy(() => import('./pages/erp/ParametrageComplet'));
 const MatieresPremieres = React.lazy(() => import('./pages/MatieresPremieres'));
 const ArticlesCatalogue = React.lazy(() => import('./pages/ArticlesCatalogue'));
 const Fournisseurs = React.lazy(() => import('./pages/Fournisseurs'));
@@ -47,9 +49,15 @@ const PlanificationGantt = React.lazy(() => import('./pages/PlanificationGantt')
 const QualiteAvance = React.lazy(() => import('./pages/QualiteAvance'));
 const Couts = React.lazy(() => import('./pages/Couts'));
 const MultiSociete = React.lazy(() => import('./pages/MultiSociete'));
+const Reports = React.lazy(() => import('./pages/Reports'));
 const Communication = React.lazy(() => import('./pages/Communication'));
+const TracabiliteLots = React.lazy(() => import('./pages/TracabiliteLots'));
+const RhRecrutement = React.lazy(() => import('./pages/RhRecrutement'));
+const PointageTimeMoto = React.lazy(() => import('./pages/PointageTimeMoto'));
 const MessagesOperateurs = React.lazy(() => import('./pages/MessagesOperateurs'));
 const Ecommerce = React.lazy(() => import('./pages/Ecommerce'));
+const EcommerceB2B = React.lazy(() => import('./pages/EcommerceB2B'));
+const PubliciteDigitale = React.lazy(() => import('./pages/PubliciteDigitale'));
 const FoutaManagementApp = React.lazy(() => import('./pages/FoutaManagement'));
 const DashboardTisseur = React.lazy(() => import('./pages/DashboardTisseur'));
 const DashboardMagasinierMP = React.lazy(() => import('./pages/DashboardMagasinierMP'));
@@ -71,9 +79,11 @@ const CatalogueArticles = React.lazy(() => import('./pages/CatalogueArticles'));
 const Devis = React.lazy(() => import('./pages/Devis'));
 const BonLivraison = React.lazy(() => import('./pages/BonLivraison'));
 const Facture = React.lazy(() => import('./pages/Facture'));
+const RelancesFactures = React.lazy(() => import('./pages/RelancesFactures'));
 const Avoir = React.lazy(() => import('./pages/Avoir'));
 const BonRetour = React.lazy(() => import('./pages/BonRetour'));
 const GestionAttributs = React.lazy(() => import('./pages/GestionAttributs'));
+const GestionPermissions = React.lazy(() => import('./pages/GestionPermissions'));
 const ParametresProduitService = React.lazy(() => import('./pages/ParametresProduitService'));
 const Inventaire = React.lazy(() => import('./pages/Inventaire'));
 const Entrepot = React.lazy(() => import('./pages/Entrepot'));
@@ -85,69 +95,127 @@ const SemiFini = React.lazy(() => import('./pages/SemiFini'));
 const MatierePremiereStock = React.lazy(() => import('./pages/MatierePremiereStock'));
 const Fourniture = React.lazy(() => import('./pages/Fourniture'));
 const ImportExcel = React.lazy(() => import('./pages/ImportExcel'));
+const PipelineVente = React.lazy(() => import('./pages/PipelineVente'));
+const CrmLeads = React.lazy(() => import('./pages/CrmLeads'));
+const Opportunities = React.lazy(() => import('./pages/Opportunities'));
+const ConfigurateurPersonnalisation = React.lazy(() => import('./pages/ConfigurateurPersonnalisation'));
+const PrimesRendement = React.lazy(() => import('./pages/PrimesRendement'));
+const TvAtelierTissage = React.lazy(() => import('./pages/TvAtelierTissage'));
+const TvAtelierFinition = React.lazy(() => import('./pages/TvAtelierFinition'));
 
-// Pages ERP (organisation dans pages/erp/)
-const SaleOrdersERP = React.lazy(() => import('./pages/erp/SaleOrders'));
-const ProductsERP = React.lazy(() => import('./pages/erp/Products'));
-const StockPickingsERP = React.lazy(() => import('./pages/erp/StockPickings'));
-const ProductionsERP = React.lazy(() => import('./pages/erp/Productions'));
-const AccountMovesERP = React.lazy(() => import('./pages/erp/AccountMoves'));
-const PurchaseOrdersERP = React.lazy(() => import('./pages/erp/PurchaseOrders'));
-const CRMLeadsERP = React.lazy(() => import('./pages/erp/CRMLeads'));
-const OpportunitiesERP = React.lazy(() => import('./pages/erp/Opportunities'));
-const PipelineVente = React.lazy(() => import('./pages/erp/PipelineVente'));
-const ReportsERP = React.lazy(() => import('./pages/erp/Reports'));
-const HREmployeesERP = React.lazy(() => import('./pages/erp/HREmployees'));
-const HRRecruitmentERP = React.lazy(() => import('./pages/erp/HRRecruitment'));
-const HRPayslipsERP = React.lazy(() => import('./pages/erp/HRPayslips'));
-const PayrollTunisia = React.lazy(() => import('./pages/erp/PayrollTunisia'));
-const ProjectsERP = React.lazy(() => import('./pages/erp/Projects'));
-const InventoryERP = React.lazy(() => import('./pages/erp/Inventory'));
-const QualityChecksERP = React.lazy(() => import('./pages/erp/QualityChecks'));
-const SuppliersERP = React.lazy(() => import('./pages/erp/Suppliers'));
-const SoustraitantsERP = React.lazy(() => import('./pages/erp/Soustraitants'));
-const BOMsERP = React.lazy(() => import('./pages/erp/BOMs'));
-const ProductCategoriesERP = React.lazy(() => import('./pages/erp/ProductCategories'));
-const EcommerceERP = React.lazy(() => import('./pages/erp/Ecommerce'));
-const SettingsERP = React.lazy(() => import('./pages/erp/Settings'));
-const AIERP = React.lazy(() => import('./pages/erp/AI'));
-const AISettingsERP = React.lazy(() => import('./pages/erp/AISettings'));
-const SocialAuthERP = React.lazy(() => import('./pages/erp/SocialAuth'));
-const CompaniesERP = React.lazy(() => import('./pages/erp/Companies'));
-const WarehouseManagement = React.lazy(() => import('./pages/erp/WarehouseManagement'));
-const POSERP = React.lazy(() => import('./pages/erp/POS'));
-const PurchaseRequestsERP = React.lazy(() => import('./pages/erp/PurchaseRequests'));
-const PurchaseReceptionsERP = React.lazy(() => import('./pages/erp/PurchaseReceptions'));
-const ChartOfAccountsERP = React.lazy(() => import('./pages/erp/ChartOfAccounts'));
-const CRMCampaignsERP = React.lazy(() => import('./pages/erp/CRMCampaigns'));
-const BankReconciliationERP = React.lazy(() => import('./pages/erp/BankReconciliation'));
-const PartnersERP = React.lazy(() => import('./pages/erp/Partners'));
-const PricelistsERP = React.lazy(() => import('./pages/erp/Pricelists'));
-const AvoirsERP = React.lazy(() => import('./pages/erp/Avoirs'));
-const BonsLivraisonERP = React.lazy(() => import('./pages/erp/BonsLivraison'));
-const BonsRetourERP = React.lazy(() => import('./pages/erp/BonsRetour'));
-const MachinesERP = React.lazy(() => import('./pages/erp/Machines'));
-const MaintenanceERP = React.lazy(() => import('./pages/erp/Maintenance'));
-const MatieresPremieresERP = React.lazy(() => import('./pages/erp/MatieresPremieres'));
-const ModelesERP = React.lazy(() => import('./pages/erp/Modeles'));
-const TachesERP = React.lazy(() => import('./pages/erp/Taches'));
-const UtilisateursERP = React.lazy(() => import('./pages/erp/Utilisateurs'));
-const CommercialDashboard = React.lazy(() => import('./pages/erp/CommercialDashboard'));
-const DevisERP = React.lazy(() => import('./pages/erp/Devis'));
-const FacturesERP = React.lazy(() => import('./pages/erp/Factures'));
-const HomeERP = React.lazy(() => import('./pages/erp/Home'));
-const DashboardsERP = React.lazy(() => import('./pages/erp/Dashboards'));
+// ── RH §11bis (contrats / structure / sanctions-primes / bulletins / paie / formations)
+const RhContratsTravail = React.lazy(() => import('./pages/rh/ContratsTravail'));
+const RhStructureOrga = React.lazy(() => import('./pages/rh/StructureOrga'));
+const RhSanctionsPrimes = React.lazy(() => import('./pages/rh/SanctionsPrimes'));
+const RhBulletinsPaie = React.lazy(() => import('./pages/rh/BulletinsPaie'));
+const RhPaieTunisie = React.lazy(() => import('./pages/rh/PaieTunisie'));
+const RhFormations = React.lazy(() => import('./pages/rh/Formations'));
+
+// ── Ventes §8 (colisage / palettes / transporteurs / paiements / relances)
+const VentesListeColisage = React.lazy(() => import('./pages/ventes/ListeColisage'));
+const VentesListePalettes = React.lazy(() => import('./pages/ventes/ListePalettes'));
+const VentesSuiviTransporteurs = React.lazy(() => import('./pages/ventes/SuiviTransporteurs'));
+const VentesPaiementsEcheances = React.lazy(() => import('./pages/ventes/PaiementsEcheances'));
+const VentesRelancesFactures = React.lazy(() => import('./pages/ventes/RelancesFactures'));
+
+// ── Comptabilité (Phase 4 · §10 domain.md) ────────────────────────────
+const PlanComptes = React.lazy(() => import('./pages/comptabilite/PlanComptes'));
+const JournalEcritures = React.lazy(() => import('./pages/comptabilite/JournalEcritures'));
+const RapprochementBancaire = React.lazy(() => import('./pages/comptabilite/RapprochementBancaire'));
+const FondCaisse = React.lazy(() => import('./pages/comptabilite/FondCaisse'));
+const Immobilisations = React.lazy(() => import('./pages/comptabilite/Immobilisations'));
+const TvaDeclarations = React.lazy(() => import('./pages/comptabilite/TvaDeclarations'));
+const RapportsCompta = React.lazy(() => import('./pages/comptabilite/RapportsCompta'));
+const ClotureExercice = React.lazy(() => import('./pages/comptabilite/ClotureExercice'));
+
+// ── Achats & Fournisseurs (§9 domain.md) ─────────────────────────────
+const DemandesAchat = React.lazy(() => import('./pages/achats/DemandesAchat'));
+const BonsCommande = React.lazy(() => import('./pages/achats/BonsCommande'));
+const ReceptionsFF = React.lazy(() => import('./pages/achats/ReceptionsFF'));
+const FacturesFournisseur = React.lazy(() => import('./pages/achats/FacturesFournisseur'));
+const ContratsServices = React.lazy(() => import('./pages/achats/ContratsServices'));
+const DepensesEspeces = React.lazy(() => import('./pages/achats/DepensesEspeces'));
+const PaiementsFournisseurs = React.lazy(() => import('./pages/achats/PaiementsFournisseurs'));
+const RapprochementBcBlFf = React.lazy(() => import('./pages/achats/RapprochementBcBlFf'));
+
+// ── Pages TODO branchées 2026-09-25 (CRM, Produits, Stock, Fab, Dashboards)
+const CrmContacts = React.lazy(() => import('./pages/crm/Contacts'));
+const CrmInteractions = React.lazy(() => import('./pages/crm/Interactions'));
+const SeoProduits = React.lazy(() => import('./pages/produits/SeoProduits'));
+const AlertesStock = React.lazy(() => import('./pages/stock/AlertesStock'));
+const VueParCategorie = React.lazy(() => import('./pages/stock/VueParCategorie'));
+const PostesTravail = React.lazy(() => import('./pages/fabrication/PostesTravail'));
+const MachinesMaintenance = React.lazy(() => import('./pages/fabrication/MachinesMaintenance'));
+const SuiviTempsReel = React.lazy(() => import('./pages/fabrication/SuiviTempsReel'));
+const FabricationGammes = React.lazy(() => import('./pages/fabrication/Gammes'));
+const FabricationOFStockCatalogue = React.lazy(() => import('./pages/fabrication/OFStockCatalogue'));
+const FabricationOurdissage = React.lazy(() => import('./pages/fabrication/Ourdissage'));
+const FabricationPreparationMP = React.lazy(() => import('./pages/fabrication/PreparationMP'));
+const DashboardOurdisseur = React.lazy(() => import('./pages/dashboards/DashboardOurdisseur'));
+const DashboardComptable = React.lazy(() => import('./pages/dashboards/DashboardComptable'));
+const DashboardRHManager = React.lazy(() => import('./pages/DashboardRHManager'));
+const DashboardIA = React.lazy(() => import('./pages/DashboardIA'));
+
+// ── Marketing / E-commerce / Mon compte ──────────────────────────────
+const MarketingSegments = React.lazy(() => import('./pages/marketing/SegmentsClients'));
+const MarketingStats = React.lazy(() => import('./pages/marketing/StatsPerformance'));
+const EcomStockSync = React.lazy(() => import('./pages/ecommerce-app/StockSynchronise'));
+const EcomStats = React.lazy(() => import('./pages/ecommerce-app/StatsWeb'));
+const EcomPanierAbandonne = React.lazy(() => import('./pages/ecommerce-app/PanierAbandonne'));
+const EcomFidelite = React.lazy(() => import('./pages/ecommerce-app/Fidelite'));
+const EcomVitrine = React.lazy(() => import('./pages/ecommerce-app/VitrinePublique'));
+const MonProfil = React.lazy(() => import('./pages/mon-compte/Profil'));
+const MonEmailPerso = React.lazy(() => import('./pages/mon-compte/EmailPerso'));
+const MonWhatsAppPerso = React.lazy(() => import('./pages/mon-compte/WhatsAppPerso'));
+
+// ── IA agents (§11ter + §14bis.6bis) ──────────────────────────────────
+const IaAgentsActifs = React.lazy(() => import('./pages/ia/AgentsActifs'));
+const IaConstats = React.lazy(() => import('./pages/ia/ConstatsATraiter'));
+const IaRapports = React.lazy(() => import('./pages/ia/RapportsGeneres'));
+const IaConfiguration = React.lazy(() => import('./pages/ia/ConfigurationAgents'));
+const IaCoutsLLM = React.lazy(() => import('./pages/ia/CoutsLLM'));
+
+// ── Paramètres §15 (12 sous-items) ────────────────────────────────────
+const ParamSociete = React.lazy(() => import('./pages/parametres/ParamSociete'));
+const ParamCrm = React.lazy(() => import('./pages/parametres/ParamCrm'));
+const ParamVente = React.lazy(() => import('./pages/parametres/ParamVente'));
+const ParamAchats = React.lazy(() => import('./pages/parametres/ParamAchats'));
+const ParamComptabilite = React.lazy(() => import('./pages/parametres/ParamComptabilite'));
+const ParamStock = React.lazy(() => import('./pages/parametres/ParamStock'));
+const ParamFabrication = React.lazy(() => import('./pages/parametres/ParamFabrication'));
+const ParamTransporteurs = React.lazy(() => import('./pages/parametres/ParamTransporteurs'));
+const ParamCommissions = React.lazy(() => import('./pages/parametres/ParamCommissions'));
+const ParamCommunication = React.lazy(() => import('./pages/parametres/ParamCommunication'));
+const ParamPaysTva = React.lazy(() => import('./pages/parametres/ParamPaysTva'));
+const ParamUtilisateursRoles = React.lazy(() => import('./pages/parametres/ParamUtilisateursRoles'));
+
+// ── Portail Client (auth séparée) ────────────────────────────────────
+const PortailLogin = React.lazy(() => import('./pages/portail/PortailLogin'));
+const PortailReset = React.lazy(() => import('./pages/portail/PortailReset'));
+const PortailDashboard = React.lazy(() => import('./pages/portail/PortailDashboard'));
+const PortailCommandes = React.lazy(() => import('./pages/portail/PortailCommandes'));
+const PortailCommandeDetail = React.lazy(() => import('./pages/portail/PortailCommandeDetail'));
+const PortailFactures = React.lazy(() => import('./pages/portail/PortailFactures'));
+const PortailBL = React.lazy(() => import('./pages/portail/PortailBL'));
+const PortailDevis = React.lazy(() => import('./pages/portail/PortailDevis'));
+const PortailDemandes = React.lazy(() => import('./pages/portail/PortailDemandes'));
+const PortailProfil = React.lazy(() => import('./pages/portail/PortailProfil'));
+const PortailPrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('portail_token') : null;
+  if (!token) return <Navigate to="/portail/login" replace />;
+  return <>{children}</>;
+};
 
 // Composant pour rediriger vers le premier dashboard de l'utilisateur
 const NavigateToUserDashboard: React.FC = () => {
   const { user } = useAuth();
-  
+
   if (!user) {
     return <Navigate to="/login" replace />;
   }
-  
+
   const userRole = user.role?.toUpperCase() || '';
-  
+
   // Mapping des dashboards par nom
   const dashboardPaths: { [key: string]: string } = {
     'dashboard': '/dashboard-admin',
@@ -160,8 +228,10 @@ const NavigateToUserDashboard: React.FC = () => {
     'chef-atelier': '/chef-atelier',
     'magasinier-soustraitants': '/dashboard-magasinier-soustraitants',
     'gpao': '/dashboard-admin',
+    'dashboard-commercial': '/dashboard-commercial',
+    'commercial': '/dashboard-commercial',
   };
-  
+
   // Mapping rôle -> dashboard par défaut (si pas de dashboard attribué)
   const roleToDashboard: { [key: string]: string } = {
     'ADMIN': '/dashboard-admin',
@@ -176,13 +246,15 @@ const NavigateToUserDashboard: React.FC = () => {
     'CHEF_ATELIER': '/chef-atelier',
     'MAGASINIER_SOUSTRAITANTS': '/dashboard-magasinier-soustraitants',
     'GPAO': '/dashboard-admin',
+    'COMMERCIAL': '/dashboard-commercial',
+    'COMMERCIALE': '/dashboard-commercial',
   };
-  
+
   // Si admin, toujours rediriger vers dashboard-admin
   if (userRole === 'ADMIN') {
     return <Navigate to="/dashboard-admin" replace />;
   }
-  
+
   // Si des dashboards sont attribués, utiliser le premier
   const dashboardsAttribues = user.dashboardsAttribues || [];
   if (dashboardsAttribues.length > 0) {
@@ -191,13 +263,13 @@ const NavigateToUserDashboard: React.FC = () => {
       return <Navigate to={firstDashboard} replace />;
     }
   }
-  
+
   // Sinon, utiliser le mapping rôle -> dashboard par défaut
   const defaultDashboard = roleToDashboard[userRole];
   if (defaultDashboard) {
     return <Navigate to={defaultDashboard} replace />;
   }
-  
+
   // Fallback: dashboard admin
   return <Navigate to="/dashboard-admin" replace />;
 };
@@ -212,15 +284,18 @@ const DashboardWrapper: React.FC<{ children: React.ReactNode }> = ({ children })
   );
 };
 
+// Rôles tablette atelier (§15 « (tablette) » → Tisseur / Coupeur / Ourdisseur)
+const PRIVATE_TABLETTE_ROLES = new Set(['TISSEUR', 'COUPEUR', 'OURDISSEUR']);
+
 const PrivateRoute: React.FC<{ children: React.ReactNode; showNav?: boolean }> = ({ children, showNav = true }) => {
   const { user, loading } = useAuth();
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-app)' }}>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Chargement...</p>
+          <div className="animate-spin rounded-full h-12 w-12 mx-auto" style={{ borderBottom: '2px solid var(--accent-terracotta)' }}></div>
+          <p className="mt-4" style={{ color: 'var(--fg-secondary)' }}>Chargement...</p>
         </div>
       </div>
     );
@@ -230,10 +305,35 @@ const PrivateRoute: React.FC<{ children: React.ReactNode; showNav?: boolean }> =
     return <Navigate to="/login" />;
   }
 
+  const roleUpper = (user as any)?.role?.toUpperCase() || '';
+  const isTabletteRole = PRIVATE_TABLETTE_ROLES.has(roleUpper);
+
+  // Rôles tablette → UserBar + TabletteLayout kiosque (pas de sidebar)
+  if (showNav && isTabletteRole) {
+    return (
+      <>
+        <UserBar />
+        <TabletteLayout>{children}</TabletteLayout>
+      </>
+    );
+  }
+
+  // Autres rôles bureau → UserBar + sidebar §15 filtrée
+  return (
+    <PrivateRouteBody showNav={showNav}>
+      {children}
+    </PrivateRouteBody>
+  );
+};
+
+// NavigationTopBar occupe le haut (48px), UserBar juste dessous (48px).
+// Le contenu commence à 96px du haut (48 + 48) et prend toute la largeur.
+const PrivateRouteBody: React.FC<{ showNav: boolean; children: React.ReactNode }> = ({ showNav, children }) => {
   return (
     <>
       {showNav && <NavigationWrapper />}
-      {showNav && <SidebarToggleButton />}
+      {/* topOffset=0 → UserBar utilise var(--nav-height) publiée par NavigationTopBar */}
+      <UserBar />
       <ContentWrapper showNav={showNav}>
         <Breadcrumbs />
         {children}
@@ -243,48 +343,25 @@ const PrivateRoute: React.FC<{ children: React.ReactNode; showNav?: boolean }> =
 };
 
 const NavigationWrapper: React.FC = () => {
-  return <NavigationEnhanced />;
-};
-
-/** Bouton flèche pour afficher / masquer le menu gauche (toujours visible) */
-const SidebarToggleButton: React.FC = () => {
-  let state: any = null;
-  let toggleSidebar: (() => void) | undefined;
-  try {
-    const appContext = useApp();
-    state = appContext?.state;
-    toggleSidebar = appContext?.toggleSidebar;
-  } catch {
-    return null;
-  }
-  const collapsed = state?.ui?.sidebarCollapsed ?? false;
-  if (!toggleSidebar) return null;
-  return (
-    <button
-      type="button"
-      onClick={toggleSidebar}
-      className={`fixed z-[60] top-1/2 -translate-y-1/2 flex items-center justify-center w-10 h-14 rounded-r-lg shadow-md transition-all duration-300 bg-gradient-to-r from-slate-600 to-amber-600 text-white hover:from-slate-500 hover:to-amber-500 ${
-        collapsed ? 'left-0' : 'left-64'
-      }`}
-      aria-label={collapsed ? 'Ouvrir le menu' : 'Fermer le menu'}
-      title={collapsed ? 'Ouvrir le menu' : 'Fermer le menu'}
-    >
-      {collapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
-    </button>
-  );
+  return <NavigationTopBar />;
 };
 
 const ContentWrapper: React.FC<{ showNav: boolean; children: React.ReactNode }> = ({ showNav, children }) => {
-  let state: any = null;
-  try {
-    const appContext = useApp();
-    state = appContext?.state;
-  } catch {
-    // Context not available, use defaults
-  }
-  
+  // La hauteur du NavigationTopBar ET de la UserBar est dynamique (wrap sur
+  // plusieurs lignes si écran étroit). Elles publient chacune leur hauteur
+  // dans --nav-height / --userbar-height via ResizeObserver. On somme les
+  // deux pour éviter que le contenu se cache sous les barres fixes.
+  const paddingTop = showNav
+    ? 'calc(var(--nav-height, 48px) + var(--userbar-height, 48px))'
+    : 'var(--userbar-height, 48px)';
   return (
-    <div className={showNav ? (state?.ui?.sidebarCollapsed ? 'ml-0' : 'ml-64') : ''}>
+    <div
+      style={{
+        marginLeft: 0,
+        paddingTop,
+        minHeight: '100vh',
+      }}
+    >
       {children}
     </div>
   );
@@ -293,6 +370,7 @@ const ContentWrapper: React.FC<{ showNav: boolean; children: React.ReactNode }> 
 const AppContent: React.FC = () => {
   return (
     <NavigationProvider>
+      <BreadcrumbProvider>
       <div className="App">
         <NotificationCenter />
         <ContextActions />
@@ -302,27 +380,32 @@ const AppContent: React.FC = () => {
         <Suspense fallback={<LoadingSpinner />}>
         <Routes>
           <Route path="/login" element={<Login />} />
+
+          {/* ─── TV atelier — routes PUBLIQUES, sans sidebar ni login ────────
+              §11bis.7bis · écrans muraux 55" plein écran, actualisation 30 s.
+              Placées AVANT tout PrivateRoute pour rester hors layout. */}
+          <Route path="/tv/tissage/:token" element={<TvAtelierTissage />} />
+          <Route path="/tv/finition/:token" element={<TvAtelierFinition />} />
+          {/* Variantes sans token — utile en démo / preview */}
+          <Route path="/tv/tissage" element={<TvAtelierTissage />} />
+          <Route path="/tv/finition" element={<TvAtelierFinition />} />
+
+          {/* Portail Client — auth séparée, hors PrivateRoute admin */}
+          <Route path="/portail/login" element={<PortailLogin />} />
+          <Route path="/portail/reset-password/:token" element={<PortailReset />} />
+          <Route path="/portail" element={<PortailPrivateRoute><PortailDashboard /></PortailPrivateRoute>} />
+          <Route path="/portail/commandes" element={<PortailPrivateRoute><PortailCommandes /></PortailPrivateRoute>} />
+          <Route path="/portail/commandes/:id" element={<PortailPrivateRoute><PortailCommandeDetail /></PortailPrivateRoute>} />
+          <Route path="/portail/factures" element={<PortailPrivateRoute><PortailFactures /></PortailPrivateRoute>} />
+          <Route path="/portail/bons-livraison" element={<PortailPrivateRoute><PortailBL /></PortailPrivateRoute>} />
+          <Route path="/portail/devis" element={<PortailPrivateRoute><PortailDevis /></PortailPrivateRoute>} />
+          <Route path="/portail/demandes" element={<PortailPrivateRoute><PortailDemandes /></PortailPrivateRoute>} />
+          <Route path="/portail/profil" element={<PortailPrivateRoute><PortailProfil /></PortailPrivateRoute>} />
           <Route
             path="/"
             element={
-              <PrivateRoute showNav={false}>
-                <HomeERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/erp/home"
-            element={
-              <PrivateRoute showNav={false}>
-                <HomeERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/erp/dashboards"
-            element={
-              <PrivateRoute showNav={false}>
-                <DashboardsERP />
+              <PrivateRoute>
+                <NavigateToUserDashboard />
               </PrivateRoute>
             }
           />
@@ -334,6 +417,27 @@ const AppContent: React.FC = () => {
               </PrivateRoute>
             }
           />
+          {/* Redirections pour compatibilité menu ↔ pages existantes */}
+          <Route path="/products" element={<Navigate to="/articles" replace />} />
+          <Route path="/product-categories" element={<Navigate to="/parametres-catalogue" replace />} />
+          <Route path="/sale-orders" element={<Navigate to="/commandes" replace />} />
+          <Route path="/purchase-orders" element={<Navigate to="/fournisseurs" replace />} />
+          <Route path="/suppliers" element={<Navigate to="/fournisseurs" replace />} />
+          <Route path="/warehouse-management" element={<Navigate to="/entrepot" replace />} />
+          <Route path="/stock-pickings" element={<Navigate to="/bon-livraison" replace />} />
+          <Route path="/hr/employees" element={<Navigate to="/equipe" replace />} />
+          <Route path="/hr/recruitment" element={<Navigate to="/rh-recrutement" replace />} />
+          <Route path="/hr/payslips" element={<Navigate to="/rh/bulletins" replace />} />
+          <Route path="/payroll-tunisia" element={<Navigate to="/rh/paie-tunisie" replace />} />
+          <Route path="/companies" element={<Navigate to="/multisociete" replace />} />
+          <Route path="/settings" element={<Navigate to="/parametrage" replace />} />
+          <Route path="/account-moves" element={<Navigate to="/facture" replace />} />
+          <Route path="/bom" element={<Navigate to="/modeles" replace />} />
+          <Route path="/ai" element={<Navigate to="/dashboard-admin" replace />} />
+          <Route path="/devis/create" element={<Navigate to="/devis?new=1" replace />} />
+          <Route path="/commandes/create" element={<Navigate to="/commandes?new=1" replace />} />
+          <Route path="/ecommerce-odoo" element={<Navigate to="/ecommerce" replace />} />
+          <Route path="/soustraitants-odoo" element={<Navigate to="/soustraitants" replace />} />
           <Route
             path="/dashboard-admin"
             element={
@@ -343,6 +447,22 @@ const AppContent: React.FC = () => {
             }
           />
           <Route path="/dashboard-administrateur" element={<Navigate to="/dashboard-admin" replace />} />
+          <Route
+            path="/dashboard-commercial"
+            element={
+              <PrivateRoute showNav={true}>
+                <DashboardCommercial />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/dashboard-commercial/:id_commercial"
+            element={
+              <PrivateRoute showNav={true}>
+                <DashboardCommercial />
+              </PrivateRoute>
+            }
+          />
           <Route
             path="/modeles"
             element={
@@ -392,6 +512,22 @@ const AppContent: React.FC = () => {
             }
           />
           <Route
+            path="/clients/nouveau"
+            element={
+              <PrivateRoute>
+                <ClientForm mode="create" />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/clients/:id/edit"
+            element={
+              <PrivateRoute>
+                <ClientForm mode="edit" />
+              </PrivateRoute>
+            }
+          />
+          <Route
             path="/clients/:id"
             element={
               <PrivateRoute>
@@ -424,222 +560,6 @@ const AppContent: React.FC = () => {
             }
           />
           <Route
-            path="/sale-orders"
-            element={
-              <PrivateRoute>
-                <SaleOrdersERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/products"
-            element={
-              <PrivateRoute>
-                <ProductsERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/product-categories"
-            element={
-              <PrivateRoute showNav={true}>
-                <ProductCategoriesERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/stock-pickings"
-            element={
-              <PrivateRoute>
-                <StockPickingsERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/productions"
-            element={
-              <PrivateRoute>
-                <ProductionsERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/account-moves"
-            element={
-              <PrivateRoute>
-                <AccountMovesERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/purchase-orders"
-            element={
-              <PrivateRoute>
-                <PurchaseOrdersERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/crm/leads"
-            element={
-              <PrivateRoute>
-                <CRMLeadsERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/pipeline-vente"
-            element={
-              <PrivateRoute>
-                <PipelineVente />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/opportunities"
-            element={
-              <PrivateRoute>
-                <OpportunitiesERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/hr/employees"
-            element={
-              <PrivateRoute>
-                <HREmployeesERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/hr/recruitment"
-            element={
-              <PrivateRoute>
-                <HRRecruitmentERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/hr/payslips"
-            element={
-              <PrivateRoute>
-                <HRPayslipsERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/payroll-tunisia"
-            element={
-              <PrivateRoute>
-                <PayrollTunisia />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/projects"
-            element={
-              <PrivateRoute>
-                <ProjectsERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/inventory"
-            element={
-              <PrivateRoute>
-                <InventoryERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/warehouse-management"
-            element={
-              <PrivateRoute>
-                <WarehouseManagement />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/quality/checks"
-            element={
-              <PrivateRoute>
-                <QualityChecksERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/suppliers"
-            element={
-              <PrivateRoute>
-                <SuppliersERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/soustraitants-odoo"
-            element={
-              <PrivateRoute>
-                <SoustraitantsERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/bom"
-            element={
-              <PrivateRoute>
-                <BOMsERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/ecommerce-odoo"
-            element={
-              <PrivateRoute>
-                <EcommerceERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/settings"
-            element={
-              <PrivateRoute>
-                <SettingsERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/ai"
-            element={
-              <PrivateRoute>
-                <AIERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/ai/settings"
-            element={
-              <PrivateRoute>
-                <AISettingsERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/social-auth"
-            element={
-              <PrivateRoute>
-                <SocialAuthERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/companies"
-            element={
-              <PrivateRoute>
-                <CompaniesERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
             path="/bon-livraison"
             element={
               <PrivateRoute>
@@ -652,6 +572,14 @@ const AppContent: React.FC = () => {
             element={
               <PrivateRoute>
                 <Facture />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/relances"
+            element={
+              <PrivateRoute>
+                <RelancesFactures />
               </PrivateRoute>
             }
           />
@@ -715,176 +643,15 @@ const AppContent: React.FC = () => {
             path="/parametrage"
             element={
               <PrivateRoute>
-                <ParametrageComplet />
+                <Parametrage />
               </PrivateRoute>
             }
           />
           <Route
-            path="/reports"
+            path="/parametres/permissions"
             element={
               <PrivateRoute>
-                <ReportsERP />
-              </PrivateRoute>
-            }
-          />
-          {/* Routes ERP - Modules supplémentaires */}
-          <Route
-            path="/partners"
-            element={
-              <PrivateRoute>
-                <PartnersERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/pricelists"
-            element={
-              <PrivateRoute>
-                <PricelistsERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/avoirs"
-            element={
-              <PrivateRoute>
-                <AvoirsERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/bons-livraison-odoo"
-            element={
-              <PrivateRoute>
-                <BonsLivraisonERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/bons-retour-odoo"
-            element={
-              <PrivateRoute>
-                <BonsRetourERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/machines-odoo"
-            element={
-              <PrivateRoute>
-                <MachinesERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/maintenance-odoo"
-            element={
-              <PrivateRoute>
-                <MaintenanceERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/matieres-premieres-odoo"
-            element={
-              <PrivateRoute>
-                <MatieresPremieresERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/modeles-odoo"
-            element={
-              <PrivateRoute>
-                <ModelesERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/taches"
-            element={
-              <PrivateRoute>
-                <TachesERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/utilisateurs"
-            element={
-              <PrivateRoute>
-                <UtilisateursERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/commercial-dashboard"
-            element={
-              <PrivateRoute>
-                <CommercialDashboard />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/purchase-requests"
-            element={
-              <PrivateRoute>
-                <PurchaseRequestsERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/purchase-receptions"
-            element={
-              <PrivateRoute>
-                <PurchaseReceptionsERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/pos-odoo"
-            element={
-              <PrivateRoute>
-                <POSERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/chart-of-accounts"
-            element={
-              <PrivateRoute>
-                <ChartOfAccountsERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/crm/campaigns"
-            element={
-              <PrivateRoute>
-                <CRMCampaignsERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/bank-reconciliation"
-            element={
-              <PrivateRoute>
-                <BankReconciliationERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/devis-odoo"
-            element={
-              <PrivateRoute>
-                <DevisERP />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/factures-odoo"
-            element={
-              <PrivateRoute>
-                <FacturesERP />
+                <GestionPermissions />
               </PrivateRoute>
             }
           />
@@ -969,10 +736,42 @@ const AppContent: React.FC = () => {
             }
           />
           <Route
+            path="/reports"
+            element={
+              <PrivateRoute>
+                <Reports />
+              </PrivateRoute>
+            }
+          />
+          <Route
             path="/communication"
             element={
               <PrivateRoute>
                 <Communication />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/tracabilite-lots"
+            element={
+              <PrivateRoute>
+                <TracabiliteLots />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/rh-recrutement"
+            element={
+              <PrivateRoute>
+                <RhRecrutement />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/rh/pointage-timemoto"
+            element={
+              <PrivateRoute>
+                <PointageTimeMoto />
               </PrivateRoute>
             }
           />
@@ -990,6 +789,22 @@ const AppContent: React.FC = () => {
               <PrivateRoute>
                 <Ecommerce />
               </PrivateRoute>
+            }
+          />
+          <Route
+            path="/ecommerce-b2b"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMMERCIAL', 'MARKETING']}>
+                <EcommerceB2B />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/publicite"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMMERCIAL', 'MARKETING']}>
+                <PubliciteDigitale />
+              </ProtectedRoute>
             }
           />
           <Route
@@ -1267,59 +1082,353 @@ const AppContent: React.FC = () => {
               </PrivateRoute>
             }
           />
-          {/* Nouveaux modules ERP */}
           <Route
-            path="/pos"
+            path="/pipeline-vente"
             element={
               <PrivateRoute>
-                <POSERP />
+                <PipelineVente />
               </PrivateRoute>
             }
           />
           <Route
-            path="/purchase-requests"
+            path="/crm/leads"
             element={
               <PrivateRoute>
-                <PurchaseRequestsERP />
+                <CrmLeads />
               </PrivateRoute>
             }
           />
           <Route
-            path="/purchase-receptions"
+            path="/opportunities"
             element={
               <PrivateRoute>
-                <PurchaseReceptionsERP />
+                <Opportunities />
+              </PrivateRoute>
+            }
+          />
+          {/* Primes de rendement hors bulletin §11bis.7bis
+              Accès : ADMIN | RH_MANAGER | COMPTABLE */}
+          <Route
+            path="/primes-rendement"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'RH_MANAGER', 'COMPTABLE']}>
+                <PrimesRendement />
+              </ProtectedRoute>
+            }
+          />
+          {/* ─── RH §11bis — Contrats · Structure · Sanctions/Primes · Bulletins · Paie · Formations
+              Accès : ADMIN | RH_MANAGER | COMPTABLE */}
+          <Route
+            path="/rh/contrats"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'RH_MANAGER', 'COMPTABLE']}>
+                <RhContratsTravail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/rh/structure"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'RH_MANAGER', 'COMPTABLE']}>
+                <RhStructureOrga />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/rh/sanctions-primes"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'RH_MANAGER', 'COMPTABLE']}>
+                <RhSanctionsPrimes />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/rh/bulletins"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'RH_MANAGER', 'COMPTABLE']}>
+                <RhBulletinsPaie />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/rh/paie-tunisie"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'RH_MANAGER', 'COMPTABLE']}>
+                <RhPaieTunisie />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/rh/formations"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'RH_MANAGER', 'COMPTABLE']}>
+                <RhFormations />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* ─── Ventes §8 — Colisage · Palettes · Transporteurs · Paiements · Relances
+              Accès : ADMIN | COMMERCIAL | COMPTABLE */}
+          <Route
+            path="/ventes/colisage"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMMERCIAL', 'COMPTABLE']}>
+                <VentesListeColisage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ventes/palettes"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMMERCIAL', 'COMPTABLE']}>
+                <VentesListePalettes />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ventes/transporteurs"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMMERCIAL', 'COMPTABLE']}>
+                <VentesSuiviTransporteurs />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ventes/paiements-echeances"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMMERCIAL', 'COMPTABLE']}>
+                <VentesPaiementsEcheances />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ventes/relances-factures"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMMERCIAL', 'COMPTABLE']}>
+                <VentesRelancesFactures />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Configurateur personnalisation §5.8 — deux variantes (avec ou sans id) */}
+          <Route
+            path="/configurateur"
+            element={
+              <PrivateRoute>
+                <ConfigurateurPersonnalisation />
               </PrivateRoute>
             }
           />
           <Route
-            path="/chart-of-accounts"
+            path="/configurateur/:articleId"
             element={
               <PrivateRoute>
-                <ChartOfAccountsERP />
+                <ConfigurateurPersonnalisation />
               </PrivateRoute>
+            }
+          />
+
+          {/* ─── Achats & Fournisseurs §9 domain.md ─────────────────────
+              Accès : ADMIN | COMMERCIAL | COMPTABLE */}
+          <Route
+            path="/achats/demandes"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMMERCIAL', 'COMPTABLE']}>
+                <DemandesAchat />
+              </ProtectedRoute>
             }
           />
           <Route
-            path="/crm/campaigns"
+            path="/achats/bc"
             element={
-              <PrivateRoute>
-                <CRMCampaignsERP />
-              </PrivateRoute>
+              <ProtectedRoute requiredRole={['ADMIN', 'COMMERCIAL', 'COMPTABLE']}>
+                <BonsCommande />
+              </ProtectedRoute>
             }
           />
           <Route
-            path="/account/reconciliations"
+            path="/achats/receptions"
             element={
-              <PrivateRoute>
-                <BankReconciliationERP />
-              </PrivateRoute>
+              <ProtectedRoute requiredRole={['ADMIN', 'COMMERCIAL', 'COMPTABLE']}>
+                <ReceptionsFF />
+              </ProtectedRoute>
             }
           />
+          <Route
+            path="/achats/factures-ff"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMMERCIAL', 'COMPTABLE']}>
+                <FacturesFournisseur />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/achats/contrats-services"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMMERCIAL', 'COMPTABLE']}>
+                <ContratsServices />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/achats/depenses-especes"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMMERCIAL', 'COMPTABLE']}>
+                <DepensesEspeces />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/achats/paiements-ff"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMMERCIAL', 'COMPTABLE']}>
+                <PaiementsFournisseurs />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/achats/rapprochement"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMMERCIAL', 'COMPTABLE']}>
+                <RapprochementBcBlFf />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* ─── Comptabilité (Phase 4 · §10 domain.md) ───────────────────
+              SYSCOA simplifié adapté Tunisie · Accès : ADMIN | COMPTABLE */}
+          <Route
+            path="/comptabilite/plan-comptes"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMPTABLE']}>
+                <PlanComptes />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/comptabilite/journal"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMPTABLE']}>
+                <JournalEcritures />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/comptabilite/rapprochement"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMPTABLE']}>
+                <RapprochementBancaire />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/comptabilite/caisse"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMPTABLE']}>
+                <FondCaisse />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/comptabilite/immobilisations"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMPTABLE']}>
+                <Immobilisations />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/comptabilite/tva"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMPTABLE']}>
+                <TvaDeclarations />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/comptabilite/rapports"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMPTABLE']}>
+                <RapportsCompta />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/comptabilite/cloture"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'COMPTABLE']}>
+                <ClotureExercice />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* ── CRM (§3) ────────────────────────────────────────────── */}
+          <Route path="/crm/contacts" element={<ProtectedRoute requiredRole={['ADMIN', 'COMMERCIAL']}><CrmContacts /></ProtectedRoute>} />
+          <Route path="/crm/interactions" element={<ProtectedRoute requiredRole={['ADMIN', 'COMMERCIAL']}><CrmInteractions /></ProtectedRoute>} />
+
+          {/* ── Produits (§5.6) ─────────────────────────────────────── */}
+          <Route path="/produits/seo-web" element={<ProtectedRoute requiredRole={['ADMIN', 'COMMERCIAL', 'MARKETING']}><SeoProduits /></ProtectedRoute>} />
+
+          {/* ── Stock §6.9 alertes + §6.1 vue catégorie ────────────── */}
+          <Route path="/stock/alertes" element={<ProtectedRoute><AlertesStock /></ProtectedRoute>} />
+          <Route path="/stock/vue-categories" element={<ProtectedRoute><VueParCategorie /></ProtectedRoute>} />
+
+          {/* ── Fabrication (§7.4 postes / §7 machines / temps réel) ─ */}
+          <Route path="/fabrication/postes" element={<ProtectedRoute requiredRole={['ADMIN', 'CHEF_PRODUCTION', 'CHEF_ATELIER']}><PostesTravail /></ProtectedRoute>} />
+          <Route path="/fabrication/machines-maintenance" element={<ProtectedRoute requiredRole={['ADMIN', 'CHEF_PRODUCTION', 'MECANICIEN']}><MachinesMaintenance /></ProtectedRoute>} />
+          <Route path="/fabrication/temps-reel" element={<ProtectedRoute requiredRole={['ADMIN', 'CHEF_PRODUCTION', 'CHEF_ATELIER']}><SuiviTempsReel /></ProtectedRoute>} />
+          <Route path="/fabrication/gammes" element={<ProtectedRoute requiredRole={['ADMIN', 'CHEF_PRODUCTION', 'CHEF_ATELIER']}><FabricationGammes /></ProtectedRoute>} />
+          <Route path="/fabrication/of-stock-ca" element={<ProtectedRoute requiredRole={['ADMIN', 'CHEF_PRODUCTION', 'CHEF_ATELIER']}><FabricationOFStockCatalogue /></ProtectedRoute>} />
+          <Route path="/fabrication/ourdissage" element={<ProtectedRoute requiredRole={['ADMIN', 'CHEF_PRODUCTION', 'CHEF_ATELIER']}><FabricationOurdissage /></ProtectedRoute>} />
+          <Route path="/fabrication/preparation-mp" element={<ProtectedRoute requiredRole={['ADMIN', 'CHEF_PRODUCTION', 'CHEF_ATELIER']}><FabricationPreparationMP /></ProtectedRoute>} />
+
+          {/* ── Dashboards manquants §14 ───────────────────────────── */}
+          <Route path="/dashboard-ourdisseur" element={<ProtectedRoute requiredRole={['ADMIN', 'OURDISSEUR', 'CHEF_PRODUCTION']}><DashboardOurdisseur /></ProtectedRoute>} />
+          <Route path="/dashboard-comptable" element={<ProtectedRoute requiredRole={['ADMIN', 'COMPTABLE']}><DashboardComptable /></ProtectedRoute>} />
+          <Route path="/dashboard-rh-manager" element={<ProtectedRoute requiredRole={['ADMIN', 'RH_MANAGER', 'RH_ASSISTANT']}><DashboardRHManager /></ProtectedRoute>} />
+          <Route path="/dashboard-ia" element={<ProtectedRoute requiredRole={['ADMIN', 'COMMERCIAL', 'CHEF_PRODUCTION', 'CHEF_ATELIER', 'RH_MANAGER']}><DashboardIA /></ProtectedRoute>} />
+
+          {/* ── Marketing (§11.3-5) ────────────────────────────────── */}
+          <Route path="/marketing/segments" element={<ProtectedRoute requiredRole={['ADMIN', 'MARKETING']}><MarketingSegments /></ProtectedRoute>} />
+          <Route path="/marketing/stats" element={<ProtectedRoute requiredRole={['ADMIN', 'MARKETING']}><MarketingStats /></ProtectedRoute>} />
+
+          {/* ── E-commerce (§11quinquies) ──────────────────────────── */}
+          <Route path="/ecommerce/stock-sync" element={<ProtectedRoute requiredRole={['ADMIN', 'MARKETING']}><EcomStockSync /></ProtectedRoute>} />
+          <Route path="/ecommerce/stats" element={<ProtectedRoute requiredRole={['ADMIN', 'MARKETING', 'COMMERCIAL']}><EcomStats /></ProtectedRoute>} />
+          <Route path="/ecommerce/panier-abandonne" element={<ProtectedRoute requiredRole={['ADMIN', 'MARKETING']}><EcomPanierAbandonne /></ProtectedRoute>} />
+          <Route path="/ecommerce/fidelite" element={<ProtectedRoute requiredRole={['ADMIN', 'MARKETING']}><EcomFidelite /></ProtectedRoute>} />
+          <Route path="/ecommerce/vitrine" element={<ProtectedRoute requiredRole={['ADMIN', 'MARKETING']}><EcomVitrine /></ProtectedRoute>} />
+
+          {/* ── Mon compte (tous les rôles) ────────────────────────── */}
+          <Route path="/mon-compte/profil" element={<ProtectedRoute><MonProfil /></ProtectedRoute>} />
+          <Route path="/mon-compte/email" element={<ProtectedRoute><MonEmailPerso /></ProtectedRoute>} />
+          <Route path="/mon-compte/whatsapp" element={<ProtectedRoute><MonWhatsAppPerso /></ProtectedRoute>} />
+
+          {/* ── IA agents (§11ter + §14bis.6bis) — ADMIN ───────────── */}
+          <Route path="/ia/agents-actifs" element={<ProtectedRoute requiredRole="ADMIN"><IaAgentsActifs /></ProtectedRoute>} />
+          <Route path="/ia/constats" element={<ProtectedRoute requiredRole="ADMIN"><IaConstats /></ProtectedRoute>} />
+          <Route path="/ia/rapports" element={<ProtectedRoute requiredRole="ADMIN"><IaRapports /></ProtectedRoute>} />
+          <Route path="/ia/configuration" element={<ProtectedRoute requiredRole="ADMIN"><IaConfiguration /></ProtectedRoute>} />
+          <Route path="/ia/couts-llm" element={<ProtectedRoute requiredRole="ADMIN"><IaCoutsLLM /></ProtectedRoute>} />
+
+          {/* ── Paramètres §15 (12 sous-items) — ADMIN ─────────────── */}
+          <Route path="/parametres/societe" element={<ProtectedRoute requiredRole="ADMIN"><ParamSociete /></ProtectedRoute>} />
+          <Route path="/parametres/crm" element={<ProtectedRoute requiredRole="ADMIN"><ParamCrm /></ProtectedRoute>} />
+          <Route path="/parametres/vente" element={<ProtectedRoute requiredRole="ADMIN"><ParamVente /></ProtectedRoute>} />
+          <Route path="/parametres/achats" element={<ProtectedRoute requiredRole="ADMIN"><ParamAchats /></ProtectedRoute>} />
+          <Route path="/parametres/comptabilite" element={<ProtectedRoute requiredRole="ADMIN"><ParamComptabilite /></ProtectedRoute>} />
+          <Route path="/parametres/stock" element={<ProtectedRoute requiredRole="ADMIN"><ParamStock /></ProtectedRoute>} />
+          <Route path="/parametres/fabrication" element={<ProtectedRoute requiredRole="ADMIN"><ParamFabrication /></ProtectedRoute>} />
+          <Route path="/parametres/transporteurs" element={<ProtectedRoute requiredRole="ADMIN"><ParamTransporteurs /></ProtectedRoute>} />
+          <Route path="/parametres/commissions" element={<ProtectedRoute requiredRole="ADMIN"><ParamCommissions /></ProtectedRoute>} />
+          <Route path="/parametres/communication" element={<ProtectedRoute requiredRole="ADMIN"><ParamCommunication /></ProtectedRoute>} />
+          <Route path="/parametres/pays-tva" element={<ProtectedRoute requiredRole="ADMIN"><ParamPaysTva /></ProtectedRoute>} />
+          <Route path="/parametres/utilisateurs-roles" element={<ProtectedRoute requiredRole="ADMIN"><ParamUtilisateursRoles /></ProtectedRoute>} />
         </Routes>
         </Suspense>
         </ErrorBoundary>
       </div>
+      </BreadcrumbProvider>
     </NavigationProvider>
   );
 };

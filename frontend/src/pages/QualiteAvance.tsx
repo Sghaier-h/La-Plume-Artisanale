@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { qualiteAvanceService } from '../services/api';
-import { CheckCircle, XCircle, AlertTriangle, BarChart3, TrendingUp, Eye, X } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, BarChart3, TrendingUp, X } from 'lucide-react';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const QualiteAvance: React.FC = () => {
@@ -28,9 +28,17 @@ const QualiteAvance: React.FC = () => {
       ]);
 
       setControles(controlesRes.data.data.controles || []);
-      setNonConformites(ncRes.data.data || []);
-      setStatistiques(statsRes.data.data);
-      setDiagrammes(diagrammesRes.data.data);
+      setNonConformites((() => {
+        const _r = ncRes.data?.data;
+        if (Array.isArray(_r)) return _r;
+        if (_r && Array.isArray(_r.data)) return _r.data;
+        if (_r && typeof _r === 'object') {
+          for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+        }
+        return [];
+      })());
+      setStatistiques((() => { const _r = statsRes.data?.data; return Array.isArray(_r) ? _r : (_r?.data || _r?.statistiques || []); })());
+      setDiagrammes((() => { const _r = diagrammesRes.data?.data; return Array.isArray(_r) ? _r : (_r?.data || _r?.diagrammes || []); })());
     } catch (error) {
       console.error('Erreur chargement:', error);
     } finally {
@@ -61,14 +69,14 @@ const QualiteAvance: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="ml-64 p-6 flex items-center justify-center min-h-screen">
+      <div className="p-6 flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="ml-64 p-6">
+    <div className="p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
@@ -133,12 +141,15 @@ const QualiteAvance: React.FC = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Taux conformité</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Résultat</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {controles.map((controle: any) => (
-                  <tr key={controle.id_controle}>
+                  <tr
+                    key={controle.id_controle}
+                    className="hover:bg-gray-50 group cursor-pointer"
+                    onClick={() => setSelectedControle(controle)}
+                  >
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       {controle.numero_controle}
                     </td>
@@ -169,15 +180,6 @@ const QualiteAvance: React.FC = () => {
                       <span className={`px-2 py-1 rounded text-xs ${getResultatColor(controle.resultat_global)}`}>
                         {controle.resultat_global}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <button
-                        onClick={() => setSelectedControle(controle)}
-                        className="text-blue-600 hover:text-blue-700"
-                        title="Consulter"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
                     </td>
                   </tr>
                 ))}

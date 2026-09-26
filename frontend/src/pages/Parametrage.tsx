@@ -41,10 +41,10 @@ const Parametrage: React.FC = () => {
       setLoading(true);
       if (activeTab === 'societe') {
         const response = await parametrageService.getSociete();
-        setSociete(response.data.data);
+        setSociete((() => { const _r = response.data?.data; return Array.isArray(_r) ? _r : (_r?.data || _r?.societe || []); })());
       } else if (activeTab === 'systeme') {
         const response = await parametrageService.getParametresSysteme();
-        setParametresSysteme(response.data.data);
+        setParametresSysteme((() => { const _r = response.data?.data; return Array.isArray(_r) ? _r : (_r?.data || _r?.parametresSysteme || []); })());
       } else if (activeTab === 'vente') {
         const response = await parametrageService.getParametresModule?.('vente') || { data: { data: {} } };
         setParametresVente(response.data.data || {
@@ -197,7 +197,7 @@ const Parametrage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="ml-64 p-6">
+      <div className="p-6">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-3xl font-bold text-gray-800 mb-6">⚙️ Paramétrage Complet</h1>
 
@@ -1401,11 +1401,11 @@ const ImportExportSection: React.FC = () => {
 
     try {
       const response = await excelImportService.preview(selectedFile, selectedType);
-      setPreviewData(response.data.data);
+      setPreviewData((() => { const _r = response.data?.data; return Array.isArray(_r) ? _r : (_r?.data || _r?.previewData || []); })());
       
       // Initialiser le mapping par défaut (mapping intelligent basé sur les noms)
       const defaultMapping: Record<string, string> = {};
-      response.data.data.headers.forEach((header: string) => {
+      (response.data?.data?.headers || []).forEach((header: string) => {
         // Essayer de trouver une correspondance automatique
         const availableFields = response.data.data.availableFields || [];
         const match = availableFields.find((field: any) => 
@@ -1418,7 +1418,7 @@ const ImportExportSection: React.FC = () => {
       });
       
       // Si ID Commande est présent, le mapper pour utiliser le numéro de ligne
-      if (response.data.data.headers.includes('ID Commande')) {
+      if ((response.data?.data?.headers || []).includes('ID Commande')) {
         defaultMapping['ID Commande'] = '__LINE_INDEX__'; // Spécial : numéro de ligne
       }
       

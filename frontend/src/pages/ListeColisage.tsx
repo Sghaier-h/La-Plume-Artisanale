@@ -161,7 +161,7 @@ const ListeColisage: React.FC = () => {
   const getStatutColor = (statut: string) => {
     switch (statut) {
       case 'EXPEDIE': return 'bg-green-100 text-green-800';
-      case 'TERMINE': return 'bg-blue-100 text-blue-800';
+      case 'TERMINE': return 'bg-[#F5EFE5] text-[#4A5D75]';
       case 'EN_COURS': return 'bg-yellow-100 text-yellow-800';
       case 'BROUILLON': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
@@ -177,19 +177,19 @@ const ListeColisage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="ml-64 p-6 flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="p-6 flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]"></div>
       </div>
     );
   }
 
   return (
-    <div className="ml-64 p-6">
+    <div className="p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
-              <Box className="w-8 h-8 text-blue-600" />
+              <Box className="w-8 h-8 text-[#C8663D]" />
               Liste de Colisage
             </h1>
             <p className="text-gray-600 mt-2">Gestion des listes de colisage pour les expéditions</p>
@@ -200,7 +200,7 @@ const ListeColisage: React.FC = () => {
               setEditingListe(null);
               setShowForm(true);
             }}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            className="flex items-center gap-2 bg-[#C8663D] text-white px-4 py-2 rounded-lg hover:bg-[#a55231]"
           >
             <Plus className="w-5 h-5" />
             Nouvelle Liste
@@ -215,7 +215,7 @@ const ListeColisage: React.FC = () => {
               <button
                 onClick={() => setAffichageMode('ligne')}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                  affichageMode === 'ligne' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  affichageMode === 'ligne' ? 'bg-[#C8663D] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
               >
                 <List className="w-4 h-4" />
@@ -224,7 +224,7 @@ const ListeColisage: React.FC = () => {
               <button
                 onClick={() => setAffichageMode('catalogue')}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                  affichageMode === 'catalogue' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  affichageMode === 'catalogue' ? 'bg-[#C8663D] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
               >
                 <Grid className="w-4 h-4" />
@@ -333,7 +333,7 @@ const ListeColisage: React.FC = () => {
                 </div>
               </div>
               <div className="flex gap-4">
-                <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+                <button type="submit" className="bg-[#C8663D] text-white px-6 py-2 rounded hover:bg-[#a55231]">
                   {editingListe ? 'Modifier' : 'Créer'}
                 </button>
                 <button
@@ -378,13 +378,13 @@ const ListeColisage: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {filteredListes.map((liste) => (
-                  <tr key={liste.id_liste} className="hover:bg-gray-50">
+                  <tr key={liste.id_liste} className="hover:bg-gray-50 group">
                     <td className="px-6 py-4 whitespace-nowrap font-mono text-sm font-medium">{liste.numero_liste}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">{liste.date_liste}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">{liste.numero_commande || '-'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">{liste.nom_client || '-'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">{liste.nombre_colis || 0}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">{liste.poids_total?.toFixed(2) || '0.00'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">{Number(liste.poids_total || 0).toFixed(2) || '0.00'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">{liste.transporteur || '-'}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 rounded text-xs ${getStatutColor(liste.statut)}`}>
@@ -392,8 +392,8 @@ const ListeColisage: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex gap-2">
-                        <button onClick={() => handleEdit(liste)} className="text-blue-600 hover:text-blue-800">
+                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => handleEdit(liste)} className="text-[#C8663D] hover:text-[#4A5D75]">
                           <Edit className="w-4 h-4" />
                         </button>
                         <button className="text-green-600 hover:text-green-800">
@@ -421,7 +421,7 @@ const ListeColisage: React.FC = () => {
                     <p><span className="font-medium">Client:</span> {liste.nom_client || '-'}</p>
                     <div className="mt-2 pt-2 border-t">
                       <p className="text-xs text-gray-500">Colis: {liste.nombre_colis || 0}</p>
-                      <p className="text-xs text-gray-500">Poids: {liste.poids_total?.toFixed(2) || '0.00'} kg</p>
+                      <p className="text-xs text-gray-500">Poids: {Number(liste.poids_total || 0).toFixed(2) || '0.00'} kg</p>
                       {liste.transporteur && <p className="text-xs text-gray-500">Transporteur: {liste.transporteur}</p>}
                     </div>
                   </div>
@@ -433,7 +433,7 @@ const ListeColisage: React.FC = () => {
                   <div className="flex gap-2 pt-3 border-t">
                     <button
                       onClick={() => handleEdit(liste)}
-                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-[#C8663D] text-white rounded hover:bg-[#a55231] text-sm"
                     >
                       <Edit className="w-4 h-4" />
                       Modifier

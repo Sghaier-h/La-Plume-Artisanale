@@ -643,9 +643,9 @@ export default function FoutaManagementApp() {
   ]);
 
   const [theme, setTheme] = useState({
-    primaryColor: '#2563eb',
-    secondaryColor: '#10b981',
-    accentColor: '#f59e0b',
+    primaryColor: '#C8663D',
+    secondaryColor: '#7A8C6A',
+    accentColor: '#C89B3C',
     dangerColor: '#ef4444',
     darkMode: false,
     companyName: 'FOUTA Manufacturing',
@@ -931,7 +931,7 @@ export default function FoutaManagementApp() {
                     <h3 className="font-semibold text-gray-800">Notifications</h3>
                     <button 
                       onClick={() => setNotifications([])}
-                      className="text-xs text-blue-600 hover:text-blue-700"
+                      className="text-xs text-[#4A5D75] hover:text-[#3B4E68]"
                     >
                       Tout effacer
                     </button>
@@ -958,7 +958,7 @@ export default function FoutaManagementApp() {
                           ) : notif.type === 'success' ? (
                             <CheckCircle className="w-5 h-5 text-green-600 mt-1 flex-shrink-0" />
                           ) : (
-                            <Info className="w-5 h-5 text-blue-600 mt-1 flex-shrink-0" />
+                            <Info className="w-5 h-5 text-[#4A5D75] mt-1 flex-shrink-0" />
                           )}
                           <div className="flex-1 min-w-0">
                             <p className="text-sm text-gray-800">{notif.message}</p>
@@ -1008,14 +1008,14 @@ export default function FoutaManagementApp() {
 
             {/* KPIs Principaux */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-              <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-5 text-white">
+              <div className="bg-gradient-to-br from-[#4A5D75] to-[#3B4E68] rounded-xl shadow-lg p-5 text-white">
                 <Package className="w-8 h-8 mb-2 opacity-80" />
                 <p className="text-sm opacity-90">Commandes</p>
                 <p className="text-3xl font-bold mt-1">{realData.totalCommandes.toLocaleString()}</p>
                 <p className="text-xs opacity-75 mt-2">Total</p>
               </div>
               
-              <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-5 text-white">
+              <div className="bg-gradient-to-br from-[#C8663D] to-[#A2502E] rounded-xl shadow-lg p-5 text-white">
                 <Factory className="w-8 h-8 mb-2 opacity-80" />
                 <p className="text-sm opacity-90">OF</p>
                 <p className="text-3xl font-bold mt-1">{realData.ordresFabrication.toLocaleString()}</p>
@@ -1043,7 +1043,7 @@ export default function FoutaManagementApp() {
                 <p className="text-xs opacity-75 mt-2">Moyen</p>
               </div>
 
-              <div className="bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-xl shadow-lg p-5 text-white">
+              <div className="bg-gradient-to-br from-[#7A8C6A] to-[#5F7051] rounded-xl shadow-lg p-5 text-white">
                 <UserCheck className="w-8 h-8 mb-2 opacity-80" />
                 <p className="text-sm opacity-90">Sous-Traitants</p>
                 <p className="text-3xl font-bold mt-1">{realData.soustraitants}</p>
@@ -1062,8 +1062,8 @@ export default function FoutaManagementApp() {
                   <AreaChart data={consoData}>
                     <defs>
                       <linearGradient id="colorTheo" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                        <stop offset="5%" stopColor="#4A5D75" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="#4A5D75" stopOpacity={0}/>
                       </linearGradient>
                       <linearGradient id="colorReel" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
@@ -1075,7 +1075,7 @@ export default function FoutaManagementApp() {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Area type="monotone" dataKey="theorique" stroke="#3b82f6" fillOpacity={1} fill="url(#colorTheo)" name="Théorique (m)" />
+                    <Area type="monotone" dataKey="theorique" stroke="#4A5D75" fillOpacity={1} fill="url(#colorTheo)" name="Théorique (m)" />
                     <Area type="monotone" dataKey="reel" stroke="#10b981" fillOpacity={1} fill="url(#colorReel)" name="Réel (m)" />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -1107,7 +1107,7 @@ export default function FoutaManagementApp() {
                 </h2>
                 <button 
                   onClick={() => setCurrentView('production-suivi')}
-                  className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                  className="text-sm text-[#4A5D75] hover:text-[#3B4E68] flex items-center gap-1"
                 >
                   Voir tout <ArrowRight className="w-4 h-4" />
                 </button>
@@ -1156,7 +1156,7 @@ export default function FoutaManagementApp() {
                 </h2>
                 <button 
                   onClick={() => setCurrentView('production-of')}
-                  className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                  className="text-sm text-[#4A5D75] hover:text-[#3B4E68] flex items-center gap-1"
                 >
                   Voir tout <ArrowRight className="w-4 h-4" />
                 </button>
@@ -1183,7 +1183,7 @@ export default function FoutaManagementApp() {
                             </span>
                           )}
                           <span className={`px-2 py-1 text-xs rounded-full ${
-                            of.statut === 'En cours' ? 'bg-blue-100 text-blue-800' :
+                            of.statut === 'En cours' ? 'bg-[#EDF0F5] text-[#3B4E68]' :
                             of.statut === 'En attente' ? 'bg-gray-100 text-gray-800' :
                             'bg-green-100 text-green-800'
                           }`}>
@@ -1251,7 +1251,7 @@ export default function FoutaManagementApp() {
 
             {/* Stats Planning */}
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-              <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg p-4 text-white">
+              <div className="bg-gradient-to-br from-[#4A5D75] to-[#3B4E68] rounded-lg shadow-lg p-4 text-white">
                 <p className="text-sm opacity-90">OF en Attente</p>
                 <p className="text-3xl font-bold mt-1">{ofEnAttente.length}</p>
                 <p className="text-xs opacity-75 mt-1">À planifier</p>
@@ -1270,7 +1270,7 @@ export default function FoutaManagementApp() {
                 </p>
                 <p className="text-xs opacity-75 mt-1">Prioritaires</p>
               </div>
-              <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow-lg p-4 text-white">
+              <div className="bg-gradient-to-br from-[#C8663D] to-[#A2502E] rounded-lg shadow-lg p-4 text-white">
                 <p className="text-sm opacity-90">Capacité</p>
                 <p className="text-3xl font-bold mt-1">
                   {Math.floor(realData.totalMachines * 24 * 0.85)}h
@@ -1312,7 +1312,7 @@ export default function FoutaManagementApp() {
                       className={`p-3 rounded-lg border-2 cursor-move transition-all hover:shadow-lg ${
                         of.urgence 
                           ? 'bg-red-50 border-red-300 hover:border-red-500' 
-                          : 'bg-gray-50 border-gray-200 hover:border-blue-400'
+                          : 'bg-gray-50 border-gray-200 hover:border-[#4A5D75]'
                       }`}
                     >
                       <div className="flex items-start justify-between mb-2">
@@ -1356,7 +1356,7 @@ export default function FoutaManagementApp() {
                               setSelectedOFForColors(of);
                               setShowColorModal(true);
                             }}
-                            className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200"
+                            className="text-xs px-2 py-1 bg-[#EDF0F5] text-[#3B4E68] rounded hover:bg-[#DDE3ED]"
                           >
                             Attribuer couleurs
                           </button>
@@ -1380,14 +1380,14 @@ export default function FoutaManagementApp() {
                       key={idx}
                       onDragOver={(e) => {
                         e.preventDefault();
-                        e.currentTarget.classList.add('ring-2', 'ring-blue-400');
+                        e.currentTarget.classList.add('ring-2', 'ring-[#4A5D75]');
                       }}
                       onDragLeave={(e) => {
-                        e.currentTarget.classList.remove('ring-2', 'ring-blue-400');
+                        e.currentTarget.classList.remove('ring-2', 'ring-[#4A5D75]');
                       }}
                       onDrop={(e) => {
                         e.preventDefault();
-                        e.currentTarget.classList.remove('ring-2', 'ring-blue-400');
+                        e.currentTarget.classList.remove('ring-2', 'ring-[#4A5D75]');
                         
                         if (draggedOF) {
                           if (!(draggedOF as any)?.couleurAttributed) {
@@ -1420,9 +1420,9 @@ export default function FoutaManagementApp() {
                       {machine.ofEnCours && (
                         <div className="mb-3">
                           <div className="text-xs text-gray-600 mb-1">EN COURS:</div>
-                          <div className="p-2 bg-blue-100 rounded border border-blue-300">
-                            <div className="font-semibold text-sm text-blue-900">{machine.ofEnCours}</div>
-                            <div className="text-xs text-blue-700 mt-1">
+                          <div className="p-2 bg-[#EDF0F5] rounded border border-[#C4CFE0]">
+                            <div className="font-semibold text-sm text-[#2F3E52]">{machine.ofEnCours}</div>
+                            <div className="text-xs text-[#3B4E68] mt-1">
                               Opérateur: {machine.operateur}
                             </div>
                           </div>
@@ -1456,12 +1456,12 @@ export default function FoutaManagementApp() {
                 </div>
 
                 {/* Instructions */}
-                <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <h3 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                <div className="mt-6 p-4 bg-[#EDF0F5] rounded-lg border border-[#C4CFE0]">
+                  <h3 className="font-semibold text-[#2F3E52] mb-2 flex items-center gap-2">
                     <Info className="w-5 h-5" />
                     Instructions de Planification
                   </h3>
-                  <ul className="text-sm text-blue-800 space-y-1">
+                  <ul className="text-sm text-[#3B4E68] space-y-1">
                     <li>• <strong>Étape 1:</strong> Attribuer les couleurs MP à chaque OF (vérification stock automatique)</li>
                     <li>• <strong>Étape 2:</strong> Glisser-déposer l'OF vers une machine disponible</li>
                     <li>• <strong>Synchronisation:</strong> Toutes les équipes sont notifiées automatiquement</li>
@@ -1517,7 +1517,7 @@ export default function FoutaManagementApp() {
                                 setSelectedOFForColors(of);
                                 setShowColorModal(true);
                               }}
-                              className="text-blue-600 hover:text-blue-800 font-semibold"
+                              className="text-[#4A5D75] hover:text-[#3B4E68] font-semibold"
                             >
                               Attribuer →
                             </button>
@@ -1566,7 +1566,7 @@ export default function FoutaManagementApp() {
                     placeholder="Rechercher OF, client, article..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D] focus:border-transparent"
                   />
                 </div>
                 <div className="relative">
@@ -1574,7 +1574,7 @@ export default function FoutaManagementApp() {
                   <select
                     value={filterStatus}
                     onChange={(e) => setFilterStatus(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D] focus:border-transparent"
                   >
                     <option value="all">Tous les statuts</option>
                     <option value="En attente">En attente</option>
@@ -1607,18 +1607,18 @@ export default function FoutaManagementApp() {
                     <p className="text-sm text-gray-600">Total OF</p>
                     <p className="text-2xl font-bold text-gray-800">{ordresFabrication.length}</p>
                   </div>
-                  <ClipboardList className="w-10 h-10 text-blue-500 opacity-20" />
+                  <ClipboardList className="w-10 h-10 text-[#4A5D75] opacity-20" />
                 </div>
               </div>
               <div className="bg-white rounded-lg shadow p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-600">En cours</p>
-                    <p className="text-2xl font-bold text-blue-600">
+                    <p className="text-2xl font-bold text-[#4A5D75]">
                       {ordresFabrication.filter(of => of.statut === 'En cours').length}
                     </p>
                   </div>
-                  <Activity className="w-10 h-10 text-blue-500 opacity-20" />
+                  <Activity className="w-10 h-10 text-[#4A5D75] opacity-20" />
                 </div>
               </div>
               <div className="bg-white rounded-lg shadow p-4">
@@ -1682,9 +1682,13 @@ export default function FoutaManagementApp() {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredOF.map((of, idx) => (
-                      <tr 
+                      <tr
                         key={idx}
-                        className={`hover:bg-gray-50 transition-colors ${
+                        onClick={() => {
+                          setSelectedOF(of);
+                          setShowDocumentModal(true);
+                        }}
+                        className={`hover:bg-gray-50 transition-colors cursor-pointer ${
                           of.urgence ? 'bg-red-50' : ''
                         }`}
                       >
@@ -1731,7 +1735,7 @@ export default function FoutaManagementApp() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                            of.statut === 'En cours' ? 'bg-blue-100 text-blue-800' :
+                            of.statut === 'En cours' ? 'bg-[#EDF0F5] text-[#3B4E68]' :
                             of.statut === 'En attente' ? 'bg-gray-100 text-gray-800' :
                             'bg-green-100 text-green-800'
                           }`}>
@@ -1742,16 +1746,7 @@ export default function FoutaManagementApp() {
                           {of.dateLivraison}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <button 
-                            onClick={() => {
-                              setSelectedOF(of);
-                              setShowDocumentModal(true);
-                            }}
-                            className="text-blue-600 hover:text-blue-900 mr-3"
-                          >
-                            <Eye className="w-5 h-5 inline" />
-                          </button>
-                          <button className="text-gray-600 hover:text-gray-900 mr-3">
+                          <button onClick={(e) => e.stopPropagation()} className="text-gray-600 hover:text-gray-900 mr-3">
                             <Edit className="w-5 h-5 inline" />
                           </button>
                         </td>
@@ -1789,7 +1784,7 @@ export default function FoutaManagementApp() {
 
             {/* KPIs */}
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-              <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg p-4 text-white">
+              <div className="bg-gradient-to-br from-[#4A5D75] to-[#3B4E68] rounded-lg shadow-lg p-4 text-white">
                 <p className="text-sm opacity-90">Machines Actives</p>
                 <p className="text-3xl font-bold mt-1">{realData.machinesActives}</p>
                 <p className="text-xs opacity-75 mt-1">sur {realData.totalMachines} machines</p>
@@ -1809,7 +1804,7 @@ export default function FoutaManagementApp() {
                 <p className="text-3xl font-bold mt-1">{productionMoyenne} m</p>
                 <p className="text-xs opacity-75 mt-1">par machine/jour</p>
               </div>
-              <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow-lg p-4 text-white">
+              <div className="bg-gradient-to-br from-[#C8663D] to-[#A2502E] rounded-lg shadow-lg p-4 text-white">
                 <p className="text-sm opacity-90">Taux Utilisation</p>
                 <p className="text-3xl font-bold mt-1">{tauxUtilisation}%</p>
                 <p className="text-xs opacity-75 mt-1">{realData.machinesActives}/{realData.totalMachines} machines</p>
@@ -1832,7 +1827,7 @@ export default function FoutaManagementApp() {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Line type="monotone" dataKey="theorique" stroke="#3b82f6" strokeWidth={2} name="Théorique" />
+                    <Line type="monotone" dataKey="theorique" stroke="#4A5D75" strokeWidth={2} name="Théorique" />
                     <Line type="monotone" dataKey="reel" stroke="#10b981" strokeWidth={2} name="Réel" />
                   </LineChart>
                 </ResponsiveContainer>
@@ -1908,7 +1903,7 @@ export default function FoutaManagementApp() {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">OF en cours:</span>
-                        <span className="font-semibold text-blue-600">{machine.ofEnCours}</span>
+                        <span className="font-semibold text-[#4A5D75]">{machine.ofEnCours}</span>
                       </div>
                       <div className="mt-3 pt-3 border-t border-gray-300">
                         <div className="flex justify-between items-center">
@@ -1990,7 +1985,7 @@ export default function FoutaManagementApp() {
                           style={{ 
                             backgroundColor: item.couleur === 'BLANC' ? '#ffffff' :
                                            item.couleur === 'ECRU' ? '#f5f5dc' :
-                                           item.couleur === 'BLEU' ? '#3b82f6' :
+                                           item.couleur === 'BLEU' ? '#4A5D75' :
                                            item.couleur === 'VERT' ? '#10b981' :
                                            item.couleur === 'ROUGE' ? '#ef4444' : '#gray',
                             border: item.couleur === 'BLANC' ? '1px solid #e5e7eb' : 'none'
@@ -2044,7 +2039,7 @@ export default function FoutaManagementApp() {
                       <Cell key={`cell-${index}`} fill={
                         entry.couleur === 'BLANC' ? '#94a3b8' :
                         entry.couleur === 'ECRU' ? '#d6d3d1' :
-                        entry.couleur === 'BLEU' ? '#3b82f6' :
+                        entry.couleur === 'BLEU' ? '#4A5D75' :
                         entry.couleur === 'VERT' ? '#10b981' :
                         entry.couleur === 'ROUGE' ? '#ef4444' : '#gray'
                       } />
@@ -2085,7 +2080,7 @@ export default function FoutaManagementApp() {
               </div>
               <div className="bg-white rounded-lg shadow p-4">
                 <p className="text-sm text-gray-600">Export</p>
-                <p className="text-2xl font-bold text-blue-600 mt-1">
+                <p className="text-2xl font-bold text-[#4A5D75] mt-1">
                   {clients.filter(c => c.type === 'Export').length}
                 </p>
               </div>
@@ -2116,7 +2111,7 @@ export default function FoutaManagementApp() {
                             <h3 className="font-bold text-gray-900">{client.nom}</h3>
                             <p className="text-sm text-gray-600">{client.code}</p>
                             <div className="flex items-center gap-3 mt-1">
-                              <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">
+                              <span className="text-xs px-2 py-1 bg-[#EDF0F5] text-[#3B4E68] rounded">
                                 {client.type}
                               </span>
                               <span className="text-xs text-gray-500 flex items-center gap-1">
@@ -2182,7 +2177,7 @@ export default function FoutaManagementApp() {
               </div>
               <div className="bg-white rounded-lg shadow p-4">
                 <p className="text-sm text-gray-600">Modèles</p>
-                <p className="text-2xl font-bold text-blue-600 mt-1">
+                <p className="text-2xl font-bold text-[#4A5D75] mt-1">
                   {new Set(bomData.map(b => b.modele)).size}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">Modèles différents</p>
@@ -2196,7 +2191,7 @@ export default function FoutaManagementApp() {
               </div>
               <div className="bg-white rounded-lg shadow p-4">
                 <p className="text-sm text-gray-600">Temps Production</p>
-                <p className="text-2xl font-bold text-purple-600 mt-1">
+                <p className="text-2xl font-bold text-[#C8663D] mt-1">
                   {(bomData.reduce((acc, b) => acc + b.tempsProduction, 0) / bomData.length).toFixed(1)}h
                 </p>
                 <p className="text-xs text-gray-500 mt-1">Pour 100 pièces</p>
@@ -2221,9 +2216,9 @@ export default function FoutaManagementApp() {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {bomData.map((bom, idx) => (
-                      <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                      <tr key={idx} className="hover:bg-gray-50 transition-colors group">
                         <td className="px-6 py-4">
-                          <span className="font-mono text-sm font-semibold text-blue-600">{bom.codeParametrage}</span>
+                          <span className="font-mono text-sm font-semibold text-[#4A5D75]">{bom.codeParametrage}</span>
                         </td>
                         <td className="px-6 py-4">
                           <div>
@@ -2235,7 +2230,7 @@ export default function FoutaManagementApp() {
                           <span className="text-sm text-gray-900">{bom.dimensions}</span>
                         </td>
                         <td className="px-6 py-4">
-                          <span className="text-xs px-2 py-1 bg-purple-100 text-purple-800 rounded">
+                          <span className="text-xs px-2 py-1 bg-[#FDF2ED] text-[#A2502E] rounded">
                             {bom.typeTissage}
                           </span>
                         </td>
@@ -2251,9 +2246,6 @@ export default function FoutaManagementApp() {
                           <span className="font-semibold text-green-600">{bom.prixRevient.toFixed(2)} TND</span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right">
-                          <button className="text-blue-600 hover:text-blue-900 mr-3">
-                            <Eye className="w-5 h-5 inline" />
-                          </button>
                           <button className="text-gray-600 hover:text-gray-900 mr-3">
                             <Edit className="w-5 h-5 inline" />
                           </button>
@@ -2272,7 +2264,7 @@ export default function FoutaManagementApp() {
             <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-lg font-semibold text-gray-800 mb-4">Détails Technique - {bomData[0].codeParametrage}</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-blue-50 rounded-lg p-4">
+                <div className="bg-[#EDF0F5] rounded-lg p-4">
                   <h3 className="font-semibold text-gray-800 mb-3">Paramètres Tissage</h3>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
@@ -2312,7 +2304,7 @@ export default function FoutaManagementApp() {
                   </div>
                 </div>
 
-                <div className="bg-purple-50 rounded-lg p-4">
+                <div className="bg-[#FDF2ED] rounded-lg p-4">
                   <h3 className="font-semibold text-gray-800 mb-3">Production</h3>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
@@ -2364,7 +2356,7 @@ export default function FoutaManagementApp() {
               </div>
               <div className="bg-white rounded-lg shadow p-4">
                 <p className="text-sm text-gray-600">Tisseurs</p>
-                <p className="text-2xl font-bold text-blue-600 mt-1">
+                <p className="text-2xl font-bold text-[#4A5D75] mt-1">
                   {equipesData.filter(e => e.fonction === 'Tisseur').length}
                 </p>
               </div>
@@ -2382,7 +2374,7 @@ export default function FoutaManagementApp() {
               </div>
               <div className="bg-white rounded-lg shadow p-4">
                 <p className="text-sm text-gray-600">Rendement Moy.</p>
-                <p className="text-2xl font-bold text-purple-600 mt-1">
+                <p className="text-2xl font-bold text-[#C8663D] mt-1">
                   {Math.floor(equipesData.reduce((acc, e) => acc + e.rendementMoyen, 0) / equipesData.length)}%
                 </p>
               </div>
@@ -2393,7 +2385,7 @@ export default function FoutaManagementApp() {
               {/* Tisseurs */}
               <div className="bg-white rounded-lg shadow p-6">
                 <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                  <Factory className="w-5 h-5 text-blue-600" />
+                  <Factory className="w-5 h-5 text-[#4A5D75]" />
                   Tisseurs ({equipesData.filter(e => e.fonction === 'Tisseur').length})
                 </h2>
                 <div className="space-y-3">
@@ -2401,8 +2393,8 @@ export default function FoutaManagementApp() {
                     <div key={idx} className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-all">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                            <span className="font-bold text-blue-600">{membre.nom.split(' ').map(n => n[0]).join('')}</span>
+                          <div className="w-10 h-10 bg-[#EDF0F5] rounded-full flex items-center justify-center">
+                            <span className="font-bold text-[#4A5D75]">{membre.nom.split(' ').map(n => n[0]).join('')}</span>
                           </div>
                           <div>
                             <h3 className="font-semibold text-gray-900">{membre.nom}</h3>
@@ -2426,7 +2418,7 @@ export default function FoutaManagementApp() {
                         </div>
                         <div>
                           <span className="text-gray-500">Rendement:</span>
-                          <span className="font-semibold ml-1 text-blue-600">{membre.rendementMoyen}%</span>
+                          <span className="font-semibold ml-1 text-[#4A5D75]">{membre.rendementMoyen}%</span>
                         </div>
                         <div>
                           <span className="text-gray-500">Taux:</span>
@@ -2539,7 +2531,7 @@ export default function FoutaManagementApp() {
               {/* Magasiniers */}
               <div className="bg-white rounded-lg shadow p-6">
                 <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                  <Package className="w-5 h-5 text-purple-600" />
+                  <Package className="w-5 h-5 text-[#C8663D]" />
                   Magasiniers ({equipesData.filter(e => e.fonction.includes('Magasinier')).length})
                 </h2>
                 <div className="space-y-3">
@@ -2547,15 +2539,15 @@ export default function FoutaManagementApp() {
                     <div key={idx} className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-all">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                            <span className="font-bold text-purple-600">{membre.nom.split(' ').map(n => n[0]).join('')}</span>
+                          <div className="w-10 h-10 bg-[#FDF2ED] rounded-full flex items-center justify-center">
+                            <span className="font-bold text-[#C8663D]">{membre.nom.split(' ').map(n => n[0]).join('')}</span>
                           </div>
                           <div>
                             <h3 className="font-semibold text-gray-900">{membre.nom}</h3>
                             <p className="text-xs text-gray-500">{membre.fonction}</p>
                           </div>
                         </div>
-                        <span className="px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-800">
+                        <span className="px-2 py-1 text-xs rounded-full bg-[#FDF2ED] text-[#A2502E]">
                           {membre.statut}
                         </span>
                       </div>
@@ -2627,7 +2619,7 @@ export default function FoutaManagementApp() {
               </div>
               <div className="bg-white rounded-lg shadow p-4">
                 <p className="text-sm text-gray-600">Disponibilité Moy.</p>
-                <p className="text-2xl font-bold text-blue-600 mt-1">
+                <p className="text-2xl font-bold text-[#4A5D75] mt-1">
                   {(equipementsData.reduce((acc, e) => acc + e.tauxDisponibilite, 0) / equipementsData.length).toFixed(1)}%
                 </p>
               </div>
@@ -2651,7 +2643,7 @@ export default function FoutaManagementApp() {
                 <div key={idx} className="bg-white rounded-lg shadow-lg overflow-hidden">
                   <div className={`p-4 ${
                     equip.etat === 'Excellent' ? 'bg-gradient-to-r from-green-500 to-green-600' :
-                    equip.etat === 'Bon' ? 'bg-gradient-to-r from-blue-500 to-blue-600' :
+                    equip.etat === 'Bon' ? 'bg-gradient-to-r from-[#4A5D75] to-[#3B4E68]' :
                     'bg-gradient-to-r from-orange-500 to-orange-600'
                   }`}>
                     <div className="flex items-center justify-between">
@@ -2704,16 +2696,16 @@ export default function FoutaManagementApp() {
                           style={{ 
                             width: `${equip.tauxDisponibilite}%`,
                             backgroundColor: equip.tauxDisponibilite >= 95 ? '#10b981' :
-                                           equip.tauxDisponibilite >= 90 ? '#3b82f6' : '#f59e0b'
+                                           equip.tauxDisponibilite >= 90 ? '#4A5D75' : '#f59e0b'
                           }}
                         />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-3 gap-2 mb-4 text-center">
-                      <div className="bg-blue-50 rounded p-2">
+                      <div className="bg-[#EDF0F5] rounded p-2">
                         <p className="text-xs text-gray-600">Heures</p>
-                        <p className="font-bold text-blue-600">{equip.compteurHeures.toLocaleString()}</p>
+                        <p className="font-bold text-[#4A5D75]">{equip.compteurHeures.toLocaleString()}</p>
                       </div>
                       <div className="bg-green-50 rounded p-2">
                         <p className="text-xs text-gray-600">Maintenances</p>
@@ -2742,7 +2734,7 @@ export default function FoutaManagementApp() {
 
                     <div className="mt-4 flex gap-2">
                       <button 
-                        className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                        className="flex-1 px-3 py-2 bg-[#4A5D75] text-white rounded-lg hover:bg-[#3B4E68] text-sm"
                         onClick={() => {
                           setSelectedMachine(equip);
                           setShowDocumentModal(true);
@@ -2791,7 +2783,7 @@ export default function FoutaManagementApp() {
               </div>
               <div className="bg-white rounded-lg shadow p-4">
                 <p className="text-sm text-gray-600">Export</p>
-                <p className="text-2xl font-bold text-blue-600 mt-1">
+                <p className="text-2xl font-bold text-[#4A5D75] mt-1">
                   {clients.filter(c => c.type === 'Export').length}
                 </p>
               </div>
@@ -2822,7 +2814,7 @@ export default function FoutaManagementApp() {
                             <h3 className="font-bold text-gray-900">{client.nom}</h3>
                             <p className="text-sm text-gray-600">{client.code}</p>
                             <div className="flex items-center gap-3 mt-1">
-                              <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">
+                              <span className="text-xs px-2 py-1 bg-[#EDF0F5] text-[#3B4E68] rounded">
                                 {client.type}
                               </span>
                               <span className="text-xs text-gray-500 flex items-center gap-1">
@@ -2862,9 +2854,9 @@ export default function FoutaManagementApp() {
                 <p className="text-gray-600 text-lg mb-2">Module en développement</p>
                 <p className="text-gray-500 text-sm">Ce module sera disponible prochainement avec toutes les fonctionnalités décrites dans vos spécifications.</p>
               </div>
-              <div className="mt-8 p-4 bg-blue-50 rounded-lg">
-                <p className="text-sm text-blue-800 font-medium mb-2">💡 Données disponibles pour ce module:</p>
-                <ul className="mt-2 text-sm text-blue-700 space-y-1">
+              <div className="mt-8 p-4 bg-[#EDF0F5] rounded-lg">
+                <p className="text-sm text-[#3B4E68] font-medium mb-2">💡 Données disponibles pour ce module:</p>
+                <ul className="mt-2 text-sm text-[#3B4E68] space-y-1">
                   <li>• {realData.totalCommandes.toLocaleString()} commandes</li>
                   <li>• {realData.articles} articles différents</li>
                   <li>• {realData.modeles} modèles de base</li>
@@ -2924,7 +2916,7 @@ export default function FoutaManagementApp() {
                       type="text"
                       value={theme.companyName}
                       onChange={(e) => updateTheme('companyName', e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D] focus:border-transparent"
                       placeholder="Nom de votre entreprise"
                     />
                   </div>
@@ -2932,7 +2924,7 @@ export default function FoutaManagementApp() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">Logo</label>
                     <button 
                       onClick={() => setShowLogoUpload(true)}
-                      className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 transition-colors"
+                      className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-[#C8663D] transition-colors"
                     >
                       {companyLogo ? (
                         <img src={companyLogo} alt="Logo" className="h-12 mx-auto" />
@@ -2983,9 +2975,9 @@ export default function FoutaManagementApp() {
               </button>
             </div>
             
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-500 transition-colors">
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-[#C8663D] transition-colors">
               <Upload className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-              <label className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer">
+              <label className="inline-flex items-center gap-2 px-4 py-2 bg-[#C8663D] text-white rounded-lg hover:bg-[#A2502E] cursor-pointer">
                 <Upload className="w-4 h-4" />
                 Parcourir fichiers
                 <input 
@@ -3005,7 +2997,7 @@ export default function FoutaManagementApp() {
       {showDocumentModal && selectedMachine && !selectedOF && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-blue-500 to-blue-600">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-[#4A5D75] to-[#3B4E68]">
               <h3 className="text-xl font-semibold text-white">
                 Machine {(selectedMachine as any)?.machine} - Détails Complets
               </h3>
@@ -3053,7 +3045,7 @@ export default function FoutaManagementApp() {
                 </div>
 
                 {/* Production en Cours */}
-                <div className="bg-blue-50 rounded-lg p-4">
+                <div className="bg-[#EDF0F5] rounded-lg p-4">
                   <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
                     <Factory className="w-5 h-5" />
                     Production en Cours
@@ -3061,7 +3053,7 @@ export default function FoutaManagementApp() {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-600">OF:</span>
-                      <span className="font-semibold text-blue-600">{(selectedMachine as any)?.ofEnCours}</span>
+                      <span className="font-semibold text-[#4A5D75]">{(selectedMachine as any)?.ofEnCours}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Client:</span>
@@ -3117,7 +3109,7 @@ export default function FoutaManagementApp() {
                 </div>
 
                 {/* Performance */}
-                <div className="bg-purple-50 rounded-lg p-4">
+                <div className="bg-[#FDF2ED] rounded-lg p-4">
                   <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
                     <TrendingUp className="w-5 h-5" />
                     Performance
@@ -3125,7 +3117,7 @@ export default function FoutaManagementApp() {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Rendement:</span>
-                      <span className="font-bold text-purple-600 text-xl">{(selectedMachine as any)?.rendement}%</span>
+                      <span className="font-bold text-[#C8663D] text-xl">{(selectedMachine as any)?.rendement}%</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Temps fonct.:</span>
@@ -3135,10 +3127,10 @@ export default function FoutaManagementApp() {
                       <span className="text-gray-600">Temps arrêt:</span>
                       <span className="font-semibold">{(selectedMachine as any)?.tempsArret}h</span>
                     </div>
-                    <div className="mt-3 pt-3 border-t border-purple-200">
+                    <div className="mt-3 pt-3 border-t border-[#F2D8CB]">
                       <div className="w-full bg-gray-200 rounded-full h-3">
                         <div 
-                          className="bg-purple-600 h-3 rounded-full"
+                          className="bg-[#C8663D] h-3 rounded-full"
                           style={{ width: `${(selectedMachine as any)?.rendement}%` }}
                         />
                       </div>
@@ -3150,7 +3142,7 @@ export default function FoutaManagementApp() {
               {/* Actions */}
               <div className="mt-6 flex gap-3">
                 <button 
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  className="flex-1 px-4 py-2 bg-[#C8663D] text-white rounded-lg hover:bg-[#A2502E]"
                   onClick={() => alert('Fonction en développement')}
                 >
                   Lancer Ordissage
@@ -3177,12 +3169,12 @@ export default function FoutaManagementApp() {
       {showDocumentModal && selectedOF && !selectedMachine && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-purple-500 to-purple-600">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-[#C8663D] to-[#A2502E]">
               <div>
                 <h3 className="text-xl font-semibold text-white">
                   {(selectedOF as any)?.numOF} - Détails Complets
                 </h3>
-                <p className="text-sm text-purple-100 mt-1">{(selectedOF as any)?.nomClient}</p>
+                <p className="text-sm text-[#F2D8CB] mt-1">{(selectedOF as any)?.nomClient}</p>
               </div>
               <button 
                 onClick={() => {
@@ -3198,13 +3190,13 @@ export default function FoutaManagementApp() {
             <div className="p-6 overflow-y-auto max-h-[calc(90vh-100px)]">
               {/* Informations principales */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div className="bg-blue-50 rounded-lg p-4">
+                <div className="bg-[#EDF0F5] rounded-lg p-4">
                   <p className="text-sm text-gray-600 mb-1">Commande</p>
-                  <p className="text-lg font-bold text-blue-600">{(selectedOF as any)?.numCommande}</p>
+                  <p className="text-lg font-bold text-[#4A5D75]">{(selectedOF as any)?.numCommande}</p>
                 </div>
-                <div className="bg-purple-50 rounded-lg p-4">
+                <div className="bg-[#FDF2ED] rounded-lg p-4">
                   <p className="text-sm text-gray-600 mb-1">Machine</p>
-                  <p className="text-lg font-bold text-purple-600">{(selectedOF as any)?.machine}</p>
+                  <p className="text-lg font-bold text-[#C8663D]">{(selectedOF as any)?.machine}</p>
                 </div>
                 <div className="bg-green-50 rounded-lg p-4">
                   <p className="text-sm text-gray-600 mb-1">Statut</p>
@@ -3213,7 +3205,7 @@ export default function FoutaManagementApp() {
               </div>
 
               {/* Progression */}
-              <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6 mb-6">
+              <div className="bg-gradient-to-r from-[#EDF0F5] to-[#FDF2ED] rounded-lg p-6 mb-6">
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="font-semibold text-gray-800">Progression</h4>
                   <span className="text-3xl font-bold" style={{ color: theme.primaryColor }}>
@@ -3304,7 +3296,7 @@ export default function FoutaManagementApp() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Consommée:</span>
-                      <span className="font-semibold text-blue-600">{(selectedOF as any)?.mpConsommee} kg</span>
+                      <span className="font-semibold text-[#4A5D75]">{(selectedOF as any)?.mpConsommee} kg</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Restante:</span>
@@ -3319,7 +3311,7 @@ export default function FoutaManagementApp() {
               {/* Actions */}
               <div className="mt-6 flex gap-3">
                 <button 
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  className="flex-1 px-4 py-2 bg-[#C8663D] text-white rounded-lg hover:bg-[#A2502E]"
                   onClick={() => alert('Fonction en développement')}
                 >
                   <Edit className="w-4 h-4 inline mr-2" />

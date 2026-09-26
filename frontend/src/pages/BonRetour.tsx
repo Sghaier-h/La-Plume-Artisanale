@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { RotateCcw, Plus, Edit, Trash2, Search, Download, Eye, X, Package } from 'lucide-react';
+import { RotateCcw, Plus, Edit, Trash2, Search, Download, X, Package } from 'lucide-react';
 import { bonsRetourService, bonsLivraisonService, clientsService } from '../services/api';
 
 interface LigneRetour {
@@ -53,15 +53,15 @@ const BonRetour: React.FC = () => {
       ]);
 
       if (brRes.data?.success) {
-        setBonsRetour(brRes.data.data || []);
+        const brRaw = brRes.data.data; setBonsRetour(Array.isArray(brRaw) ? brRaw : (brRaw?.data || brRaw?.bons_retour || []));
       } else {
         setBonsRetour([]);
       }
       
       if (blRes.data?.success) {
-        setBonsLivraison(blRes.data.data || []);
+        const blRaw = blRes.data.data; setBonsLivraison(Array.isArray(blRaw) ? blRaw : (blRaw?.data || blRaw?.bons_livraison || []));
       }
-      setClients(clientsRes.data?.data || []);
+      const clientsRaw = clientsRes.data?.data; setClients(Array.isArray(clientsRaw) ? clientsRaw : (clientsRaw?.data || clientsRaw?.clients || []));
     } catch (error) {
       console.error('Erreur chargement BR:', error);
       setBonsRetour([]);
@@ -186,18 +186,18 @@ const BonRetour: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 ml-64 p-6">
+    <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-              <RotateCcw className="w-8 h-8 text-blue-600" />
+              <RotateCcw className="w-8 h-8 text-[#C8663D]" />
               Bons de Retour
             </h1>
             <p className="text-gray-600 mt-2">Gestion des retours clients</p>
@@ -208,7 +208,7 @@ const BonRetour: React.FC = () => {
               setEditingBR(null);
               resetForm();
             }}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-2 bg-[#C8663D] text-white px-4 py-2 rounded-lg hover:bg-[#a55231] transition-colors"
           >
             <Plus className="w-5 h-5" />
             Nouveau Bon de Retour
@@ -225,13 +225,13 @@ const BonRetour: React.FC = () => {
                 placeholder="Rechercher..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
               />
             </div>
             <select
               value={filters.statut}
               onChange={(e) => setFilters({ ...filters, statut: e.target.value })}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
             >
               <option value="">Tous les statuts</option>
               <option value="BROUILLON">Brouillon</option>
@@ -242,7 +242,7 @@ const BonRetour: React.FC = () => {
             <select
               value={filters.client_id}
               onChange={(e) => setFilters({ ...filters, client_id: e.target.value })}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
             >
               <option value="">Tous les clients</option>
               {clients.map(c => (
@@ -275,7 +275,7 @@ const BonRetour: React.FC = () => {
                         handleGenerateFromBL(parseInt(e.target.value));
                       }
                     }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                   >
                     <option value="">Sélectionner un BL (optionnel)</option>
                     {bonsLivraison.filter(b => b.statut === 'LIVREE').map(b => (
@@ -290,7 +290,7 @@ const BonRetour: React.FC = () => {
                   <select
                     value={formData.id_client}
                     onChange={(e) => setFormData({ ...formData, id_client: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                     required
                   >
                     <option value="">Sélectionner un client</option>
@@ -305,7 +305,7 @@ const BonRetour: React.FC = () => {
                     type="date"
                     value={formData.date_retour}
                     onChange={(e) => setFormData({ ...formData, date_retour: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                     required
                   />
                 </div>
@@ -314,7 +314,7 @@ const BonRetour: React.FC = () => {
                   <select
                     value={formData.statut}
                     onChange={(e) => setFormData({ ...formData, statut: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                   >
                     <option value="BROUILLON">Brouillon</option>
                     <option value="EN_ATTENTE">En attente</option>
@@ -328,7 +328,7 @@ const BonRetour: React.FC = () => {
                     type="text"
                     value={formData.motif_retour}
                     onChange={(e) => setFormData({ ...formData, motif_retour: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                     placeholder="Ex: Défaut qualité, Non conforme..."
                     required
                   />
@@ -339,7 +339,7 @@ const BonRetour: React.FC = () => {
                     type="text"
                     value={formData.reference_client}
                     onChange={(e) => setFormData({ ...formData, reference_client: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                     placeholder="Réf. retour client"
                   />
                 </div>
@@ -348,7 +348,7 @@ const BonRetour: React.FC = () => {
                   <textarea
                     value={formData.notes}
                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                     rows={3}
                     placeholder="Notes additionnelles..."
                   />
@@ -362,7 +362,7 @@ const BonRetour: React.FC = () => {
                   <button
                     type="button"
                     onClick={addLigne}
-                    className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                    className="text-[#C8663D] hover:text-[#a55231] text-sm font-medium"
                   >
                     + Ajouter une ligne
                   </button>
@@ -461,7 +461,7 @@ const BonRetour: React.FC = () => {
               <div className="flex gap-2">
                 <button
                   type="submit"
-                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  className="bg-[#C8663D] text-white px-6 py-2 rounded-lg hover:bg-[#a55231] transition-colors"
                 >
                   Enregistrer
                 </button>
@@ -504,7 +504,21 @@ const BonRetour: React.FC = () => {
                 </tr>
               ) : (
                 filteredBR.map((br) => (
-                  <tr key={br.id_retour} className="hover:bg-gray-50">
+                  <tr
+                    key={br.id_retour}
+                    onClick={async () => {
+                      try {
+                        const result = await bonsRetourService.getBonRetourById(br.id_retour);
+                        if (result.data?.success) {
+                          setSelectedBR(result.data?.data);
+                        }
+                      } catch (error: any) {
+                        console.error('Erreur chargement BR:', error);
+                        alert(error.response?.data?.error?.message || 'Erreur lors du chargement');
+                      }
+                    }}
+                    className="hover:bg-gray-50 group cursor-pointer"
+                  >
                     <td className="px-6 py-4 whitespace-nowrap font-medium">{br.numero_retour}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{br.numero_bl || '-'}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{br.client_nom}</td>
@@ -516,29 +530,17 @@ const BonRetour: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex gap-2">
-                        <button 
-                          onClick={async () => {
-                            try {
-                              const result = await bonsRetourService.getBonRetourById(br.id_retour);
-                              if (result.data?.success) {
-                                setSelectedBR(result.data.data);
-                              }
-                            } catch (error: any) {
-                              console.error('Erreur chargement BR:', error);
-                              alert(error.response?.data?.error?.message || 'Erreur lors du chargement');
-                            }
-                          }}
-                          className="text-blue-600 hover:text-blue-700"
-                          title="Consulter"
+                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); }}
+                          className="text-green-600 hover:text-green-700"
+                          title="Télécharger PDF"
                         >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button className="text-green-600 hover:text-green-700" title="Télécharger PDF">
                           <Download className="w-4 h-4" />
                         </button>
-                        <button 
-                          onClick={async () => {
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
                             try {
                               const result = await bonsRetourService.getBonRetourById(br.id_retour);
                               if (result.data?.success) {
@@ -574,8 +576,9 @@ const BonRetour: React.FC = () => {
                         >
                           <Edit className="w-4 h-4" />
                         </button>
-                        <button 
-                          onClick={async () => {
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
                             if (window.confirm(`Supprimer le bon de retour ${br.numero_retour} ?`)) {
                               try {
                                 await bonsRetourService.deleteBonRetour(br.id_retour);
@@ -669,11 +672,11 @@ const BonRetour: React.FC = () => {
                             <tr key={index}>
                               <td className="px-4 py-2">{ligne.designation}</td>
                               <td className="px-4 py-2">{ligne.quantite_retournee}</td>
-                              <td className="px-4 py-2">{ligne.prix_unitaire_ht?.toFixed(2)} TND</td>
+                              <td className="px-4 py-2">{Number(ligne.prix_unitaire_ht || 0).toFixed(2)} TND</td>
                               <td className="px-4 py-2">{ligne.taux_tva || 20}%</td>
                               <td className="px-4 py-2">{ligne.motif_retour || '-'}</td>
                               <td className="px-4 py-2 font-semibold">
-                                {ligne.montant_ttc?.toFixed(2)} TND
+                                {Number(ligne.montant_ttc || 0).toFixed(2)} TND
                               </td>
                             </tr>
                           ))}
@@ -689,15 +692,15 @@ const BonRetour: React.FC = () => {
                     <div className="w-64 space-y-2">
                       <div className="flex justify-between">
                         <span className="text-gray-600">Montant HT:</span>
-                        <span className="font-semibold">{selectedBR.montant_ht?.toFixed(2)} TND</span>
+                        <span className="font-semibold">{Number(selectedBR.montant_ht || 0).toFixed(2)} TND</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">TVA:</span>
-                        <span className="font-semibold">{selectedBR.montant_tva?.toFixed(2)} TND</span>
+                        <span className="font-semibold">{Number(selectedBR.montant_tva || 0).toFixed(2)} TND</span>
                       </div>
                       <div className="flex justify-between text-lg font-bold border-t pt-2">
                         <span>Total TTC:</span>
-                        <span>{selectedBR.montant_ttc?.toFixed(2)} TND</span>
+                        <span>{Number(selectedBR.montant_ttc || 0).toFixed(2)} TND</span>
                       </div>
                     </div>
                   </div>
@@ -738,7 +741,7 @@ const BonRetour: React.FC = () => {
                         alert(error.response?.data?.error?.message || 'Erreur lors du chargement');
                       }
                     }}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    className="px-4 py-2 bg-[#C8663D] text-white rounded-lg hover:bg-[#a55231]"
                   >
                     <Edit className="w-4 h-4 inline mr-2" />
                     Modifier

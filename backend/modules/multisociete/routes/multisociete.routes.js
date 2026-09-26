@@ -38,7 +38,8 @@ router.post('/transferts', authenticate, createTransfert);
 router.get('/consolidations', authenticate, getConsolidations);
 
 // Routes CRUD génériques
-router.get('/', authenticate, getMultisociete);
+// GET /api/multisociete -> renvoyer la liste des sociétés (au lieu du stub)
+router.get('/', authenticate, getSocietes);
 router.get('/:id', authenticate, getMultisocieteById);
 router.post('/', authenticate, createMultisociete);
 router.put('/:id', authenticate, updateMultisociete);

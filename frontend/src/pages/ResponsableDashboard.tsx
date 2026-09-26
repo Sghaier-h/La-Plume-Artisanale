@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { tachesService, messagesService } from '../services/api';
 import { useWebSocket } from '../hooks/useWebSocket';
-import { Factory, Users, CheckCircle, Clock, AlertCircle, Send, Bell } from 'lucide-react';
+import {
+  Factory, Users, CheckCircle, Clock, AlertCircle, Send, Bell, Activity,
+} from 'lucide-react';
+import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
 
 interface Tache {
   id_tache: number;
@@ -31,31 +34,26 @@ const ResponsableDashboard: React.FC = () => {
   const [taches, setTaches] = useState<Tache[]>([]);
   const [operateurs, setOperateurs] = useState<Operateur[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedTache, setSelectedTache] = useState<Tache | null>(null);
   const [showMessageForm, setShowMessageForm] = useState(false);
   const [messageData, setMessageData] = useState({ destinataire_id: '', destinataire_poste: '', sujet: '', message: '' });
-  const { socket, connected, notifications } = useWebSocket();
+  const { connected, notifications } = useWebSocket();
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 30000); // Rafraîchir toutes les 30s
+    const interval = setInterval(loadData, 30000);
     return () => clearInterval(interval);
   }, []);
 
   const loadData = async () => {
     try {
-      const [tachesRes] = await Promise.all([
-        tachesService.getTaches()
-      ]);
+      const [tachesRes] = await Promise.all([tachesService.getTaches()]);
       setTaches(tachesRes.data.data.taches || []);
-      
-      // Simuler opérateurs (à remplacer par vraie API)
       setOperateurs([
         { id: 1, nom: 'Ahmed', prenom: 'Ben Ali', poste_travail: 'TISSEUR', machine_assignee: 'M2301', statut: 'online', tache_en_cours: 'OF-001' },
         { id: 2, nom: 'Mohamed', prenom: 'Trabelsi', poste_travail: 'MAGASINIER_MP', statut: 'online', tache_en_cours: 'OF-002' },
         { id: 3, nom: 'Fatma', prenom: 'Khelifi', poste_travail: 'COUPEUR', statut: 'online' },
         { id: 4, nom: 'Ali', prenom: 'Mahjoub', poste_travail: 'TISSEUR', machine_assignee: 'M2305', statut: 'pause' },
-        { id: 5, nom: 'Sami', prenom: 'Bouslama', poste_travail: 'CONTROLEUR_QUALITE', statut: 'offline' }
+        { id: 5, nom: 'Sami', prenom: 'Bouslama', poste_travail: 'CONTROLEUR_QUALITE', statut: 'offline' },
       ]);
     } catch (err) {
       console.error('Erreur chargement:', err);
@@ -68,8 +66,8 @@ const ResponsableDashboard: React.FC = () => {
     try {
       await tachesService.assignerTache(tacheId, { assigne_a });
       loadData();
-    } catch (err) {
-      alert('Erreur lors de l\'assignation');
+    } catch {
+      alert("Erreur lors de l'assignation");
     }
   };
 
@@ -79,307 +77,215 @@ const ResponsableDashboard: React.FC = () => {
       await messagesService.envoyerMessage(messageData);
       setShowMessageForm(false);
       setMessageData({ destinataire_id: '', destinataire_poste: '', sujet: '', message: '' });
-    } catch (err) {
-      alert('Erreur lors de l\'envoi');
+    } catch {
+      alert("Erreur lors de l'envoi");
     }
   };
 
-  const getStatutBadge = (statut: string) => {
-    const badges: { [key: string]: { bg: string; text: string; icon: any } } = {
-      'EN_COURS': { bg: 'bg-green-100', text: 'text-green-800', icon: CheckCircle },
-      'ASSIGNEE': { bg: 'bg-blue-100', text: 'text-blue-800', icon: Clock },
-      'EN_ATTENTE': { bg: 'bg-gray-100', text: 'text-gray-800', icon: Clock },
-      'EN_PAUSE': { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: AlertCircle },
-      'TERMINEE': { bg: 'bg-green-100', text: 'text-green-800', icon: CheckCircle }
+  const tachesParPoste = {
+    MAGASINIER_MP: taches.filter((t) => t.type_tache === 'PREPARATION_MP'),
+    TISSEUR: taches.filter((t) => t.type_tache === 'TISSAGE'),
+    COUPEUR: taches.filter((t) => t.type_tache === 'COUPE'),
+    CONTROLEUR_QUALITE: taches.filter((t) => t.type_tache === 'CONTROLE_QUALITE'),
+  };
+
+  const statutBadge = (statut: string) => {
+    const map: Record<string, { bg: string; c: string; icon: any }> = {
+      EN_COURS: { bg: 'var(--color-success-bg)', c: 'var(--color-success)', icon: CheckCircle },
+      ASSIGNEE: { bg: 'var(--color-info-bg)', c: 'var(--color-info)', icon: Clock },
+      EN_ATTENTE: { bg: 'var(--bg-hover)', c: 'var(--fg-secondary)', icon: Clock },
+      EN_PAUSE: { bg: 'var(--color-warning-bg)', c: 'var(--color-warning)', icon: AlertCircle },
+      TERMINEE: { bg: 'var(--color-success-bg)', c: 'var(--color-success)', icon: CheckCircle },
     };
-    const badge = badges[statut] || badges['EN_ATTENTE'];
-    const Icon = badge.icon;
+    const b = map[statut] || map.EN_ATTENTE;
+    const Icon = b.icon;
     return (
-      <span className={`inline-flex items-center px-2 py-1 rounded text-xs ${badge.bg} ${badge.text}`}>
-        <Icon className="w-3 h-3 mr-1" />
+      <span style={{ ...badgeBase, background: b.bg, color: b.c, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+        <Icon size={11} />
         {statut.replace('_', ' ')}
       </span>
     );
   };
 
-  const getPrioriteBadge = (priorite: number) => {
-    if (priorite === 1) return <span className="px-2 py-1 bg-red-100 text-red-800 rounded text-xs">🔴 Urgente</span>;
-    if (priorite === 2) return <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded text-xs">🟡 Urgente</span>;
-    return <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">🟢 Normale</span>;
+  const prioriteBadge = (p: number) => {
+    if (p === 1) return <span style={{ ...badgeBase, background: 'var(--color-danger-bg)', color: 'var(--color-danger)' }}>Urgente</span>;
+    if (p === 2) return <span style={{ ...badgeBase, background: 'var(--color-warning-bg)', color: 'var(--color-warning)' }}>Prioritaire</span>;
+    return <span style={{ ...badgeBase, background: 'var(--color-info-bg)', color: 'var(--color-info)' }}>Normale</span>;
   };
-
-  const tachesParPoste = {
-    'MAGASINIER_MP': taches.filter(t => t.type_tache === 'PREPARATION_MP'),
-    'TISSEUR': taches.filter(t => t.type_tache === 'TISSAGE'),
-    'COUPEUR': taches.filter(t => t.type_tache === 'COUPE'),
-    'CONTROLEUR_QUALITE': taches.filter(t => t.type_tache === 'CONTROLE_QUALITE')
-  };
-
-  if (loading) {
-    return (
-      <div className="ml-64 p-6 flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="ml-64 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
-              <Factory className="w-8 h-8" />
-              Tableau de Bord Production
-            </h1>
-            <div className="flex items-center gap-4">
-              <div className={`flex items-center gap-2 ${connected ? 'text-green-600' : 'text-red-600'}`}>
-                <div className={`w-3 h-3 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'}`} />
-                {connected ? 'Connecté' : 'Déconnecté'}
-              </div>
-              {notifications.length > 0 && (
-                <div className="relative">
-                  <Bell className="w-6 h-6 text-gray-600" />
-                  <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
-                    {notifications.length}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Statistiques par poste */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white p-4 rounded-lg shadow">
-              <div className="flex items-center gap-2 mb-2">
-                <Factory className="w-5 h-5 text-blue-600" />
-                <h3 className="font-semibold">Magasin MP</h3>
-              </div>
-              <div className="text-2xl font-bold">{tachesParPoste.MAGASINIER_MP.length} tâches</div>
-              <div className="text-sm text-green-600">
-                {tachesParPoste.MAGASINIER_MP.filter(t => t.statut === 'EN_COURS').length} actives
-              </div>
-            </div>
-            <div className="bg-white p-4 rounded-lg shadow">
-              <div className="flex items-center gap-2 mb-2">
-                <Factory className="w-5 h-5 text-purple-600" />
-                <h3 className="font-semibold">Tissage</h3>
-              </div>
-              <div className="text-2xl font-bold">{tachesParPoste.TISSEUR.length} tâches</div>
-              <div className="text-sm text-green-600">
-                {tachesParPoste.TISSEUR.filter(t => t.statut === 'EN_COURS').length} actives
-              </div>
-            </div>
-            <div className="bg-white p-4 rounded-lg shadow">
-              <div className="flex items-center gap-2 mb-2">
-                <Factory className="w-5 h-5 text-orange-600" />
-                <h3 className="font-semibold">Coupe</h3>
-              </div>
-              <div className="text-2xl font-bold">{tachesParPoste.COUPEUR.length} tâches</div>
-              <div className="text-sm text-green-600">
-                {tachesParPoste.COUPEUR.filter(t => t.statut === 'EN_COURS').length} actives
-              </div>
-            </div>
-            <div className="bg-white p-4 rounded-lg shadow">
-              <div className="flex items-center gap-2 mb-2">
-                <CheckCircle className="w-5 h-5 text-green-600" />
-                <h3 className="font-semibold">Qualité</h3>
-              </div>
-              <div className="text-2xl font-bold">{tachesParPoste.CONTROLEUR_QUALITE.length} tâches</div>
-              <div className="text-sm text-green-600">
-                {tachesParPoste.CONTROLEUR_QUALITE.filter(t => t.statut === 'EN_COURS').length} actives
-              </div>
-            </div>
-          </div>
-
-          {/* Attribution des tâches */}
-          <div className="bg-white rounded-lg shadow p-6 mb-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Attribution des Tâches</h2>
-              <button
-                onClick={() => setShowMessageForm(!showMessageForm)}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
-              >
-                <Send className="w-4 h-4" />
-                Envoyer Message
-              </button>
-            </div>
-
-            {showMessageForm && (
-              <form onSubmit={handleEnvoyerMessage} className="mb-4 p-4 bg-gray-50 rounded">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Destinataire (Poste)</label>
-                    <select
-                      value={messageData.destinataire_poste}
-                      onChange={(e) => setMessageData({ ...messageData, destinataire_poste: e.target.value, destinataire_id: '' })}
-                      className="w-full px-4 py-2 border rounded-lg"
-                    >
-                      <option value="">Sélectionner un poste...</option>
-                      <option value="MAGASINIER_MP">Magasinier MP</option>
-                      <option value="TISSEUR">Tisseur</option>
-                      <option value="COUPEUR">Coupeur</option>
-                      <option value="CONTROLEUR_QUALITE">Contrôleur Qualité</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Sujet</label>
-                    <input
-                      type="text"
-                      value={messageData.sujet}
-                      onChange={(e) => setMessageData({ ...messageData, sujet: e.target.value })}
-                      className="w-full px-4 py-2 border rounded-lg"
-                      placeholder="Sujet du message"
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium mb-1">Message</label>
-                    <textarea
-                      value={messageData.message}
-                      onChange={(e) => setMessageData({ ...messageData, message: e.target.value })}
-                      className="w-full px-4 py-2 border rounded-lg"
-                      rows={3}
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="flex gap-2 mt-4">
-                  <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-                    Envoyer
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowMessageForm(false)}
-                    className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400"
-                  >
-                    Annuler
-                  </button>
-                </div>
-              </form>
+    <>
+      <DashboardShell
+        eyebrow="Poste — Responsable général"
+        title="Tableau de bord — Responsable"
+        subtitle="Attribution des tâches, supervision des opérateurs et pilotage global de la production."
+        headerRight={
+          <>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 'var(--text-xs)', color: connected ? 'var(--color-success)' : 'var(--color-danger)' }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: connected ? 'var(--color-success)' : 'var(--color-danger)' }} />
+              {connected ? 'Connecté' : 'Déconnecté'}
+            </span>
+            {notifications.length > 0 && (
+              <span style={{ position: 'relative', display: 'inline-flex' }}>
+                <Bell size={16} style={{ color: 'var(--fg-secondary)' }} />
+                <span style={{ position: 'absolute', top: -6, right: -8, background: 'var(--color-danger)', color: '#fff', borderRadius: '50%', width: 16, height: 16, fontSize: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {notifications.length}
+                </span>
+              </span>
             )}
+            <button onClick={loadData} style={btnGhost} title="Actualiser">
+              <Activity size={14} /> Actualiser
+            </button>
+            <ThemeToggle />
+          </>
+        }
+      >
+        <div className="lp-metric-grid">
+          <KpiCard label="Magasin MP" value={tachesParPoste.MAGASINIER_MP.length} hint={`${tachesParPoste.MAGASINIER_MP.filter((t) => t.statut === 'EN_COURS').length} actives`} icon={<Factory size={18} />} tone="brown" loading={loading} />
+          <KpiCard label="Tissage" value={tachesParPoste.TISSEUR.length} hint={`${tachesParPoste.TISSEUR.filter((t) => t.statut === 'EN_COURS').length} actives`} icon={<Factory size={18} />} tone="terracotta" loading={loading} />
+          <KpiCard label="Coupe" value={tachesParPoste.COUPEUR.length} hint={`${tachesParPoste.COUPEUR.filter((t) => t.statut === 'EN_COURS').length} actives`} icon={<Factory size={18} />} tone="gold" loading={loading} />
+          <KpiCard label="Qualité" value={tachesParPoste.CONTROLEUR_QUALITE.length} hint={`${tachesParPoste.CONTROLEUR_QUALITE.filter((t) => t.statut === 'EN_COURS').length} actives`} icon={<CheckCircle size={18} />} tone="sage" loading={loading} />
+        </div>
 
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">OF</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Assigné à</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Priorité</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Progression</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {taches.map((tache) => (
-                    <tr key={tache.id_tache}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{tache.numero_of}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">{tache.type_tache}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        {tache.assigne_a_nom 
-                          ? `${tache.assigne_a_nom} ${tache.assigne_a_prenom || ''}`.trim()
-                          : <span className="text-gray-400">Non assigné</span>
-                        }
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">{getStatutBadge(tache.statut)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">{getPrioriteBadge(tache.priorite)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        {tache.quantite_demandee && tache.quantite_realisee !== undefined ? (
-                          <div className="flex items-center gap-2">
-                            <div className="w-24 bg-gray-200 rounded-full h-2">
-                              <div
-                                className="bg-blue-600 h-2 rounded-full"
-                                style={{ width: `${(tache.quantite_realisee / tache.quantite_demandee) * 100}%` }}
-                              />
-                            </div>
-                            <span className="text-xs">
-                              {tache.quantite_realisee}/{tache.quantite_demandee}
-                            </span>
-                          </div>
-                        ) : '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        {!tache.assigne_a_nom && (
-                          <select
-                            onChange={(e) => {
-                              if (e.target.value) {
-                                handleAssigner(tache.id_tache, parseInt(e.target.value));
-                              }
-                            }}
-                            className="text-xs border rounded px-2 py-1"
-                            defaultValue=""
-                          >
-                            <option value="">Assigner...</option>
-                            {operateurs
-                              .filter(op => {
-                                if (tache.type_tache === 'TISSAGE') return op.poste_travail === 'TISSEUR';
-                                if (tache.type_tache === 'PREPARATION_MP') return op.poste_travail === 'MAGASINIER_MP';
-                                if (tache.type_tache === 'COUPE') return op.poste_travail === 'COUPEUR';
-                                if (tache.type_tache === 'CONTROLE_QUALITE') return op.poste_travail === 'CONTROLEUR_QUALITE';
-                                return true;
-                              })
-                              .map(op => (
-                                <option key={op.id} value={op.id}>
-                                  {op.prenom} {op.nom} {op.machine_assignee ? `(${op.machine_assignee})` : ''}
-                                </option>
-                              ))}
-                          </select>
-                        )}
-                      </td>
-                    </tr>
+        <div className="lp-metric-grid">
+          <KpiCard label="Opérateurs en ligne" value={operateurs.filter((o) => o.statut === 'online').length} hint={`sur ${operateurs.length} au total`} icon={<Users size={16} />} tone="indigo" loading={loading} />
+          <KpiCard label="En pause" value={operateurs.filter((o) => o.statut === 'pause').length} icon={<AlertCircle size={16} />} tone="rose" loading={loading} />
+          <KpiCard label="Tâches non assignées" value={taches.filter((t) => !t.assigne_a_nom).length} icon={<Clock size={16} />} tone="gold" loading={loading} />
+          <KpiCard label="Notifications" value={notifications.length} icon={<Bell size={16} />} tone="indigo" loading={loading} />
+        </div>
+
+        <SectionCard
+          title="Attribution des tâches"
+          subtitle="Suivi et affectation aux opérateurs"
+          icon={<Send size={16} />}
+          actions={
+            <button onClick={() => setShowMessageForm(!showMessageForm)} style={btnPrimary}>
+              <Send size={12} /> Envoyer message
+            </button>
+          }
+        >
+          {showMessageForm && (
+            <form onSubmit={handleEnvoyerMessage} style={{ marginBottom: 'var(--s-4)', padding: 'var(--s-4)', background: 'var(--bg-hover)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 'var(--s-3)' }}>
+                <div>
+                  <label style={labelStyle}>Poste destinataire</label>
+                  <select value={messageData.destinataire_poste} onChange={(e) => setMessageData({ ...messageData, destinataire_poste: e.target.value, destinataire_id: '' })} style={inputStyle}>
+                    <option value="">Sélectionner...</option>
+                    <option value="MAGASINIER_MP">Magasinier MP</option>
+                    <option value="TISSEUR">Tisseur</option>
+                    <option value="COUPEUR">Coupeur</option>
+                    <option value="CONTROLEUR_QUALITE">Contrôleur Qualité</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={labelStyle}>Sujet</label>
+                  <input type="text" value={messageData.sujet} onChange={(e) => setMessageData({ ...messageData, sujet: e.target.value })} style={inputStyle} placeholder="Sujet du message" />
+                </div>
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label style={labelStyle}>Message</label>
+                  <textarea value={messageData.message} onChange={(e) => setMessageData({ ...messageData, message: e.target.value })} style={{ ...inputStyle, minHeight: 80 }} required />
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 'var(--s-2)', marginTop: 'var(--s-3)' }}>
+                <button type="submit" style={btnPrimary}>Envoyer</button>
+                <button type="button" onClick={() => setShowMessageForm(false)} style={btnGhost}>Annuler</button>
+              </div>
+            </form>
+          )}
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
+              <thead>
+                <tr style={{ background: 'var(--bg-hover)' }}>
+                  {['OF', 'Type', 'Assigné à', 'Statut', 'Priorité', 'Progression', 'Actions'].map((h) => (
+                    <th key={h} style={thStyle}>{h}</th>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                </tr>
+              </thead>
+              <tbody>
+                {taches.map((t) => (
+                  <tr key={t.id_tache} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                    <td style={tdStyle}><strong style={{ color: 'var(--fg-primary)' }}>{t.numero_of}</strong></td>
+                    <td style={tdStyle}>{t.type_tache}</td>
+                    <td style={tdStyle}>{t.assigne_a_nom ? `${t.assigne_a_nom} ${t.assigne_a_prenom || ''}`.trim() : <span style={{ color: 'var(--fg-muted)' }}>Non assigné</span>}</td>
+                    <td style={tdStyle}>{statutBadge(t.statut)}</td>
+                    <td style={tdStyle}>{prioriteBadge(t.priorite)}</td>
+                    <td style={tdStyle}>
+                      {t.quantite_demandee && t.quantite_realisee !== undefined ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <div style={{ width: 80, height: 6, background: 'var(--border-subtle)', borderRadius: 999 }}>
+                            <div style={{ width: `${(t.quantite_realisee / t.quantite_demandee) * 100}%`, height: '100%', background: 'var(--accent-indigo)', borderRadius: 999 }} />
+                          </div>
+                          <span style={{ fontSize: 11, color: 'var(--fg-secondary)' }}>{t.quantite_realisee}/{t.quantite_demandee}</span>
+                        </div>
+                      ) : '-'}
+                    </td>
+                    <td style={tdStyle}>
+                      {!t.assigne_a_nom && (
+                        <select
+                          onChange={(e) => e.target.value && handleAssigner(t.id_tache, parseInt(e.target.value))}
+                          style={{ ...inputStyle, padding: '4px 8px', fontSize: 11 }}
+                          defaultValue=""
+                        >
+                          <option value="">Assigner...</option>
+                          {operateurs
+                            .filter((op) => {
+                              if (t.type_tache === 'TISSAGE') return op.poste_travail === 'TISSEUR';
+                              if (t.type_tache === 'PREPARATION_MP') return op.poste_travail === 'MAGASINIER_MP';
+                              if (t.type_tache === 'COUPE') return op.poste_travail === 'COUPEUR';
+                              if (t.type_tache === 'CONTROLE_QUALITE') return op.poste_travail === 'CONTROLEUR_QUALITE';
+                              return true;
+                            })
+                            .map((op) => (
+                              <option key={op.id} value={op.id}>
+                                {op.prenom} {op.nom} {op.machine_assignee ? `(${op.machine_assignee})` : ''}
+                              </option>
+                            ))}
+                        </select>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
+        </SectionCard>
 
-          {/* Opérateurs en ligne */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              <Users className="w-5 h-5" />
-              Opérateurs en Ligne
-            </h2>
-            <div className="space-y-2">
-              {operateurs.map((op) => (
-                <div
-                  key={op.id}
-                  className={`flex items-center justify-between p-3 rounded ${
-                    op.statut === 'online' ? 'bg-green-50' :
-                    op.statut === 'pause' ? 'bg-yellow-50' :
-                    'bg-gray-50'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-3 h-3 rounded-full ${
-                      op.statut === 'online' ? 'bg-green-500' :
-                      op.statut === 'pause' ? 'bg-yellow-500' :
-                      'bg-gray-400'
-                    }`} />
-                    <div>
-                      <div className="font-medium">
-                        {op.prenom} {op.nom}
-                        {op.machine_assignee && <span className="text-gray-500"> ({op.machine_assignee})</span>}
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        {op.poste_travail.replace('_', ' ')}
-                        {op.tache_en_cours && ` - ${op.tache_en_cours} en cours`}
-                      </div>
+        <SectionCard title="Opérateurs" subtitle="Statut en temps réel" icon={<Users size={16} />}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--s-2)' }}>
+            {operateurs.map((op) => (
+              <div key={op.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'var(--s-3) var(--s-4)', background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span style={{ width: 10, height: 10, borderRadius: '50%', background: op.statut === 'online' ? 'var(--color-success)' : op.statut === 'pause' ? 'var(--color-warning)' : 'var(--fg-muted)' }} />
+                  <div>
+                    <div style={{ fontWeight: 500, color: 'var(--fg-primary)' }}>
+                      {op.prenom} {op.nom}
+                      {op.machine_assignee && <span style={{ color: 'var(--fg-muted)', marginLeft: 6 }}>({op.machine_assignee})</span>}
+                    </div>
+                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-secondary)' }}>
+                      {op.poste_travail.replace('_', ' ')}
+                      {op.tache_en_cours && ` — ${op.tache_en_cours} en cours`}
                     </div>
                   </div>
-                  <div className="text-sm text-gray-500">
-                    {op.statut === 'online' ? '🟢 En ligne' :
-                     op.statut === 'pause' ? '🟡 Pause' :
-                     '🔴 Hors ligne'}
-                  </div>
                 </div>
-              ))}
-            </div>
+                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-muted)' }}>
+                  {op.statut === 'online' ? 'En ligne' : op.statut === 'pause' ? 'Pause' : 'Hors ligne'}
+                </span>
+              </div>
+            ))}
           </div>
-        </div>
-      </div>
-    </div>
+        </SectionCard>
+      </DashboardShell>
+    </>
   );
 };
+
+const badgeBase: React.CSSProperties = { padding: '2px 8px', borderRadius: 'var(--radius-full)', fontSize: 'var(--text-xs)', fontWeight: 600 };
+const thStyle: React.CSSProperties = { textAlign: 'left', padding: 'var(--s-3) var(--s-4)', fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--fg-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' };
+const tdStyle: React.CSSProperties = { padding: 'var(--s-3) var(--s-4)', color: 'var(--fg-primary)' };
+const labelStyle: React.CSSProperties = { display: 'block', fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--fg-secondary)', marginBottom: 4 };
+const inputStyle: React.CSSProperties = { width: '100%', padding: '8px 12px', background: 'var(--bg-elevated)', color: 'var(--fg-primary)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-sm)', fontSize: 'var(--text-sm)' };
+
+const btnPrimary: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: 'var(--accent-indigo)', color: '#fff', border: '1px solid var(--accent-indigo)', borderRadius: 'var(--radius-full)', fontSize: 'var(--text-xs)', fontWeight: 600, cursor: 'pointer' };
+const btnGhost: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: 'var(--bg-hover)', color: 'var(--fg-secondary)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-full)', fontSize: 'var(--text-xs)', fontWeight: 600, cursor: 'pointer' };
 
 export default ResponsableDashboard;

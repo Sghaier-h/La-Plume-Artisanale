@@ -1,263 +1,272 @@
-import React, { useEffect, useState } from 'react';
-import { soustraitantsService } from '../services/api';
+import React, { useEffect, useState, useCallback } from 'react';
+import { Truck, AlertTriangle, PlusCircle, CheckCircle, Clock, X, ArrowUpRight } from 'lucide-react';
+import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
+import api from '../services/api';
+import { connectSocket } from '../services/socket';
+
+const asArray = (x: any): any[] =>
+  Array.isArray(x) ? x : (x?.data || x?.items || x?.mouvements || []);
+
+const fmtInt = (v: any) => {
+  const n = Number(v ?? 0);
+  return isNaN(n) ? '0' : n.toLocaleString('fr-FR');
+};
 
 const Soustraitants: React.FC = () => {
+  const [mouvements, setMouvements] = useState<any[]>([]);
   const [soustraitants, setSoustraitants] = useState<any[]>([]);
   const [alertes, setAlertes] = useState<any[]>([]);
+  const [stats, setStats] = useState<any>({});
+  const [ofs, setOfs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [editingST, setEditingST] = useState<any>(null);
-  const [selectedST, setSelectedST] = useState<any>(null);
-  const [search, setSearch] = useState('');
-
-  const [formData, setFormData] = useState({
-    code_sous_traitant: '',
-    raison_sociale: '',
-    adresse: '',
-    telephone: '',
-    email: '',
-    contact_principal: '',
-    specialite: '',
-    capacite_production: '',
-    delai_moyen_jours: '12',
-    taux_qualite: '',
-    actif: true
+  const [showSortie, setShowSortie] = useState(false);
+  const [showRetour, setShowRetour] = useState<any | null>(null);
+  const [sortieForm, setSortieForm] = useState<any>({
+    id_sous_traitant: '', id_of: '', date_retour_prevue: '', details: [{ id_lot_coupe: '', quantite_envoyee: '' }],
   });
+  const [retourForm, setRetourForm] = useState<any>({ lots: [] });
+
+  const loadAll = useCallback(async () => {
+    try {
+      const [st, mv, al, sg, ofRes] = await Promise.all([
+        api.get('/soustraitants').catch(() => ({ data: [] })),
+        api.get('/soustraitants').catch(() => ({ data: [] })),
+        api.get('/soustraitants/alertes/retard').catch(() => ({ data: [] })),
+        api.get('/soustraitants/stats/global').catch(() => ({ data: {} })),
+        api.get('/of').catch(() => ({ data: [] })),
+      ]);
+      setSoustraitants(asArray(st.data));
+      // mv is same endpoint; refetch mouvements from first soustraitant list — treat records as mouvements too
+      setMouvements(asArray(mv.data));
+      setAlertes(asArray(al.data));
+      setStats(sg.data?.data || sg.data || {});
+      setOfs(asArray(ofRes.data));
+    } catch (e) { console.error('Erreur chargement soustraitants:', e); }
+  }, []);
 
   useEffect(() => {
-    loadData();
-    loadAlertes();
-  }, [search]);
+    (async () => { setLoading(true); await loadAll(); setLoading(false); })();
+  }, [loadAll]);
 
-  const loadData = async () => {
+  useEffect(() => {
+    const socket = connectSocket();
+    const refresh = () => loadAll();
+    socket.on('soustraitants:new', refresh);
+    socket.on('soustraitants:retour', refresh);
+    return () => {
+      socket.off('soustraitants:new', refresh);
+      socket.off('soustraitants:retour', refresh);
+    };
+  }, [loadAll]);
+
+  const submitSortie = async () => {
     try {
-      const res = await soustraitantsService.getSoustraitants({ search });
-      setSoustraitants(res.data.data);
-    } catch (error) {
-      console.error('Erreur chargement sous-traitants:', error);
-    } finally {
-      setLoading(false);
+      const { id_sous_traitant, id_of, date_retour_prevue, details } = sortieForm;
+      await api.post(`/soustraitants/${id_sous_traitant}/sortie`, { id_of, date_retour_prevue, details });
+      setShowSortie(false);
+      setSortieForm({ id_sous_traitant: '', id_of: '', date_retour_prevue: '', details: [{ id_lot_coupe: '', quantite_envoyee: '' }] });
+      await loadAll();
+    } catch (e: any) {
+      alert(`Erreur sortie: ${e?.response?.data?.error || e?.message}`);
     }
   };
 
-  const loadAlertes = async () => {
-    try {
-      const res = await soustraitantsService.getAlertesRetard();
-      setAlertes(res.data.data);
-    } catch (error) {
-      console.error('Erreur chargement alertes:', error);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      if (editingST) {
-        await soustraitantsService.updateSoustraitant(editingST.id_sous_traitant, formData);
-      } else {
-        await soustraitantsService.createSoustraitant(formData);
-      }
-      setShowForm(false);
-      setEditingST(null);
-      resetForm();
-      loadData();
-    } catch (error: any) {
-      alert(error.response?.data?.error?.message || 'Erreur');
-    }
-  };
-
-  const handleEdit = (st: any) => {
-    setEditingST(st);
-    setFormData({
-      code_sous_traitant: st.code_sous_traitant,
-      raison_sociale: st.raison_sociale,
-      adresse: st.adresse || '',
-      telephone: st.telephone || '',
-      email: st.email || '',
-      contact_principal: st.contact_principal || '',
-      specialite: st.specialite || '',
-      capacite_production: st.capacite_production || '',
-      delai_moyen_jours: st.delai_moyen_jours || '12',
-      taux_qualite: st.taux_qualite || '',
-      actif: st.actif
-    });
-    setShowForm(true);
-  };
-
-  const resetForm = () => {
-    setFormData({
-      code_sous_traitant: '',
-      raison_sociale: '',
-      adresse: '',
-      telephone: '',
-      email: '',
-      contact_principal: '',
-      specialite: '',
-      capacite_production: '',
-      delai_moyen_jours: '12',
-      taux_qualite: '',
-      actif: true
+  const openRetour = (mvt: any) => {
+    setShowRetour(mvt);
+    setRetourForm({
+      lots: (mvt.details || mvt.lots || []).map((l: any) => ({
+        id_lot_coupe: l.id_lot_coupe,
+        libelle: l.libelle || `Lot #${l.id_lot_coupe}`,
+        quantite_envoyee: l.quantite_envoyee,
+        quantite_retournee: l.quantite_envoyee,
+        quantite_conforme: l.quantite_envoyee,
+        quantite_non_conforme: 0,
+      })),
     });
   };
 
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>;
-  }
+  const submitRetour = async () => {
+    try {
+      await api.put(`/soustraitants/${showRetour.id_mouvement || showRetour.id}/retour`, { lots: retourForm.lots });
+      setShowRetour(null);
+      await loadAll();
+    } catch (e: any) {
+      alert(`Erreur retour: ${e?.response?.data?.error || e?.message}`);
+    }
+  };
+
+  const annulerMvt = async (id: number) => {
+    if (!window.confirm('Annuler ce mouvement ?')) return;
+    try {
+      await api.put(`/soustraitants/${id}/annuler`);
+      await loadAll();
+    } catch (e: any) { alert(`Erreur: ${e?.response?.data?.error || e?.message}`); }
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="ml-64 p-6">
-        <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-800">🤝 Sous-traitants</h1>
-          <button
-            onClick={() => { setShowForm(true); setEditingST(null); resetForm(); }}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          >
-            + Nouveau Sous-traitant
-          </button>
+    <>
+      <DashboardShell
+        eyebrow="Gestion sous-traitants"
+        title="Gestion sous-traitants"
+        subtitle="Suivi des mouvements, sorties et retours."
+        headerRight={
+          <>
+            <button onClick={() => setShowSortie(true)} style={btnPrimary}>
+              <PlusCircle size={14} /> Nouvelle sortie
+            </button>
+            <ThemeToggle />
+          </>
+        }
+      >
+        {alertes.length > 0 && (
+          <div style={{
+            background: 'color-mix(in srgb, var(--accent-terracotta) 15%, transparent)',
+            border: '1px solid var(--accent-terracotta)',
+            color: 'var(--accent-terracotta)',
+            padding: 'var(--s-3) var(--s-4)',
+            borderRadius: 'var(--radius-md)',
+            display: 'flex', alignItems: 'center', gap: 'var(--s-3)',
+            fontWeight: 600, fontSize: 'var(--text-sm)',
+          }}>
+            <AlertTriangle size={18} />
+            {alertes.length} mouvement(s) en retard de retour
+          </div>
+        )}
+
+        <div className="lp-metric-grid">
+          <KpiCard label="Actifs" value={fmtInt(stats?.actifs ?? soustraitants.length)} icon={<Truck size={18} />} tone="terracotta" loading={loading} />
+          <KpiCard label="En cours" value={fmtInt(stats?.en_cours)} icon={<Clock size={18} />} tone="gold" loading={loading} />
+          <KpiCard label="Retournés" value={fmtInt(stats?.retournes ?? stats?.termines)} icon={<CheckCircle size={18} />} tone="sage" loading={loading} />
+          <KpiCard label="En retard" value={fmtInt(stats?.en_retard ?? alertes.length)} icon={<AlertTriangle size={18} />} tone="indigo" loading={loading} />
         </div>
 
-        {/* Alertes retards */}
-        {alertes.length > 0 && (
-          <div className="bg-orange-50 border-l-4 border-orange-500 p-4 mb-6 rounded">
-            <h2 className="text-lg font-bold text-orange-800 mb-2">⚠️ Alertes Retards ({alertes.length})</h2>
-            <div className="space-y-2">
-              {alertes.slice(0, 5).map((alerte: any) => (
-                <div key={alerte.id_mouvement_st} className="text-sm text-orange-700">
-                  {alerte.raison_sociale} - {alerte.numero_of} - Retard de {Math.ceil((new Date().getTime() - new Date(alerte.date_retour_prevue).getTime()) / (1000 * 60 * 60 * 24))} jours
+        <SectionCard title="Mouvements en cours" icon={<ArrowUpRight size={16} />} subtitle={`${mouvements.length} mouvement(s)`}>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={tableStyle}>
+              <thead>
+                <tr>{['Numéro', 'Sous-traitant', 'OF', 'Type', 'Date sortie', 'Retour prévu', 'Statut', 'Actions'].map(h => <th key={h} style={thStyle}>{h}</th>)}</tr>
+              </thead>
+              <tbody>
+                {mouvements.length === 0 && <tr><td colSpan={8} style={{ padding: 'var(--s-5)', textAlign: 'center', color: 'var(--fg-muted)' }}>Aucun mouvement</td></tr>}
+                {mouvements.map(mv => (
+                  <tr key={mv.id_mouvement || mv.id} style={{ borderTop: '1px solid var(--border-subtle)' }}>
+                    <td style={tdStyle}>{mv.numero || `#${mv.id_mouvement || mv.id}`}</td>
+                    <td style={tdStyle}>{mv.raison_sociale || mv.sous_traitant_nom || mv.id_sous_traitant}</td>
+                    <td style={tdStyle}>{mv.numero_of || mv.id_of || '—'}</td>
+                    <td style={tdStyle}>{mv.type_mouvement || 'SORTIE'}</td>
+                    <td style={tdStyle}>{mv.date_sortie || mv.created_at}</td>
+                    <td style={tdStyle}>{mv.date_retour_prevue || '—'}</td>
+                    <td style={tdStyle}><span style={badgeStyle(mv.statut)}>{mv.statut}</span></td>
+                    <td style={tdStyle}>
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        {mv.statut !== 'RETOURNE' && mv.statut !== 'ANNULE' && (
+                          <>
+                            <button style={btnGhostSm} onClick={() => openRetour(mv)}>Retour</button>
+                            <button style={btnGhostSm} onClick={() => annulerMvt(mv.id_mouvement || mv.id)}>Annuler</button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </SectionCard>
+
+        {/* Sortie modal */}
+        {showSortie && (
+          <div style={modalOverlay} onClick={() => setShowSortie(false)}>
+            <div style={modalBox} onClick={(e) => e.stopPropagation()}>
+              <div style={modalHeader}>
+                <h3 style={{ margin: 0, fontFamily: 'var(--font-serif)' }}>Nouvelle sortie</h3>
+                <button style={btnGhostSm} onClick={() => setShowSortie(false)}><X size={14} /></button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--s-3)' }}>
+                <select style={inputStyle} value={sortieForm.id_sous_traitant} onChange={(e) => setSortieForm({ ...sortieForm, id_sous_traitant: e.target.value })}>
+                  <option value="">Sous-traitant…</option>
+                  {soustraitants.map(s => <option key={s.id_sous_traitant || s.id} value={s.id_sous_traitant || s.id}>{s.raison_sociale || s.code_sous_traitant}</option>)}
+                </select>
+                <select style={inputStyle} value={sortieForm.id_of} onChange={(e) => setSortieForm({ ...sortieForm, id_of: e.target.value })}>
+                  <option value="">OF…</option>
+                  {ofs.map(o => <option key={o.id_of || o.id} value={o.id_of || o.id}>{o.numero_of || `OF#${o.id_of || o.id}`}</option>)}
+                </select>
+                <input type="date" style={inputStyle} value={sortieForm.date_retour_prevue} onChange={(e) => setSortieForm({ ...sortieForm, date_retour_prevue: e.target.value })} />
+                {sortieForm.details.map((d: any, i: number) => (
+                  <div key={i} style={{ display: 'flex', gap: 'var(--s-2)' }}>
+                    <input placeholder="ID lot coupe" style={{ ...inputStyle, flex: 1 }} value={d.id_lot_coupe}
+                      onChange={(e) => {
+                        const details = [...sortieForm.details]; details[i].id_lot_coupe = e.target.value; setSortieForm({ ...sortieForm, details });
+                      }} />
+                    <input placeholder="Quantité" type="number" style={{ ...inputStyle, width: 120 }} value={d.quantite_envoyee}
+                      onChange={(e) => {
+                        const details = [...sortieForm.details]; details[i].quantite_envoyee = e.target.value; setSortieForm({ ...sortieForm, details });
+                      }} />
+                  </div>
+                ))}
+                <button style={btnGhostSm} onClick={() => setSortieForm({ ...sortieForm, details: [...sortieForm.details, { id_lot_coupe: '', quantite_envoyee: '' }] })}>+ Ajouter un lot</button>
+                <div style={{ display: 'flex', gap: 'var(--s-2)', justifyContent: 'flex-end' }}>
+                  <button style={btnGhostSm} onClick={() => setShowSortie(false)}>Annuler</button>
+                  <button style={btnPrimary} onClick={submitSortie}>Créer</button>
                 </div>
-              ))}
+              </div>
             </div>
           </div>
         )}
 
-        {/* Recherche */}
-        <div className="bg-white p-4 rounded-lg shadow mb-6">
-          <input
-            type="text"
-            placeholder="Rechercher..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full px-4 py-2 border rounded"
-          />
-        </div>
-
-        {/* Formulaire */}
-        {showForm && (
-          <div className="bg-white p-6 rounded-lg shadow mb-6">
-            <h2 className="text-xl font-bold mb-4">{editingST ? 'Modifier' : 'Nouveau'} Sous-traitant</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Code *</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.code_sous_traitant}
-                    onChange={(e) => setFormData({ ...formData, code_sous_traitant: e.target.value })}
-                    className="w-full px-4 py-2 border rounded"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Raison Sociale *</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.raison_sociale}
-                    onChange={(e) => setFormData({ ...formData, raison_sociale: e.target.value })}
-                    className="w-full px-4 py-2 border rounded"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Spécialité</label>
-                  <input
-                    type="text"
-                    value={formData.specialite}
-                    onChange={(e) => setFormData({ ...formData, specialite: e.target.value })}
-                    className="w-full px-4 py-2 border rounded"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Délai Moyen (jours)</label>
-                  <input
-                    type="number"
-                    value={formData.delai_moyen_jours}
-                    onChange={(e) => setFormData({ ...formData, delai_moyen_jours: e.target.value })}
-                    className="w-full px-4 py-2 border rounded"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Téléphone</label>
-                  <input
-                    type="text"
-                    value={formData.telephone}
-                    onChange={(e) => setFormData({ ...formData, telephone: e.target.value })}
-                    className="w-full px-4 py-2 border rounded"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Email</label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-4 py-2 border rounded"
-                  />
-                </div>
+        {/* Retour modal */}
+        {showRetour && (
+          <div style={modalOverlay} onClick={() => setShowRetour(null)}>
+            <div style={{ ...modalBox, width: 'min(720px, 92vw)' }} onClick={(e) => e.stopPropagation()}>
+              <div style={modalHeader}>
+                <h3 style={{ margin: 0, fontFamily: 'var(--font-serif)' }}>Enregistrer retour</h3>
+                <button style={btnGhostSm} onClick={() => setShowRetour(null)}><X size={14} /></button>
               </div>
-              <div className="flex gap-4">
-                <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
-                  {editingST ? 'Modifier' : 'Créer'}
-                </button>
-                <button type="button" onClick={() => { setShowForm(false); setEditingST(null); resetForm(); }} className="bg-gray-300 text-gray-700 px-6 py-2 rounded hover:bg-gray-400">
-                  Annuler
-                </button>
+              <table style={tableStyle}>
+                <thead><tr>{['Lot', 'Envoyé', 'Retourné', 'Conforme', 'Non conforme'].map(h => <th key={h} style={thStyle}>{h}</th>)}</tr></thead>
+                <tbody>
+                  {retourForm.lots.map((l: any, i: number) => (
+                    <tr key={i} style={{ borderTop: '1px solid var(--border-subtle)' }}>
+                      <td style={tdStyle}>{l.libelle}</td>
+                      <td style={tdStyle}>{l.quantite_envoyee}</td>
+                      <td style={tdStyle}><input type="number" style={{ ...inputStyle, width: 80 }} value={l.quantite_retournee}
+                        onChange={(e) => { const lots = [...retourForm.lots]; lots[i].quantite_retournee = Number(e.target.value); setRetourForm({ lots }); }} /></td>
+                      <td style={tdStyle}><input type="number" style={{ ...inputStyle, width: 80 }} value={l.quantite_conforme}
+                        onChange={(e) => { const lots = [...retourForm.lots]; lots[i].quantite_conforme = Number(e.target.value); setRetourForm({ lots }); }} /></td>
+                      <td style={tdStyle}><input type="number" style={{ ...inputStyle, width: 80 }} value={l.quantite_non_conforme}
+                        onChange={(e) => { const lots = [...retourForm.lots]; lots[i].quantite_non_conforme = Number(e.target.value); setRetourForm({ lots }); }} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div style={{ display: 'flex', gap: 'var(--s-2)', justifyContent: 'flex-end', marginTop: 'var(--s-4)' }}>
+                <button style={btnGhostSm} onClick={() => setShowRetour(null)}>Annuler</button>
+                <button style={btnPrimary} onClick={submitRetour}>Enregistrer</button>
               </div>
-            </form>
+            </div>
           </div>
         )}
-
-        {/* Liste */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Code</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Raison Sociale</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Spécialité</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Délai Moyen</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Téléphone</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {soustraitants.map((st) => (
-                <tr key={st.id_sous_traitant}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{st.code_sous_traitant}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">{st.raison_sociale}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">{st.specialite || '-'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">{st.delai_moyen_jours} jours</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">{st.telephone || '-'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs rounded ${st.actif ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                      {st.actif ? 'Actif' : 'Inactif'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <button onClick={() => setSelectedST(st)} className="text-blue-600 hover:text-blue-900 mr-3">Voir</button>
-                    <button onClick={() => handleEdit(st)} className="text-blue-600 hover:text-blue-900">Modifier</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        </div>
-      </div>
-    </div>
+      </DashboardShell>
+    </>
   );
+};
+
+const btnPrimary: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: 'var(--accent-terracotta)', color: '#fff', border: '1px solid var(--accent-terracotta)', borderRadius: 'var(--radius-full)', fontSize: 'var(--text-xs)', fontWeight: 600, cursor: 'pointer' };
+const btnGhostSm: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', background: 'var(--bg-hover)', color: 'var(--fg-secondary)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-full)', fontSize: '11px', fontWeight: 500, cursor: 'pointer' };
+const inputStyle: React.CSSProperties = { padding: '8px 12px', background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)', color: 'var(--fg-primary)', fontSize: 'var(--text-sm)' };
+const tableStyle: React.CSSProperties = { width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' };
+const thStyle: React.CSSProperties = { textAlign: 'left', padding: 'var(--s-3)', fontSize: 'var(--text-xs)', color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 };
+const tdStyle: React.CSSProperties = { padding: 'var(--s-3)', color: 'var(--fg-primary)' };
+const modalOverlay: React.CSSProperties = { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 };
+const modalBox: React.CSSProperties = { background: 'var(--bg-elevated)', padding: 'var(--s-5)', borderRadius: 'var(--radius-md)', width: 'min(520px, 92vw)', border: '1px solid var(--border-default)', maxHeight: '90vh', overflowY: 'auto' };
+const modalHeader: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--s-4)' };
+const badgeStyle = (v: string): React.CSSProperties => {
+  const map: Record<string, string> = {
+    SORTIE: 'var(--accent-gold)', EN_COURS: 'var(--accent-terracotta)', RETOURNE: 'var(--accent-sage)',
+    EN_RETARD: 'var(--accent-terracotta)', ANNULE: 'var(--fg-muted)',
+  };
+  const c = map[v] || 'var(--fg-muted)';
+  return { padding: '2px 8px', borderRadius: 'var(--radius-full)', background: `${c}22`, color: c, fontSize: '11px', fontWeight: 600 };
 };
 
 export default Soustraitants;
