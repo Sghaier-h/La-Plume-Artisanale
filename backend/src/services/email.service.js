@@ -373,3 +373,59 @@ class EmailService {
 }
 
 export default new EmailService();
+
+// ─── Named export: sendEmail (graceful degradation via env vars) ──────────
+// Utilise un transporter lazy basé uniquement sur les variables d'environnement.
+// Retourne { success:false, mocked:true, ... } si SMTP_HOST n'est pas configuré.
+
+let _envTransporter = null;
+let _envTransporterInit = false;
+
+const _getEnvTransporter = () => {
+  if (_envTransporterInit) return _envTransporter;
+  _envTransporterInit = true;
+  if (!process.env.SMTP_HOST) {
+    _envTransporter = null;
+    return null;
+  }
+  const auth = (process.env.SMTP_USER)
+    ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASSWORD || process.env.SMTP_PASS }
+    : undefined;
+  _envTransporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: parseInt(process.env.SMTP_PORT || '587', 10),
+    secure: process.env.SMTP_SECURE === 'true',
+    auth,
+    tls: { rejectUnauthorized: false },
+  });
+  return _envTransporter;
+};
+
+export const sendEmail = async ({ to, subject, html, text, from, attachments, cc, bcc } = {}) => {
+  const tx = _getEnvTransporter();
+  if (!tx) {
+    return {
+      success: false,
+      mocked: true,
+      message: 'SMTP non configuré — email loggé mais non envoyé',
+      to,
+      subject,
+    };
+  }
+  try {
+    const info = await tx.sendMail({
+      from: from || process.env.SMTP_FROM || 'noreply@laplume-artisanale.tn',
+      to: Array.isArray(to) ? to.join(', ') : to,
+      subject,
+      html,
+      text,
+      cc: Array.isArray(cc) ? cc.join(', ') : cc,
+      bcc: Array.isArray(bcc) ? bcc.join(', ') : bcc,
+      attachments,
+    });
+    return { success: true, messageId: info.messageId, response: info.response };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+};
+

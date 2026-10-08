@@ -44,7 +44,7 @@ export const getMrpBOMs = async (req, res) => {
     }
     
     query += ` GROUP BY n.id_nomenclature, a1.designation, n.id_article, n.version, n.active, n.created_at, n.updated_at
-               ORDER BY COALESCE(n.updated_at, n.created_at, n.id_nomenclature) DESC`;
+               ORDER BY COALESCE(n.updated_at, n.created_at) DESC NULLS LAST, n.id_nomenclature DESC`;
     
     const result = await pool.query(query, params);
     res.json(result.rows);

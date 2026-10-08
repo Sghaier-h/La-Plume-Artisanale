@@ -1,23 +1,24 @@
 /**
- * Routes PlanificationGantt - Module modulaire
+ * Routes Planification Gantt
  */
 
 import express from 'express';
 import { authenticate } from '../../../src/middleware/auth.middleware.js';
 import {
-  getPlanificationGantt,
-  getPlanificationGanttById,
-  createPlanificationGantt,
-  updatePlanificationGantt,
-  deletePlanificationGantt
+  getProjets,
+  getTachesGantt,
+  getRessources,
+  getGanttData,
+  createTacheGantt,
 } from '../controllers/planification-gantt.controller.js';
 
 const router = express.Router();
+router.use(authenticate);
 
-router.get('/', authenticate, getPlanificationGantt);
-router.get('/:id', authenticate, getPlanificationGanttById);
-router.post('/', authenticate, createPlanificationGantt);
-router.put('/:id', authenticate, updatePlanificationGantt);
-router.delete('/:id', authenticate, deletePlanificationGantt);
+router.get('/projets', getProjets);
+router.get('/taches', getTachesGantt);
+router.get('/ressources', getRessources);
+router.get('/gantt-data', getGanttData);
+router.post('/taches', createTacheGantt);
 
 export default router;

@@ -45,7 +45,7 @@ const Fournisseurs: React.FC = () => {
     setError(null);
     try {
       const res = await fournisseursService.getFournisseurs({ search });
-      setFournisseurs(res.data.data.fournisseurs || []);
+      setFournisseurs(((v) => Array.isArray(v) ? v : (v?.fournisseurs || v?.data || v?.items || (v && typeof v === 'object' ? Object.values(v).find((x: any) => Array.isArray(x)) : null) || []))(res.data?.data) as any[]);
     } catch (err: any) {
       console.error('Erreur chargement fournisseurs:', err);
       setError(err.response?.data?.error?.message || 'Erreur lors du chargement');
@@ -110,15 +110,15 @@ const Fournisseurs: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="ml-64 p-6 flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="p-6 flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]"></div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="ml-64 p-6">
+      <div className="p-6">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
@@ -127,7 +127,7 @@ const Fournisseurs: React.FC = () => {
             </h1>
             <button
               onClick={() => { setShowForm(true); setEditingFournisseur(null); resetForm(); }}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
+              className="bg-[#C8663D] text-white px-4 py-2 rounded-lg hover:bg-[#a55231] flex items-center gap-2"
             >
               <PlusCircle className="w-5 h-5" />
               Nouveau Fournisseur
@@ -148,7 +148,7 @@ const Fournisseurs: React.FC = () => {
                 <button
                   onClick={() => setAffichageMode('ligne')}
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                    affichageMode === 'ligne' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    affichageMode === 'ligne' ? 'bg-[#C8663D] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                   }`}
                 >
                   <List className="w-4 h-4" />
@@ -157,7 +157,7 @@ const Fournisseurs: React.FC = () => {
                 <button
                   onClick={() => setAffichageMode('catalogue')}
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                    affichageMode === 'catalogue' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    affichageMode === 'catalogue' ? 'bg-[#C8663D] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                   }`}
                 >
                   <Grid className="w-4 h-4" />
@@ -277,7 +277,7 @@ const Fournisseurs: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex gap-4">
-                  <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+                  <button type="submit" className="bg-[#C8663D] text-white px-6 py-2 rounded-lg hover:bg-[#a55231]">
                     {editingFournisseur ? 'Modifier' : 'Créer'}
                   </button>
                   <button
@@ -309,8 +309,20 @@ const Fournisseurs: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {fournisseurs.map((fournisseur) => (
-                    <tr key={fournisseur.id_fournisseur}>
+                  {fournisseurs.map((fournisseur) => {
+                    const openFournisseurView = async () => {
+                      try {
+                        const result = await fournisseursService.getFournisseur(fournisseur.id_fournisseur);
+                        if (result.data?.data) {
+                          setSelectedFournisseur(result.data?.data);
+                        }
+                      } catch (error: any) {
+                        console.error('Erreur chargement fournisseur:', error);
+                        setSelectedFournisseur(fournisseur);
+                      }
+                    };
+                    return (
+                    <tr key={fournisseur.id_fournisseur} onClick={openFournisseurView} className="hover:bg-gray-50 cursor-pointer group">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{fournisseur.code_fournisseur}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">{fournisseur.raison_sociale}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">{fournisseur.ville}</td>
@@ -322,31 +334,15 @@ const Fournisseurs: React.FC = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <div className="flex gap-2">
-                          <button 
-                            onClick={async () => {
-                              try {
-                                const result = await fournisseursService.getFournisseur(fournisseur.id_fournisseur);
-                                if (result.data?.data) {
-                                  setSelectedFournisseur(result.data.data);
-                                }
-                              } catch (error: any) {
-                                console.error('Erreur chargement fournisseur:', error);
-                                setSelectedFournisseur(fournisseur);
-                              }
-                            }}
-                            className="text-blue-600 hover:text-blue-900"
-                            title="Consulter"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => handleEdit(fournisseur)} className="text-gray-600 hover:text-gray-900" title="Modifier">
+                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={(e) => { e.stopPropagation(); handleEdit(fournisseur); }} className="text-gray-600 hover:text-gray-900" title="Modifier">
                             <Edit className="w-4 h-4" />
                           </button>
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -379,14 +375,14 @@ const Fournisseurs: React.FC = () => {
                         try {
                           const result = await fournisseursService.getFournisseur(fournisseur.id_fournisseur);
                           if (result.data?.data) {
-                            setSelectedFournisseur(result.data.data);
+                            setSelectedFournisseur(result.data?.data);
                           }
                         } catch (error: any) {
                           console.error('Erreur chargement fournisseur:', error);
                           setSelectedFournisseur(fournisseur);
                         }
                       }}
-                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-[#C8663D] text-white rounded hover:bg-[#a55231] text-sm"
                     >
                       <Eye className="w-4 h-4" />
                       Consulter
@@ -545,7 +541,7 @@ const Fournisseurs: React.FC = () => {
                       handleEdit(selectedFournisseur);
                       setSelectedFournisseur(null);
                     }}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                    className="px-4 py-2 bg-[#C8663D] text-white rounded-lg hover:bg-[#a55231] flex items-center gap-2"
                   >
                     <Edit className="w-4 h-4" />
                     Modifier

@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { 
-  ArrowLeft, Edit, Trash2, User, Mail, Phone, MapPin, Building, CreditCard, 
-  Percent, BarChart3, Settings, FileText, Plus, X, Package, Receipt, 
-  Truck, Tag, Globe, Briefcase, UserCircle, Users, AlertCircle
+import {
+  ArrowLeft, Edit, Trash2, User, Mail, Phone, MapPin, Building, CreditCard,
+  Percent, BarChart3, Settings, FileText, Plus, X, Package, Receipt,
+  Truck, Tag, Globe, Briefcase, UserCircle, Users, AlertCircle,
+  Boxes, FileMinus, DollarSign
 } from 'lucide-react';
+import { colisageService, paiementsService } from '../services/ventesComplementsApi';
+import { avoirsService } from '../services/api';
 import { clientsService } from '../services/api';
+import { useDynamicCrumb } from '../components/BreadcrumbContext';
 
 interface Client {
   id_client?: number;
@@ -73,12 +77,14 @@ interface Contact {
   nom_adresse_associee?: string;
 }
 
-type TabType = 'info' | 'adresses' | 'contacts' | 'commandes' | 'livraisons' | 'factures';
+type TabType = 'info' | 'adresses' | 'contacts' | 'commandes' | 'livraisons' | 'colisage' | 'factures' | 'avoirs' | 'paiements';
 
 const ClientDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [client, setClient] = useState<Client | null>(null);
+  // Fil d'Ariane dynamique : Accueil › Clients › <raison_sociale ou code_client>
+  useDynamicCrumb(client?.raison_sociale || client?.code_client || null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('info');
@@ -117,7 +123,15 @@ const ClientDetails: React.FC = () => {
   const loadCategories = async () => {
     try {
       const res = await clientsService.getCategories();
-      setCategories(res.data.data || res.data);
+      setCategories((() => {
+        const _r = res.data?.data;
+        if (Array.isArray(_r)) return _r;
+        if (_r && Array.isArray(_r.data)) return _r.data;
+        if (_r && typeof _r === 'object') {
+          for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+        }
+        return [];
+      })());
     } catch (err) {
       console.error('Erreur chargement catégories:', err);
     }
@@ -126,7 +140,15 @@ const ClientDetails: React.FC = () => {
   const loadTypesCommerciaux = async () => {
     try {
       const res = await clientsService.getTypesCommerciaux();
-      setTypesCommerciaux(res.data.data || res.data);
+      setTypesCommerciaux((() => {
+        const _r = res.data?.data;
+        if (Array.isArray(_r)) return _r;
+        if (_r && Array.isArray(_r.data)) return _r.data;
+        if (_r && typeof _r === 'object') {
+          for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+        }
+        return [];
+      })());
     } catch (err) {
       console.error('Erreur chargement types commerciaux:', err);
     }
@@ -218,18 +240,18 @@ const ClientDetails: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="ml-64 p-6 flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="p-6 flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]"></div>
       </div>
     );
   }
 
   if (error || !client) {
     return (
-      <div className="ml-64 p-6">
+      <div className="p-6">
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <p className="text-red-800">{error || 'Client non trouvé'}</p>
-          <Link to="/clients" className="mt-4 inline-block text-blue-600 hover:underline">
+          <Link to="/clients" className="mt-4 inline-block text-[#C8663D] hover:underline">
             ← Retour à la liste
           </Link>
         </div>
@@ -243,11 +265,14 @@ const ClientDetails: React.FC = () => {
     { id: 'contacts' as TabType, label: 'Contacts', icon: Users },
     { id: 'commandes' as TabType, label: 'Commandes', icon: Package },
     { id: 'livraisons' as TabType, label: 'Bons de livraison', icon: Truck },
+    { id: 'colisage' as TabType, label: 'Liste de colisage', icon: Boxes },
     { id: 'factures' as TabType, label: 'Factures', icon: Receipt },
+    { id: 'avoirs' as TabType, label: 'Avoirs', icon: FileMinus },
+    { id: 'paiements' as TabType, label: 'Paiements', icon: DollarSign },
   ];
 
   return (
-    <div className="ml-64 p-6 bg-gray-50 min-h-screen">
+    <div className="p-6 bg-gray-50 min-h-screen">
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -260,7 +285,7 @@ const ClientDetails: React.FC = () => {
           </Link>
           <div className="h-6 w-px bg-gray-300"></div>
           <div className="flex items-center gap-3">
-            <Building className="w-8 h-8 text-blue-600" />
+            <Building className="w-8 h-8 text-[#C8663D]" />
             <div>
               <h1 className="text-3xl font-bold text-gray-900">{client.raison_sociale}</h1>
               <p className="text-sm text-gray-500 font-mono">{client.code_client}</p>
@@ -268,7 +293,7 @@ const ClientDetails: React.FC = () => {
           </div>
           <div className="flex gap-2">
             {client.type_client === 'CLIENT' ? (
-              <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded text-sm font-medium">Client</span>
+              <span className="px-3 py-1 bg-[#F5EFE5] text-[#4A5D75] rounded text-sm font-medium">Client</span>
             ) : (
               <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded text-sm font-medium">Prospect</span>
             )}
@@ -282,7 +307,7 @@ const ClientDetails: React.FC = () => {
         <div className="flex gap-2">
           <button
             onClick={() => navigate(`/clients?edit=${client.id_client}`)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="flex items-center gap-2 px-4 py-2 bg-[#C8663D] text-white rounded-lg hover:bg-[#a55231]"
           >
             <Edit className="w-4 h-4" />
             Modifier
@@ -310,7 +335,7 @@ const ClientDetails: React.FC = () => {
                   className={`
                     flex items-center gap-2 px-6 py-4 text-sm font-medium border-b-2 transition-colors
                     ${activeTab === tab.id
-                      ? 'border-blue-600 text-blue-600'
+                      ? 'border-[#C8663D] text-[#C8663D]'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                     }
                   `}
@@ -344,7 +369,10 @@ const ClientDetails: React.FC = () => {
           )}
           {activeTab === 'commandes' && <CommandesTab client={client} />}
           {activeTab === 'livraisons' && <LivraisonsTab client={client} />}
+          {activeTab === 'colisage' && <ColisageTab client={client} />}
           {activeTab === 'factures' && <FacturesTab client={client} />}
+          {activeTab === 'avoirs' && <AvoirsTab client={client} />}
+          {activeTab === 'paiements' && <PaiementsTab client={client} />}
         </div>
       </div>
 
@@ -377,7 +405,7 @@ const InfoTab: React.FC<{ client: Client; categories: any[]; typesCommerciaux: a
       {/* Informations générales */}
       <div className="space-y-4">
         <h3 className="text-lg font-semibold flex items-center gap-2">
-          <Building className="w-5 h-5 text-blue-600" />
+          <Building className="w-5 h-5 text-[#C8663D]" />
           Informations générales
         </h3>
         <div className="bg-gray-50 rounded-lg p-4 space-y-3">
@@ -415,7 +443,7 @@ const InfoTab: React.FC<{ client: Client; categories: any[]; typesCommerciaux: a
             {client.site_web && (
               <div className="col-span-2 flex items-center gap-2">
                 <Globe className="w-4 h-4 text-gray-400" />
-                <a href={client.site_web} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                <a href={client.site_web} target="_blank" rel="noopener noreferrer" className="text-[#C8663D] hover:underline">
                   {client.site_web}
                 </a>
               </div>
@@ -427,7 +455,7 @@ const InfoTab: React.FC<{ client: Client; categories: any[]; typesCommerciaux: a
         {(client.id_commercial || client.id_type_commercial) && (
           <>
             <h3 className="text-lg font-semibold flex items-center gap-2 mt-6">
-              <Briefcase className="w-5 h-5 text-blue-600" />
+              <Briefcase className="w-5 h-5 text-[#C8663D]" />
               Commercial
             </h3>
             <div className="bg-gray-50 rounded-lg p-4 space-y-3">
@@ -451,7 +479,7 @@ const InfoTab: React.FC<{ client: Client; categories: any[]; typesCommerciaux: a
       {/* Conditions commerciales */}
       <div className="space-y-4">
         <h3 className="text-lg font-semibold flex items-center gap-2">
-          <CreditCard className="w-5 h-5 text-blue-600" />
+          <CreditCard className="w-5 h-5 text-[#C8663D]" />
           Conditions commerciales
         </h3>
         <div className="bg-gray-50 rounded-lg p-4 space-y-3">
@@ -464,7 +492,7 @@ const InfoTab: React.FC<{ client: Client; categories: any[]; typesCommerciaux: a
               <Percent className="w-4 h-4" />
               Taux de remise
             </label>
-            <p className="text-2xl font-bold text-blue-600">{client.taux_remise || 0}%</p>
+            <p className="text-2xl font-bold text-[#C8663D]">{client.taux_remise || 0}%</p>
           </div>
           {client.plafond_credit && (
             <div>
@@ -484,7 +512,7 @@ const InfoTab: React.FC<{ client: Client; categories: any[]; typesCommerciaux: a
 
         {/* Informations système */}
         <h3 className="text-lg font-semibold flex items-center gap-2 mt-6">
-          <BarChart3 className="w-5 h-5 text-blue-600" />
+          <BarChart3 className="w-5 h-5 text-[#C8663D]" />
           Informations système
         </h3>
         <div className="bg-gray-50 rounded-lg p-4 space-y-3">
@@ -534,7 +562,7 @@ const AdressesTab: React.FC<{
         <h3 className="text-lg font-semibold">Adresses</h3>
         <button
           onClick={onAdd}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          className="flex items-center gap-2 px-4 py-2 bg-[#C8663D] text-white rounded-lg hover:bg-[#a55231]"
         >
           <Plus className="w-4 h-4" />
           Ajouter une adresse
@@ -597,7 +625,7 @@ const AdresseCard: React.FC<{
       <div className="flex justify-between items-start">
         <div className="flex-1">
           {adresse.principale && (
-            <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded mb-2">
+            <span className="inline-block px-2 py-1 bg-[#F5EFE5] text-[#4A5D75] text-xs rounded mb-2">
               Principale
             </span>
           )}
@@ -616,7 +644,7 @@ const AdresseCard: React.FC<{
             {adresse.site_web && (
               <p className="flex items-center gap-1">
                 <Globe className="w-3 h-3" />
-                <a href={adresse.site_web} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                <a href={adresse.site_web} target="_blank" rel="noopener noreferrer" className="text-[#C8663D] hover:underline">
                   {adresse.site_web}
                 </a>
               </p>
@@ -626,7 +654,7 @@ const AdresseCard: React.FC<{
         <div className="flex gap-2 ml-4">
           <button
             onClick={() => onEdit(adresse)}
-            className="p-2 text-blue-600 hover:bg-blue-50 rounded"
+            className="p-2 text-[#C8663D] hover:bg-[#F5EFE5] rounded"
             title="Modifier"
           >
             <Edit className="w-4 h-4" />
@@ -659,7 +687,7 @@ const ContactsTab: React.FC<{
         <h3 className="text-lg font-semibold">Contacts</h3>
         <button
           onClick={onAdd}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          className="flex items-center gap-2 px-4 py-2 bg-[#C8663D] text-white rounded-lg hover:bg-[#a55231]"
         >
           <Plus className="w-4 h-4" />
           Ajouter un contact
@@ -692,7 +720,7 @@ const ContactCard: React.FC<{
       <div className="flex justify-between items-start mb-3">
         <div className="flex-1">
           {contact.contact_principal && (
-            <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded mb-2">
+            <span className="inline-block px-2 py-1 bg-[#F5EFE5] text-[#4A5D75] text-xs rounded mb-2">
               Contact principal
             </span>
           )}
@@ -710,7 +738,7 @@ const ContactCard: React.FC<{
         <div className="flex gap-2">
           <button
             onClick={() => onEdit(contact)}
-            className="p-2 text-blue-600 hover:bg-blue-50 rounded"
+            className="p-2 text-[#C8663D] hover:bg-[#F5EFE5] rounded"
             title="Modifier"
           >
             <Edit className="w-4 h-4" />
@@ -728,7 +756,7 @@ const ContactCard: React.FC<{
         {contact.email && (
           <div className="flex items-center gap-2">
             <Mail className="w-4 h-4" />
-            <a href={`mailto:${contact.email}`} className="hover:text-blue-600">
+            <a href={`mailto:${contact.email}`} className="hover:text-[#C8663D]">
               {contact.email}
             </a>
           </div>
@@ -736,7 +764,7 @@ const ContactCard: React.FC<{
         {contact.telephone_fixe && (
           <div className="flex items-center gap-2">
             <Phone className="w-4 h-4" />
-            <a href={`tel:${contact.telephone_fixe}`} className="hover:text-blue-600">
+            <a href={`tel:${contact.telephone_fixe}`} className="hover:text-[#C8663D]">
               {contact.telephone_fixe}
             </a>
           </div>
@@ -744,7 +772,7 @@ const ContactCard: React.FC<{
         {contact.telephone_portable && (
           <div className="flex items-center gap-2">
             <Phone className="w-4 h-4" />
-            <a href={`tel:${contact.telephone_portable}`} className="hover:text-blue-600">
+            <a href={`tel:${contact.telephone_portable}`} className="hover:text-[#C8663D]">
               {contact.telephone_portable} (portable)
             </a>
           </div>
@@ -800,7 +828,7 @@ const CommandesTab: React.FC<{ client: Client }> = ({ client }) => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                     <Link
                       to={`/commandes/${commande.id_commande}`}
-                      className="text-blue-600 hover:text-blue-900"
+                      className="text-[#C8663D] hover:text-[#4A5D75]"
                     >
                       Voir
                     </Link>
@@ -910,6 +938,240 @@ const FacturesTab: React.FC<{ client: Client }> = ({ client }) => {
         <div className="text-center py-12 text-gray-500">
           <Receipt className="w-12 h-12 mx-auto mb-4 text-gray-300" />
           <p>Aucune facture</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// Onglets Liste de colisage / Avoirs / Paiements — fetch à la demande
+// depuis leurs services respectifs, filtré sur le client courant.
+// ═══════════════════════════════════════════════════════════════════
+
+const ColisageTab: React.FC<{ client: Client }> = ({ client }) => {
+  const [colis, setColis] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoading(true);
+        const commandes = client.commandes || [];
+        if (commandes.length === 0) { if (!cancelled) setColis([]); return; }
+        const results = await Promise.all(
+          commandes.map((c: any) => colisageService.list({ id_commande: c.id_commande }).catch(() => ({ data: { data: [] } })))
+        );
+        const all = results.flatMap((r: any) => {
+          const d = r.data?.data;
+          return Array.isArray(d) ? d : (d?.data || []);
+        });
+        if (!cancelled) setColis(all);
+      } catch (err) {
+        console.error('Erreur chargement colisage:', err);
+        if (!cancelled) setColis([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [client]);
+
+  return (
+    <div>
+      <h3 className="text-lg font-semibold mb-4">Liste de colisage</h3>
+      {loading ? (
+        <div className="text-center py-12 text-gray-500">Chargement…</div>
+      ) : colis.length > 0 ? (
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">N° Colis</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Commande</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Poids (kg)</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Volume</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {colis.map((c) => (
+                <tr key={c.id_colis}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-mono">{c.numero_colis || c.reference_colis}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">{c.numero_commande || c.id_commande}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">{c.poids_kg ?? '-'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    {c.volume_m3 != null ? `${c.volume_m3} m³` : '-'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 py-1 text-xs rounded ${
+                      c.statut === 'valide' || c.statut === 'expedie' ? 'bg-green-100 text-green-800' :
+                      c.statut === 'en_preparation' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>{c.statut || '-'}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="text-center py-12 text-gray-500">
+          <Boxes className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+          <p>Aucun colis</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const AvoirsTab: React.FC<{ client: Client }> = ({ client }) => {
+  const [avoirs, setAvoirs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoading(true);
+        const res = await avoirsService.getAvoirs({ id_client: client.id_client });
+        const d = res.data?.data;
+        if (!cancelled) setAvoirs(Array.isArray(d) ? d : (d?.data || d?.avoirs || []));
+      } catch (err) {
+        console.error('Erreur chargement avoirs:', err);
+        if (!cancelled) setAvoirs([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [client]);
+
+  return (
+    <div>
+      <h3 className="text-lg font-semibold mb-4">Avoirs</h3>
+      {loading ? (
+        <div className="text-center py-12 text-gray-500">Chargement…</div>
+      ) : avoirs.length > 0 ? (
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Numéro</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Facture liée</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Montant</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Motif</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {avoirs.map((a) => (
+                <tr key={a.id_avoir}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-mono">{a.numero_avoir}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    {a.date_avoir ? new Date(a.date_avoir).toLocaleDateString('fr-FR') : '-'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">{a.numero_facture || '-'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-mono">
+                    {Number(a.montant_total || 0).toLocaleString('fr-FR')} {client.devise || 'TND'}
+                  </td>
+                  <td className="px-6 py-4 text-sm">{a.motif || '-'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="text-center py-12 text-gray-500">
+          <FileMinus className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+          <p>Aucun avoir</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const PaiementsTab: React.FC<{ client: Client }> = ({ client }) => {
+  const [paiements, setPaiements] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoading(true);
+        const res = await paiementsService.list({ id_client: client.id_client });
+        const d = res.data?.data;
+        if (!cancelled) setPaiements(Array.isArray(d) ? d : (d?.data || d?.paiements || []));
+      } catch (err) {
+        console.error('Erreur chargement paiements:', err);
+        if (!cancelled) setPaiements([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [client]);
+
+  const totalPaye = paiements.reduce((s, p: any) => s + Number(p.montant_paye || p.montant || 0), 0);
+  const totalDu = paiements.reduce((s, p: any) => s + Number(p.montant_du || 0), 0);
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-semibold">Paiements & échéances</h3>
+        {paiements.length > 0 && (
+          <div className="text-sm font-mono" style={{ color: 'var(--fg-secondary)' }}>
+            Réglé : <span style={{ color: 'var(--color-success)' }}>{totalPaye.toLocaleString('fr-FR')} {client.devise || 'TND'}</span>
+            {' · '}
+            Dû : <span style={{ color: 'var(--color-danger)' }}>{totalDu.toLocaleString('fr-FR')} {client.devise || 'TND'}</span>
+          </div>
+        )}
+      </div>
+      {loading ? (
+        <div className="text-center py-12 text-gray-500">Chargement…</div>
+      ) : paiements.length > 0 ? (
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Facture</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Échéance</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Montant dû</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payé</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mode</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {paiements.map((p: any) => (
+                <tr key={p.id_paiement || p.id_echeance}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-mono">{p.numero_facture || '-'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    {p.date_echeance ? new Date(p.date_echeance).toLocaleDateString('fr-FR') : '-'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-mono">
+                    {Number(p.montant_du || 0).toLocaleString('fr-FR')}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-mono" style={{ color: 'var(--color-success)' }}>
+                    {Number(p.montant_paye || p.montant || 0).toLocaleString('fr-FR')}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">{p.mode_paiement || '-'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 py-1 text-xs rounded ${
+                      p.statut === 'paye' || p.statut === 'solde' ? 'bg-green-100 text-green-800' :
+                      p.statut === 'partiel' ? 'bg-yellow-100 text-yellow-800' :
+                      p.statut === 'echu' || p.statut === 'en_retard' ? 'bg-red-100 text-red-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>{p.statut || '-'}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="text-center py-12 text-gray-500">
+          <DollarSign className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+          <p>Aucun paiement enregistré</p>
         </div>
       )}
     </div>
@@ -1067,7 +1329,7 @@ const AdresseFormModal: React.FC<{
             </div>
           </div>
           <div className="flex gap-4 pt-4">
-            <button type="submit" className="flex-1 bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+            <button type="submit" className="flex-1 bg-[#C8663D] text-white px-6 py-2 rounded hover:bg-[#a55231]">
               {adresse ? 'Modifier' : 'Créer'}
             </button>
             <button type="button" onClick={onClose} className="flex-1 bg-gray-300 text-gray-700 px-6 py-2 rounded hover:bg-gray-400">
@@ -1219,7 +1481,7 @@ const ContactFormModal: React.FC<{
             </div>
           </div>
           <div className="flex gap-4 pt-4">
-            <button type="submit" className="flex-1 bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+            <button type="submit" className="flex-1 bg-[#C8663D] text-white px-6 py-2 rounded hover:bg-[#a55231]">
               {contact ? 'Modifier' : 'Créer'}
             </button>
             <button type="button" onClick={onClose} className="flex-1 bg-gray-300 text-gray-700 px-6 py-2 rounded hover:bg-gray-400">

@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Package, AlertTriangle, CheckCircle, Clock, Printer, Play, Square, AlertCircle, ChevronDown, ChevronRight, Wrench, Activity, Zap, Boxes, FileWarning, Box, FileText } from 'lucide-react';
+import {
+  Package, AlertTriangle, CheckCircle, Clock, Printer, Play, ChevronDown, ChevronRight,
+  Wrench, Activity, Zap, Boxes, FileWarning, Box, FileText, RefreshCw,
+} from 'lucide-react';
 import WhatsAppWidget from '../components/WhatsAppWidget';
-import DashboardLayout from '../components/DashboardLayout';
+import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
 
 const DashboardTisseur = () => {
-  const navigate = useNavigate();
-  const [activeSection, setActiveSection] = useState('machines');
+  const [activeSection, setActiveSection] = useState<'machines' | 'incidents' | 'rendement'>('machines');
   const [selectedMachine, setSelectedMachine] = useState<string | null>(null);
   const [expandedOF, setExpandedOF] = useState<string | null>(null);
   const [showIncidentModal, setShowIncidentModal] = useState(false);
@@ -22,218 +23,90 @@ const DashboardTisseur = () => {
   const [quantiteRestante, setQuantiteRestante] = useState('');
   const [causeRefus, setCauseRefus] = useState('');
 
-  const tisseurNom = "Ahmed Ben Ali";
+  const tisseurNom = 'Ahmed Ben Ali';
 
   // Données des OF organisées par machine
   const [mesOF, setMesOF] = useState([
     {
-      numSousOF: 'OF249850',
-      client: 'CL00884',
-      numCommande: 'CM-FT0119',
-      modele: 'ARTHUR',
-      ref: 'AR1020-B02-04',
-      qtePieces: 320,
-      machine: 'M2303',
-      uniteMesure: 'pièces',
-      typeCompteur: 'pieces', // 'pieces' ou 'metres'
-      compteurInitial: 320, // Compteur à programmer sur la machine
-      compteurActuel: null,
-      dateDebut: '2025-10-20 08:00',
-      ordrePlanification: 1,
-      etat: 'Machine alimentée',
-      statut: 'En attente de départ',
+      numSousOF: 'OF249850', client: 'CL00884', numCommande: 'CM-FT0119', modele: 'ARTHUR', ref: 'AR1020-B02-04',
+      qtePieces: 320, machine: 'M2303', uniteMesure: 'pièces', typeCompteur: 'pieces',
+      compteurInitial: 320, compteurActuel: null, dateDebut: '2025-10-20 08:00', ordrePlanification: 1,
+      etat: 'Machine alimentée', statut: 'En attente de départ',
       selecteurs: [
         { sel: 'S01', codeFab: 'NM05-01.00', codeCom: 'C29', couleur: 'ROUGE' },
-        { sel: 'S02', codeFab: 'NM05-01.00', codeCom: 'C01', couleur: 'BLANC' }
+        { sel: 'S02', codeFab: 'NM05-01.00', codeCom: 'C01', couleur: 'BLANC' },
       ],
-      vitesseDuites: 450,
-      tempsPrevu: '12h30',
-      tempsReel: null,
-      tempsArretsMecanique: 0,
-      tempsArretsMP: 0,
-      tempsPlanification: 0,
-      piecesProduites: 0,
-      deuxiemeChoix: 0,
-      dechets: 0,
-      rendementTemps: null,
-      rendementProduction: null,
-      dateHeureDebut: null,
-      priorite: 'Urgent',
-      complementTissage: false,
-      quantiteComplement: 0,
+      vitesseDuites: 450, tempsPrevu: '12h30', tempsReel: null,
+      tempsArretsMecanique: 0, tempsArretsMP: 0, tempsPlanification: 0,
+      piecesProduites: 0, deuxiemeChoix: 0, dechets: 0, rendementTemps: null, rendementProduction: null,
+      dateHeureDebut: null, priorite: 'Urgent', complementTissage: false, quantiteComplement: 0,
       noteSpeciale: 'Attention: Contrôler la tension du fil rouge (C29) toutes les 2 heures',
-      instructionSpeciale: null,
-      noteTisseur: 'Première utilisation du fil C29 lot S2024, vérifier la qualité'
+      instructionSpeciale: null, noteTisseur: 'Première utilisation du fil C29 lot S2024, vérifier la qualité',
     },
     {
-      numSousOF: 'OF249851',
-      client: 'CL00837',
-      numCommande: 'CM-FT0121',
-      modele: 'IBIZA',
-      ref: 'IB1020-B29-01',
-      qtePieces: 250,
-      machine: 'M2303',
-      uniteMesure: 'pièces',
-      typeCompteur: 'pieces',
-      compteurInitial: 250,
-      compteurActuel: null,
-      dateDebut: '2025-10-21 08:00',
-      ordrePlanification: 2,
-      etat: 'En attente',
-      statut: 'Prochain',
+      numSousOF: 'OF249851', client: 'CL00837', numCommande: 'CM-FT0121', modele: 'IBIZA', ref: 'IB1020-B29-01',
+      qtePieces: 250, machine: 'M2303', uniteMesure: 'pièces', typeCompteur: 'pieces',
+      compteurInitial: 250, compteurActuel: null, dateDebut: '2025-10-21 08:00', ordrePlanification: 2,
+      etat: 'En attente', statut: 'Prochain',
       selecteurs: [
         { sel: 'S01', codeFab: 'NM05-01.00', codeCom: 'C29', couleur: 'ROUGE' },
-        { sel: 'S02', codeFab: 'NM05-01.00', codeCom: 'C01', couleur: 'BLANC' }
+        { sel: 'S02', codeFab: 'NM05-01.00', codeCom: 'C01', couleur: 'BLANC' },
       ],
-      vitesseDuites: 450,
-      tempsPrevu: '10h00',
-      tempsReel: null,
-      tempsArretsMecanique: 0,
-      tempsArretsMP: 0,
-      tempsPlanification: 0,
-      piecesProduites: 0,
-      deuxiemeChoix: 0,
-      dechets: 0,
-      rendementTemps: null,
-      rendementProduction: null,
-      dateHeureDebut: null,
-      priorite: 'Normal',
-      complementTissage: false,
-      quantiteComplement: 0,
-      noteSpeciale: null,
-      instructionSpeciale: null,
-      noteTisseur: null
+      vitesseDuites: 450, tempsPrevu: '10h00', tempsReel: null,
+      tempsArretsMecanique: 0, tempsArretsMP: 0, tempsPlanification: 0,
+      piecesProduites: 0, deuxiemeChoix: 0, dechets: 0, rendementTemps: null, rendementProduction: null,
+      dateHeureDebut: null, priorite: 'Normal', complementTissage: false, quantiteComplement: 0,
+      noteSpeciale: null, instructionSpeciale: null, noteTisseur: null,
     },
     {
-      numSousOF: 'OF249780',
-      client: 'CL00884',
-      numCommande: 'CM-FT0118',
-      modele: 'ND LILI',
-      ref: 'NDL1020-B12-01',
-      qtePieces: 150,
-      machine: 'M2303',
-      uniteMesure: 'pièces',
-      typeCompteur: 'pieces',
-      compteurInitial: 150,
-      compteurActuel: 40,
-      dateDebut: '2025-10-18 08:00',
-      ordrePlanification: 3,
-      etat: 'En cours',
-      statut: 'Fabrication en cours',
+      numSousOF: 'OF249780', client: 'CL00884', numCommande: 'CM-FT0118', modele: 'ND LILI', ref: 'NDL1020-B12-01',
+      qtePieces: 150, machine: 'M2303', uniteMesure: 'pièces', typeCompteur: 'pieces',
+      compteurInitial: 150, compteurActuel: 40, dateDebut: '2025-10-18 08:00', ordrePlanification: 3,
+      etat: 'En cours', statut: 'Fabrication en cours',
       selecteurs: [
         { sel: 'S01', codeFab: 'NM10-02.00', codeCom: 'C12', couleur: 'BLEU' },
-        { sel: 'S02', codeFab: 'NM05-01.00', codeCom: 'C01', couleur: 'BLANC' }
+        { sel: 'S02', codeFab: 'NM05-01.00', codeCom: 'C01', couleur: 'BLANC' },
       ],
-      vitesseDuites: 420,
-      tempsPrevu: '8h00',
-      tempsReel: '6h30',
-      tempsArretsMecanique: 45,
-      tempsArretsMP: 15,
-      tempsPlanification: 0,
-      piecesProduites: 110,
-      deuxiemeChoix: 8,
-      dechets: 2,
-      rendementTemps: 85,
-      rendementProduction: 93.33,
-      dateHeureDebut: '2025-10-18 08:15',
-      priorite: 'Normal',
-      complementTissage: false,
-      quantiteComplement: 0,
-      noteSpeciale: null,
-      instructionSpeciale: null,
-      noteTisseur: 'Petit problème de tension résolu à 10h30'
+      vitesseDuites: 420, tempsPrevu: '8h00', tempsReel: '6h30',
+      tempsArretsMecanique: 45, tempsArretsMP: 15, tempsPlanification: 0,
+      piecesProduites: 110, deuxiemeChoix: 8, dechets: 2, rendementTemps: 85, rendementProduction: 93.33,
+      dateHeureDebut: '2025-10-18 08:15', priorite: 'Normal', complementTissage: false, quantiteComplement: 0,
+      noteSpeciale: null, instructionSpeciale: null, noteTisseur: 'Petit problème de tension résolu à 10h30',
     },
     {
-      numSousOF: 'OF249852',
-      client: 'CL00901',
-      numCommande: 'CM-FT0123',
-      modele: 'UNI',
-      ref: 'UNS1020-02',
-      qtePieces: 1800,
-      machine: 'M2301',
-      uniteMesure: 'mètres',
-      typeCompteur: 'metres',
-      compteurInitial: 1800,
-      compteurActuel: 600,
-      dateDebut: '2025-10-19 08:00',
-      ordrePlanification: 1,
-      etat: 'En cours',
-      statut: 'Fabrication en cours',
-      selecteurs: [
-        { sel: 'S01', codeFab: 'NM05-01.00', codeCom: 'C02', couleur: 'ECRU' }
-      ],
-      vitesseDuites: 500,
-      tempsPrevu: '6h00',
-      tempsReel: '5h15',
-      tempsArretsMecanique: 20,
-      tempsArretsMP: 0,
-      tempsPlanification: 0,
-      piecesProduites: 1200,
-      deuxiemeChoix: 45,
-      dechets: 15,
-      rendementTemps: 90,
-      rendementProduction: 96.67,
-      dateHeureDebut: '2025-10-19 08:00',
-      priorite: 'Normal',
-      complementTissage: false,
-      quantiteComplement: 0,
-      noteSpeciale: null,
-      instructionSpeciale: 'Vitesse à réduire à 450 duites/min après 1500m produits',
-      noteTisseur: 'RAS - Production fluide'
+      numSousOF: 'OF249852', client: 'CL00901', numCommande: 'CM-FT0123', modele: 'UNI', ref: 'UNS1020-02',
+      qtePieces: 1800, machine: 'M2301', uniteMesure: 'mètres', typeCompteur: 'metres',
+      compteurInitial: 1800, compteurActuel: 600, dateDebut: '2025-10-19 08:00', ordrePlanification: 1,
+      etat: 'En cours', statut: 'Fabrication en cours',
+      selecteurs: [{ sel: 'S01', codeFab: 'NM05-01.00', codeCom: 'C02', couleur: 'ECRU' }],
+      vitesseDuites: 500, tempsPrevu: '6h00', tempsReel: '5h15',
+      tempsArretsMecanique: 20, tempsArretsMP: 0, tempsPlanification: 0,
+      piecesProduites: 1200, deuxiemeChoix: 45, dechets: 15, rendementTemps: 90, rendementProduction: 96.67,
+      dateHeureDebut: '2025-10-19 08:00', priorite: 'Normal', complementTissage: false, quantiteComplement: 0,
+      noteSpeciale: null, instructionSpeciale: 'Vitesse à réduire à 450 duites/min après 1500m produits',
+      noteTisseur: 'RAS - Production fluide',
     },
     {
-      numSousOF: 'OF249780.1',
-      client: 'CL00884',
-      numCommande: 'CM-FT0118',
-      modele: 'ND LILI',
-      ref: 'NDL1020-B12-01',
-      qtePieces: 20,
-      machine: 'M2303',
-      uniteMesure: 'pièces',
-      typeCompteur: 'pieces',
-      compteurInitial: 20,
-      compteurActuel: null,
-      dateDebut: '2025-10-19 08:00',
-      ordrePlanification: 0,
-      etat: 'Machine alimentée',
-      statut: 'COMPLÉMENT URGENT',
+      numSousOF: 'OF249780.1', client: 'CL00884', numCommande: 'CM-FT0118', modele: 'ND LILI', ref: 'NDL1020-B12-01',
+      qtePieces: 20, machine: 'M2303', uniteMesure: 'pièces', typeCompteur: 'pieces',
+      compteurInitial: 20, compteurActuel: null, dateDebut: '2025-10-19 08:00', ordrePlanification: 0,
+      etat: 'Machine alimentée', statut: 'COMPLÉMENT URGENT',
       selecteurs: [
         { sel: 'S01', codeFab: 'NM10-02.00', codeCom: 'C12', couleur: 'BLEU' },
-        { sel: 'S02', codeFab: 'NM05-01.00', codeCom: 'C01', couleur: 'BLANC' }
+        { sel: 'S02', codeFab: 'NM05-01.00', codeCom: 'C01', couleur: 'BLANC' },
       ],
-      vitesseDuites: 420,
-      tempsPrevu: '2h00',
-      tempsReel: null,
-      tempsArretsMecanique: 0,
-      tempsArretsMP: 0,
-      tempsPlanification: 0,
-      piecesProduites: 0,
-      deuxiemeChoix: 0,
-      dechets: 0,
-      rendementTemps: null,
-      rendementProduction: null,
-      dateHeureDebut: null,
-      priorite: 'COMPLEMENT',
-      complementTissage: true,
-      quantiteComplement: 20,
+      vitesseDuites: 420, tempsPrevu: '2h00', tempsReel: null,
+      tempsArretsMecanique: 0, tempsArretsMP: 0, tempsPlanification: 0,
+      piecesProduites: 0, deuxiemeChoix: 0, dechets: 0, rendementTemps: null, rendementProduction: null,
+      dateHeureDebut: null, priorite: 'COMPLEMENT', complementTissage: true, quantiteComplement: 20,
       ofOrigine: 'OF249780',
-      noteSpeciale: 'URGENT: Complément pour commande client prioritaire',
-      instructionSpeciale: null,
-      noteTisseur: null
-    }
+      noteSpeciale: 'URGENT: Complément pour commande client prioritaire', instructionSpeciale: null, noteTisseur: null,
+    },
   ]);
 
   const [incidents] = useState([
-    {
-      id: 'INC001',
-      numSousOF: 'OF249780',
-      machine: 'M2303',
-      type: 'Problème mécanique',
-      date: '2025-10-18 10:30',
-      statut: 'Résolu',
-      description: 'Tension chaîne anormale',
-      duree: 45
-    }
+    { id: 'INC001', numSousOF: 'OF249780', machine: 'M2303', type: 'Problème mécanique',
+      date: '2025-10-18 10:30', statut: 'Résolu', description: 'Tension chaîne anormale', duree: 45 },
   ]);
 
   const typesIncident = [
@@ -242,22 +115,15 @@ const DashboardTisseur = () => {
     { value: 'mecanique', label: '⚙️ Incident Mécanique', icon: Wrench, needsColor: false },
     { value: 'electrique', label: '⚡ Incident Électrique', icon: Zap, needsColor: false },
     { value: 'programme', label: '💻 Problème de Programmation', icon: FileWarning, needsColor: false },
-    { value: 'carton', label: '📦 Carton Manquant/Non Existant', icon: Package, needsColor: false }
+    { value: 'carton', label: '📦 Carton Manquant/Non Existant', icon: Package, needsColor: false },
   ];
 
   const getOFByMachine = () => {
     const machines: { [key: string]: { machine: string; ofs: any[] } } = {};
-    
     mesOF.forEach((of: any) => {
-      if (!machines[of.machine]) {
-        machines[of.machine] = {
-          machine: of.machine,
-          ofs: []
-        };
-      }
+      if (!machines[of.machine]) machines[of.machine] = { machine: of.machine, ofs: [] };
       machines[of.machine].ofs.push(of);
     });
-    
     Object.values(machines).forEach((m: any) => {
       m.ofs.sort((a: any, b: any) => {
         if (a.complementTissage && !b.complementTissage) return -1;
@@ -265,7 +131,6 @@ const DashboardTisseur = () => {
         return a.ordrePlanification - b.ordrePlanification;
       });
     });
-    
     return Object.values(machines);
   };
 
@@ -277,48 +142,27 @@ const DashboardTisseur = () => {
 
   const handleConfirmerDemarrage = () => {
     if (!selectedOF || !quantiteRestante) return;
-
     const qteRestante = parseFloat(quantiteRestante);
-
-    // Afficher une alerte avec l'info du compteur
     alert(`⚠️ PROGRAMMATION MACHINE\n\nCompteur à programmer sur la machine:\n${qteRestante} ${(selectedOF as any).typeCompteur === 'pieces' ? 'pièces' : 'mètres'}\n\nLe compteur est dégressif (diminue à chaque pièce/mètre produit)`);
-
     setMesOF((prev: any) => prev.map((o: any) => {
       if (o.numSousOF === (selectedOF as any).numSousOF) {
-        return {
-          ...o,
-          etat: 'En cours',
-          statut: o.complementTissage ? 'COMPLÉMENT EN COURS' : 'Fabrication en cours',
-          dateHeureDebut: new Date().toISOString(),
-          compteurInitial: qteRestante,
-          compteurActuel: qteRestante,
-          qtePieces: qteRestante
-        };
+        return { ...o, etat: 'En cours', statut: o.complementTissage ? 'COMPLÉMENT EN COURS' : 'Fabrication en cours',
+          dateHeureDebut: new Date().toISOString(), compteurInitial: qteRestante, compteurActuel: qteRestante, qtePieces: qteRestante };
       }
       return o;
     }));
-
     setShowDebutPosteModal(false);
   };
 
   const handleTerminerOF = (numSousOF: string) => {
     const of = mesOF.find((o: any) => o.numSousOF === numSousOF);
     if (of) {
-      setSelectedOF({
-        ...of,
-        typeEtiquette: 'fin'
-      } as any);
+      setSelectedOF({ ...of, typeEtiquette: 'fin' } as any);
       setShowEtiquetteModal(true);
     }
-    
     setMesOF((prev: any) => prev.map((o: any) => {
       if (o.numSousOF === numSousOF) {
-        return {
-          ...o,
-          etat: 'Terminé',
-          statut: 'Fin de fabrication',
-          piecesProduites: o.qtePieces
-        };
+        return { ...o, etat: 'Terminé', statut: 'Fin de fabrication', piecesProduites: o.qtePieces };
       }
       return o;
     }));
@@ -332,40 +176,22 @@ const DashboardTisseur = () => {
 
   const handleSaveFinPoste = () => {
     if (!selectedOF || !compteurMachine) return;
-
     const compteurRestant = parseFloat(compteurMachine);
-    
     setMesOF((prev: any) => prev.map((of: any) => {
       if (of.numSousOF === (selectedOF as any).numSousOF) {
-        // Calcul de la production THÉORIQUE basée sur le compteur dégressif
         const quantiteTheoriqueProduite = (selectedOF as any).compteurInitial - compteurRestant;
-
-        return {
-          ...of,
-          compteurActuel: compteurRestant,
-          piecesProduites: quantiteTheoriqueProduite // Quantité THÉORIQUE
-        };
+        return { ...of, compteurActuel: compteurRestant, piecesProduites: quantiteTheoriqueProduite };
       }
       return of;
     }));
-
     setShowFinPosteModal(false);
-    
     const quantiteTheoriqueProduite = (selectedOF as any).compteurInitial - compteurRestant;
-    setSelectedOF({
-      ...(selectedOF as any),
-      typeEtiquette: 'finposte',
-      compteurActuel: compteurRestant,
-      piecesProduites: quantiteTheoriqueProduite
-    } as any);
+    setSelectedOF({ ...(selectedOF as any), typeEtiquette: 'finposte', compteurActuel: compteurRestant, piecesProduites: quantiteTheoriqueProduite } as any);
     setShowEtiquetteModal(true);
   };
 
   const handleImprimerEtiquette = (of: any, type: string) => {
-    setSelectedOF({
-      ...of,
-      typeEtiquette: type
-    } as any);
+    setSelectedOF({ ...of, typeEtiquette: type } as any);
     setShowEtiquetteModal(true);
   };
 
@@ -384,10 +210,7 @@ const DashboardTisseur = () => {
 
   const handleConfirmerRefus = () => {
     if (!causeRefus) return;
-    
-    // Logique pour envoyer le refus
     alert(`Refus envoyé pour l'OF ${(selectedOF as any)?.numSousOF}\nCause: ${causeRefus}`);
-    
     setShowRefuserComplementModal(false);
     setCauseRefus('');
   };
@@ -401,544 +224,380 @@ const DashboardTisseur = () => {
     setExpandedOF(expandedOF === numSousOF ? null : numSousOF);
   };
 
-  const StatCard = ({ title, value, subtitle = '', icon: Icon, color = 'blue' }: { title: string; value: number | string; subtitle?: string; icon: any; color?: string }) => (
-    <div className="bg-white rounded-lg shadow p-4 border-l-4" style={{ borderLeftColor: color }}>
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-gray-600">{title}</p>
-          <p className="text-2xl font-bold mt-1">{value}</p>
-          {subtitle && <p className="text-xs text-gray-500 mt-1">{subtitle}</p>}
-        </div>
-        {Icon && <Icon className="w-8 h-8 text-gray-400" />}
+  // --- Derived data ---
+  const machinesData = getOFByMachine();
+  const filteredMachines = selectedMachine ? machinesData.filter((m: any) => m.machine === selectedMachine) : machinesData;
+  const complementCount = mesOF.filter((o) => o.complementTissage).length;
+  const enCoursCount = mesOF.filter((o) => o.etat === 'En cours').length;
+  const enAttenteCount = mesOF.filter((o) => o.etat === 'En attente' || o.etat === 'Machine alimentée').length;
+
+  // --- Badges ---
+  const statutBadge = (etat: string, statut: string) => {
+    const map: Record<string, { bg: string; c: string }> = {
+      'Machine alimentée': { bg: 'var(--color-success-bg)', c: 'var(--color-success)' },
+      'En cours':         { bg: 'var(--color-info-bg)',    c: 'var(--color-info)' },
+      'Terminé':          { bg: 'var(--color-info-bg)',    c: 'var(--accent-indigo)' },
+      'En attente':       { bg: 'var(--bg-hover)',         c: 'var(--fg-secondary)' },
+    };
+    const b = map[etat] || map['En attente'];
+    return <span style={{ ...badgeBase, background: b.bg, color: b.c }}>{statut}</span>;
+  };
+
+  // --- Sub renders ---
+  const renderMachines = () => (
+    <>
+      <div className="lp-metric-grid">
+        <KpiCard label="Machines actives" value={machinesData.length} hint="Sous ma responsabilité" icon={<Box size={18} />} tone="terracotta" />
+        <KpiCard label="Compléments urgents" value={complementCount} hint="Priorité coupeur" icon={<AlertTriangle size={18} />} tone="rose" />
+        <KpiCard label="OF en cours" value={enCoursCount} hint="Fabrication active" icon={<Activity size={18} />} tone="sage" />
+        <KpiCard label="En attente / alimentée" value={enAttenteCount} hint="Prêts au démarrage" icon={<Clock size={18} />} tone="gold" />
       </div>
-    </div>
-  );
 
-  const renderMachines = () => {
-    const machinesData = getOFByMachine();
-    
-    const filteredMachines = selectedMachine 
-      ? machinesData.filter((m: any) => m.machine === selectedMachine)
-      : machinesData;
-
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-800">Mes Machines</h2>
-          <div className="text-sm text-gray-600">
-            Organisation par machine et ordre de planification
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <StatCard 
-            title="Machines actives" 
-            value={machinesData.length}
-            icon={Box}
-            color="#3b82f6"
-          />
-          <StatCard 
-            title="Compléments urgents" 
-            value={mesOF.filter(o => o.complementTissage).length}
-            icon={AlertTriangle}
-            color="#ef4444"
-          />
-          <StatCard 
-            title="En cours" 
-            value={mesOF.filter(o => o.etat === 'En cours').length}
-            icon={Activity}
-            color="#10b981"
-          />
-          <StatCard 
-            title="En attente" 
-            value={mesOF.filter(o => o.etat === 'En attente' || o.etat === 'Machine alimentée').length}
-            icon={Clock}
-            color="#f59e0b"
-          />
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow sticky top-24">
-              <div className="p-4 border-b bg-gray-50">
-                <h3 className="font-semibold text-gray-800">Mes Machines</h3>
-              </div>
-              <div className="p-2">
+      <div className="lp-grid-3">
+        <SectionCard title="Mes machines" subtitle="Sélection du poste" icon={<Box size={16} />}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--s-2)' }}>
+            <button
+              onClick={() => setSelectedMachine(null)}
+              style={{ ...machineBtn, background: !selectedMachine ? 'var(--bg-hover)' : 'transparent',
+                borderColor: !selectedMachine ? 'var(--accent-terracotta)' : 'var(--border-subtle)' }}
+            >
+              <span style={{ fontWeight: 600, color: 'var(--fg-primary)' }}>Toutes</span>
+              <span style={countChip}>{machinesData.length}</span>
+            </button>
+            {machinesData.map((m: any) => {
+              const complCount = m.ofs.filter((o: any) => o.complementTissage).length;
+              const activeCount = m.ofs.filter((o: any) => o.etat === 'En cours').length;
+              const isActive = selectedMachine === m.machine;
+              return (
                 <button
-                  onClick={() => setSelectedMachine(null)}
-                  className={`w-full text-left px-4 py-3 rounded-lg mb-1 transition-colors ${
-                    !selectedMachine 
-                      ? 'bg-blue-100 text-blue-900 font-semibold' 
-                      : 'hover:bg-gray-100 text-gray-700'
-                  }`}
+                  key={m.machine}
+                  onClick={() => setSelectedMachine(m.machine)}
+                  style={{ ...machineBtn, background: isActive ? 'var(--bg-hover)' : 'transparent',
+                    borderColor: isActive ? 'var(--accent-terracotta)' : 'var(--border-subtle)' }}
                 >
-                  <div className="flex items-center justify-between">
-                    <span>Toutes</span>
-                    <span className="px-2 py-1 bg-gray-200 rounded-full text-xs">
-                      {machinesData.length}
-                    </span>
-                  </div>
-                </button>
-                
-                {machinesData.map((machineData: any) => {
-                  const totalOF = machineData.ofs.length;
-                  const complementCount = machineData.ofs.filter((o: any) => o.complementTissage).length;
-                  const enCoursCount = machineData.ofs.filter((o: any) => o.etat === 'En cours').length;
-                  
-                  return (
-                    <button
-                      key={machineData.machine}
-                      onClick={() => setSelectedMachine(machineData.machine)}
-                      className={`w-full text-left px-4 py-3 rounded-lg mb-1 transition-colors ${
-                        selectedMachine === machineData.machine
-                          ? 'bg-blue-100 text-blue-900 font-semibold' 
-                          : 'hover:bg-gray-100 text-gray-700'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-bold">{machineData.machine}</span>
-                        <span className="px-2 py-1 bg-gray-200 rounded-full text-xs">
-                          {totalOF} OF
+                  <div style={{ flex: 1, textAlign: 'left' }}>
+                    <div style={{ fontWeight: 700, color: 'var(--fg-primary)' }}>{m.machine}</div>
+                    <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+                      {complCount > 0 && (
+                        <span style={{ ...badgeBase, background: 'var(--color-danger-bg)', color: 'var(--color-danger)' }}>
+                          {complCount} compl.
                         </span>
-                      </div>
-                      <div className="flex items-center space-x-2 text-xs">
-                        {complementCount > 0 && (
-                          <span className="px-2 py-0.5 bg-red-100 text-red-800 rounded-full font-semibold">
-                            {complementCount} complément
-                          </span>
-                        )}
-                        {enCoursCount > 0 && (
-                          <span className="px-2 py-0.5 bg-green-100 text-green-800 rounded-full">
-                            {enCoursCount} en cours
-                          </span>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+                      )}
+                      {activeCount > 0 && (
+                        <span style={{ ...badgeBase, background: 'var(--color-success-bg)', color: 'var(--color-success)' }}>
+                          {activeCount} en cours
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <span style={countChip}>{m.ofs.length} OF</span>
+                </button>
+              );
+            })}
           </div>
+        </SectionCard>
 
-          <div className="lg:col-span-3 space-y-4">
-            {filteredMachines.map((machineData: any) => (
-              <div key={machineData.machine}>
-                {!selectedMachine && (
-                  <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center">
-                    <Box className="w-5 h-5 mr-2 text-blue-600" />
-                    Machine {machineData.machine}
-                  </h3>
-                )}
-                
-                <div className="space-y-2">
-                  {machineData.ofs.map((of: any, idx: number) => {
-                    const isExpanded = expandedOF === of.numSousOF;
-                    const progression = (of.piecesProduites / of.qtePieces) * 100;
-                    const peutDemarrer = of.etat === 'Machine alimentée';
-                    const enCours = of.etat === 'En cours';
-                    const hasNotes = of.noteSpeciale || of.instructionSpeciale || of.noteTisseur;
-                    
-                    return (
-                      <div 
-                        key={of.numSousOF}
-                        className={`bg-white rounded-lg shadow-sm border-2 transition-all ${
-                          of.complementTissage ? 'border-red-500 bg-red-50' : 
-                          isExpanded ? 'border-blue-500' : 'border-gray-200'
-                        } ${isExpanded ? 'shadow-lg' : 'hover:shadow-md'}`}
-                      >
-                        <div 
-                          onClick={() => toggleOF(of.numSousOF)}
-                          className="p-4 cursor-pointer"
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3 flex-1">
-                              <div className="text-gray-400">
-                                {isExpanded ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
-                              </div>
-                              
-                              <div className="flex-1">
-                                <div className="flex items-center space-x-2 mb-1">
-                                  <span className="font-bold text-gray-900">{of.numSousOF}</span>
-                                  
-                                  {of.complementTissage && (
-                                    <span className="px-2 py-0.5 bg-red-600 text-white rounded-full text-xs font-bold animate-pulse flex items-center">
-                                      <AlertTriangle className="w-3 h-3 mr-1" />
-                                      COMPLÉMENT {of.quantiteComplement} {of.uniteMesure}
-                                    </span>
-                                  )}
-                                  
-                                  {idx === 0 && of.etat === 'Machine alimentée' && !of.complementTissage && (
-                                    <span className="px-2 py-0.5 bg-blue-600 text-white rounded-full text-xs font-semibold">
-                                      Prochain
-                                    </span>
-                                  )}
+        <div style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: 'var(--s-4)' }}>
+          {filteredMachines.map((m: any) => (
+            <SectionCard
+              key={m.machine}
+              title={`Machine ${m.machine}`}
+              subtitle={`${m.ofs.length} OF programmé(s)`}
+              icon={<Box size={16} />}
+            >
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--s-3)' }}>
+                {m.ofs.map((of: any, idx: number) => {
+                  const isExpanded = expandedOF === of.numSousOF;
+                  const progression = of.qtePieces > 0 ? (of.piecesProduites / of.qtePieces) * 100 : 0;
+                  const peutDemarrer = of.etat === 'Machine alimentée';
+                  const enCours = of.etat === 'En cours';
+                  const hasNotes = of.noteSpeciale || of.instructionSpeciale || of.noteTisseur;
 
-                                  {of.priorite === 'Urgent' && !of.complementTissage && (
-                                    <span className="px-2 py-0.5 bg-orange-100 text-orange-800 rounded-full text-xs font-bold">
-                                      URGENT
-                                    </span>
-                                  )}
-
-                                  {hasNotes && (
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleVoirNotes(of);
-                                      }}
-                                      className="px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded-full text-xs font-semibold hover:bg-yellow-200 flex items-center"
-                                    >
-                                      <FileText className="w-3 h-3 mr-1" />
-                                      Notes
-                                    </button>
-                                  )}
-                                </div>
-                                
-                                <div className="text-sm text-gray-600">
-                                  {of.modele} - {of.qtePieces} {of.uniteMesure}
-                                </div>
-                                <div className="flex items-center space-x-2 mt-1">
-                                  <div className="flex items-center space-x-1">
-                                    {of.selecteurs.map((sel: any, idx: number) => (
-                                      <span key={idx} className="text-xs px-2 py-0.5 bg-gray-100 rounded">
-                                        S{sel.sel}: {sel.codeFab}
-                                      </span>
-                                    ))}
-                                  </div>
-                                  {(of.etat === 'Machine alimentée' || of.etat === 'En attente') && (
-                                    <span className="text-xs px-2 py-1 bg-blue-600 text-white rounded font-bold">
-                                      📊 Compteur: {of.compteurInitial}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
+                  return (
+                    <div
+                      key={of.numSousOF}
+                      style={{
+                        background: 'var(--bg-elevated)',
+                        border: `1px solid ${of.complementTissage ? 'var(--color-danger)' : isExpanded ? 'var(--accent-terracotta)' : 'var(--border-subtle)'}`,
+                        borderRadius: 'var(--radius-sm)',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <div onClick={() => toggleOF(of.numSousOF)} style={{ padding: 'var(--s-4)', cursor: 'pointer' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--s-3)' }}>
+                          {isExpanded ? <ChevronDown size={18} style={{ color: 'var(--fg-muted)' }} /> : <ChevronRight size={18} style={{ color: 'var(--fg-muted)' }} />}
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+                              <span style={{ fontWeight: 700, color: 'var(--fg-primary)' }}>{of.numSousOF}</span>
+                              {of.complementTissage && (
+                                <span style={{ ...badgeBase, background: 'var(--color-danger)', color: '#fff', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                  <AlertTriangle size={11} /> COMPLÉMENT {of.quantiteComplement} {of.uniteMesure}
+                                </span>
+                              )}
+                              {idx === 0 && of.etat === 'Machine alimentée' && !of.complementTissage && (
+                                <span style={{ ...badgeBase, background: 'var(--color-info-bg)', color: 'var(--color-info)' }}>Prochain</span>
+                              )}
+                              {of.priorite === 'Urgent' && !of.complementTissage && (
+                                <span style={{ ...badgeBase, background: 'var(--color-warning-bg)', color: 'var(--color-warning)' }}>URGENT</span>
+                              )}
+                              {hasNotes && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleVoirNotes(of); }}
+                                  style={{ ...badgeBase, background: 'var(--color-warning-bg)', color: 'var(--color-warning)',
+                                    border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                                >
+                                  <FileText size={11} /> Notes
+                                </button>
+                              )}
                             </div>
-                            
-                            <div className="flex items-center space-x-2">
-                              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                                of.etat === 'Machine alimentée' ? 'bg-green-100 text-green-800' :
-                                of.etat === 'En cours' ? 'bg-blue-100 text-blue-800' :
-                                of.etat === 'Terminé' ? 'bg-purple-100 text-purple-800' :
-                                'bg-gray-100 text-gray-800'
-                              }`}>
-                                {of.statut}
-                              </span>
+                            <div style={{ fontSize: 'var(--text-sm)', color: 'var(--fg-secondary)' }}>
+                              {of.modele} — {of.qtePieces} {of.uniteMesure}
+                            </div>
+                            <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
+                              {of.selecteurs.map((sel: any, i: number) => (
+                                <span key={i} style={selChip}>S{sel.sel}: {sel.codeFab}</span>
+                              ))}
+                              {(of.etat === 'Machine alimentée' || of.etat === 'En attente') && (
+                                <span style={{ ...badgeBase, background: 'var(--accent-terracotta)', color: '#fff' }}>
+                                  Compteur: {of.compteurInitial}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          {statutBadge(of.etat, of.statut)}
+                        </div>
+
+                        {enCours && (
+                          <div style={{ marginTop: 'var(--s-3)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-xs)', color: 'var(--fg-secondary)', marginBottom: 4 }}>
+                              <span>Progression</span>
+                              <span>{of.piecesProduites} / {of.qtePieces} {of.uniteMesure} ({progression.toFixed(0)}%)</span>
+                            </div>
+                            <div style={{ width: '100%', height: 6, background: 'var(--border-subtle)', borderRadius: 999 }}>
+                              <div style={{ width: `${progression}%`, height: '100%',
+                                background: of.complementTissage ? 'var(--color-danger)' : 'var(--accent-terracotta)',
+                                borderRadius: 999 }} />
+                            </div>
+                            {of.compteurActuel != null && (
+                              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-secondary)', marginTop: 4 }}>
+                                Compteur: <strong style={{ color: 'var(--fg-primary)' }}>{of.compteurActuel}</strong>
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {isExpanded && (
+                        <div style={{ borderTop: '1px solid var(--border-subtle)', background: 'var(--bg-hover)', padding: 'var(--s-4)' }}>
+                          {of.complementTissage && (
+                            <div style={{ marginBottom: 'var(--s-3)', padding: 'var(--s-3)', background: 'var(--color-danger-bg)',
+                              border: '1px solid var(--color-danger)', borderRadius: 'var(--radius-sm)' }}>
+                              <p style={{ fontWeight: 700, color: 'var(--color-danger)', display: 'flex', alignItems: 'center', gap: 6, fontSize: 'var(--text-sm)' }}>
+                                <AlertTriangle size={14} /> Complément de tissage demandé par le coupeur
+                              </p>
+                              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-secondary)', marginTop: 4 }}>
+                                OF origine: {of.ofOrigine} — Quantité: {of.quantiteComplement} {of.uniteMesure}
+                              </p>
+                            </div>
+                          )}
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--s-3)', marginBottom: 'var(--s-3)', fontSize: 'var(--text-sm)' }}>
+                            <div><span style={dtLabel}>Client:</span> <strong>{of.client}</strong></div>
+                            <div><span style={dtLabel}>Commande:</span> <strong>{of.numCommande}</strong></div>
+                            <div><span style={dtLabel}>Référence:</span> <strong>{of.ref}</strong></div>
+                            <div><span style={dtLabel}>Vitesse:</span> <strong>{of.vitesseDuites} duites/min</strong></div>
+                            <div style={{ gridColumn: '1 / -1', padding: 'var(--s-3)', background: 'var(--bg-elevated)',
+                              border: '1px solid var(--accent-terracotta)', borderRadius: 'var(--radius-sm)' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontWeight: 700, color: 'var(--fg-primary)' }}>Compteur à programmer:</span>
+                                <span style={{ fontWeight: 700, color: 'var(--accent-terracotta)', fontSize: 'var(--text-xl)' }}>
+                                  {of.compteurInitial} {of.typeCompteur === 'pieces' ? 'pcs' : 'm'}
+                                </span>
+                              </div>
+                              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-muted)', marginTop: 4 }}>Compteur dégressif (diminue à chaque production)</p>
+                            </div>
+                            <div><span style={dtLabel}>Temps prévu:</span> <strong>{of.tempsPrevu}</strong></div>
+                            {of.tempsReel && <div><span style={dtLabel}>Temps réel:</span> <strong style={{ color: 'var(--accent-indigo)' }}>{of.tempsReel}</strong></div>}
+                            {of.dateHeureDebut && (
+                              <div style={{ gridColumn: '1 / -1' }}>
+                                <span style={dtLabel}>Démarré le:</span> <strong>{new Date(of.dateHeureDebut).toLocaleString('fr-FR')}</strong>
+                              </div>
+                            )}
+                          </div>
+
+                          <div style={{ marginBottom: 'var(--s-3)' }}>
+                            <p style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--fg-primary)', marginBottom: 6 }}>Matières Premières (Code Fabrication):</p>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                              {of.selecteurs.map((sel: any, i: number) => (
+                                <div key={i} style={{ padding: 'var(--s-2) var(--s-3)', background: 'var(--bg-elevated)',
+                                  border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)' }}>
+                                  <p style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-muted)' }}>Sélecteur {sel.sel}</p>
+                                  <p style={{ fontWeight: 700, color: 'var(--fg-primary)' }}>{sel.codeFab}</p>
+                                  <p style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-secondary)' }}>{sel.couleur}</p>
+                                </div>
+                              ))}
                             </div>
                           </div>
 
                           {enCours && (
-                            <div className="mt-3">
-                              <div className="flex justify-between text-xs text-gray-600 mb-1">
-                                <span>Progression</span>
-                                <span>{of.piecesProduites} / {of.qtePieces} {of.uniteMesure} ({progression.toFixed(0)}%)</span>
+                            <div style={{ padding: 'var(--s-3)', marginBottom: 'var(--s-3)',
+                              background: 'var(--bg-elevated)',
+                              border: `1px solid ${of.complementTissage ? 'var(--color-danger)' : 'var(--border-subtle)'}`,
+                              borderRadius: 'var(--radius-sm)' }}>
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                                <div>
+                                  <p style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-muted)' }}>Pièces produites (théorique)</p>
+                                  <p style={{ fontSize: 'var(--text-xl)', fontWeight: 700,
+                                    color: of.complementTissage ? 'var(--color-danger)' : 'var(--accent-terracotta)' }}>{of.piecesProduites}</p>
+                                  <p style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-muted)', fontStyle: 'italic' }}>Qté réelle après contrôle qualité</p>
+                                </div>
+                                <div>
+                                  <p style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-muted)' }}>Compteur machine</p>
+                                  <p style={{ fontSize: 'var(--text-xl)', fontWeight: 700,
+                                    color: of.complementTissage ? 'var(--color-danger)' : 'var(--accent-terracotta)' }}>{of.compteurActuel ?? '-'}</p>
+                                  <p style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-muted)', fontStyle: 'italic' }}>Compteur restant</p>
+                                </div>
                               </div>
-                              <div className="w-full bg-gray-200 rounded-full h-2">
-                                <div 
-                                  className={`h-2 rounded-full transition-all ${
-                                    of.complementTissage ? 'bg-red-600' : 'bg-blue-600'
-                                  }`}
-                                  style={{ width: `${progression}%` }}
-                                />
-                              </div>
-                              {of.compteurActuel && (
-                                <p className="text-xs text-gray-600 mt-1">
-                                  Compteur: <span className="font-bold">{of.compteurActuel}</span>
-                                  {of.compteurDebut && ` (Début: ${of.compteurDebut})`}
-                                </p>
-                              )}
                             </div>
                           )}
-                        </div>
 
-                        {isExpanded && (
-                          <div className="border-t bg-gray-50 p-4">
-                            {of.complementTissage && (
-                              <div className="mb-4 p-3 bg-red-100 border border-red-300 rounded-lg">
-                                <p className="text-sm font-bold text-red-900 flex items-center">
-                                  <AlertTriangle className="w-4 h-4 mr-2" />
-                                  Complément de tissage demandé par le coupeur
-                                </p>
-                                <p className="text-xs text-red-800 mt-1">
-                                  OF origine: {of.ofOrigine} | Quantité: {of.quantiteComplement} {of.uniteMesure}
-                                </p>
-                              </div>
+                          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                            {peutDemarrer && (
+                              <>
+                                <button onClick={() => handleDemarrerOF(of)} style={{ ...btnPrimary, background: of.complementTissage ? 'var(--color-danger)' : 'var(--accent-terracotta)', borderColor: of.complementTissage ? 'var(--color-danger)' : 'var(--accent-terracotta)' }}>
+                                  <Play size={12} /> Démarrer OF
+                                </button>
+                                <button onClick={() => handleImprimerEtiquette(of, 'debut')} style={btnGhost}>
+                                  <Printer size={12} /> Étiquette Début
+                                </button>
+                                {of.complementTissage && (
+                                  <button onClick={() => handleRefuserComplement(of)} style={btnGhost}>
+                                    Refuser complément
+                                  </button>
+                                )}
+                              </>
                             )}
-
-                            <div className="grid grid-cols-2 gap-3 mb-4 text-sm">
-                              <div>
-                                <span className="text-gray-600">Client:</span>
-                                <span className="font-medium ml-2">{of.client}</span>
-                              </div>
-                              <div>
-                                <span className="text-gray-600">Commande:</span>
-                                <span className="font-medium ml-2">{of.numCommande}</span>
-                              </div>
-                              <div>
-                                <span className="text-gray-600">Référence:</span>
-                                <span className="font-medium ml-2">{of.ref}</span>
-                              </div>
-                              <div>
-                                <span className="text-gray-600">Vitesse:</span>
-                                <span className="font-medium ml-2">{of.vitesseDuites} duites/min</span>
-                              </div>
-                              <div className="col-span-2 bg-blue-50 border-2 border-blue-300 rounded p-3">
-                                <div className="flex items-center justify-between mb-2">
-                                  <span className="text-blue-900 font-bold text-sm">Compteur à programmer:</span>
-                                  <span className="font-bold text-blue-700 text-2xl">
-                                    {of.compteurInitial} {of.typeCompteur === 'pieces' ? 'pcs' : 'm'}
-                                  </span>
-                                </div>
-                                <p className="text-xs text-blue-700">⬇️ Compteur dégressif (diminue à chaque production)</p>
-                              </div>
-                              <div>
-                                <span className="text-gray-600">Temps prévu:</span>
-                                <span className="font-medium ml-2">{of.tempsPrevu}</span>
-                              </div>
-                              {of.tempsReel && (
-                                <div>
-                                  <span className="text-gray-600">Temps réel:</span>
-                                  <span className="font-medium ml-2 text-blue-600">{of.tempsReel}</span>
-                                </div>
-                              )}
-                              {of.dateHeureDebut && (
-                                <div className="col-span-2">
-                                  <span className="text-gray-600">Démarré le:</span>
-                                  <span className="font-medium ml-2">{new Date(of.dateHeureDebut).toLocaleString('fr-FR')}</span>
-                                </div>
-                              )}
-                            </div>
-
-                            <div className="mb-4">
-                              <p className="text-sm font-semibold text-gray-700 mb-2">Matières Premières (Code Fabrication):</p>
-                              <div className="grid grid-cols-2 gap-2">
-                                {of.selecteurs.map((sel: any, idx: number) => (
-                                  <div key={idx} className="p-2 bg-white border border-gray-200 rounded">
-                                    <p className="text-xs text-gray-600">Sélecteur {sel.sel}</p>
-                                    <p className="text-sm font-bold">{sel.codeFab}</p>
-                                    <p className="text-xs text-gray-600">{sel.couleur}</p>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-
                             {enCours && (
-                              <div className={`border rounded-lg p-3 mb-4 ${
-                                of.complementTissage ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200'
-                              }`}>
-                                <div className="grid grid-cols-2 gap-3 text-sm">
-                                  <div>
-                                    <p className="text-xs text-gray-600">Pièces produites (théorique)</p>
-                                    <p className={`text-xl font-bold ${
-                                      of.complementTissage ? 'text-red-600' : 'text-blue-600'
-                                    }`}>{of.piecesProduites}</p>
-                                    <p className="text-xs text-gray-500 italic mt-1">Qté réelle après contrôle qualité</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-xs text-gray-600">Compteur machine</p>
-                                    <p className={`text-xl font-bold ${
-                                      of.complementTissage ? 'text-red-600' : 'text-blue-600'
-                                    }`}>{of.compteurActuel || '-'}</p>
-                                    <p className="text-xs text-gray-500 italic mt-1">Compteur restant</p>
-                                  </div>
-                                </div>
-                              </div>
+                              <>
+                                <button onClick={() => handleOpenFinPoste(of)} style={btnPrimary}>
+                                  <Printer size={12} /> Fin Poste
+                                </button>
+                                <button onClick={() => handleDeclarerIncident(of.numSousOF)} style={{ ...btnGhost, color: 'var(--color-danger)', borderColor: 'var(--color-danger)' }}>
+                                  <AlertTriangle size={12} /> Incident
+                                </button>
+                                <button onClick={() => handleTerminerOF(of.numSousOF)} style={btnGhost}>
+                                  <CheckCircle size={12} /> Terminer
+                                </button>
+                              </>
                             )}
-
-                            <div className="space-y-2">
-                              {peutDemarrer && (
-                                <div className="grid grid-cols-2 gap-2">
-                                  <button
-                                    onClick={() => handleDemarrerOF(of.numSousOF)}
-                                    className={`px-4 py-2 text-white rounded-lg font-semibold flex items-center justify-center ${
-                                      of.complementTissage 
-                                        ? 'bg-red-600 hover:bg-red-700' 
-                                        : 'bg-green-600 hover:bg-green-700'
-                                    }`}
-                                  >
-                                    <Play className="w-4 h-4 mr-2" />
-                                    Démarrer OF
-                                  </button>
-                                  <button
-                                    onClick={() => handleImprimerEtiquette(of, 'debut')}
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center"
-                                  >
-                                    <Printer className="w-4 h-4 mr-2" />
-                                    Étiquette Début
-                                  </button>
-                                </div>
-                              )}
-
-                              {enCours && (
-                                <div className="grid grid-cols-3 gap-2">
-                                  <button
-                                    onClick={() => handleOpenFinPoste(of)}
-                                    className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center justify-center text-sm"
-                                  >
-                                    <Printer className="w-4 h-4 mr-1" />
-                                    Fin Poste
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeclarerIncident(of.numSousOF)}
-                                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center justify-center text-sm"
-                                  >
-                                    <AlertTriangle className="w-4 h-4 mr-1" />
-                                    Incident
-                                  </button>
-                                  <button
-                                    onClick={() => handleTerminerOF(of.numSousOF)}
-                                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center justify-center text-sm"
-                                  >
-                                    <CheckCircle className="w-4 h-4 mr-1" />
-                                    Terminer
-                                  </button>
-                                </div>
-                              )}
-                            </div>
                           </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-            ))}
-          </div>
+            </SectionCard>
+          ))}
         </div>
       </div>
-    );
-  };
+    </>
+  );
 
   const renderIncidents = () => (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-800">Mes Incidents Déclarés</h2>
-      </div>
-
-      <div className="space-y-3">
+    <SectionCard title="Mes incidents déclarés" subtitle="Historique et statut" icon={<AlertTriangle size={16} />}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--s-3)' }}>
         {incidents.map((incident) => (
-          <div key={incident.id} className="bg-white rounded-lg shadow p-4 border-l-4 border-red-500">
-            <div className="flex items-start justify-between mb-2">
+          <div key={incident.id} style={{ padding: 'var(--s-4)', background: 'var(--bg-elevated)',
+            border: '1px solid var(--border-subtle)', borderLeft: '3px solid var(--color-danger)', borderRadius: 'var(--radius-sm)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
               <div>
-                <h3 className="font-bold text-gray-900">{incident.id}</h3>
-                <p className="text-sm text-gray-600">OF: {incident.numSousOF} | Machine: {incident.machine}</p>
+                <h3 style={{ fontWeight: 700, color: 'var(--fg-primary)' }}>{incident.id}</h3>
+                <p style={{ fontSize: 'var(--text-sm)', color: 'var(--fg-secondary)' }}>OF: {incident.numSousOF} — Machine: {incident.machine}</p>
               </div>
-              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                incident.statut === 'Résolu' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'
-              }`}>
-                {incident.statut}
-              </span>
+              <span style={{
+                ...badgeBase,
+                background: incident.statut === 'Résolu' ? 'var(--color-success-bg)' : 'var(--color-warning-bg)',
+                color: incident.statut === 'Résolu' ? 'var(--color-success)' : 'var(--color-warning)',
+              }}>{incident.statut}</span>
             </div>
-            <div className="text-sm">
-              <p className="font-medium text-gray-800">{incident.type}</p>
-              <p className="text-gray-600">{incident.description}</p>
-              <p className="text-xs text-gray-500 mt-2">
-                {new Date(incident.date).toLocaleString('fr-FR')} | Durée: {incident.duree} min
-              </p>
-            </div>
+            <p style={{ fontWeight: 500, color: 'var(--fg-primary)', fontSize: 'var(--text-sm)' }}>{incident.type}</p>
+            <p style={{ fontSize: 'var(--text-sm)', color: 'var(--fg-secondary)' }}>{incident.description}</p>
+            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-muted)', marginTop: 6 }}>
+              {new Date(incident.date).toLocaleString('fr-FR')} — Durée: {incident.duree} min
+            </p>
           </div>
         ))}
       </div>
-    </div>
+    </SectionCard>
   );
 
   const renderRendement = () => {
-    const ofTermines = mesOF.filter(of => of.etat === 'Terminé');
-    const ofEnCours = mesOF.filter(of => of.etat === 'En cours');
-
-    // Prix unitaire en TND (à adapter selon le produit)
-    const prixUnitaireTND = 2.5; // Prix moyen d'une pièce de 2ème choix
-
+    const prixUnitaireTND = 2.5;
     return (
-      <div className="space-y-6">
-        <h2 className="text-2xl font-bold text-gray-800">Mon Rendement</h2>
-
-        {/* Rendements par période */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <StatCard 
-            title="Rendement Aujourd'hui" 
-            value="85%"
-            subtitle="Théorique: 90%"
-            icon={Activity}
-            color="#10b981"
-          />
-          <StatCard 
-            title="Rendement Semaine" 
-            value="87%"
-            subtitle="Théorique: 90%"
-            icon={Activity}
-            color="#3b82f6"
-          />
-          <StatCard 
-            title="Rendement Mois" 
-            value="88%"
-            subtitle="Théorique: 90%"
-            icon={Activity}
-            color="#8b5cf6"
-          />
+      <>
+        <div className="lp-metric-grid">
+          <KpiCard label="Rendement Aujourd'hui" value="85%" hint="Théorique: 90%" icon={<Activity size={18} />} tone="terracotta" />
+          <KpiCard label="Rendement Semaine" value="87%" hint="Théorique: 90%" icon={<Activity size={18} />} tone="sage" />
+          <KpiCard label="Rendement Mois" value="88%" hint="Théorique: 90%" icon={<Activity size={18} />} tone="indigo" />
+          <KpiCard label="Perte 2ème choix (mois)" value="445 TND" hint="178 pcs" icon={<AlertTriangle size={18} />} tone="rose" />
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="font-bold text-gray-800 mb-4">Détail par OF</h3>
-          <div className="space-y-4">
-            {mesOF.filter(of => of.etat === 'En cours' || of.etat === 'Terminé').map((of) => {
+        <SectionCard title="Détail par OF" subtitle="Choix 1 / 2 / déchets" icon={<Activity size={16} />}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--s-3)' }}>
+            {mesOF.filter((of) => of.etat === 'En cours' || of.etat === 'Terminé').map((of) => {
               const premierChoix = of.piecesProduites - of.deuxiemeChoix - of.dechets;
-              const pctDeuxieme = of.piecesProduites > 0 ? ((of.deuxiemeChoix / of.piecesProduites) * 100).toFixed(1) : 0;
+              const pctDeuxieme = of.piecesProduites > 0 ? ((of.deuxiemeChoix / of.piecesProduites) * 100).toFixed(1) : '0';
               const valeurPerteTND = (of.deuxiemeChoix * prixUnitaireTND).toFixed(2);
-              
               return (
-                <div key={of.numSousOF} className="border-2 border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex-1">
-                      <p className="font-bold text-lg">{of.numSousOF}</p>
-                      <p className="text-sm text-gray-600">{of.modele} | Machine {of.machine}</p>
-                      <div className="flex items-center space-x-1 mt-1">
-                        {of.selecteurs.map((sel, idx) => (
-                          <span key={idx} className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded">
-                            S{sel.sel}: {sel.codeFab}
-                          </span>
-                        ))}
-                      </div>
+                <div key={of.numSousOF} style={{ padding: 'var(--s-4)', background: 'var(--bg-elevated)',
+                  border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)' }}>
+                  <div style={{ marginBottom: 'var(--s-3)' }}>
+                    <p style={{ fontWeight: 700, fontSize: 'var(--text-lg)', color: 'var(--fg-primary)' }}>{of.numSousOF}</p>
+                    <p style={{ fontSize: 'var(--text-sm)', color: 'var(--fg-secondary)' }}>{of.modele} — Machine {of.machine}</p>
+                    <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
+                      {of.selecteurs.map((sel, i) => (
+                        <span key={i} style={selChip}>S{sel.sel}: {sel.codeFab}</span>
+                      ))}
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3 text-sm mb-3">
-                    <div className="bg-green-50 p-2 rounded">
-                      <p className="text-xs text-gray-600">1er Choix</p>
-                      <p className="font-bold text-green-700 text-lg">{premierChoix}</p>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 'var(--s-3)' }}>
+                    <div style={{ padding: 'var(--s-2) var(--s-3)', background: 'var(--color-success-bg)', borderRadius: 'var(--radius-sm)' }}>
+                      <p style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-secondary)' }}>1er Choix</p>
+                      <p style={{ fontWeight: 700, color: 'var(--color-success)', fontSize: 'var(--text-lg)' }}>{premierChoix}</p>
                     </div>
-                    <div className="bg-orange-50 p-2 rounded">
-                      <p className="text-xs text-gray-600">2ème Choix</p>
-                      <p className="font-bold text-orange-700 text-lg">{of.deuxiemeChoix}</p>
-                      <p className="text-xs text-orange-600 font-semibold">{pctDeuxieme}%</p>
+                    <div style={{ padding: 'var(--s-2) var(--s-3)', background: 'var(--color-warning-bg)', borderRadius: 'var(--radius-sm)' }}>
+                      <p style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-secondary)' }}>2ème Choix</p>
+                      <p style={{ fontWeight: 700, color: 'var(--color-warning)', fontSize: 'var(--text-lg)' }}>{of.deuxiemeChoix}</p>
+                      <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-warning)', fontWeight: 600 }}>{pctDeuxieme}%</p>
                     </div>
-                    <div className="bg-red-50 p-2 rounded">
-                      <p className="text-xs text-gray-600">Déchets</p>
-                      <p className="font-bold text-red-700 text-lg">{of.dechets}</p>
+                    <div style={{ padding: 'var(--s-2) var(--s-3)', background: 'var(--color-danger-bg)', borderRadius: 'var(--radius-sm)' }}>
+                      <p style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-secondary)' }}>Déchets</p>
+                      <p style={{ fontWeight: 700, color: 'var(--color-danger)', fontSize: 'var(--text-lg)' }}>{of.dechets}</p>
                     </div>
                   </div>
 
-                  <div className="bg-yellow-50 border border-yellow-200 rounded p-2 mb-3">
-                    <p className="text-xs text-yellow-800">Valeur perte 2ème choix</p>
-                    <p className="text-lg font-bold text-yellow-900">{valeurPerteTND} TND</p>
-                    <p className="text-xs text-yellow-700">({of.deuxiemeChoix} × {prixUnitaireTND} TND)</p>
+                  <div style={{ padding: 'var(--s-2) var(--s-3)', background: 'var(--color-warning-bg)', border: '1px solid var(--color-warning)', borderRadius: 'var(--radius-sm)', marginBottom: 'var(--s-3)' }}>
+                    <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-warning)' }}>Valeur perte 2ème choix</p>
+                    <p style={{ fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--color-warning)' }}>{valeurPerteTND} TND</p>
+                    <p style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-secondary)' }}>({of.deuxiemeChoix} × {prixUnitaireTND} TND)</p>
                   </div>
 
                   {of.tempsReel && (
-                    <div className="pt-3 border-t">
-                      <div className="grid grid-cols-3 gap-2 text-xs">
-                        <div>
-                          <p className="text-gray-600">Temps réel</p>
-                          <p className="font-semibold">{of.tempsReel}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">Arrêts exclus</p>
-                          <p className="font-semibold text-blue-600">
-                            {of.tempsArretsMecanique + of.tempsArretsMP + of.tempsPlanification} min
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">Rendement Temps</p>
-                          <p className="font-semibold text-blue-600">{of.rendementTemps}%</p>
-                        </div>
+                    <div style={{ paddingTop: 'var(--s-3)', borderTop: '1px solid var(--border-subtle)',
+                      display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, fontSize: 'var(--text-xs)' }}>
+                      <div>
+                        <p style={{ color: 'var(--fg-muted)' }}>Temps réel</p>
+                        <p style={{ fontWeight: 600, color: 'var(--fg-primary)' }}>{of.tempsReel}</p>
+                      </div>
+                      <div>
+                        <p style={{ color: 'var(--fg-muted)' }}>Arrêts exclus</p>
+                        <p style={{ fontWeight: 600, color: 'var(--accent-indigo)' }}>{of.tempsArretsMecanique + of.tempsArretsMP + of.tempsPlanification} min</p>
+                      </div>
+                      <div>
+                        <p style={{ color: 'var(--fg-muted)' }}>Rendement Temps</p>
+                        <p style={{ fontWeight: 600, color: 'var(--accent-indigo)' }}>{of.rendementTemps}%</p>
                       </div>
                     </div>
                   )}
@@ -946,125 +605,115 @@ const DashboardTisseur = () => {
               );
             })}
           </div>
-        </div>
+        </SectionCard>
 
-        {/* Tableau récapitulatif par période */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="p-4 bg-gray-50 border-b">
-            <h3 className="font-bold text-gray-800">Rendement Théorique vs Réel</h3>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full">
-              <thead className="bg-gray-100">
-                <tr>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Période</th>
-                  <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700">Rendement Théorique</th>
-                  <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700">Rendement Réel</th>
-                  <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700">Écart</th>
-                  <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700">2ème Choix</th>
-                  <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700">Perte TND</th>
+        <SectionCard title="Rendement Théorique vs Réel" subtitle="Récap par période" icon={<Activity size={16} />}>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
+              <thead>
+                <tr style={{ background: 'var(--bg-hover)' }}>
+                  {['Période', 'Théorique', 'Réel', 'Écart', '2ème Choix', 'Perte TND'].map((h) => (
+                    <th key={h} style={thStyle}>{h}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-b hover:bg-gray-50">
-                  <td className="py-3 px-4 font-medium">Aujourd'hui</td>
-                  <td className="py-3 px-4 text-center text-blue-600 font-semibold">90%</td>
-                  <td className="py-3 px-4 text-center text-green-600 font-semibold">85%</td>
-                  <td className="py-3 px-4 text-center text-orange-600 font-semibold">-5%</td>
-                  <td className="py-3 px-4 text-center">8 pcs (7.3%)</td>
-                  <td className="py-3 px-4 text-center text-red-600 font-semibold">20.00 TND</td>
-                </tr>
-                <tr className="border-b hover:bg-gray-50">
-                  <td className="py-3 px-4 font-medium">Cette Semaine</td>
-                  <td className="py-3 px-4 text-center text-blue-600 font-semibold">90%</td>
-                  <td className="py-3 px-4 text-center text-green-600 font-semibold">87%</td>
-                  <td className="py-3 px-4 text-center text-orange-600 font-semibold">-3%</td>
-                  <td className="py-3 px-4 text-center">45 pcs (6.5%)</td>
-                  <td className="py-3 px-4 text-center text-red-600 font-semibold">112.50 TND</td>
-                </tr>
-                <tr className="border-b hover:bg-gray-50">
-                  <td className="py-3 px-4 font-medium">Ce Mois</td>
-                  <td className="py-3 px-4 text-center text-blue-600 font-semibold">90%</td>
-                  <td className="py-3 px-4 text-center text-green-600 font-semibold">88%</td>
-                  <td className="py-3 px-4 text-center text-orange-600 font-semibold">-2%</td>
-                  <td className="py-3 px-4 text-center">178 pcs (5.9%)</td>
-                  <td className="py-3 px-4 text-center text-red-600 font-semibold">445.00 TND</td>
-                </tr>
+                {[
+                  { p: "Aujourd'hui", t: '90%', r: '85%', e: '-5%', d: '8 pcs (7.3%)', perte: '20.00 TND' },
+                  { p: 'Cette Semaine', t: '90%', r: '87%', e: '-3%', d: '45 pcs (6.5%)', perte: '112.50 TND' },
+                  { p: 'Ce Mois', t: '90%', r: '88%', e: '-2%', d: '178 pcs (5.9%)', perte: '445.00 TND' },
+                ].map((row) => (
+                  <tr key={row.p} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                    <td style={tdStyle}><strong>{row.p}</strong></td>
+                    <td style={{ ...tdStyle, textAlign: 'center', color: 'var(--accent-indigo)', fontWeight: 600 }}>{row.t}</td>
+                    <td style={{ ...tdStyle, textAlign: 'center', color: 'var(--color-success)', fontWeight: 600 }}>{row.r}</td>
+                    <td style={{ ...tdStyle, textAlign: 'center', color: 'var(--color-warning)', fontWeight: 600 }}>{row.e}</td>
+                    <td style={{ ...tdStyle, textAlign: 'center' }}>{row.d}</td>
+                    <td style={{ ...tdStyle, textAlign: 'center', color: 'var(--color-danger)', fontWeight: 600 }}>{row.perte}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
-        </div>
-      </div>
+        </SectionCard>
+      </>
     );
   };
 
+  const tabs: { key: typeof activeSection; label: string }[] = [
+    { key: 'machines', label: 'Machines & OF' },
+    { key: 'incidents', label: 'Incidents' },
+    { key: 'rendement', label: 'Rendement' },
+  ];
+
   return (
-    <DashboardLayout
-      title="Tableau de Bord Tisseur"
-      subtitle={`${tisseurNom} - Samedi 18 Octobre 2025`}
-      activeSection={activeSection}
-      onSectionChange={setActiveSection}
-    >
-      <div className="space-y-6">
+    <>
+      <DashboardShell
+        eyebrow="Poste — Tisseur"
+        title="Tableau de bord — Tisseur"
+        subtitle="Suivi des tâches de tissage, machines assignées et cadence."
+        headerRight={
+          <>
+            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-muted)' }}>{tisseurNom}</span>
+            <button onClick={() => window.location.reload()} style={btnGhost} title="Actualiser">
+              <RefreshCw size={14} /> Actualiser
+            </button>
+            <ThemeToggle />
+          </>
+        }
+      >
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {tabs.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setActiveSection(t.key)}
+              style={activeSection === t.key ? btnPrimary : btnGhost}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
         {activeSection === 'machines' && renderMachines()}
         {activeSection === 'incidents' && renderIncidents()}
         {activeSection === 'rendement' && renderRendement()}
-      </div>
+      </DashboardShell>
 
       {/* Modal Début de Poste */}
       {showDebutPosteModal && selectedOF && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-            <div className="p-6 border-b bg-green-50">
-              <h3 className="text-xl font-bold text-green-900">Début de Poste / Démarrage</h3>
-              <p className="text-sm text-green-700 mt-1">OF: {(selectedOF as any)?.numSousOF}</p>
+        <div style={modalOverlay}>
+          <div style={modalBox}>
+            <div style={{ ...modalHeader, background: 'var(--color-success-bg)' }}>
+              <h3 style={{ fontSize: 'var(--text-xl)', fontWeight: 700, color: 'var(--color-success)' }}>Début de Poste / Démarrage</h3>
+              <p style={{ fontSize: 'var(--text-sm)', color: 'var(--fg-secondary)', marginTop: 4 }}>OF: {(selectedOF as any)?.numSousOF}</p>
             </div>
-            
-            <div className="p-6 space-y-4">
-              <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
-                <p className="text-sm text-blue-900 font-semibold mb-2">Compteur initial prévu:</p>
-                <p className="text-3xl font-bold text-blue-700">{(selectedOF as any)?.compteurInitial} {(selectedOF as any)?.typeCompteur === 'pieces' ? 'pièces' : 'mètres'}</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Quantité restante à fabriquer <span className="text-red-600">*</span>
-                </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  value={quantiteRestante}
-                  onChange={(e) => setQuantiteRestante(e.target.value)}
-                  placeholder={`Ex: ${(selectedOF as any)?.compteurInitial}`}
-                  className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-lg font-bold"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Recalculé selon la coupe et les données réelles
+            <div style={modalBody}>
+              <div style={{ padding: 'var(--s-3)', background: 'var(--bg-hover)', border: '1px solid var(--accent-terracotta)', borderRadius: 'var(--radius-sm)' }}>
+                <p style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--fg-primary)', marginBottom: 6 }}>Compteur initial prévu:</p>
+                <p style={{ fontSize: 'var(--text-2xl)', fontWeight: 700, color: 'var(--accent-terracotta)' }}>
+                  {(selectedOF as any)?.compteurInitial} {(selectedOF as any)?.typeCompteur === 'pieces' ? 'pièces' : 'mètres'}
                 </p>
               </div>
-
-              <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-3">
-                <p className="text-sm text-yellow-900">
+              <div>
+                <label style={labelStyle}>Quantité restante à fabriquer <span style={{ color: 'var(--color-danger)' }}>*</span></label>
+                <input
+                  type="number" step="0.1" value={quantiteRestante}
+                  onChange={(e) => setQuantiteRestante(e.target.value)}
+                  placeholder={`Ex: ${(selectedOF as any)?.compteurInitial}`}
+                  style={{ ...inputStyle, fontSize: 'var(--text-lg)', fontWeight: 700 }}
+                />
+                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-muted)', marginTop: 4 }}>Recalculé selon la coupe et les données réelles</p>
+              </div>
+              <div style={{ padding: 'var(--s-3)', background: 'var(--color-warning-bg)', border: '1px solid var(--color-warning)', borderRadius: 'var(--radius-sm)' }}>
+                <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-warning)' }}>
                   <strong>Important:</strong> Cette quantité sera programmée sur le compteur machine (dégressif)
                 </p>
               </div>
             </div>
-
-            <div className="p-6 border-t bg-gray-50 flex justify-end space-x-3">
-              <button
-                onClick={() => {
-                  setShowDebutPosteModal(false);
-                  setQuantiteRestante('');
-                }}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleConfirmerDemarrage}
-                disabled={!quantiteRestante}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold disabled:bg-gray-300 disabled:cursor-not-allowed"
-              >
+            <div style={modalFooter}>
+              <button onClick={() => { setShowDebutPosteModal(false); setQuantiteRestante(''); }} style={btnGhost}>Annuler</button>
+              <button onClick={handleConfirmerDemarrage} disabled={!quantiteRestante}
+                style={{ ...btnPrimary, opacity: !quantiteRestante ? 0.5 : 1, cursor: !quantiteRestante ? 'not-allowed' : 'pointer' }}>
                 Confirmer et Démarrer
               </button>
             </div>
@@ -1074,69 +723,48 @@ const DashboardTisseur = () => {
 
       {/* Modal Fin de Poste */}
       {showFinPosteModal && selectedOF && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-            <div className="p-6 border-b">
-              <h3 className="text-xl font-bold text-gray-900">Fin de Poste</h3>
-              <p className="text-sm text-gray-600 mt-1">OF: {(selectedOF as any)?.numSousOF}</p>
+        <div style={modalOverlay}>
+          <div style={modalBox}>
+            <div style={modalHeader}>
+              <h3 style={{ fontSize: 'var(--text-xl)', fontWeight: 700, color: 'var(--fg-primary)' }}>Fin de Poste</h3>
+              <p style={{ fontSize: 'var(--text-sm)', color: 'var(--fg-secondary)', marginTop: 4 }}>OF: {(selectedOF as any)?.numSousOF}</p>
             </div>
-            
-            <div className="p-6 space-y-4">
+            <div style={modalBody}>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Compteur machine restant <span className="text-red-600">*</span>
-                </label>
+                <label style={labelStyle}>Compteur machine restant <span style={{ color: 'var(--color-danger)' }}>*</span></label>
                 <input
-                  type="number"
-                  step="0.1"
-                  value={compteurMachine}
+                  type="number" step="0.1" value={compteurMachine}
                   onChange={(e) => setCompteurMachine(e.target.value)}
                   placeholder={`Ex: ${(selectedOF as any)?.typeCompteur === 'pieces' ? '40 pièces' : '600 mètres'}`}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  style={inputStyle}
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  ⬇️ Compteur dégressif - Indiquez le nombre restant ({(selectedOF as any)?.typeCompteur === 'pieces' ? 'pièces' : 'mètres'})
+                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-muted)', marginTop: 4 }}>
+                  Compteur dégressif — Indiquez le nombre restant ({(selectedOF as any)?.typeCompteur === 'pieces' ? 'pièces' : 'mètres'})
                 </p>
               </div>
-
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <p className="text-sm text-blue-900 font-semibold mb-1">
+              <div style={{ padding: 'var(--s-3)', background: 'var(--bg-hover)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)' }}>
+                <p style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--fg-primary)' }}>
                   Compteur initial programmé: {(selectedOF as any)?.compteurInitial} {(selectedOF as any)?.typeCompteur === 'pieces' ? 'pièces' : 'mètres'}
                 </p>
                 {compteurMachine && (
                   <>
-                    <p className="text-sm text-blue-900">
+                    <p style={{ fontSize: 'var(--text-sm)', color: 'var(--fg-primary)', marginTop: 4 }}>
                       Production THÉORIQUE calculée: <strong>{(selectedOF as any)?.compteurInitial - parseFloat(compteurMachine)} {(selectedOF as any)?.uniteMesure}</strong>
                     </p>
-                    <p className="text-xs text-blue-700 mt-1">
-                      (Cette quantité sera indiquée sur l'étiquette)
-                    </p>
+                    <p style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-muted)', marginTop: 4 }}>(Cette quantité sera indiquée sur l'étiquette)</p>
                   </>
                 )}
               </div>
-
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                <p className="text-sm text-yellow-900">
-                  <strong>Note importante:</strong> La quantité théorique sera calculée automatiquement. La quantité réelle sera déterminée après le contrôle qualité de la coupe.
+              <div style={{ padding: 'var(--s-3)', background: 'var(--color-warning-bg)', border: '1px solid var(--color-warning)', borderRadius: 'var(--radius-sm)' }}>
+                <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-warning)' }}>
+                  <strong>Note:</strong> La quantité théorique sera calculée automatiquement. La quantité réelle sera déterminée après le contrôle qualité.
                 </p>
               </div>
             </div>
-
-            <div className="p-6 border-t bg-gray-50 flex justify-end space-x-3">
-              <button
-                onClick={() => {
-                  setShowFinPosteModal(false);
-                  setCompteurMachine('');
-                }}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleSaveFinPoste}
-                disabled={!compteurMachine}
-                className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 font-semibold disabled:bg-gray-300 disabled:cursor-not-allowed"
-              >
+            <div style={modalFooter}>
+              <button onClick={() => { setShowFinPosteModal(false); setCompteurMachine(''); }} style={btnGhost}>Annuler</button>
+              <button onClick={handleSaveFinPoste} disabled={!compteurMachine}
+                style={{ ...btnPrimary, opacity: !compteurMachine ? 0.5 : 1, cursor: !compteurMachine ? 'not-allowed' : 'pointer' }}>
                 Valider et Imprimer
               </button>
             </div>
@@ -1146,43 +774,34 @@ const DashboardTisseur = () => {
 
       {/* Modal Notes */}
       {showNotesModal && selectedOF && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full">
-            <div className="p-6 border-b">
-              <h3 className="text-xl font-bold text-gray-900">Notes & Instructions</h3>
-              <p className="text-sm text-gray-600 mt-1">OF: {(selectedOF as any)?.numSousOF}</p>
+        <div style={modalOverlay}>
+          <div style={{ ...modalBox, maxWidth: 560 }}>
+            <div style={modalHeader}>
+              <h3 style={{ fontSize: 'var(--text-xl)', fontWeight: 700, color: 'var(--fg-primary)' }}>Notes & Instructions</h3>
+              <p style={{ fontSize: 'var(--text-sm)', color: 'var(--fg-secondary)', marginTop: 4 }}>OF: {(selectedOF as any)?.numSousOF}</p>
             </div>
-            
-            <div className="p-6 space-y-4">
+            <div style={modalBody}>
               {(selectedOF as any)?.noteSpeciale && (
-                <div className="p-4 bg-yellow-50 border-2 border-yellow-300 rounded-lg">
-                  <p className="text-xs font-semibold text-yellow-900 uppercase mb-2">Note Spéciale</p>
-                  <p className="text-sm text-yellow-900">{(selectedOF as any)?.noteSpeciale}</p>
+                <div style={{ padding: 'var(--s-3)', background: 'var(--color-warning-bg)', border: '1px solid var(--color-warning)', borderRadius: 'var(--radius-sm)' }}>
+                  <p style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--color-warning)', textTransform: 'uppercase', marginBottom: 4 }}>Note Spéciale</p>
+                  <p style={{ fontSize: 'var(--text-sm)', color: 'var(--fg-primary)' }}>{(selectedOF as any)?.noteSpeciale}</p>
                 </div>
               )}
-
               {(selectedOF as any)?.instructionSpeciale && (
-                <div className="p-4 bg-blue-50 border-2 border-blue-300 rounded-lg">
-                  <p className="text-xs font-semibold text-blue-900 uppercase mb-2">Instruction Spéciale</p>
-                  <p className="text-sm text-blue-900 font-medium">{(selectedOF as any)?.instructionSpeciale}</p>
+                <div style={{ padding: 'var(--s-3)', background: 'var(--color-info-bg)', border: '1px solid var(--color-info)', borderRadius: 'var(--radius-sm)' }}>
+                  <p style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--color-info)', textTransform: 'uppercase', marginBottom: 4 }}>Instruction Spéciale</p>
+                  <p style={{ fontSize: 'var(--text-sm)', color: 'var(--fg-primary)', fontWeight: 500 }}>{(selectedOF as any)?.instructionSpeciale}</p>
                 </div>
               )}
-
               {(selectedOF as any)?.noteTisseur && (
-                <div className="p-4 bg-gray-50 border-2 border-gray-300 rounded-lg">
-                  <p className="text-xs font-semibold text-gray-900 uppercase mb-2">Note Tisseur</p>
-                  <p className="text-sm text-gray-700">{(selectedOF as any)?.noteTisseur}</p>
+                <div style={{ padding: 'var(--s-3)', background: 'var(--bg-hover)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)' }}>
+                  <p style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--fg-secondary)', textTransform: 'uppercase', marginBottom: 4 }}>Note Tisseur</p>
+                  <p style={{ fontSize: 'var(--text-sm)', color: 'var(--fg-primary)' }}>{(selectedOF as any)?.noteTisseur}</p>
                 </div>
               )}
             </div>
-
-            <div className="p-6 border-t bg-gray-50 flex justify-end">
-              <button
-                onClick={() => setShowNotesModal(false)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                Fermer
-              </button>
+            <div style={modalFooter}>
+              <button onClick={() => setShowNotesModal(false)} style={btnPrimary}>Fermer</button>
             </div>
           </div>
         </div>
@@ -1190,85 +809,44 @@ const DashboardTisseur = () => {
 
       {/* Modal Incident */}
       {showIncidentModal && selectedOF && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-            <div className="p-6 border-b">
-              <h3 className="text-xl font-bold text-gray-900">Déclarer un Incident</h3>
-              <p className="text-sm text-gray-600 mt-1">OF: {(selectedOF as any)?.numSousOF} | Machine: {(selectedOF as any)?.machine}</p>
+        <div style={modalOverlay}>
+          <div style={modalBox}>
+            <div style={modalHeader}>
+              <h3 style={{ fontSize: 'var(--text-xl)', fontWeight: 700, color: 'var(--fg-primary)' }}>Déclarer un Incident</h3>
+              <p style={{ fontSize: 'var(--text-sm)', color: 'var(--fg-secondary)', marginTop: 4 }}>
+                OF: {(selectedOF as any)?.numSousOF} — Machine: {(selectedOF as any)?.machine}
+              </p>
             </div>
-            
-            <div className="p-6 space-y-4">
+            <div style={modalBody}>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Type d'incident</label>
-                <select
-                  value={incidentType}
-                  onChange={(e) => {
-                    setIncidentType(e.target.value);
-                    setSelecteurMP('');
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                >
+                <label style={labelStyle}>Type d'incident</label>
+                <select value={incidentType}
+                  onChange={(e) => { setIncidentType(e.target.value); setSelecteurMP(''); }}
+                  style={inputStyle}>
                   <option value="">Sélectionner...</option>
-                  {typesIncident.map((type) => (
-                    <option key={type.value} value={type.value}>
-                      {type.label}
-                    </option>
-                  ))}
+                  {typesIncident.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                 </select>
               </div>
-
-              {incidentType && typesIncident.find(t => t.value === incidentType)?.needsColor && (
+              {incidentType && typesIncident.find((t) => t.value === incidentType)?.needsColor && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Sélecteur concerné <span className="text-red-600">*</span>
-                  </label>
-                  <select
-                    value={selecteurMP}
-                    onChange={(e) => setSelecteurMP(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
+                  <label style={labelStyle}>Sélecteur concerné <span style={{ color: 'var(--color-danger)' }}>*</span></label>
+                  <select value={selecteurMP} onChange={(e) => setSelecteurMP(e.target.value)} style={inputStyle}>
                     <option value="">Sélectionner...</option>
-                    {(selectedOF as any)?.selecteurs?.map((sel: any, idx: number) => (
-                      <option key={idx} value={sel.sel}>
-                        Sélecteur {sel.sel} - {sel.codeFab} ({sel.couleur})
-                      </option>
+                    {(selectedOF as any)?.selecteurs?.map((sel: any, i: number) => (
+                      <option key={i} value={sel.sel}>Sélecteur {sel.sel} - {sel.codeFab} ({sel.couleur})</option>
                     ))}
                   </select>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {incidentType === 'mp_manque' ? 'Indiquer quelle matière manque' : 'Indiquer quelle matière nécessite une alimentation'}
-                  </p>
                 </div>
               )}
-              
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                <textarea
-                  rows={4}
-                  placeholder="Décrivez le problème..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
+                <label style={labelStyle}>Description</label>
+                <textarea rows={4} placeholder="Décrivez le problème..." style={{ ...inputStyle, minHeight: 80 }} />
               </div>
             </div>
-
-            <div className="p-6 border-t bg-gray-50 flex justify-end space-x-3">
-              <button
-                onClick={() => {
-                  setShowIncidentModal(false);
-                  setIncidentType('');
-                  setSelecteurMP('');
-                }}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={() => {
-                  setShowIncidentModal(false);
-                  setIncidentType('');
-                  setSelecteurMP('');
-                }}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-semibold"
-              >
+            <div style={modalFooter}>
+              <button onClick={() => { setShowIncidentModal(false); setIncidentType(''); setSelecteurMP(''); }} style={btnGhost}>Annuler</button>
+              <button onClick={() => { setShowIncidentModal(false); setIncidentType(''); setSelecteurMP(''); }}
+                style={{ ...btnPrimary, background: 'var(--color-danger)', borderColor: 'var(--color-danger)' }}>
                 Envoyer l'alerte
               </button>
             </div>
@@ -1278,29 +856,21 @@ const DashboardTisseur = () => {
 
       {/* Modal Refuser Complément */}
       {showRefuserComplementModal && selectedOF && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-            <div className="p-6 border-b bg-red-50">
-              <h3 className="text-xl font-bold text-red-900">Refuser le Complément</h3>
-              <p className="text-sm text-red-700 mt-1">OF: {(selectedOF as any)?.numSousOF}</p>
+        <div style={modalOverlay}>
+          <div style={modalBox}>
+            <div style={{ ...modalHeader, background: 'var(--color-danger-bg)' }}>
+              <h3 style={{ fontSize: 'var(--text-xl)', fontWeight: 700, color: 'var(--color-danger)' }}>Refuser le Complément</h3>
+              <p style={{ fontSize: 'var(--text-sm)', color: 'var(--fg-secondary)', marginTop: 4 }}>OF: {(selectedOF as any)?.numSousOF}</p>
             </div>
-            
-            <div className="p-6 space-y-4">
-              <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-3">
-                <p className="text-sm text-yellow-900">
+            <div style={modalBody}>
+              <div style={{ padding: 'var(--s-3)', background: 'var(--color-warning-bg)', border: '1px solid var(--color-warning)', borderRadius: 'var(--radius-sm)' }}>
+                <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-warning)' }}>
                   <strong>Attention:</strong> Vous êtes sur le point de refuser un complément de tissage urgent.
                 </p>
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Cause du refus <span className="text-red-600">*</span>
-                </label>
-                <select
-                  value={causeRefus}
-                  onChange={(e) => setCauseRefus(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                >
+                <label style={labelStyle}>Cause du refus <span style={{ color: 'var(--color-danger)' }}>*</span></label>
+                <select value={causeRefus} onChange={(e) => setCauseRefus(e.target.value)} style={inputStyle}>
                   <option value="">Sélectionner...</option>
                   <option value="matiere_manquante">Matière première manquante</option>
                   <option value="probleme_machine">Problème machine</option>
@@ -1309,32 +879,16 @@ const DashboardTisseur = () => {
                   <option value="autre">Autre raison</option>
                 </select>
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Détails (optionnel)</label>
-                <textarea
-                  rows={3}
-                  placeholder="Précisez la raison du refus..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                />
+                <label style={labelStyle}>Détails (optionnel)</label>
+                <textarea rows={3} placeholder="Précisez la raison du refus..." style={{ ...inputStyle, minHeight: 70 }} />
               </div>
             </div>
-
-            <div className="p-6 border-t bg-gray-50 flex justify-end space-x-3">
-              <button
-                onClick={() => {
-                  setShowRefuserComplementModal(false);
-                  setCauseRefus('');
-                }}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleConfirmerRefus}
-                disabled={!causeRefus}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-semibold disabled:bg-gray-300 disabled:cursor-not-allowed"
-              >
+            <div style={modalFooter}>
+              <button onClick={() => { setShowRefuserComplementModal(false); setCauseRefus(''); }} style={btnGhost}>Annuler</button>
+              <button onClick={handleConfirmerRefus} disabled={!causeRefus}
+                style={{ ...btnPrimary, background: 'var(--color-danger)', borderColor: 'var(--color-danger)',
+                  opacity: !causeRefus ? 0.5 : 1, cursor: !causeRefus ? 'not-allowed' : 'pointer' }}>
                 Confirmer le Refus
               </button>
             </div>
@@ -1344,86 +898,149 @@ const DashboardTisseur = () => {
 
       {/* Modal Étiquette */}
       {showEtiquetteModal && selectedOF && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-            <div className="p-6 border-b">
-              <h3 className="text-xl font-bold text-gray-900">
-                Étiquette {
-                  (selectedOF as any)?.typeEtiquette === 'debut' ? 'Début de Poste' :
-                  (selectedOF as any)?.typeEtiquette === 'finposte' ? 'Fin de Poste' :
-                  'Fin de Fabrication'
-                }
+        <div style={modalOverlay}>
+          <div style={modalBox}>
+            <div style={modalHeader}>
+              <h3 style={{ fontSize: 'var(--text-xl)', fontWeight: 700, color: 'var(--fg-primary)' }}>
+                Étiquette {(selectedOF as any)?.typeEtiquette === 'debut' ? 'Début de Poste' :
+                  (selectedOF as any)?.typeEtiquette === 'finposte' ? 'Fin de Poste' : 'Fin de Fabrication'}
               </h3>
             </div>
-            
-            <div className="p-6">
-              <div className="border-4 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50">
-                <div className="text-center space-y-3">
-                  <div className="text-2xl font-bold text-gray-900">
-                    {(selectedOF as any)?.numSousOF}
-                  </div>
-                  <div className="text-lg font-semibold">
-                    {(selectedOF as any)?.modele} - {(selectedOF as any)?.ref}
-                  </div>
-                  <div className="text-sm text-gray-600 space-y-1">
-                    <div>Machine: {(selectedOF as any)?.machine}</div>
-                    <div className="font-bold text-blue-700">Tisseur: {tisseurNom}</div>
-                    <div>Date: {new Date().toLocaleString('fr-FR')}</div>
-                    {(selectedOF as any)?.typeEtiquette === 'finposte' && (
-                      <>
-                        <div className="font-bold text-green-600 mt-2 text-base">
-                          Produit THÉORIQUE: {(selectedOF as any)?.piecesProduites} pièces
-                        </div>
-                        <div className="font-bold text-orange-600">
-                          Compteur restant: {(selectedOF as any)?.compteurActuel} {(selectedOF as any)?.typeCompteur === 'pieces' ? 'pcs' : 'm'}
-                        </div>
-                        <div className="text-xs text-gray-600 mt-2 italic">
-                          Quantité réelle à déterminer après contrôle qualité
-                        </div>
-                      </>
-                    )}
-                    {(selectedOF as any)?.typeEtiquette === 'fin' && (
-                      <>
-                        <div className="font-bold text-green-600 mt-2">
-                          Total: {(selectedOF as any)?.qtePieces} {(selectedOF as any)?.uniteMesure}
-                        </div>
-                        <div className="font-bold text-blue-600">
-                          Temps: {(selectedOF as any)?.tempsReel || (selectedOF as any)?.tempsPrevu}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                  <div className="mt-4 p-4 bg-white border-2 border-gray-300">
-                    <div className="text-xs text-gray-500">QR CODE</div>
-                    <div className="text-lg font-mono font-bold">████████</div>
-                  </div>
+            <div style={{ padding: 'var(--s-4)' }}>
+              <div style={{ border: '2px dashed var(--border-default)', borderRadius: 'var(--radius-sm)',
+                padding: 'var(--s-4)', background: 'var(--bg-hover)', textAlign: 'center' }}>
+                <div style={{ fontSize: 'var(--text-2xl)', fontWeight: 700, color: 'var(--fg-primary)' }}>
+                  {(selectedOF as any)?.numSousOF}
+                </div>
+                <div style={{ fontSize: 'var(--text-lg)', fontWeight: 600, color: 'var(--fg-primary)', marginTop: 6 }}>
+                  {(selectedOF as any)?.modele} — {(selectedOF as any)?.ref}
+                </div>
+                <div style={{ fontSize: 'var(--text-sm)', color: 'var(--fg-secondary)', marginTop: 8 }}>
+                  <div>Machine: {(selectedOF as any)?.machine}</div>
+                  <div style={{ fontWeight: 700, color: 'var(--accent-terracotta)' }}>Tisseur: {tisseurNom}</div>
+                  <div>Date: {new Date().toLocaleString('fr-FR')}</div>
+                  {(selectedOF as any)?.typeEtiquette === 'finposte' && (
+                    <>
+                      <div style={{ fontWeight: 700, color: 'var(--color-success)', marginTop: 6 }}>
+                        Produit THÉORIQUE: {(selectedOF as any)?.piecesProduites} pièces
+                      </div>
+                      <div style={{ fontWeight: 700, color: 'var(--color-warning)' }}>
+                        Compteur restant: {(selectedOF as any)?.compteurActuel} {(selectedOF as any)?.typeCompteur === 'pieces' ? 'pcs' : 'm'}
+                      </div>
+                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-muted)', fontStyle: 'italic', marginTop: 4 }}>
+                        Quantité réelle à déterminer après contrôle qualité
+                      </div>
+                    </>
+                  )}
+                  {(selectedOF as any)?.typeEtiquette === 'fin' && (
+                    <>
+                      <div style={{ fontWeight: 700, color: 'var(--color-success)', marginTop: 6 }}>
+                        Total: {(selectedOF as any)?.qtePieces} {(selectedOF as any)?.uniteMesure}
+                      </div>
+                      <div style={{ fontWeight: 700, color: 'var(--accent-indigo)' }}>
+                        Temps: {(selectedOF as any)?.tempsReel || (selectedOF as any)?.tempsPrevu}
+                      </div>
+                    </>
+                  )}
+                </div>
+                <div style={{ marginTop: 12, padding: 'var(--s-3)', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)' }}>
+                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-muted)' }}>QR CODE</div>
+                  <div style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 'var(--text-lg)', color: 'var(--fg-primary)' }}>████████</div>
                 </div>
               </div>
             </div>
-
-            <div className="p-6 border-t bg-gray-50 flex justify-end space-x-3">
-              <button
-                onClick={() => setShowEtiquetteModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100"
-              >
-                Fermer
-              </button>
-              <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center">
-                <Printer className="w-4 h-4 mr-2" />
-                Imprimer
-              </button>
+            <div style={modalFooter}>
+              <button onClick={() => setShowEtiquetteModal(false)} style={btnGhost}>Fermer</button>
+              <button style={btnPrimary}><Printer size={12} /> Imprimer</button>
             </div>
           </div>
         </div>
       )}
-      
-      {/* Widget WhatsApp pour ce dashboard */}
-      <WhatsAppWidget 
-        dashboardName="Tisseur"
-        position="bottom-right"
-      />
-    </DashboardLayout>
+
+      <WhatsAppWidget dashboardName="Tisseur" position="bottom-right" />
+    </>
   );
+};
+
+// --- Reusable styles ---
+const badgeBase: React.CSSProperties = {
+  padding: '2px 8px', borderRadius: 'var(--radius-full)', fontSize: 'var(--text-xs)', fontWeight: 600,
+  display: 'inline-block', whiteSpace: 'nowrap',
+};
+
+const selChip: React.CSSProperties = {
+  padding: '2px 8px', borderRadius: 'var(--radius-full)', fontSize: 'var(--text-xs)', fontWeight: 500,
+  background: 'var(--bg-hover)', color: 'var(--fg-secondary)', border: '1px solid var(--border-subtle)',
+};
+
+const countChip: React.CSSProperties = {
+  padding: '2px 8px', borderRadius: 'var(--radius-full)', fontSize: 'var(--text-xs)', fontWeight: 600,
+  background: 'var(--bg-hover)', color: 'var(--fg-secondary)', border: '1px solid var(--border-subtle)',
+};
+
+const machineBtn: React.CSSProperties = {
+  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+  padding: 'var(--s-3) var(--s-4)', border: '1px solid var(--border-subtle)',
+  borderRadius: 'var(--radius-sm)', cursor: 'pointer', textAlign: 'left', width: '100%',
+};
+
+const dtLabel: React.CSSProperties = { color: 'var(--fg-muted)', marginRight: 4 };
+
+const thStyle: React.CSSProperties = {
+  textAlign: 'left', padding: 'var(--s-3) var(--s-4)',
+  fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--fg-secondary)',
+  textTransform: 'uppercase', letterSpacing: '0.04em',
+};
+const tdStyle: React.CSSProperties = { padding: 'var(--s-3) var(--s-4)', color: 'var(--fg-primary)' };
+
+const labelStyle: React.CSSProperties = {
+  display: 'block', fontSize: 'var(--text-xs)', fontWeight: 600,
+  color: 'var(--fg-secondary)', marginBottom: 4,
+};
+
+const inputStyle: React.CSSProperties = {
+  width: '100%', padding: '8px 12px', background: 'var(--bg-elevated)',
+  color: 'var(--fg-primary)', border: '1px solid var(--border-default)',
+  borderRadius: 'var(--radius-sm)', fontSize: 'var(--text-sm)',
+};
+
+const modalOverlay: React.CSSProperties = {
+  position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  zIndex: 50, padding: 16,
+};
+
+const modalBox: React.CSSProperties = {
+  background: 'var(--bg-elevated)', borderRadius: 'var(--radius-md)',
+  border: '1px solid var(--border-default)', width: '100%', maxWidth: 480,
+  boxShadow: '0 10px 30px rgba(0,0,0,0.2)', overflow: 'hidden',
+};
+
+const modalHeader: React.CSSProperties = {
+  padding: 'var(--s-4)', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-hover)',
+};
+
+const modalBody: React.CSSProperties = {
+  padding: 'var(--s-4)', display: 'flex', flexDirection: 'column', gap: 'var(--s-3)',
+};
+
+const modalFooter: React.CSSProperties = {
+  padding: 'var(--s-4)', borderTop: '1px solid var(--border-subtle)', background: 'var(--bg-hover)',
+  display: 'flex', justifyContent: 'flex-end', gap: 'var(--s-2)',
+};
+
+const btnPrimary: React.CSSProperties = {
+  display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px',
+  background: 'var(--accent-terracotta)', color: '#fff',
+  border: '1px solid var(--accent-terracotta)', borderRadius: 'var(--radius-full)',
+  fontSize: 'var(--text-xs)', fontWeight: 600, cursor: 'pointer',
+};
+
+const btnGhost: React.CSSProperties = {
+  display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px',
+  background: 'var(--bg-hover)', color: 'var(--fg-secondary)',
+  border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-full)',
+  fontSize: 'var(--text-xs)', fontWeight: 600, cursor: 'pointer',
 };
 
 export default DashboardTisseur;

@@ -1,261 +1,233 @@
-import React, { useState, useEffect } from 'react';
-import { tachesService } from '../services/api';
-import { useWebSocket } from '../hooks/useWebSocket';
-import { CheckCircle, XCircle, AlertTriangle, Bell, Camera } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { io, Socket } from 'socket.io-client';
+import { CheckCircle, XCircle, AlertTriangle, ShieldCheck, PlusCircle } from 'lucide-react';
+import LoadingSpinner from '../components/LoadingSpinner';
+import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
+import api from '../services/api';
+import { useAuth } from '../hooks/useAuth';
 
-interface Tache {
-  id_tache: number;
-  id_of: number;
-  numero_of: string;
-  type_tache: string;
-  statut: string;
-  priorite: number;
-  article_designation?: string;
-}
+const SOCKET_URL =
+  process.env.REACT_APP_SOCKET_URL ||
+  (process.env.NODE_ENV === 'production' ? window.location.origin : 'http://localhost:5000');
+
+const toArr = (x: any): any[] =>
+  Array.isArray(x) ? x : (x?.data || x?.items || x?.rows || x?.controles || x?.non_conformites || []);
 
 const TabletteQualite: React.FC = () => {
-  const [taches, setTaches] = useState<Tache[]>([]);
-  const [tacheSelectionnee, setTacheSelectionnee] = useState<Tache | null>(null);
-  const [resultatControle, setResultatControle] = useState({
-    conforme: true,
-    poids_mesure: '',
-    largeur_mesure: '',
-    observations: ''
-  });
-  const [loading, setLoading] = useState(true);
-  const { socket, connected, notifications } = useWebSocket();
+  const { user } = useAuth();
+  const operateurId = user?.id;
 
-  useEffect(() => {
-    loadMesTaches();
-    const interval = setInterval(loadMesTaches, 10000);
-    return () => clearInterval(interval);
+  const [loading, setLoading] = useState(true);
+  const [controles, setControles] = useState<any[]>([]);
+  const [ncs, setNcs] = useState<any[]>([]);
+  const [showNcForm, setShowNcForm] = useState(false);
+  const [ncForm, setNcForm] = useState({ id_of: '', type_nc: '', gravite: 'MINEUR', description: '' });
+  const [showControleForm, setShowControleForm] = useState(false);
+  const [controleForm, setControleForm] = useState({ id_of: '', numero_piece: '', conforme: true, observations: '' });
+
+  const loadData = useCallback(async () => {
+    try {
+      const [ncRes, ctrlRes] = await Promise.all([
+        api.get('/qualite-avance/non-conformites', { params: { statut: 'OUVERTE' } }),
+        api.get('/qualite-avance/controles', { params: { date: 'today' } }),
+      ]);
+      setNcs(toArr(ncRes.data?.data ?? ncRes.data));
+      setControles(toArr(ctrlRes.data?.data ?? ctrlRes.data));
+    } catch (err) { console.error('Erreur chargement qualité:', err); }
+    finally { setLoading(false); }
   }, []);
 
-  const loadMesTaches = async () => {
-    try {
-      const res = await tachesService.getMesTaches();
-      const taches = res.data.data.taches || [];
-      setTaches(taches.sort((a: Tache, b: Tache) => a.priorite - b.priorite));
-    } catch (err) {
-      console.error('Erreur chargement tâches:', err);
-    } finally {
-      setLoading(false);
-    }
+  useEffect(() => { loadData(); }, [loadData]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const socket: Socket = io(SOCKET_URL, { transports: ['websocket'], auth: { token } });
+    socket.on('tache:new', loadData);
+    socket.on('tache:completed', loadData);
+    socket.on('production:updated', loadData);
+    return () => { socket.disconnect(); };
+  }, [loadData]);
+
+  const handleValider = async (id: number) => {
+    try { await api.post(`/qualite-avance/controles/${id}/valider`); loadData(); }
+    catch { alert('Erreur validation'); }
+  };
+  const handleRefuser = async (id: number) => {
+    try { await api.post(`/qualite-avance/controles/${id}/refuser`); loadData(); }
+    catch { alert('Erreur refus'); }
   };
 
-  const handleDemarrer = async (tacheId: number) => {
+  const handleCreerControle = async () => {
     try {
-      await tachesService.demarrerTache(tacheId);
-      loadMesTaches();
-    } catch (err) {
-      alert('Erreur lors du démarrage');
-    }
+      await api.post('/qualite-avance/controles', {
+        id_of: parseInt(controleForm.id_of, 10) || null,
+        numero_piece: controleForm.numero_piece || '1',
+        type_controle: 'PREMIERE_PIECE',
+        conforme: controleForm.conforme,
+        observations: controleForm.observations,
+        id_controleur: operateurId,
+      });
+      setShowControleForm(false);
+      setControleForm({ id_of: '', numero_piece: '', conforme: true, observations: '' });
+      loadData();
+    } catch { alert('Erreur création contrôle'); }
   };
 
-  const handleValiderControle = async () => {
-    if (!tacheSelectionnee) return;
-
+  const handleCreerNc = async () => {
     try {
-      // TODO: Envoyer résultats contrôle à l'API qualité
-      await tachesService.terminerTache(tacheSelectionnee.id_tache);
-      loadMesTaches();
-      setTacheSelectionnee(null);
-      setResultatControle({ conforme: true, poids_mesure: '', largeur_mesure: '', observations: '' });
-    } catch (err) {
-      alert('Erreur lors de la validation');
-    }
+      await api.post('/qualite-avance/non-conformites', {
+        id_of: parseInt(ncForm.id_of, 10) || null,
+        type_nc: ncForm.type_nc,
+        gravite: ncForm.gravite,
+        description: ncForm.description,
+        id_declarant: operateurId,
+      });
+      setShowNcForm(false);
+      setNcForm({ id_of: '', type_nc: '', gravite: 'MINEUR', description: '' });
+      loadData();
+    } catch { alert('Erreur création NC'); }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600"></div>
-      </div>
-    );
-  }
+  const conformes = controles.filter((c: any) => c.conforme === true || c.statut === 'VALIDE').length;
+  const nonConformes = controles.length - conformes;
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* En-tête */}
-      <div className="bg-purple-600 text-white p-4 flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          <CheckCircle className="w-8 h-8" />
-          <div>
-            <h1 className="text-xl font-bold">Poste Contrôle Qualité</h1>
-            <div className="text-sm opacity-90">
-              <span className={`${connected ? 'text-green-300' : 'text-red-300'}`}>
-                {connected ? '🟢 Connecté' : '🔴 Déconnecté'}
-              </span>
-            </div>
+    <>
+      {loading ? <LoadingSpinner message="Chargement du poste qualité..." /> : (
+        <DashboardShell
+          eyebrow="Contrôle qualité"
+          title={`Bienvenue ${user?.prenom || ''} ${user?.nom || ''}`}
+          subtitle="Contrôles première pièce, non-conformités et validation."
+          headerRight={<ThemeToggle />}
+        >
+          <div className="lp-metric-grid">
+            <KpiCard label="Contrôles jour" value={controles.length} icon={<ShieldCheck size={18} />} tone="indigo" />
+            <KpiCard label="Conformes" value={conformes} icon={<CheckCircle size={18} />} tone="sage" />
+            <KpiCard label="Non conformes" value={nonConformes} icon={<XCircle size={18} />} tone="rose" />
+            <KpiCard label="NC ouvertes" value={ncs.length} icon={<AlertTriangle size={18} />} tone="terracotta" />
           </div>
-        </div>
-        {notifications.length > 0 && (
-          <div className="relative">
-            <Bell className="w-6 h-6" />
-            <span className="absolute -top-2 -right-2 bg-red-500 rounded-full w-5 h-5 flex items-center justify-center text-xs">
-              {notifications.length}
-            </span>
-          </div>
-        )}
-      </div>
 
-      <div className="p-6 max-w-4xl mx-auto">
-        <h2 className="text-2xl font-bold mb-4">🎯 Mes Contrôles à Effectuer</h2>
-
-        <div className="space-y-4 mb-6">
-          {taches.map((tache) => (
-            <div
-              key={tache.id_tache}
-              className={`bg-white rounded-lg shadow-lg p-4 border-2 ${
-                tache.priorite === 1 ? 'border-red-400 bg-red-50' :
-                'border-blue-400 bg-blue-50'
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-bold text-lg">{tache.numero_of}</div>
-                  {tache.article_designation && (
-                    <div className="text-gray-700">{tache.article_designation}</div>
-                  )}
+          <SectionCard
+            title="Contrôles du jour"
+            subtitle="Première pièce à valider"
+            icon={<ShieldCheck size={16} />}
+            actions={<button style={btnGhost} onClick={() => setShowControleForm(v => !v)}><PlusCircle size={14} /> Nouveau contrôle</button>}
+          >
+            {showControleForm && (
+              <div style={formBox}>
+                <div style={{ display: 'grid', gap: 'var(--s-3)', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))' }}>
+                  <div><label style={labelStyle}>ID OF</label><input style={bigInputStyle} value={controleForm.id_of} onChange={e => setControleForm({ ...controleForm, id_of: e.target.value })} /></div>
+                  <div><label style={labelStyle}>N° pièce</label><input style={bigInputStyle} value={controleForm.numero_piece} onChange={e => setControleForm({ ...controleForm, numero_piece: e.target.value })} /></div>
                 </div>
-                <div className="flex gap-2">
-                  {tache.statut === 'ASSIGNEE' && (
-                    <button
-                      onClick={() => {
-                        setTacheSelectionnee(tache);
-                        handleDemarrer(tache.id_tache);
-                      }}
-                      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
-                    >
-                      Démarrer contrôle
-                    </button>
-                  )}
-                  {tache.statut === 'EN_COURS' && (
-                    <button
-                      onClick={() => setTacheSelectionnee(tache)}
-                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-                    >
-                      Continuer contrôle
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Formulaire contrôle */}
-        {tacheSelectionnee && (
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold">Contrôle OF {tacheSelectionnee.numero_of}</h3>
-              <button
-                onClick={() => setTacheSelectionnee(null)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Résultat</label>
-                <div className="flex gap-4">
-                  <button
-                    onClick={() => setResultatControle({ ...resultatControle, conforme: true })}
-                    className={`flex-1 p-4 rounded-lg border-2 ${
-                      resultatControle.conforme
-                        ? 'bg-green-100 border-green-500 text-green-800'
-                        : 'bg-gray-50 border-gray-300'
-                    }`}
-                  >
-                    <CheckCircle className="w-6 h-6 mx-auto mb-2" />
-                    <div className="font-semibold">Conforme</div>
+                <label style={labelStyle}>Observations</label>
+                <textarea style={{ ...bigInputStyle, minHeight: 80 }} value={controleForm.observations} onChange={e => setControleForm({ ...controleForm, observations: e.target.value })} />
+                <div style={btnRow}>
+                  <button style={{ ...btnPrimary, background: controleForm.conforme ? 'var(--accent-sage)' : 'var(--accent-rose)', borderColor: 'transparent' }} onClick={() => setControleForm({ ...controleForm, conforme: !controleForm.conforme })}>
+                    {controleForm.conforme ? <><CheckCircle size={16} /> Conforme</> : <><XCircle size={16} /> Non conforme</>}
                   </button>
-                  <button
-                    onClick={() => setResultatControle({ ...resultatControle, conforme: false })}
-                    className={`flex-1 p-4 rounded-lg border-2 ${
-                      !resultatControle.conforme
-                        ? 'bg-red-100 border-red-500 text-red-800'
-                        : 'bg-gray-50 border-gray-300'
-                    }`}
-                  >
-                    <XCircle className="w-6 h-6 mx-auto mb-2" />
-                    <div className="font-semibold">Non Conforme</div>
-                  </button>
+                  <button style={btnPrimary} onClick={handleCreerControle}>Enregistrer</button>
                 </div>
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Poids mesuré (g)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={resultatControle.poids_mesure}
-                    onChange={(e) => setResultatControle({ ...resultatControle, poids_mesure: e.target.value })}
-                    className="w-full px-4 py-2 border rounded-lg"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Largeur mesurée (cm)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={resultatControle.largeur_mesure}
-                    onChange={(e) => setResultatControle({ ...resultatControle, largeur_mesure: e.target.value })}
-                    className="w-full px-4 py-2 border rounded-lg"
-                  />
-                </div>
+            )}
+            {controles.length === 0 ? (
+              <div style={{ padding: 'var(--s-4)', color: 'var(--fg-muted)' }}>Aucun contrôle enregistré aujourd'hui.</div>
+            ) : (
+              <div style={{ display: 'grid', gap: 'var(--s-3)' }}>
+                {controles.map((c: any) => (
+                  <div key={c.id_controle || c.id} style={rowCard}>
+                    <div>
+                      <div style={{ fontSize: 'var(--text-md)', fontWeight: 600 }}>
+                        OF {c.numero_of || c.id_of || '—'} · pièce {c.numero_piece || '1'}
+                      </div>
+                      <div style={{ fontSize: 'var(--text-sm)', color: 'var(--fg-muted)' }}>
+                        {c.type_controle || 'PREMIERE_PIECE'} · {c.statut || (c.conforme ? 'CONFORME' : 'NON CONFORME')}
+                      </div>
+                    </div>
+                    {(!c.statut || c.statut === 'EN_ATTENTE') && (
+                      <div style={{ display: 'flex', gap: 'var(--s-2)' }}>
+                        <button style={{ ...btnPrimary, background: 'var(--accent-sage)', borderColor: 'var(--accent-sage)' }} onClick={() => handleValider(c.id_controle || c.id)}>
+                          <CheckCircle size={14} /> Valider
+                        </button>
+                        <button style={{ ...btnPrimary, background: 'var(--accent-rose)', borderColor: 'var(--accent-rose)' }} onClick={() => handleRefuser(c.id_controle || c.id)}>
+                          <XCircle size={14} /> Refuser
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
+            )}
+          </SectionCard>
 
-              <div>
-                <label className="block text-sm font-medium mb-1">Observations</label>
-                <textarea
-                  value={resultatControle.observations}
-                  onChange={(e) => setResultatControle({ ...resultatControle, observations: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg"
-                  rows={3}
-                  placeholder="Notes, remarques..."
-                />
-              </div>
-
-              {!resultatControle.conforme && (
-                <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4">
-                  <AlertTriangle className="w-6 h-6 text-red-600 mb-2" />
-                  <div className="font-semibold text-red-800 mb-2">Non-conformité détectée</div>
-                  <div className="text-sm text-red-700">
-                    Une non-conformité sera créée automatiquement après validation.
+          <SectionCard
+            title="Non-conformités ouvertes"
+            subtitle={`${ncs.length} à traiter`}
+            icon={<AlertTriangle size={16} />}
+            actions={<button style={btnGhost} onClick={() => setShowNcForm(v => !v)}><PlusCircle size={14} /> Déclarer NC</button>}
+          >
+            {showNcForm && (
+              <div style={formBox}>
+                <div style={{ display: 'grid', gap: 'var(--s-3)', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))' }}>
+                  <div><label style={labelStyle}>ID OF</label><input style={bigInputStyle} value={ncForm.id_of} onChange={e => setNcForm({ ...ncForm, id_of: e.target.value })} /></div>
+                  <div><label style={labelStyle}>Type</label><input style={bigInputStyle} value={ncForm.type_nc} onChange={e => setNcForm({ ...ncForm, type_nc: e.target.value })} placeholder="Tissage, coupe, matière..." /></div>
+                  <div>
+                    <label style={labelStyle}>Gravité</label>
+                    <select style={bigInputStyle} value={ncForm.gravite} onChange={e => setNcForm({ ...ncForm, gravite: e.target.value })}>
+                      <option>MINEUR</option><option>MAJEUR</option><option>CRITIQUE</option>
+                    </select>
                   </div>
                 </div>
-              )}
-
-              <button
-                onClick={handleValiderControle}
-                className={`w-full px-6 py-4 rounded-lg text-lg font-semibold flex items-center justify-center gap-2 ${
-                  resultatControle.conforme
-                    ? 'bg-green-600 text-white hover:bg-green-700'
-                    : 'bg-red-600 text-white hover:bg-red-700'
-                }`}
-              >
-                {resultatControle.conforme ? (
-                  <>
-                    <CheckCircle className="w-5 h-5" />
-                    VALIDER CONTRÔLE
-                  </>
-                ) : (
-                  <>
-                    <XCircle className="w-5 h-5" />
-                    ENREGISTRER NON-CONFORMITÉ
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
+                <label style={labelStyle}>Description</label>
+                <textarea style={{ ...bigInputStyle, minHeight: 80 }} value={ncForm.description} onChange={e => setNcForm({ ...ncForm, description: e.target.value })} />
+                <button style={btnPrimary} onClick={handleCreerNc}><PlusCircle size={16} /> Créer NC</button>
+              </div>
+            )}
+            {ncs.length === 0 ? (
+              <div style={{ padding: 'var(--s-4)', color: 'var(--fg-muted)' }}>Aucune non-conformité ouverte.</div>
+            ) : (
+              <div style={{ display: 'grid', gap: 'var(--s-3)' }}>
+                {ncs.map((nc: any) => (
+                  <div key={nc.id_nc || nc.id} style={rowCard}>
+                    <div>
+                      <div style={{ fontSize: 'var(--text-md)', fontWeight: 600 }}>
+                        OF {nc.numero_of || nc.id_of || '—'} · {nc.type_nc || nc.type || '—'}
+                      </div>
+                      <div style={{ fontSize: 'var(--text-sm)', color: 'var(--fg-muted)' }}>
+                        {nc.gravite || '—'} · {nc.description ? String(nc.description).slice(0, 80) : ''}
+                      </div>
+                    </div>
+                    <span style={{ padding: '4px 10px', borderRadius: 'var(--radius-full)', background: 'var(--accent-rose)', color: '#fff', fontSize: 'var(--text-xs)', fontWeight: 600 }}>{nc.gravite || 'NC'}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </SectionCard>
+        </DashboardShell>
+      )}
+    </>
   );
+};
+
+const labelStyle: React.CSSProperties = { display: 'block', fontSize: 'var(--text-md)', fontWeight: 600, marginBottom: 8, color: 'var(--fg-secondary)' };
+const bigInputStyle: React.CSSProperties = {
+  width: '100%', padding: '14px 16px', fontSize: 'var(--text-lg)', border: '2px solid var(--border-default)',
+  borderRadius: 'var(--radius-sm)', background: 'var(--bg-elevated)', color: 'var(--fg-primary)', minHeight: 56,
+};
+const btnRow: React.CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: 'var(--s-3)', marginTop: 'var(--s-3)' };
+const btnBase: React.CSSProperties = {
+  display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 20px', minHeight: 48,
+  borderRadius: 'var(--radius-sm)', fontSize: 'var(--text-md)', fontWeight: 600, cursor: 'pointer', border: '1px solid transparent',
+};
+const btnPrimary: React.CSSProperties = { ...btnBase, background: 'var(--accent-terracotta)', color: '#fff', borderColor: 'var(--accent-terracotta)' };
+const btnGhost: React.CSSProperties = { ...btnBase, background: 'var(--bg-hover)', color: 'var(--fg-primary)', borderColor: 'var(--border-default)', padding: '8px 14px', minHeight: 40, fontSize: 'var(--text-sm)' };
+const rowCard: React.CSSProperties = {
+  display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--s-3)',
+  padding: 'var(--s-4)', background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)',
+};
+const formBox: React.CSSProperties = {
+  padding: 'var(--s-4)', background: 'var(--bg-hover)', borderRadius: 'var(--radius-sm)',
+  border: '1px solid var(--border-subtle)', marginBottom: 'var(--s-4)', display: 'grid', gap: 'var(--s-3)',
 };
 
 export default TabletteQualite;

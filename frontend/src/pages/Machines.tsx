@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { machinesService } from '../services/api';
-import { Settings, Plus, Edit, Trash2, Search, Eye, X, Calendar, MapPin, AlertCircle, Activity, TrendingUp } from 'lucide-react';
+import { Settings, Plus, Edit, Trash2, Search, X, Calendar, MapPin, AlertCircle, Activity, TrendingUp } from 'lucide-react';
 
 const Machines: React.FC = () => {
   const [machines, setMachines] = useState<any[]>([]);
@@ -38,8 +38,8 @@ const Machines: React.FC = () => {
         machinesService.getMachines({ ...filters, search }),
         machinesService.getTypesMachines()
       ]);
-      setMachines(machinesRes.data.data);
-      setTypes(typesRes.data.data);
+      setMachines((() => { const _r = machinesRes.data?.data; return Array.isArray(_r) ? _r : (_r?.data || _r?.machines || []); })());
+      setTypes((() => { const _r = typesRes.data?.data; return Array.isArray(_r) ? _r : (_r?.data || _r?.types || []); })());
     } catch (error) {
       console.error('Erreur chargement machines:', error);
     } finally {
@@ -103,18 +103,18 @@ const Machines: React.FC = () => {
   };
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>;
+    return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]"></div></div>;
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="ml-64 p-6">
+      <div className="p-6">
         <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-800">⚙️ Machines</h1>
           <button
             onClick={() => { setShowForm(true); setEditingMachine(null); resetForm(); }}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="bg-[#C8663D] text-white px-4 py-2 rounded hover:bg-[#a55231]"
           >
             + Nouvelle Machine
           </button>
@@ -224,7 +224,7 @@ const Machines: React.FC = () => {
                 </div>
               </div>
               <div className="flex gap-4">
-                <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+                <button type="submit" className="bg-[#C8663D] text-white px-6 py-2 rounded hover:bg-[#a55231]">
                   {editingMachine ? 'Modifier' : 'Créer'}
                 </button>
                 <button type="button" onClick={() => { setShowForm(false); setEditingMachine(null); resetForm(); }} className="bg-gray-300 text-gray-700 px-6 py-2 rounded hover:bg-gray-400">
@@ -249,8 +249,20 @@ const Machines: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {machines.map((machine) => (
-                <tr key={machine.id_machine}>
+              {machines.map((machine) => {
+                const openMachineView = async () => {
+                  try {
+                    const result = await machinesService.getMachine(machine.id_machine);
+                    if (result.data?.data) {
+                      setSelectedMachine(result.data?.data);
+                    }
+                  } catch (error: any) {
+                    console.error('Erreur chargement machine:', error);
+                    setSelectedMachine(machine);
+                  }
+                };
+                return (
+                <tr key={machine.id_machine} onClick={openMachineView} className="hover:bg-gray-50 cursor-pointer group">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{machine.numero_machine}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">{machine.type_machine || '-'}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">{machine.marque} {machine.modele}</td>
@@ -265,26 +277,9 @@ const Machines: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">{machine.emplacement || '-'}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <div className="flex gap-2">
-                      <button 
-                        onClick={async () => {
-                          try {
-                            const result = await machinesService.getMachine(machine.id_machine);
-                            if (result.data?.data) {
-                              setSelectedMachine(result.data.data);
-                            }
-                          } catch (error: any) {
-                            console.error('Erreur chargement machine:', error);
-                            setSelectedMachine(machine);
-                          }
-                        }}
-                        className="text-blue-600 hover:text-blue-700"
-                        title="Consulter"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button 
-                        onClick={() => handleEdit(machine)}
+                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleEdit(machine); }}
                         className="text-gray-600 hover:text-gray-700"
                         title="Modifier"
                       >
@@ -293,7 +288,8 @@ const Machines: React.FC = () => {
                     </div>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -304,7 +300,7 @@ const Machines: React.FC = () => {
             <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
               <div className="sticky top-0 bg-white border-b p-6 flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                  <Settings className="w-6 h-6 text-blue-600" />
+                  <Settings className="w-6 h-6 text-[#C8663D]" />
                   Machine {selectedMachine.numero_machine}
                 </h2>
                 <button
@@ -319,7 +315,7 @@ const Machines: React.FC = () => {
                 {/* Informations générales */}
                 <div>
                   <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <Activity className="w-5 h-5 text-blue-600" />
+                    <Activity className="w-5 h-5 text-[#C8663D]" />
                     Informations Générales
                   </h3>
                   <div className="grid grid-cols-2 gap-4">
@@ -377,7 +373,7 @@ const Machines: React.FC = () => {
                 {(selectedMachine.vitesse_nominale || selectedMachine.largeur_utile || selectedMachine.capacite_production) && (
                   <div>
                     <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                      <TrendingUp className="w-5 h-5 text-blue-600" />
+                      <TrendingUp className="w-5 h-5 text-[#C8663D]" />
                       Caractéristiques Techniques
                     </h3>
                     <div className="grid grid-cols-2 gap-4">
@@ -407,7 +403,7 @@ const Machines: React.FC = () => {
                 {(selectedMachine.annee_fabrication || selectedMachine.date_mise_service) && (
                   <div>
                     <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                      <Calendar className="w-5 h-5 text-blue-600" />
+                      <Calendar className="w-5 h-5 text-[#C8663D]" />
                       Dates
                     </h3>
                     <div className="grid grid-cols-2 gap-4">
@@ -437,7 +433,7 @@ const Machines: React.FC = () => {
                       handleEdit(selectedMachine);
                       setSelectedMachine(null);
                     }}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                    className="px-4 py-2 bg-[#C8663D] text-white rounded-lg hover:bg-[#a55231] flex items-center gap-2"
                   >
                     <Edit className="w-4 h-4" />
                     Modifier

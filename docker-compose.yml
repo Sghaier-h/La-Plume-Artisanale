@@ -1,32 +1,9 @@
 services:
-  # ── PostgreSQL (optional, only if not using external DB) ────────────
-  # Uncomment if you want to run PostgreSQL locally instead of OVH CloudDB
-  # postgres:
-  #   image: postgres:16-alpine
-  #   container_name: laplume-postgres
-  #   restart: unless-stopped
-  #   environment:
-  #     POSTGRES_DB: ${DB_NAME:-ERP_La_Plume}
-  #     POSTGRES_USER: ${DB_USER:-postgres}
-  #     POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
-  #     - ./database/init:/docker-entrypoint-initdb.d
-  #   ports:
-  #     - "5432:5432"
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
-
-  # ── Redis (optional) ─────────────────────────────────────────────────
+  # ── Redis (cache / sockets adapter) ──────────────────────────────────
   redis:
     image: redis:7-alpine
     container_name: laplume-redis
     restart: unless-stopped
-    ports:
-      - "6379:6379"
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes
@@ -35,8 +12,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+    networks:
+      - laplume-net
 
-  # ── Backend API ──────────────────────────────────────────────────────
+  # ── Backend API (Node/Express + Socket.IO) ───────────────────────────
+  # DB is external (OVH CloudDB) — no local postgres service.
   backend:
     build:
       context: ./backend
@@ -46,43 +26,65 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: 5000
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      # Database (OVH CloudDB)
       DB_HOST: ${DB_HOST}
       DB_PORT: ${DB_PORT:-5432}
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
+      DB_SSL: ${DB_SSL:-true}
+      # Auth
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRE: ${JWT_EXPIRE:-24h}
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+      SESSION_SECRET: ${SESSION_SECRET}
+      # CORS & URLs
+      FRONTEND_URL: ${FRONTEND_URL}
+      CORS_ORIGIN: ${CORS_ORIGIN}
+      # Redis
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      LOG_LEVEL: ${LOG_LEVEL:-info}
-    ports:
-      - "5000:5000"
+      # SMTP
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_FROM: ${SMTP_FROM}
+      # WhatsApp
+      WHATSAPP_API_URL: ${WHATSAPP_API_URL}
+      WHATSAPP_TOKEN: ${WHATSAPP_TOKEN}
+      # AI
+      AI_PROVIDER: ${AI_PROVIDER:-anthropic}
+      AI_API_KEY: ${AI_API_KEY}
+      # Push notifications
+      FCM_SERVER_KEY: ${FCM_SERVER_KEY}
+      # Google Drive (optional)
+      GOOGLE_DRIVE_ENABLED: ${GOOGLE_DRIVE_ENABLED:-false}
+      GOOGLE_DRIVE_FOLDER_ID: ${GOOGLE_DRIVE_FOLDER_ID}
     volumes:
-      - backend_logs:/app/logs
-      - backend_uploads:/app/uploads
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
     depends_on:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5000/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/api/dashboard/kpis"]
       interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 30s
+      start_period: 45s
+    expose:
+      - "5000"
     networks:
-      - laplume-network
+      - laplume-net
 
-  # ── Frontend (React + Nginx) ─────────────────────────────────────────
+  # ── Frontend (React build served by internal nginx) ──────────────────
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: laplume-frontend
     restart: unless-stopped
-    ports:
-      - "80:80"
     depends_on:
       backend:
         condition: service_healthy
@@ -91,15 +93,39 @@ services:
       interval: 30s
       timeout: 3s
       retries: 3
+    expose:
+      - "80"
     networks:
-      - laplume-network
+      - laplume-net
+
+  # ── Nginx reverse proxy (TLS termination + routing) ──────────────────
+  nginx:
+    build:
+      context: ./deploy/nginx
+      dockerfile: Dockerfile
+    container_name: laplume-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - ./deploy/nginx/certbot-webroot:/var/www/certbot:ro
+      - ./logs/nginx:/var/log/nginx
+    depends_on:
+      - frontend
+      - backend
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/healthz"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    networks:
+      - laplume-net
 
 volumes:
   redis_data:
-  backend_logs:
-  backend_uploads:
-  # postgres_data:
 
 networks:
-  laplume-network:
+  laplume-net:
     driver: bridge

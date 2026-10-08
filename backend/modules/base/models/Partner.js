@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Partner Model - Modèle partenaire (clients/fournisseurs)
  */
 
@@ -13,7 +13,7 @@ export class Partner extends BaseModel {
   }
 
   async search(domain = [], options = {}) {
-    let query = 'SELECT * FROM clients WHERE 1=1';
+    let query = 'SELECT * FROM comptes WHERE 1=1';
     const params = [];
     let paramCount = 0;
 

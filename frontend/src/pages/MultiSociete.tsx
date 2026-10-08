@@ -23,8 +23,24 @@ const MultiSociete: React.FC = () => {
       ]);
 
       setSocietes(societesRes.data.data.societes || []);
-      setEtablissements(etablissementsRes.data.data || []);
-      setTransferts(transfertsRes.data.data || []);
+      setEtablissements((() => {
+        const _r = etablissementsRes.data?.data;
+        if (Array.isArray(_r)) return _r;
+        if (_r && Array.isArray(_r.data)) return _r.data;
+        if (_r && typeof _r === 'object') {
+          for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+        }
+        return [];
+      })());
+      setTransferts((() => {
+        const _r = transfertsRes.data?.data;
+        if (Array.isArray(_r)) return _r;
+        if (_r && Array.isArray(_r.data)) return _r.data;
+        if (_r && typeof _r === 'object') {
+          for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+        }
+        return [];
+      })());
     } catch (error) {
       console.error('Erreur chargement:', error);
     } finally {
@@ -43,14 +59,14 @@ const MultiSociete: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="ml-64 p-6 flex items-center justify-center min-h-screen">
+      <div className="p-6 flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="ml-64 p-6">
+    <div className="p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">

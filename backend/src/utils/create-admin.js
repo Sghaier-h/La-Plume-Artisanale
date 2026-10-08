@@ -1,4 +1,4 @@
-import bcrypt from 'bcrypt';
+﻿import bcrypt from 'bcrypt';
 import { pool } from './db.js';
 
 async function createAdmin() {
@@ -27,7 +27,7 @@ async function createAdmin() {
 
     // Vérifier si l'utilisateur admin existe déjà
     const userCheck = await pool.query(
-      'SELECT id_utilisateur, email, actif FROM utilisateurs WHERE email = $1',
+      'SELECT id_utilisateur, email, actif FROM users WHERE email = $1',
       ['admin@system.local']
     );
 
@@ -40,7 +40,7 @@ async function createAdmin() {
       // Vérifier le rôle
       const roleCheck = await pool.query(`
         SELECT r.code_role 
-        FROM utilisateurs_roles ur
+        FROM users_roles ur
         JOIN roles r ON ur.id_role = r.id_role
         WHERE ur.id_utilisateur = $1
         LIMIT 1
@@ -58,7 +58,7 @@ async function createAdmin() {
 
         if (adminRole.rows.length > 0) {
           await pool.query(
-            'INSERT INTO utilisateurs_roles (id_utilisateur, id_role) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+            'INSERT INTO users_roles (id_utilisateur, id_role) VALUES ($1, $2) ON CONFLICT DO NOTHING',
             [user.id_utilisateur, adminRole.rows[0].id_role]
           );
           console.log('   ✅ Rôle ADMIN assigné');
@@ -70,7 +70,7 @@ async function createAdmin() {
       const hashedPassword = await bcrypt.hash('Admin123!', 10);
       
       await pool.query(
-        'UPDATE utilisateurs SET mot_de_passe_hash = $1, actif = true WHERE id_utilisateur = $2',
+        'UPDATE users SET mot_de_passe_hash = $1, actif = true WHERE id_utilisateur = $2',
         [hashedPassword, user.id_utilisateur]
       );
       
@@ -116,7 +116,7 @@ async function createAdmin() {
 
     // Créer l'utilisateur
     const result = await pool.query(`
-      INSERT INTO utilisateurs (
+      INSERT INTO users (
         nom_utilisateur, email, mot_de_passe_hash, salt, 
         id_operateur, actif, force_changement_mdp
       ) VALUES (
@@ -142,7 +142,7 @@ async function createAdmin() {
 
     if (adminRole.rows.length > 0) {
       await pool.query(
-        'INSERT INTO utilisateurs_roles (id_utilisateur, id_role) VALUES ($1, $2)',
+        'INSERT INTO users_roles (id_utilisateur, id_role) VALUES ($1, $2)',
         [userId, adminRole.rows[0].id_role]
       );
       console.log('✅ Rôle ADMIN assigné');

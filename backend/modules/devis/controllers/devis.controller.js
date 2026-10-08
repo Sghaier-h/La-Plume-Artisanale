@@ -186,7 +186,7 @@ export const updateDevis = async (req, res) => {
 
     if (devisCheck.rows[0].statut === 'TRANSFORME') {
       await client.query('ROLLBACK');
-      return sendError(res, HTTP_STATUS.BAD_REQUEST, 'Impossible de modifier un devis transformé en commande');
+      return sendError(res, 'Impossible de modifier un devis transformé en commande', HTTP_STATUS.BAD_REQUEST);
     }
 
     // Recalcul si lignes fournies
@@ -289,7 +289,7 @@ export const transformerEnCommande = async (req, res) => {
     const devis = devisResult.rows[0];
     if (devis.statut === 'TRANSFORME') {
       await client.query('ROLLBACK');
-      return sendError(res, HTTP_STATUS.BAD_REQUEST, 'Ce devis a déjà été transformé en commande');
+      return sendError(res, 'Ce devis a déjà été transformé en commande', HTTP_STATUS.BAD_REQUEST);
     }
 
     // Générer numéro commande
@@ -355,7 +355,7 @@ export const deleteDevis = async (req, res) => {
     }
 
     if (devis.rows[0].statut === 'TRANSFORME') {
-      return sendError(res, HTTP_STATUS.BAD_REQUEST, 'Impossible de supprimer un devis transformé en commande');
+      return sendError(res, 'Impossible de supprimer un devis transformé en commande', HTTP_STATUS.BAD_REQUEST);
     }
 
     await pool.query('DELETE FROM devis WHERE id_devis = $1', [id]);

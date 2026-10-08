@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Modèle Client - Gestion des clients
  * Utilise BaseModel pour les opérations ORM
  */
@@ -40,10 +40,10 @@ export class Client extends BaseModel {
         tc.libelle as libelle_type_commercial,
         (SELECT COUNT(*) FROM commandes WHERE id_client = c.id_client) as nb_commandes,
         (SELECT COUNT(*) FROM adresses_client WHERE id_client = c.id_client AND actif = true) as nb_adresses,
-        (SELECT COUNT(*) FROM contacts_client WHERE id_client = c.id_client AND actif = true) as nb_contacts
-      FROM clients c
+        (SELECT COUNT(*) FROM contacts WHERE id_client = c.id_client AND actif = true) as nb_contacts
+      FROM comptes c
       LEFT JOIN categories_clients cat ON c.id_categorie = cat.id_categorie
-      LEFT JOIN utilisateurs u ON c.id_commercial = u.id_utilisateur
+      LEFT JOIN users u ON c.id_commercial = u.id_utilisateur
       LEFT JOIN types_commerciaux tc ON c.id_type_commercial = tc.id_type_commercial
       WHERE ${whereClause}
     `;
@@ -81,9 +81,9 @@ export class Client extends BaseModel {
         cat.libelle as libelle_categorie,
         u.nom_utilisateur as nom_commercial,
         tc.libelle as libelle_type_commercial
-      FROM clients c
+      FROM comptes c
       LEFT JOIN categories_clients cat ON c.id_categorie = cat.id_categorie
-      LEFT JOIN utilisateurs u ON c.id_commercial = u.id_utilisateur
+      LEFT JOIN users u ON c.id_commercial = u.id_utilisateur
       LEFT JOIN types_commerciaux tc ON c.id_type_commercial = tc.id_type_commercial
       WHERE c.id_client = ANY($1)
     `;
@@ -122,7 +122,7 @@ export class Client extends BaseModel {
       const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
 
       const query = `
-        INSERT INTO clients (${fields})
+        INSERT INTO comptes (${fields})
         VALUES (${placeholders})
         RETURNING *
       `;
@@ -218,7 +218,7 @@ export class Client extends BaseModel {
         (SELECT COALESCE(SUM(montant_ttc), 0) FROM factures WHERE id_client = $1) as chiffre_affaires,
         (SELECT COALESCE(SUM(montant_ttc), 0) FROM factures WHERE id_client = $1 AND statut = 'PAYEE') as montant_paye,
         (SELECT COUNT(*) FROM adresses_client WHERE id_client = $1 AND actif = true) as nb_adresses,
-        (SELECT COUNT(*) FROM contacts_client WHERE id_client = $1 AND actif = true) as nb_contacts
+        (SELECT COUNT(*) FROM contacts WHERE id_client = $1 AND actif = true) as nb_contacts
     `;
 
     const result = await pool.query(query, [clientId]);
@@ -316,7 +316,7 @@ export class Client extends BaseModel {
     // Validation code_client unique
     if (vals.code_client) {
       const query = `
-        SELECT id_client FROM clients 
+        SELECT id_client FROM comptes 
         WHERE code_client = $1 ${isUpdate ? 'AND id_client != $2' : ''}
       `;
       const params = isUpdate ? [vals.code_client, vals.id_client] : [vals.code_client];

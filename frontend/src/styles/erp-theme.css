@@ -4,57 +4,57 @@
  */
 
 :root {
-  /* Couleurs primaires modernes */
-  --erp-primary: #6366f1;
-  --erp-primary-dark: #4f46e5;
-  --erp-primary-light: #818cf8;
-  --erp-primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  --erp-secondary: #8b5cf6;
-  --erp-secondary-gradient: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
-  
-  /* Couleurs de statut modernes */
-  --erp-success: #10b981;
-  --erp-success-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  --erp-warning: #f59e0b;
-  --erp-warning-gradient: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  --erp-danger: #ef4444;
-  --erp-danger-gradient: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  --erp-info: #3b82f6;
-  --erp-info-gradient: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  
-  /* Couleurs de fond modernes */
-  --erp-bg-primary: #ffffff;
-  --erp-bg-secondary: #f8fafc;
-  --erp-bg-tertiary: #f1f5f9;
-  --erp-bg-hover: #f1f5f9;
-  --erp-bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  
+  /* Couleurs primaires — remappées sur la palette artisanale (design-system.css) */
+  --erp-primary: var(--accent-terracotta);
+  --erp-primary-dark: #A8552E;
+  --erp-primary-light: #E2896A;
+  --erp-primary-gradient: linear-gradient(135deg, var(--accent-terracotta) 0%, var(--accent-gold) 100%);
+  --erp-secondary: var(--accent-sage);
+  --erp-secondary-gradient: linear-gradient(135deg, var(--accent-sage) 0%, var(--accent-indigo) 100%);
+
+  /* Couleurs de statut — alignées sur les tokens artisanaux */
+  --erp-success: var(--color-success);
+  --erp-success-gradient: linear-gradient(135deg, var(--color-success) 0%, #4E6E37 100%);
+  --erp-warning: var(--color-warning);
+  --erp-warning-gradient: linear-gradient(135deg, var(--color-warning) 0%, #B37D1E 100%);
+  --erp-danger: var(--color-danger);
+  --erp-danger-gradient: linear-gradient(135deg, var(--color-danger) 0%, #8E3521 100%);
+  --erp-info: var(--accent-indigo);
+  --erp-info-gradient: linear-gradient(135deg, var(--accent-indigo) 0%, #364656 100%);
+
+  /* Couleurs de fond — parchemin / crème artisanale */
+  --erp-bg-primary: var(--bg-elevated);
+  --erp-bg-secondary: var(--bg-app);
+  --erp-bg-tertiary: var(--bg-canvas);
+  --erp-bg-hover: var(--bg-hover);
+  --erp-bg-gradient: linear-gradient(135deg, var(--accent-terracotta) 0%, var(--accent-gold) 100%);
+
   /* Couleurs de texte */
-  --erp-text-primary: #1e293b;
-  --erp-text-secondary: #64748b;
-  --erp-text-muted: #94a3b8;
-  
-  /* Bordures modernes */
-  --erp-border-color: #e2e8f0;
-  --erp-border-radius: 8px;
-  --erp-border-radius-lg: 12px;
-  --erp-border-radius-xl: 16px;
-  
-  /* Ombres modernes avec profondeur */
-  --erp-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --erp-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --erp-shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --erp-shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  --erp-shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  --erp-shadow-colored: 0 10px 15px -3px rgba(99, 102, 241, 0.3), 0 4px 6px -2px rgba(99, 102, 241, 0.2);
-  
+  --erp-text-primary: var(--fg-primary);
+  --erp-text-secondary: var(--fg-secondary);
+  --erp-text-muted: var(--fg-muted);
+
+  /* Bordures */
+  --erp-border-color: var(--border-default);
+  --erp-border-radius: var(--radius-sm);
+  --erp-border-radius-lg: var(--radius-md);
+  --erp-border-radius-xl: var(--radius-lg);
+
+  /* Ombres — chaleur artisanale */
+  --erp-shadow-sm: var(--shadow-xs);
+  --erp-shadow: var(--shadow-sm);
+  --erp-shadow-md: var(--shadow-md);
+  --erp-shadow-lg: var(--shadow-lg);
+  --erp-shadow-xl: var(--shadow-xl);
+  --erp-shadow-colored: 0 10px 15px -3px rgba(200, 102, 61, 0.28), 0 4px 6px -2px rgba(200, 102, 61, 0.18);
+
   /* Espacements */
   --erp-spacing-xs: 4px;
   --erp-spacing-sm: 8px;
   --erp-spacing-md: 16px;
   --erp-spacing-lg: 24px;
   --erp-spacing-xl: 32px;
-  
+
   /* Transitions */
   --erp-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   --erp-transition-fast: all 0.15s ease-in-out;
@@ -65,7 +65,7 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  background: linear-gradient(135deg, var(--bg-app) 0%, var(--bg-canvas) 100%);
 }
 
 .erp-header {
@@ -182,27 +182,27 @@
 }
 
 .erp-status-badge.draft {
-  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-  color: #475569;
-  border: 1px solid #cbd5e1;
+  background: linear-gradient(135deg, var(--bg-canvas) 0%, var(--bg-sunken) 100%);
+  color: var(--fg-secondary);
+  border: 1px solid var(--border-default);
 }
 
 .erp-status-badge.confirmed {
-  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-  color: #1e40af;
-  border: 1px solid #93c5fd;
+  background: var(--color-info-bg);
+  color: var(--accent-indigo);
+  border: 1px solid var(--accent-indigo);
 }
 
 .erp-status-badge.done {
-  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-  color: #065f46;
-  border: 1px solid #6ee7b7;
+  background: var(--color-success-bg);
+  color: var(--color-success);
+  border: 1px solid var(--color-success);
 }
 
 .erp-status-badge.cancelled {
-  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-  color: #991b1b;
-  border: 1px solid #fca5a5;
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+  border: 1px solid var(--color-danger);
 }
 
 /* Form View ERP */
@@ -308,7 +308,7 @@
   display: flex;
   gap: var(--erp-spacing-sm);
   padding: var(--erp-spacing-md);
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  background: linear-gradient(135deg, var(--bg-app) 0%, var(--bg-canvas) 100%);
   border-radius: var(--erp-border-radius-lg);
   margin-top: var(--erp-spacing-md);
   border: 1px solid var(--erp-border-color);
@@ -398,7 +398,7 @@
   align-items: center;
   justify-content: space-between;
   padding: var(--erp-spacing-md);
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  background: linear-gradient(135deg, var(--bg-app) 0%, var(--bg-canvas) 100%);
   border-bottom: 2px solid var(--erp-border-color);
 }
 
@@ -421,7 +421,7 @@
 }
 
 .erp-tree-table thead {
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  background: linear-gradient(135deg, var(--bg-app) 0%, var(--bg-canvas) 100%);
 }
 
 .erp-tree-table th {
@@ -454,12 +454,12 @@
 }
 
 .erp-tree-table tbody tr:hover {
-  background: linear-gradient(90deg, #f8fafc 0%, transparent 100%);
+  background: linear-gradient(90deg, var(--bg-hover) 0%, transparent 100%);
   transform: translateX(4px);
 }
 
 .erp-tree-table tbody tr.selected {
-  background: linear-gradient(90deg, #dbeafe 0%, transparent 100%);
+  background: linear-gradient(90deg, var(--color-info-bg) 0%, transparent 100%);
   border-left: 4px solid var(--erp-primary);
 }
 
@@ -474,7 +474,7 @@
 
 .erp-kanban-column {
   min-width: 320px;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  background: linear-gradient(135deg, var(--bg-app) 0%, var(--bg-canvas) 100%);
   border-radius: var(--erp-border-radius-lg);
   padding: var(--erp-spacing-md);
   border: 2px solid var(--erp-border-color);
@@ -604,44 +604,44 @@
 .erp-btn-secondary {
   background: var(--erp-secondary-gradient);
   color: white;
-  box-shadow: 0 10px 15px -3px rgba(139, 92, 246, 0.3), 0 4px 6px -2px rgba(139, 92, 246, 0.2);
+  box-shadow: 0 10px 15px -3px rgba(122, 140, 106, 0.3), 0 4px 6px -2px rgba(122, 140, 106, 0.2);
 }
 
 .erp-btn-secondary:hover {
-  box-shadow: var(--erp-shadow-lg), 0 10px 15px -3px rgba(139, 92, 246, 0.4);
+  box-shadow: var(--erp-shadow-lg), 0 10px 15px -3px rgba(122, 140, 106, 0.4);
   transform: translateY(-2px);
 }
 
 .erp-btn-success {
   background: var(--erp-success-gradient);
   color: white;
-  box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3), 0 4px 6px -2px rgba(16, 185, 129, 0.2);
+  box-shadow: 0 10px 15px -3px rgba(107, 142, 78, 0.3), 0 4px 6px -2px rgba(107, 142, 78, 0.2);
 }
 
 .erp-btn-success:hover {
-  box-shadow: var(--erp-shadow-lg), 0 10px 15px -3px rgba(16, 185, 129, 0.4);
+  box-shadow: var(--erp-shadow-lg), 0 10px 15px -3px rgba(107, 142, 78, 0.4);
   transform: translateY(-2px);
 }
 
 .erp-btn-warning {
   background: var(--erp-warning-gradient);
   color: white;
-  box-shadow: 0 10px 15px -3px rgba(245, 158, 11, 0.3), 0 4px 6px -2px rgba(245, 158, 11, 0.2);
+  box-shadow: 0 10px 15px -3px rgba(212, 160, 56, 0.3), 0 4px 6px -2px rgba(212, 160, 56, 0.2);
 }
 
 .erp-btn-warning:hover {
-  box-shadow: var(--erp-shadow-lg), 0 10px 15px -3px rgba(245, 158, 11, 0.4);
+  box-shadow: var(--erp-shadow-lg), 0 10px 15px -3px rgba(212, 160, 56, 0.4);
   transform: translateY(-2px);
 }
 
 .erp-btn-danger {
   background: var(--erp-danger-gradient);
   color: white;
-  box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.3), 0 4px 6px -2px rgba(239, 68, 68, 0.2);
+  box-shadow: 0 10px 15px -3px rgba(184, 74, 47, 0.3), 0 4px 6px -2px rgba(184, 74, 47, 0.2);
 }
 
 .erp-btn-danger:hover {
-  box-shadow: var(--erp-shadow-lg), 0 10px 15px -3px rgba(239, 68, 68, 0.4);
+  box-shadow: var(--erp-shadow-lg), 0 10px 15px -3px rgba(184, 74, 47, 0.4);
   transform: translateY(-2px);
 }
 
@@ -704,7 +704,7 @@
 .erp-field-input:focus {
   outline: none;
   border-color: var(--erp-primary);
-  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1), var(--erp-shadow);
+  box-shadow: 0 0 0 4px rgba(200, 102, 61, 0.12), var(--erp-shadow);
   transform: translateY(-1px);
 }
 

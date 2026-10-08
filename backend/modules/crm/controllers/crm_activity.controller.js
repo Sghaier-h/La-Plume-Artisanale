@@ -6,10 +6,10 @@ import { pool } from '../../../src/utils/db.js';
 import { getUserId } from '../../../src/utils/audit.helper.js';
 import { sendError, sendSuccess, handleError } from '../../../src/utils/error.helper.js';
 
-// GET /api/crm/crm_activity - Liste tous les enregistrements
+// GET /api/crm/activites_crm - Liste tous les enregistrements
 export const getCrmActivity = async (req, res) => {
   try {
-    const query = `SELECT * FROM crm_activitys ORDER BY created_at DESC`;
+    const query = `SELECT * FROM activites_crm ORDER BY created_at DESC`;
     const result = await pool.query(query);
     return sendSuccess(res, result.rows, 'CrmActivity récupérés avec succès');
   } catch (error) {
@@ -17,11 +17,11 @@ export const getCrmActivity = async (req, res) => {
   }
 };
 
-// GET /api/crm/crm_activity/:id - Récupère un enregistrement
+// GET /api/crm/activites_crm/:id - Récupère un enregistrement
 export const getCrmActivityById = async (req, res) => {
   try {
     const { id } = req.params;
-    const query = `SELECT * FROM crm_activitys WHERE id = $1`;
+    const query = `SELECT * FROM activites_crm WHERE id = $1`;
     const result = await pool.query(query, [id]);
     
     if (result.rows.length === 0) {
@@ -34,7 +34,7 @@ export const getCrmActivityById = async (req, res) => {
   }
 };
 
-// POST /api/crm/crm_activity - Crée un enregistrement
+// POST /api/crm/activites_crm - Crée un enregistrement
 export const createCrmActivity = async (req, res) => {
   try {
     const userId = getUserId(req) || 1;
@@ -53,7 +53,7 @@ export const createCrmActivity = async (req, res) => {
     const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
     
     const query = `
-      INSERT INTO crm_activitys (${fields.join(', ')}, created_at, created_by)
+      INSERT INTO activites_crm (${fields.join(', ')}, created_at, created_by)
       VALUES (${placeholders}, NOW(), $${values.length + 1})
       RETURNING *
     `;
@@ -65,7 +65,7 @@ export const createCrmActivity = async (req, res) => {
   }
 };
 
-// PUT /api/crm/crm_activity/:id - Met à jour un enregistrement
+// PUT /api/crm/activites_crm/:id - Met à jour un enregistrement
 export const updateCrmActivity = async (req, res) => {
   try {
     const { id } = req.params;
@@ -85,7 +85,7 @@ export const updateCrmActivity = async (req, res) => {
     const setClause = fields.map((field, i) => `${field} = $${i + 1}`).join(', ');
     
     const query = `
-      UPDATE crm_activitys
+      UPDATE activites_crm
       SET ${setClause}, updated_at = NOW(), updated_by = $${values.length + 1}
       WHERE id = $${values.length + 2}
       RETURNING *
@@ -103,7 +103,7 @@ export const updateCrmActivity = async (req, res) => {
   }
 };
 
-// DELETE /api/crm/crm_activity/:id - Supprime un enregistrement
+// DELETE /api/crm/activites_crm/:id - Supprime un enregistrement
 export const deleteCrmActivity = async (req, res) => {
   try {
     const { id } = req.params;
@@ -113,7 +113,7 @@ export const deleteCrmActivity = async (req, res) => {
     const checkActiveQuery = `
       SELECT column_name 
       FROM information_schema.columns 
-      WHERE table_name = 'crm_activitys' AND column_name = 'active'
+      WHERE table_name = 'activites_crm' AND column_name = 'active'
     `;
     
     let query;
@@ -125,7 +125,7 @@ export const deleteCrmActivity = async (req, res) => {
       
       if (hasActiveField) {
         query = `
-          UPDATE crm_activitys
+          UPDATE activites_crm
           SET active = false, updated_at = NOW(), updated_by = $1
           WHERE id = $2
           RETURNING *
@@ -133,7 +133,7 @@ export const deleteCrmActivity = async (req, res) => {
         params = [userId, id];
       } else {
         query = `
-          DELETE FROM crm_activitys
+          DELETE FROM activites_crm
           WHERE id = $1
           RETURNING *
         `;
@@ -141,7 +141,7 @@ export const deleteCrmActivity = async (req, res) => {
       }
     } catch (checkError) {
       query = `
-        DELETE FROM crm_activitys
+        DELETE FROM activites_crm
         WHERE id = $1
         RETURNING *
       `;

@@ -1,4 +1,4 @@
-import bcrypt from 'bcrypt';
+﻿import bcrypt from 'bcrypt';
 import { pool } from './db.js';
 
 async function updateAdminPassword() {
@@ -15,7 +15,7 @@ async function updateAdminPassword() {
 
     // Vérifier si l'utilisateur existe
     const userCheck = await pool.query(
-      'SELECT id_utilisateur, email, prenom, nom, actif FROM utilisateurs WHERE email = $1',
+      'SELECT id_utilisateur, email, prenom, nom, actif FROM users WHERE email = $1',
       [email]
     );
 
@@ -35,7 +35,7 @@ async function updateAdminPassword() {
     // Vérifier le rôle
     const roleCheck = await pool.query(`
       SELECT r.code_role, r.nom_role
-      FROM utilisateurs_roles ur
+      FROM users_roles ur
       JOIN roles r ON ur.id_role = r.id_role
       WHERE ur.id_utilisateur = $1
       LIMIT 1
@@ -53,7 +53,7 @@ async function updateAdminPassword() {
 
       if (adminRole.rows.length > 0) {
         await pool.query(
-          'INSERT INTO utilisateurs_roles (id_utilisateur, id_role) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+          'INSERT INTO users_roles (id_utilisateur, id_role) VALUES ($1, $2) ON CONFLICT DO NOTHING',
           [user.id_utilisateur, adminRole.rows[0].id_role]
         );
         console.log('   ✅ Rôle ADMIN assigné');
@@ -67,7 +67,7 @@ async function updateAdminPassword() {
     const hashedPassword = await bcrypt.hash(password, 10);
     
     await pool.query(
-      'UPDATE utilisateurs SET mot_de_passe_hash = $1, actif = true WHERE id_utilisateur = $2',
+      'UPDATE users SET mot_de_passe_hash = $1, actif = true WHERE id_utilisateur = $2',
       [hashedPassword, user.id_utilisateur]
     );
     

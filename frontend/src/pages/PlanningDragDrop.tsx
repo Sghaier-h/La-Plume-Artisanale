@@ -105,7 +105,7 @@ const PlanningDragDrop: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="ml-64 p-6 flex items-center justify-center min-h-screen">
+      <div className="p-6 flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
@@ -113,7 +113,7 @@ const PlanningDragDrop: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="ml-64 p-6">
+      <div className="p-6">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-3xl font-bold text-gray-800 mb-6 flex items-center gap-2">
             <Factory className="w-8 h-8" />

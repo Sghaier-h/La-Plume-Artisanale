@@ -77,19 +77,19 @@ const SemiFini: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="ml-64 p-6 flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="p-6 flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]"></div>
       </div>
     );
   }
 
   return (
-    <div className="ml-64 p-6">
+    <div className="p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
-              <Package2 className="w-8 h-8 text-blue-600" />
+              <Package2 className="w-8 h-8 text-[#C8663D]" />
               Semi-Finis
             </h1>
             <p className="text-gray-600 mt-2">Gestion du stock des produits semi-finis</p>
@@ -104,7 +104,7 @@ const SemiFini: React.FC = () => {
               <button
                 onClick={() => setAffichageMode('ligne')}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                  affichageMode === 'ligne' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  affichageMode === 'ligne' ? 'bg-[#C8663D] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
               >
                 <List className="w-4 h-4" />
@@ -113,7 +113,7 @@ const SemiFini: React.FC = () => {
               <button
                 onClick={() => setAffichageMode('catalogue')}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                  affichageMode === 'catalogue' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  affichageMode === 'catalogue' ? 'bg-[#C8663D] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
               >
                 <Grid className="w-4 h-4" />
@@ -150,8 +150,8 @@ const SemiFini: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {filteredProduits.map((produit) => (
-                  <tr key={produit.id_article} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap font-mono text-sm font-medium text-blue-600">{produit.ref_commercial}</td>
+                  <tr key={produit.id_article} className="hover:bg-gray-50 group">
+                    <td className="px-6 py-4 whitespace-nowrap font-mono text-sm font-medium text-[#C8663D]">{produit.ref_commercial}</td>
                     <td className="px-6 py-4 whitespace-nowrap font-mono text-sm text-gray-600">{produit.ref_fabrication}</td>
                     <td className="px-6 py-4 text-sm">{produit.designation}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -161,8 +161,8 @@ const SemiFini: React.FC = () => {
                         {produit.stock_total || 0}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">{produit.prix_vente?.toFixed(2) || '0.00'} TND</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{produit.prix_reviens?.toFixed(2) || '0.00'} TND</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">{Number(produit.prix_vente || 0).toFixed(2) || '0.00'} TND</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{Number(produit.prix_reviens || 0).toFixed(2) || '0.00'} TND</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {produit.actif ? (
                         <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">Actif</span>
@@ -187,8 +187,8 @@ const SemiFini: React.FC = () => {
                   <div className="space-y-1 text-sm text-gray-600 mb-3">
                     <p><span className="font-medium">Ref:</span> <span className="font-mono text-xs">{produit.ref_commercial}</span></p>
                     <div className="mt-2 pt-2 border-t">
-                      <p className="font-semibold text-green-600 text-lg">{produit.prix_vente?.toFixed(2) || '0.00'} TND</p>
-                      <p className="text-xs text-gray-500">Reviens: {produit.prix_reviens?.toFixed(2) || '0.00'} TND</p>
+                      <p className="font-semibold text-green-600 text-lg">{Number(produit.prix_vente || 0).toFixed(2) || '0.00'} TND</p>
+                      <p className="text-xs text-gray-500">Reviens: {Number(produit.prix_reviens || 0).toFixed(2) || '0.00'} TND</p>
                     </div>
                   </div>
                   <div className="flex items-center justify-between mb-3">

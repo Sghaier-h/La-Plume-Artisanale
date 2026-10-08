@@ -674,3 +674,88 @@ class AIService {
 }
 
 export default new AIService();
+
+// ─── Named export: askAI (Anthropic Claude API) ───────────────────────────
+// Chargement paresseux du SDK — si AI_API_KEY absent → { mocked:true }.
+// Coût estimé selon les tarifs publiés Anthropic Sonnet : $3/M input, $15/M output.
+
+let _anthropicClient = null;
+let _anthropicInit = false;
+
+const _getAnthropic = async () => {
+  if (_anthropicInit) return _anthropicClient;
+  _anthropicInit = true;
+  if (!process.env.AI_API_KEY && !process.env.ANTHROPIC_API_KEY) {
+    _anthropicClient = null;
+    return null;
+  }
+  try {
+    const mod = await import('@anthropic-ai/sdk');
+    const Anthropic = mod.default || mod.Anthropic;
+    _anthropicClient = new Anthropic({
+      apiKey: process.env.AI_API_KEY || process.env.ANTHROPIC_API_KEY,
+    });
+  } catch (err) {
+    console.warn('[ai] @anthropic-ai/sdk non installé:', err.message);
+    _anthropicClient = null;
+  }
+  return _anthropicClient;
+};
+
+const _estimateCost = (input_tokens = 0, output_tokens = 0) => {
+  // Claude 3.5 Sonnet: $3/M input, $15/M output
+  const inCost = (input_tokens / 1_000_000) * 3;
+  const outCost = (output_tokens / 1_000_000) * 15;
+  return +(inCost + outCost).toFixed(6);
+};
+
+export const askAI = async ({ prompt, systemPrompt, maxTokens = 1000 } = {}) => {
+  const c = await _getAnthropic();
+  if (!c) {
+    return {
+      success: false,
+      mocked: true,
+      response: 'IA non configurée — définissez AI_API_KEY dans .env pour activer.',
+      model: 'placeholder',
+      tokens_input: 0,
+      tokens_output: 0,
+      cost: 0,
+    };
+  }
+  const start = Date.now();
+  try {
+    const msg = await c.messages.create({
+      model: process.env.AI_MODEL || 'claude-3-5-sonnet-20241022',
+      max_tokens: maxTokens,
+      system:
+        systemPrompt ||
+        "Tu es un assistant expert de l'ERP La Plume Artisanale, une entreprise de fabrication de foutas tunisiennes. Réponds en français, de manière concise et actionnable.",
+      messages: [{ role: 'user', content: prompt }],
+    });
+    const text = Array.isArray(msg.content)
+      ? msg.content.map(b => b.text || '').join('')
+      : (msg.content?.[0]?.text || '');
+    const tokens_input = msg.usage?.input_tokens || 0;
+    const tokens_output = msg.usage?.output_tokens || 0;
+    return {
+      success: true,
+      response: text,
+      model: msg.model,
+      tokens_input,
+      tokens_output,
+      cost: _estimateCost(tokens_input, tokens_output),
+      latency_ms: Date.now() - start,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.message,
+      model: process.env.AI_MODEL || 'claude-3-5-sonnet-20241022',
+      tokens_input: 0,
+      tokens_output: 0,
+      cost: 0,
+      latency_ms: Date.now() - start,
+    };
+  }
+};
+

@@ -29,7 +29,7 @@ export const getMrpProductions = async (req, res) => {
       paramIndex++;
     }
 
-    query += ` ORDER BY created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+    query += ` ORDER BY ${ID_FIELD} DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
     params.push(pageSize, offset);
 
     const result = await pool.query(query, params);

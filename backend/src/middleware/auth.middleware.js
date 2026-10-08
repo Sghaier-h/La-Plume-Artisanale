@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+﻿import jwt from 'jsonwebtoken';
 import { pool } from '../utils/db.js';
 
 export const authenticate = async (req, res, next) => {
@@ -47,8 +47,8 @@ export const authenticate = async (req, res, next) => {
           u.email,
           u.actif,
           r.code_role as role
-        FROM utilisateurs u
-        LEFT JOIN utilisateurs_roles ur ON u.id_utilisateur = ur.id_utilisateur
+        FROM users u
+        LEFT JOIN users_roles ur ON u.id_utilisateur = ur.id_utilisateur
         LEFT JOIN roles r ON ur.id_role = r.id_role
         WHERE u.id_utilisateur = $1
         LIMIT 1`,

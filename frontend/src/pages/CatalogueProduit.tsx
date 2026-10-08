@@ -192,14 +192,14 @@ const CatalogueProduit: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="ml-64 p-6 flex items-center justify-center min-h-screen">
+      <div className="p-6 flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="ml-64 p-6">
+    <div className="p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <div>
@@ -289,7 +289,7 @@ const CatalogueProduit: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {filteredArticles.map((article) => (
-                  <tr key={article.id_article} className="hover:bg-gray-50">
+                  <tr key={article.id_article} className="hover:bg-gray-50 group">
                     <td className="px-6 py-4">
                       {article.photo_article ? (
                         <img src={article.photo_article} alt={article.designation_article} className="w-16 h-16 object-cover rounded" />
@@ -309,9 +309,9 @@ const CatalogueProduit: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm">
-                        <div className="font-semibold text-green-600">{article.prix_vente?.toFixed(2) || '0.00'} TND</div>
+                        <div className="font-semibold text-green-600">{Number(article.prix_vente || 0).toFixed(2) || '0.00'} TND</div>
                         {article.prix_reviens && (
-                          <div className="text-xs text-gray-500">Reviens: {article.prix_reviens.toFixed(2)} TND</div>
+                          <div className="text-xs text-gray-500">Reviens: {Number(article.prix_reviens || 0).toFixed(2)} TND</div>
                         )}
                       </div>
                     </td>
@@ -397,9 +397,9 @@ const CatalogueProduit: React.FC = () => {
                       <p><span className="font-medium">Couleur:</span> {article.couleur_article}</p>
                     )}
                     <div className="mt-2 pt-2 border-t">
-                      <p className="font-semibold text-green-600 text-lg">{article.prix_vente?.toFixed(2) || '0.00'} TND</p>
+                      <p className="font-semibold text-green-600 text-lg">{Number(article.prix_vente || 0).toFixed(2) || '0.00'} TND</p>
                       {article.prix_reviens && (
-                        <p className="text-xs text-gray-500">Reviens: {article.prix_reviens.toFixed(2)} TND</p>
+                        <p className="text-xs text-gray-500">Reviens: {Number(article.prix_reviens || 0).toFixed(2)} TND</p>
                       )}
                     </div>
                   </div>

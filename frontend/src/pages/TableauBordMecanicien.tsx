@@ -247,7 +247,7 @@ const TableauBordMecanicien = () => {
 
   const getUrgenceColor = (urgence: any) => {
     switch(urgence) {
-      case 'Critique': return 'bg-purple-100 text-purple-800 border-purple-500';
+      case 'Critique': return 'bg-[#FDF2ED] text-[#A2502E] border-[#C8663D]';
       case 'Haute': return 'bg-red-100 text-red-800 border-red-500';
       case 'Moyenne': return 'bg-yellow-100 text-yellow-800 border-yellow-500';
       case 'Basse': return 'bg-green-100 text-green-800 border-green-500';
@@ -258,16 +258,16 @@ const TableauBordMecanicien = () => {
   const getStatutColor = (statut: any) => {
     switch(statut) {
       case 'En attente': return 'bg-orange-100 text-orange-800';
-      case 'En cours': return 'bg-blue-100 text-blue-800';
+      case 'En cours': return 'bg-[#EDF0F5] text-[#3B4E68]';
       case 'Terminé': return 'bg-green-100 text-green-800';
       case 'Réparé': return 'bg-green-100 text-green-800';
       case 'Effectué': return 'bg-green-100 text-green-800';
       case 'Disponible': return 'bg-green-100 text-green-800';
       case 'Validé': return 'bg-green-100 text-green-800';
       case 'Demandé': return 'bg-orange-100 text-orange-800';
-      case 'Envoyé au magasinier MP': return 'bg-blue-100 text-blue-800';
+      case 'Envoyé au magasinier MP': return 'bg-[#EDF0F5] text-[#3B4E68]';
       case 'Fil chaîne préparé': return 'bg-yellow-100 text-yellow-800';
-      case 'Envoyé sous-traitant': return 'bg-purple-100 text-purple-800';
+      case 'Envoyé sous-traitant': return 'bg-[#FDF2ED] text-[#A2502E]';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -304,7 +304,7 @@ const TableauBordMecanicien = () => {
             {/* Contenu */}
             <div className="p-4 space-y-3">
               {/* OF Actuel */}
-              <div className="bg-blue-50 p-3 rounded">
+              <div className="bg-[#EDF0F5] p-3 rounded">
                 <p className="text-xs text-gray-600 mb-1">OF ACTUEL</p>
                 <p className="font-bold text-gray-800">{machine.ofActuel}</p>
                 <p className="text-sm text-gray-700">{machine.modeleActuel}</p>
@@ -328,13 +328,13 @@ const TableauBordMecanicien = () => {
               </div>
 
               {/* Jours restants */}
-              <div className="bg-purple-50 p-3 rounded border-l-4 border-purple-500">
+              <div className="bg-[#FDF2ED] p-3 rounded border-l-4 border-[#C8663D]">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs text-gray-600">Jours restants</p>
-                    <p className="text-2xl font-bold text-purple-700">{machine.joursRestants}</p>
+                    <p className="text-2xl font-bold text-[#A2502E]">{machine.joursRestants}</p>
                   </div>
-                  <Calendar className="text-purple-500" size={32} />
+                  <Calendar className="text-[#C8663D]" size={32} />
                 </div>
                 <p className="text-xs text-gray-500 mt-1">Production: {machine.productionJour}m/jour</p>
               </div>
@@ -381,13 +381,13 @@ const TableauBordMecanicien = () => {
 
       {/* KPIs Généraux */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-blue-500">
+        <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-[#4A5D75]">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Temps Réaction Moyen</p>
               <p className="text-2xl font-bold text-gray-800">{rendementStats.tempsReactionMoyen} min</p>
             </div>
-            <Clock className="text-blue-500" size={32} />
+            <Clock className="text-[#4A5D75]" size={32} />
           </div>
         </div>
         
@@ -485,7 +485,7 @@ const TableauBordMecanicien = () => {
             </thead>
             <tbody className="divide-y divide-gray-200">
               {alertesPannes.map(panne => (
-                <tr key={panne.id} className="hover:bg-gray-50">
+                <tr key={panne.id} className="hover:bg-gray-50 group">
                   <td className="px-6 py-4 whitespace-nowrap font-bold text-gray-900">{panne.machine}</td>
                   <td className="px-6 py-4 text-sm text-gray-600">{panne.cause}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -632,12 +632,12 @@ const TableauBordMecanicien = () => {
           </thead>
           <tbody className="divide-y divide-gray-200">
             {demandes.map(demande => (
-              <tr key={demande.id} className="hover:bg-gray-50">
+              <tr key={demande.id} className="hover:bg-gray-50 group">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`px-2 py-1 text-xs rounded-full font-semibold ${
-                    demande.type === 'Risque' ? 'bg-purple-100 text-purple-800' :
+                    demande.type === 'Risque' ? 'bg-[#FDF2ED] text-[#A2502E]' :
                     demande.type === 'Réparation' ? 'bg-red-100 text-red-800' :
-                    demande.type === 'Entretien' ? 'bg-blue-100 text-blue-800' :
+                    demande.type === 'Entretien' ? 'bg-[#EDF0F5] text-[#3B4E68]' :
                     'bg-yellow-100 text-yellow-800'
                   }`}>
                     {demande.type}
@@ -664,7 +664,7 @@ const TableauBordMecanicien = () => {
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
                   <button
                     onClick={() => openModal('traiter-demande', demande)}
-                    className="text-blue-600 hover:text-blue-800"
+                    className="text-[#4A5D75] hover:text-[#3B4E68]"
                   >
                     <Edit size={18} />
                   </button>
@@ -684,7 +684,7 @@ const TableauBordMecanicien = () => {
         <div className="flex gap-2">
           <button
             onClick={() => openModal('demande-ourdissage')}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition flex items-center gap-2"
+            className="bg-[#C8663D] text-white px-4 py-2 rounded hover:bg-[#A2502E] transition flex items-center gap-2"
           >
             <Send size={18} />
             Demander Ourdissage
@@ -704,13 +704,13 @@ const TableauBordMecanicien = () => {
         <h3 className="text-lg font-bold text-gray-800 mb-4">Demandes d'Ourdissage en Cours</h3>
         <div className="space-y-3">
           {demandesOurdissage.map(demande => (
-            <div key={demande.id} className="border-l-4 border-blue-500 bg-blue-50 p-4 rounded">
+            <div key={demande.id} className="border-l-4 border-[#4A5D75] bg-[#EDF0F5] p-4 rounded">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     <h4 className="font-bold text-lg">{demande.modele}</h4>
                     <span className={`px-2 py-1 text-xs rounded-full ${
-                      demande.type === 'Réserve' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                      demande.type === 'Réserve' ? 'bg-[#FDF2ED] text-[#A2502E]' : 'bg-[#EDF0F5] text-[#3B4E68]'
                     }`}>
                       {demande.type}
                     </span>
@@ -791,7 +791,7 @@ const TableauBordMecanicien = () => {
                     )}
                     <button
                       onClick={() => openModal('attribuer-ensouple-reception', reception)}
-                      className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition text-sm whitespace-nowrap"
+                      className="bg-[#C8663D] text-white px-4 py-2 rounded hover:bg-[#A2502E] transition text-sm whitespace-nowrap"
                     >
                       Attribuer Machine
                     </button>
@@ -824,7 +824,7 @@ const TableauBordMecanicien = () => {
           </thead>
           <tbody className="divide-y divide-gray-200">
             {ensouples.map(ensouple => (
-              <tr key={ensouple.id} className="hover:bg-gray-50">
+              <tr key={ensouple.id} className="hover:bg-gray-50 group">
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{ensouple.id}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{ensouple.modele}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{ensouple.metrage}m</td>
@@ -835,7 +835,7 @@ const TableauBordMecanicien = () => {
                   {ensouple.machine === 'Réserve' && (
                     <button
                       onClick={() => openModal('attribuer-ensouple', ensouple)}
-                      className="text-blue-600 hover:text-blue-800"
+                      className="text-[#4A5D75] hover:text-[#3B4E68]"
                       title="Attribuer à une machine"
                     >
                       <Settings size={18} />
@@ -900,7 +900,7 @@ const TableauBordMecanicien = () => {
                   {demande.statut === 'Effectué' && demande.documentSigne && (
                     <button
                       onClick={() => openModal('document-nouage', demande)}
-                      className="text-blue-600 hover:text-blue-800"
+                      className="text-[#4A5D75] hover:text-[#3B4E68]"
                       title="Document"
                     >
                       <Download size={20} />
@@ -929,7 +929,7 @@ const TableauBordMecanicien = () => {
         <h2 className="text-2xl font-bold text-gray-800">Demandes d'Achat & Interventions Externes</h2>
         <button
           onClick={() => openModal('nouvelle-demande-achat')}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition flex items-center gap-2"
+          className="bg-[#C8663D] text-white px-4 py-2 rounded hover:bg-[#A2502E] transition flex items-center gap-2"
         >
           <Plus size={18} />
           Nouvelle Demande
@@ -955,7 +955,7 @@ const TableauBordMecanicien = () => {
                 <td className="px-6 py-4 text-sm font-medium text-gray-900">{demande.article}</td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`px-2 py-1 text-xs rounded-full ${
-                    demande.type === 'Pièce' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+                    demande.type === 'Pièce' ? 'bg-[#EDF0F5] text-[#3B4E68]' : 'bg-[#FDF2ED] text-[#A2502E]'
                   }`}>
                     {demande.type}
                   </span>
@@ -973,7 +973,7 @@ const TableauBordMecanicien = () => {
                   ) : (
                     <button
                       onClick={() => openModal('envoyer-email-achat', demande)}
-                      className="text-blue-600 hover:text-blue-800"
+                      className="text-[#4A5D75] hover:text-[#3B4E68]"
                       title="Envoyer par email"
                     >
                       <Mail size={18} />
@@ -997,7 +997,7 @@ const TableauBordMecanicien = () => {
         <h2 className="text-2xl font-bold text-gray-800">Planning Maintenance Préventive</h2>
         <button
           onClick={() => openModal('nouvelle-revision')}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition flex items-center gap-2"
+          className="bg-[#C8663D] text-white px-4 py-2 rounded hover:bg-[#A2502E] transition flex items-center gap-2"
         >
           <Plus size={18} />
           Planifier Révision
@@ -1030,15 +1030,15 @@ const TableauBordMecanicien = () => {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-blue-500">
+        <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-[#4A5D75]">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Révisions À Venir</p>
-              <p className="text-2xl font-bold text-blue-600">
+              <p className="text-2xl font-bold text-[#4A5D75]">
                 {planRevisions.filter(r => r.statut === 'À venir').length}
               </p>
             </div>
-            <Calendar className="text-blue-500" size={32} />
+            <Calendar className="text-[#4A5D75]" size={32} />
           </div>
         </div>
 
@@ -1092,7 +1092,7 @@ const TableauBordMecanicien = () => {
                   <span className={`px-2 py-1 text-xs rounded-full ${
                     revision.statut === 'Dépassé' ? 'bg-red-100 text-red-800' :
                     revision.statut === 'Urgent' ? 'bg-orange-100 text-orange-800' :
-                    'bg-blue-100 text-blue-800'
+                    'bg-[#EDF0F5] text-[#3B4E68]'
                   }`}>
                     {revision.statut}
                   </span>
@@ -1150,13 +1150,13 @@ const TableauBordMecanicien = () => {
             <div className="space-y-4">
               {modalType === 'details-machine' && selectedItem && (
                 <div className="space-y-4">
-                  <div className="bg-gradient-to-r from-blue-500 to-blue-700 text-white p-6 rounded-lg">
+                  <div className="text-white p-6 rounded-lg" style={{ background: 'linear-gradient(135deg, var(--accent-sage), var(--accent-indigo))' }}>
                     <h4 className="text-2xl font-bold mb-2">Machine {selectedItem.id}</h4>
-                    <p className="text-blue-100">{selectedItem.configuration}</p>
+                    <p style={{ color: 'rgba(255,255,255,0.85)' }}>{selectedItem.configuration}</p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-blue-50 p-4 rounded-lg">
+                    <div className="bg-[#EDF0F5] p-4 rounded-lg">
                       <p className="text-sm text-gray-600 mb-1">OF Actuel</p>
                       <p className="font-bold text-xl">{selectedItem.ofActuel}</p>
                       <p className="text-lg text-gray-700">{selectedItem.modeleActuel}</p>
@@ -1177,7 +1177,7 @@ const TableauBordMecanicien = () => {
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-4">
                         <div 
-                          className="bg-blue-600 h-4 rounded-full" 
+                          className="bg-[#4A5D75] h-4 rounded-full" 
                           style={{width: `${(selectedItem.metrageActuel/selectedItem.metrageTotal)*100}%`}}
                         ></div>
                       </div>
@@ -1194,13 +1194,13 @@ const TableauBordMecanicien = () => {
                       </div>
                       <div>
                         <p className="text-gray-600">Jours restants:</p>
-                        <p className="font-bold text-lg text-purple-700">{selectedItem.joursRestants} jours</p>
+                        <p className="font-bold text-lg text-[#A2502E]">{selectedItem.joursRestants} jours</p>
                       </div>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-3 gap-4">
-                    <div className="bg-purple-50 p-4 rounded-lg">
+                    <div className="bg-[#FDF2ED] p-4 rounded-lg">
                       <p className="text-sm text-gray-600">Ensouple</p>
                       <p className="font-bold text-gray-800">{selectedItem.ensoupleActuelle}</p>
                     </div>
@@ -1250,7 +1250,7 @@ const TableauBordMecanicien = () => {
                     </label>
                     <input 
                       type="number" 
-                      className="w-full border-2 border-gray-300 rounded-lg px-4 py-3 text-lg focus:border-blue-500 focus:outline-none" 
+                      className="w-full border-2 border-gray-300 rounded-lg px-4 py-3 text-lg focus:border-[#C8663D] focus:outline-none" 
                       placeholder={selectedItem.metrageActuel.toString()}
                       defaultValue={selectedItem.metrageActuel}
                     />
@@ -1261,7 +1261,7 @@ const TableauBordMecanicien = () => {
                       Raison de la correction
                     </label>
                     <textarea 
-                      className="w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:border-blue-500 focus:outline-none" 
+                      className="w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:border-[#C8663D] focus:outline-none" 
                       rows={3}
                       placeholder="Expliquez pourquoi le métrage doit être corrigé..."
                     ></textarea>
@@ -1283,7 +1283,7 @@ const TableauBordMecanicien = () => {
 
               {modalType === 'envoyer-email-achat' && selectedItem && (
                 <div className="space-y-4">
-                  <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500">
+                  <div className="bg-[#EDF0F5] p-4 rounded-lg border-l-4 border-[#4A5D75]">
                     <h4 className="font-bold text-lg mb-2">Demande d'Achat</h4>
                     <p className="text-sm"><strong>Article:</strong> {selectedItem.article}</p>
                     <p className="text-sm"><strong>Quantité:</strong> {selectedItem.quantite}</p>
@@ -1296,7 +1296,7 @@ const TableauBordMecanicien = () => {
                     </label>
                     <input 
                       type="email" 
-                      className="w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:border-blue-500 focus:outline-none" 
+                      className="w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:border-[#C8663D] focus:outline-none" 
                       placeholder="responsable.fabrication@entreprise.com"
                       defaultValue="responsable.fabrication@entreprise.com"
                     />
@@ -1307,7 +1307,7 @@ const TableauBordMecanicien = () => {
                       Message
                     </label>
                     <textarea 
-                      className="w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:border-blue-500 focus:outline-none" 
+                      className="w-full border-2 border-gray-300 rounded-lg px-4 py-2 focus:border-[#C8663D] focus:outline-none" 
                       rows={5}
                       defaultValue={`Bonjour,
 
@@ -1327,7 +1327,7 @@ Service Maintenance`}
                   </div>
 
                   <div className="flex gap-3">
-                    <button className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-semibold flex items-center justify-center gap-2">
+                    <button className="flex-1 bg-[#C8663D] text-white py-3 rounded-lg hover:bg-[#A2502E] transition font-semibold flex items-center justify-center gap-2">
                       <Mail size={20} />
                       Envoyer l'Email
                     </button>
@@ -1353,21 +1353,47 @@ Service Maintenance`}
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 ml-64">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-6 shadow-lg">
-        <div className="container mx-auto">
-          <h1 className="text-3xl font-bold flex items-center gap-3">
-            <Wrench size={36} />
-            Tableau de Bord Mécanicien & Entretien
-          </h1>
-          <p className="mt-2 text-blue-100">Gestion complète des machines, interventions et maintenance</p>
+    <div className="min-h-screen" style={{ background: 'var(--bg-app)' }}>
+      {/* Header artisanal */}
+      <div className="px-8 pt-8 pb-4 max-w-7xl mx-auto">
+        <div
+          className="text-[11px] font-mono uppercase tracking-[0.14em] mb-2"
+          style={{ color: 'var(--fg-muted)' }}
+        >
+          Maintenance · Tableau de bord
         </div>
+        <h1
+          className="flex items-center gap-3"
+          style={{
+            fontFamily: 'var(--font-serif)',
+            fontStyle: 'italic',
+            fontWeight: 500,
+            fontSize: 'var(--text-3xl)',
+            color: 'var(--fg-primary)',
+            lineHeight: 1.15,
+          }}
+        >
+          <Wrench size={32} style={{ color: 'var(--accent-indigo)' }} />
+          Mécanicien
+        </h1>
+        <p
+          className="mt-2 text-sm"
+          style={{ color: 'var(--fg-secondary)' }}
+        >
+          Gestion complète des machines, interventions et maintenance
+        </p>
       </div>
 
       {/* Navigation */}
-      <div className="bg-white shadow-md sticky top-0 z-40">
-        <div className="container mx-auto px-6">
+      <div
+        className="sticky top-0 z-40"
+        style={{
+          background: 'var(--bg-elevated)',
+          borderBottom: '1px solid var(--border-subtle)',
+          boxShadow: 'var(--shadow-sm)',
+        }}
+      >
+        <div className="max-w-7xl mx-auto px-8">
           <div className="flex gap-1 overflow-x-auto">
             {[
               { id: 'planning', label: 'Planning Machines', icon: Calendar },
@@ -1377,26 +1403,30 @@ Service Maintenance`}
               { id: 'ourdissage', label: 'Ourdissage & Nouage', icon: Package },
               { id: 'achats', label: 'Achats', icon: FileText },
               { id: 'revisions', label: 'Révisions', icon: Droplet },
-            ].map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-6 py-4 font-medium transition border-b-2 whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? 'border-blue-600 text-blue-600 bg-blue-50'
-                    : 'border-transparent text-gray-600 hover:text-gray-800 hover:bg-gray-50'
-                }`}
-              >
-                <tab.icon size={18} />
-                {tab.label}
-              </button>
-            ))}
+            ].map(tab => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className="flex items-center gap-2 px-5 py-4 font-medium transition whitespace-nowrap"
+                  style={{
+                    borderBottom: `2px solid ${isActive ? 'var(--accent-terracotta)' : 'transparent'}`,
+                    color: isActive ? 'var(--accent-terracotta)' : 'var(--fg-secondary)',
+                    background: isActive ? 'var(--bg-hover)' : 'transparent',
+                  }}
+                >
+                  <tab.icon size={18} />
+                  {tab.label}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="container mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-8 py-8">
         {activeTab === 'planning' && renderPlanning()}
         {activeTab === 'rendement' && renderRendement()}
         {activeTab === 'alertes' && renderAlertes()}

@@ -147,7 +147,7 @@ export const createBomMaster = async (req, res) => {
     }
 
     if (!data.code_bom_master) {
-      return sendError(res, HTTP_STATUS.BAD_REQUEST, 'code_bom_master requis (ou id_modele + id_dimension)');
+      return sendError(res, 'code_bom_master requis (ou id_modele + id_dimension)', HTTP_STATUS.BAD_REQUEST);
     }
     if (!data.code_produit) {
       return sendError(res, HTTP_STATUS.BAD_REQUEST, ERROR_MESSAGES.REQUIRED_FIELD('code_produit'));
@@ -200,7 +200,7 @@ export const updateBomMaster = async (req, res) => {
     const fields = allowed.filter(f => data[f] !== undefined);
 
     if (fields.length === 0) {
-      return sendError(res, HTTP_STATUS.BAD_REQUEST, 'Aucune donnée à mettre à jour');
+      return sendError(res, 'Aucune donnée à mettre à jour', HTTP_STATUS.BAD_REQUEST);
     }
 
     const values = fields.map(f => data[f]);
@@ -286,7 +286,7 @@ export const createBomComposant = async (req, res) => {
 
     // Valider que le BOM Master existe
     if (!data.id_bom_master && !data.code_bom_master) {
-      return sendError(res, HTTP_STATUS.BAD_REQUEST, 'id_bom_master ou code_bom_master requis');
+      return sendError(res, 'id_bom_master ou code_bom_master requis', HTTP_STATUS.BAD_REQUEST);
     }
 
     let master;
@@ -296,7 +296,7 @@ export const createBomComposant = async (req, res) => {
       master = await pool.query('SELECT * FROM bom_master WHERE code_bom_master = $1', [data.code_bom_master]);
     }
     if (master.rows.length === 0) {
-      return sendError(res, HTTP_STATUS.NOT_FOUND, 'BOM Master introuvable');
+      return sendError(res, 'BOM Master introuvable', HTTP_STATUS.NOT_FOUND);
     }
     const parent = master.rows[0];
 
@@ -391,7 +391,7 @@ export const updateBomComposant = async (req, res) => {
     const fields = allowed.filter(f => data[f] !== undefined);
 
     if (fields.length === 0) {
-      return sendError(res, HTTP_STATUS.BAD_REQUEST, 'Aucune donnée à mettre à jour');
+      return sendError(res, 'Aucune donnée à mettre à jour', HTTP_STATUS.BAD_REQUEST);
     }
 
     const values = fields.map(f => data[f]);

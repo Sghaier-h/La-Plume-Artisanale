@@ -1,107 +1,130 @@
-/**
- * Contrôleur Search - Module modulaire
+﻿/**
+ * Contrôleur Search — recherche transversale
+ *
+ * Endpoints :
+ *   GET /api/search?q=&type=&limit=       — Recherche unifiée
+ *   GET /api/search/quick?q=              — Top 3 par entité
  */
 
 import { pool } from '../../../src/utils/db.js';
-import { getUserId } from '../../../src/utils/audit.helper.js';
-import { sendError, sendSuccess, handleError } from '../../../src/utils/error.helper.js';
+import { sendSuccess, handleError } from '../../../src/utils/error.helper.js';
 
-// GET /api/search - Liste tous les enregistrements
-export const getSearch = async (req, res) => {
+// Descripteurs des sources de recherche
+const SOURCES = [
+  {
+    type: 'article',
+    sql: (q, l) => ({
+      text: `SELECT id_article AS id, designation AS title, code_article AS subtitle
+             FROM articles_catalogue
+             WHERE designation ILIKE $1 OR code_article ILIKE $1
+             LIMIT $2`,
+      params: [`%${q}%`, l],
+      link: (id) => `/articles-catalogue/${id}`,
+    }),
+  },
+  {
+    type: 'client',
+    sql: (q, l) => ({
+      text: `SELECT id_client AS id, raison_sociale AS title, code_client AS subtitle
+             FROM comptes
+             WHERE raison_sociale ILIKE $1 OR code_client ILIKE $1
+             LIMIT $2`,
+      params: [`%${q}%`, l],
+      link: (id) => `/clients/${id}`,
+    }),
+  },
+  {
+    type: 'commande',
+    sql: (q, l) => ({
+      text: `SELECT id_commande AS id, numero_commande AS title, ref_client AS subtitle
+             FROM commandes
+             WHERE numero_commande ILIKE $1 OR ref_client ILIKE $1
+             LIMIT $2`,
+      params: [`%${q}%`, l],
+      link: (id) => `/commandes/${id}`,
+    }),
+  },
+  {
+    type: 'of',
+    sql: (q, l) => ({
+      text: `SELECT id_of AS id, numero_of AS title, '' AS subtitle
+             FROM ordres_fabrication
+             WHERE numero_of ILIKE $1
+             LIMIT $2`,
+      params: [`%${q}%`, l],
+      link: (id) => `/ordres-fabrication/${id}`,
+    }),
+  },
+  {
+    type: 'facture',
+    sql: (q, l) => ({
+      text: `SELECT id_facture AS id, numero_facture AS title, '' AS subtitle
+             FROM factures
+             WHERE numero_facture ILIKE $1
+             LIMIT $2`,
+      params: [`%${q}%`, l],
+      link: (id) => `/factures/${id}`,
+    }),
+  },
+  {
+    type: 'bl',
+    sql: (q, l) => ({
+      text: `SELECT id_bl AS id, numero_bl AS title, '' AS subtitle
+             FROM bons_livraison
+             WHERE numero_bl ILIKE $1
+             LIMIT $2`,
+      params: [`%${q}%`, l],
+      link: (id) => `/bons-livraison/${id}`,
+    }),
+  },
+];
+
+const runSource = async (source, q, perTypeLimit) => {
   try {
-    const query = `SELECT * FROM search ORDER BY created_at DESC`;
-    const result = await pool.query(query);
-    return sendSuccess(res, result.rows, 'Search récupérés avec succès');
-  } catch (error) {
-    return handleError(res, error, 'getSearch');
+    const spec = source.sql(q, perTypeLimit);
+    const r = await pool.query(spec.text, spec.params);
+    return r.rows.map(row => ({
+      type: source.type,
+      id: row.id,
+      title: row.title,
+      subtitle: row.subtitle || null,
+      link: spec.link(row.id),
+    }));
+  } catch (err) {
+    // Table absente ou colonne manquante : on ignore silencieusement cette source
+    return [];
   }
 };
 
-// GET /api/search/:id - Récupère un enregistrement
-export const getSearchById = async (req, res) => {
+// ─── GET /api/search ──────────────────────────────────────────────
+export const search = async (req, res) => {
   try {
-    const { id } = req.params;
-    const query = `SELECT * FROM search WHERE id_search = $1`;
-    const result = await pool.query(query, [id]);
-    
-    if (result.rows.length === 0) {
-      return sendError(res, 'Search non trouvé', 404);
-    }
-    
-    return sendSuccess(res, result.rows[0], 'Search récupéré avec succès');
+    const q = (req.query.q || '').trim();
+    const type = req.query.type;
+    const limit = parseInt(req.query.limit, 10) || 20;
+
+    if (!q) return sendSuccess(res, { items: [], total: 0 });
+
+    const sources = type ? SOURCES.filter(s => s.type === type) : SOURCES;
+    const perType = Math.max(1, Math.ceil(limit / (sources.length || 1)));
+
+    const results = await Promise.all(sources.map(s => runSource(s, q, perType)));
+    const items = results.flat().slice(0, limit);
+    return sendSuccess(res, { items, total: items.length });
   } catch (error) {
-    return handleError(res, error, 'getSearchById');
+    return handleError(res, error, 'search');
   }
 };
 
-// POST /api/search - Crée un enregistrement
-// POST /api/search - Crée un enregistrement
-export const createSearch = async (req, res) => {
+// ─── GET /api/search/quick ────────────────────────────────────────
+export const quickSearch = async (req, res) => {
   try {
-    const userId = getUserId(req) || 1;
-    const data = req.body;
-    const excludedFields = ['id_search', 'created_at', 'updated_at', 'created_by', 'updated_by'];
-    const allowedFields = Object.keys(data).filter(f => !excludedFields.includes(f));
-    const fields = allowedFields;
-    const values = fields.map(f => data[f]);
-    if (fields.length === 0) return sendError(res, 'Aucune donnée à créer', 400);
-    const placeholders = values.map((_, i) => '$' + (i + 1)).join(', ');
-    const query = 'INSERT INTO search (' + fields.join(', ') + ', created_at, created_by) VALUES (' + placeholders + ', NOW(), $' + (values.length + 1) + ') RETURNING *';
-    const result = await pool.query(query, [...values, userId]);
-    return sendSuccess(res, result.rows[0], 'Enregistrement créé avec succès', 201);
+    const q = (req.query.q || '').trim();
+    if (!q) return sendSuccess(res, { items: [], total: 0 });
+    const results = await Promise.all(SOURCES.map(s => runSource(s, q, 3)));
+    const items = results.flat();
+    return sendSuccess(res, { items, total: items.length });
   } catch (error) {
-    return handleError(res, error, 'createSearch');
-  }
-};
-
-// PUT /api/search/:id - Met à jour un enregistrement
-// PUT /api/search/:id - Met à jour un enregistrement
-export const updateSearch = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const userId = getUserId(req) || 1;
-    const data = req.body;
-    const excludedFields = ['id_search', 'created_at', 'created_by'];
-    const allowedFields = Object.keys(data).filter(f => !excludedFields.includes(f));
-    const fields = allowedFields;
-    const values = fields.map(f => data[f]);
-    if (fields.length === 0) return sendError(res, 'Aucune donnée à mettre à jour', 400);
-    const setClause = fields.map((field, i) => field + ' = $' + (i + 1)).join(', ');
-    const query = 'UPDATE search SET ' + setClause + ', updated_at = NOW(), updated_by = $' + (values.length + 1) + ' WHERE id_search = $' + (values.length + 2) + ' RETURNING *';
-    const result = await pool.query(query, [...values, userId, id]);
-    if (result.rows.length === 0) return sendError(res, 'Enregistrement non trouvé', 404);
-    return sendSuccess(res, result.rows[0], 'Enregistrement mis à jour avec succès');
-  } catch (error) {
-    return handleError(res, error, 'updateSearch');
-  }
-};
-
-// DELETE /api/search/:id - Supprime un enregistrement
-// DELETE /api/search/:id - Supprime un enregistrement
-export const deleteSearch = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const userId = getUserId(req) || 1;
-    const checkActiveQuery = "SELECT column_name FROM information_schema.columns WHERE table_name = 'search' AND column_name = 'active'";
-    let query, params;
-    try {
-      const checkResult = await pool.query(checkActiveQuery);
-      const hasActiveField = checkResult.rows.length > 0;
-      if (hasActiveField) {
-        query = 'UPDATE search SET active = false, updated_at = NOW(), updated_by = $1 WHERE id_search = $2 RETURNING *';
-        params = [userId, id];
-      } else {
-        query = 'DELETE FROM search WHERE id_search = $1 RETURNING *';
-        params = [id];
-      }
-    } catch (checkError) {
-      query = 'DELETE FROM search WHERE id_search = $1 RETURNING *';
-      params = [id];
-    }
-    const result = await pool.query(query, params);
-    if (result.rows.length === 0) return sendError(res, 'Enregistrement non trouvé', 404);
-    return sendSuccess(res, null, 'Enregistrement supprimé avec succès');
-  } catch (error) {
-    return handleError(res, error, 'deleteSearch');
+    return handleError(res, error, 'quickSearch');
   }
 };

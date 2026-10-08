@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Truck, Plus, Edit, Trash2, Search, Download, Eye, CheckCircle, X, Package, Receipt } from 'lucide-react';
+import { Truck, Plus, Edit, Trash2, Search, Download, CheckCircle, X, Package, Receipt } from 'lucide-react';
 import { bonsLivraisonService, commandesService, clientsService, articlesService, facturesService } from '../services/api';
+import ArticlePicker from '../components/ArticlePicker';
 
 interface LigneBL {
   id_article?: number;
@@ -25,6 +26,7 @@ const BonLivraison: React.FC = () => {
   const [selectedCommande, setSelectedCommande] = useState<any>(null);
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState({ statut: '', client_id: '' });
+  const [pickerIndex, setPickerIndex] = useState<number | null>(null);
 
   const [formData, setFormData] = useState({
     id_commande: '',
@@ -58,14 +60,30 @@ const BonLivraison: React.FC = () => {
       ]);
 
       if (blRes.data?.success) {
-        setBonsLivraison(blRes.data.data || []);
+        const blRaw = blRes.data.data; setBonsLivraison(Array.isArray(blRaw) ? blRaw : (blRaw?.data || blRaw?.bons_livraison || []));
       } else {
         setBonsLivraison([]);
       }
       
-      setCommandes(cmdRes.data?.data || []);
-      setClients(clientsRes.data?.data || []);
-      setArticles(articlesRes.data?.data || []);
+      setCommandes((() => {
+        const _r = cmdRes.data?.data;
+        if (Array.isArray(_r)) return _r;
+        if (_r && Array.isArray(_r.data)) return _r.data;
+        if (_r && typeof _r === 'object') {
+          for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+        }
+        return [];
+      })());
+      const clientsRaw = clientsRes.data?.data; setClients(Array.isArray(clientsRaw) ? clientsRaw : (clientsRaw?.data || clientsRaw?.clients || []));
+      setArticles((() => {
+        const _r = articlesRes.data?.data;
+        if (Array.isArray(_r)) return _r;
+        if (_r && Array.isArray(_r.data)) return _r.data;
+        if (_r && typeof _r === 'object') {
+          for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+        }
+        return [];
+      })());
     } catch (error) {
       console.error('Erreur chargement BL:', error);
       setBonsLivraison([]);
@@ -209,18 +227,18 @@ const BonLivraison: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 ml-64 p-6">
+    <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-              <Truck className="w-8 h-8 text-blue-600" />
+              <Truck className="w-8 h-8 text-[#C8663D]" />
               Bons de Livraison
             </h1>
             <p className="text-gray-600 mt-2">Gestion et suivi des livraisons</p>
@@ -232,7 +250,7 @@ const BonLivraison: React.FC = () => {
                 setEditingBL(null);
                 resetForm();
               }}
-              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              className="flex items-center gap-2 bg-[#C8663D] text-white px-4 py-2 rounded-lg hover:bg-[#a55231] transition-colors"
             >
               <Plus className="w-5 h-5" />
               Nouveau BL
@@ -250,13 +268,13 @@ const BonLivraison: React.FC = () => {
                 placeholder="Rechercher..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
               />
             </div>
             <select
               value={filters.statut}
               onChange={(e) => setFilters({ ...filters, statut: e.target.value })}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
             >
               <option value="">Tous les statuts</option>
               <option value="BROUILLON">Brouillon</option>
@@ -267,7 +285,7 @@ const BonLivraison: React.FC = () => {
             <select
               value={filters.client_id}
               onChange={(e) => setFilters({ ...filters, client_id: e.target.value })}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
             >
               <option value="">Tous les clients</option>
               {clients.map(c => (
@@ -298,7 +316,7 @@ const BonLivraison: React.FC = () => {
                       });
                       setSelectedCommande(cmd);
                     }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                   >
                     <option value="">Sélectionner une commande (optionnel)</option>
                     {commandes.filter(c => c.statut === 'validee' || c.statut === 'en_cours').map(c => (
@@ -311,7 +329,7 @@ const BonLivraison: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleGenerateFromCommande(parseInt(formData.id_commande))}
-                      className="mt-2 text-sm text-blue-600 hover:text-blue-700"
+                      className="mt-2 text-sm text-[#C8663D] hover:text-[#a55231]"
                     >
                       Générer depuis cette commande
                     </button>
@@ -322,7 +340,7 @@ const BonLivraison: React.FC = () => {
                   <select
                     value={formData.id_client}
                     onChange={(e) => setFormData({ ...formData, id_client: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                     required
                   >
                     <option value="">Sélectionner un client</option>
@@ -337,7 +355,7 @@ const BonLivraison: React.FC = () => {
                     type="date"
                     value={formData.date_livraison}
                     onChange={(e) => setFormData({ ...formData, date_livraison: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                     required
                   />
                 </div>
@@ -346,7 +364,7 @@ const BonLivraison: React.FC = () => {
                   <select
                     value={formData.statut}
                     onChange={(e) => setFormData({ ...formData, statut: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                   >
                     <option value="BROUILLON">Brouillon</option>
                     <option value="PREPARE">Préparé</option>
@@ -359,7 +377,7 @@ const BonLivraison: React.FC = () => {
                     type="text"
                     value={formData.transporteur}
                     onChange={(e) => setFormData({ ...formData, transporteur: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                     placeholder="Nom du transporteur"
                   />
                 </div>
@@ -369,7 +387,7 @@ const BonLivraison: React.FC = () => {
                     type="text"
                     value={formData.numero_suivi}
                     onChange={(e) => setFormData({ ...formData, numero_suivi: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                     placeholder="Numéro de suivi colis"
                   />
                 </div>
@@ -378,7 +396,7 @@ const BonLivraison: React.FC = () => {
                   <textarea
                     value={formData.adresse_livraison}
                     onChange={(e) => setFormData({ ...formData, adresse_livraison: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                     rows={2}
                     placeholder="Adresse complète de livraison"
                   />
@@ -388,7 +406,7 @@ const BonLivraison: React.FC = () => {
                   <textarea
                     value={formData.notes}
                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                     rows={2}
                     placeholder="Notes additionnelles..."
                   />
@@ -402,7 +420,7 @@ const BonLivraison: React.FC = () => {
                   <button
                     type="button"
                     onClick={addLigne}
-                    className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                    className="text-[#C8663D] hover:text-[#a55231] text-sm font-medium"
                   >
                     + Ajouter une ligne
                   </button>
@@ -423,25 +441,13 @@ const BonLivraison: React.FC = () => {
                       {formData.lignes.map((ligne, index) => (
                         <tr key={index} className="border-t">
                           <td className="px-4 py-2">
-                            <select
-                              value={ligne.id_article || ''}
-                              onChange={(e) => {
-                                const article = articles.find(a => a.id_article?.toString() === e.target.value);
-                                updateLigne(index, 'id_article', e.target.value ? parseInt(e.target.value) : undefined);
-                                if (article) {
-                                  updateLigne(index, 'designation', article.designation || article.libelle);
-                                  updateLigne(index, 'prix_unitaire_ht', article.prix_vente || 0);
-                                }
-                              }}
-                              className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                            <button
+                              type="button"
+                              onClick={() => setPickerIndex(index)}
+                              className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-left bg-white hover:bg-gray-50"
                             >
-                              <option value="">Sélectionner</option>
-                              {articles.map(a => (
-                                <option key={a.id_article} value={a.id_article}>
-                                  {a.designation || a.libelle}
-                                </option>
-                              ))}
-                            </select>
+                              {ligne.designation || (ligne.id_article ? `Article #${ligne.id_article}` : 'Sélectionner un article...')}
+                            </button>
                           </td>
                           <td className="px-4 py-2">
                             <input
@@ -503,7 +509,7 @@ const BonLivraison: React.FC = () => {
               <div className="flex gap-2">
                 <button
                   type="submit"
-                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  className="bg-[#C8663D] text-white px-6 py-2 rounded-lg hover:bg-[#a55231] transition-colors"
                 >
                   Enregistrer
                 </button>
@@ -546,41 +552,47 @@ const BonLivraison: React.FC = () => {
                 </tr>
               ) : (
                 filteredBL.map((bl) => (
-                  <tr key={bl.id_bl} className="hover:bg-gray-50">
+                  <tr
+                    key={bl.id_bl}
+                    onClick={async () => {
+                      try {
+                        const result = await bonsLivraisonService.getBonLivraisonById(bl.id_bl);
+                        if (result.data?.success) {
+                          setSelectedBL(result.data?.data);
+                        }
+                      } catch (error: any) {
+                        console.error('Erreur chargement BL:', error);
+                        alert(error.response?.data?.error?.message || 'Erreur lors du chargement');
+                      }
+                    }}
+                    className="hover:bg-gray-50 group cursor-pointer"
+                  >
                     <td className="px-6 py-4 whitespace-nowrap font-medium">{bl.numero_bl}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{bl.numero_commande || '-'}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{bl.client_nom}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{bl.date_livraison}</td>
-                    <td className="px-6 py-4 whitespace-nowrap font-semibold">{bl.montant_ttc?.toFixed(2)} TND</td>
+                    <td className="px-6 py-4 whitespace-nowrap font-semibold">{Number(bl.montant_ttc || 0).toFixed(2)} TND</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 rounded text-xs font-medium ${getStatutColor(bl.statut)}`}>
                         {bl.statut}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex gap-2">
-                        <button 
-                          onClick={async () => {
-                            try {
-                              const result = await bonsLivraisonService.getBonLivraisonById(bl.id_bl);
-                              if (result.data?.success) {
-                                setSelectedBL(result.data.data);
-                              }
-                            } catch (error: any) {
-                              console.error('Erreur chargement BL:', error);
-                              alert(error.response?.data?.error?.message || 'Erreur lors du chargement');
-                            }
+                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            try { await bonsLivraisonService.downloadPDF(bl.id_bl, bl.numero_bl); }
+                            catch { alert('Erreur lors du téléchargement du PDF'); }
                           }}
-                          className="text-blue-600 hover:text-blue-700"
-                          title="Consulter"
+                          className="text-[#C8663D] hover:text-[#a94f2b]"
+                          title="Télécharger PDF"
                         >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button className="text-green-600 hover:text-green-700" title="Télécharger PDF">
                           <Download className="w-4 h-4" />
                         </button>
-                        <button 
-                          onClick={async () => {
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
                             try {
                               const result = await bonsLivraisonService.getBonLivraisonById(bl.id_bl);
                               if (result.data?.success) {
@@ -618,8 +630,9 @@ const BonLivraison: React.FC = () => {
                         >
                           <Edit className="w-4 h-4" />
                         </button>
-                        <button 
-                          onClick={async () => {
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
                             if (window.confirm(`Supprimer le bon de livraison ${bl.numero_bl} ?`)) {
                               try {
                                 await bonsLivraisonService.deleteBonLivraison(bl.id_bl);
@@ -718,10 +731,10 @@ const BonLivraison: React.FC = () => {
                             <tr key={index}>
                               <td className="px-4 py-2">{ligne.designation}</td>
                               <td className="px-4 py-2">{ligne.quantite_livree}</td>
-                              <td className="px-4 py-2">{ligne.prix_unitaire_ht?.toFixed(2)} TND</td>
+                              <td className="px-4 py-2">{Number(ligne.prix_unitaire_ht || 0).toFixed(2)} TND</td>
                               <td className="px-4 py-2">{ligne.taux_tva || 20}%</td>
                               <td className="px-4 py-2 font-semibold">
-                                {ligne.montant_ttc?.toFixed(2)} TND
+                                {Number(ligne.montant_ttc || 0).toFixed(2)} TND
                               </td>
                             </tr>
                           ))}
@@ -737,15 +750,15 @@ const BonLivraison: React.FC = () => {
                     <div className="w-64 space-y-2">
                       <div className="flex justify-between">
                         <span className="text-gray-600">Montant HT:</span>
-                        <span className="font-semibold">{selectedBL.montant_ht?.toFixed(2)} TND</span>
+                        <span className="font-semibold">{Number(selectedBL.montant_ht || 0).toFixed(2)} TND</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">TVA:</span>
-                        <span className="font-semibold">{selectedBL.montant_tva?.toFixed(2)} TND</span>
+                        <span className="font-semibold">{Number(selectedBL.montant_tva || 0).toFixed(2)} TND</span>
                       </div>
                       <div className="flex justify-between text-lg font-bold border-t pt-2">
                         <span>Total TTC:</span>
-                        <span>{selectedBL.montant_ttc?.toFixed(2)} TND</span>
+                        <span>{Number(selectedBL.montant_ttc || 0).toFixed(2)} TND</span>
                       </div>
                     </div>
                   </div>
@@ -788,7 +801,7 @@ const BonLivraison: React.FC = () => {
                         alert(error.response?.data?.error?.message || 'Erreur lors du chargement');
                       }
                     }}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    className="px-4 py-2 bg-[#C8663D] text-white rounded-lg hover:bg-[#a55231]"
                   >
                     <Edit className="w-4 h-4 inline mr-2" />
                     Modifier
@@ -814,6 +827,24 @@ const BonLivraison: React.FC = () => {
           </div>
         )}
       </div>
+
+      <ArticlePicker
+        isOpen={pickerIndex !== null}
+        onClose={() => setPickerIndex(null)}
+        onSelect={(article) => {
+          if (pickerIndex === null) return;
+          const newLignes = [...formData.lignes];
+          newLignes[pickerIndex] = {
+            ...newLignes[pickerIndex],
+            id_article: article.id_article,
+            designation: article.designation,
+            prix_unitaire_ht: article.prix_vente,
+            quantite_livree: article.quantite,
+          };
+          setFormData({ ...formData, lignes: newLignes });
+          setPickerIndex(null);
+        }}
+      />
     </div>
   );
 };

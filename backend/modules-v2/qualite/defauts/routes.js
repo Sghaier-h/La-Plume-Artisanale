@@ -1,0 +1,10 @@
+import { Router } from 'express';
+import * as c from './controller.js';
+const r = Router();
+r.get('/types',              c.listTypes);
+r.get('/signales',            c.listSignales);
+r.post('/signales',           c.signaler);
+r.post('/signales/:id/resoudre', c.resoudre);
+r.get('/signales/:id/photos', c.photosDe);
+r.post('/signales/:id/photos', c.uploadPhoto);
+export default r;
