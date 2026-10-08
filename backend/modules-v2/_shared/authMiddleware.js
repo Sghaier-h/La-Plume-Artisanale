@@ -29,7 +29,13 @@ export function requirePermission(code) {
   return (req, res, next) => {
     const u = req.user;
     if (!u) return fail(res, 401, 'unauthorized', 'Non authentifié');
-    if (u.role_principal === 'ADMIN') return next();
+    // ADMIN bypass — accepte les 2 conventions de nommage (legacy `role` + v2 `role_principal`)
+    // et normalise la casse pour tolérer 'admin' / 'Admin' / 'ADMIN'.
+    const roleUp = String(u.role_principal || u.role || '').toUpperCase();
+    if (roleUp === 'ADMIN' || roleUp === 'SUPER_ADMIN') return next();
+    // Fallback si les roles multiples sont listés (v2 payload étendu)
+    const rolesArr = Array.isArray(u.roles) ? u.roles.map(r => String(r).toUpperCase()) : [];
+    if (rolesArr.includes('ADMIN') || rolesArr.includes('SUPER_ADMIN')) return next();
     const perms = new Set(u.permissions || []);
     const blocked = new Set(u.permissions_bloquees || []);
     if (blocked.has(code)) return fail(res, 403, 'forbidden', `Permission ${code} bloquée`);
