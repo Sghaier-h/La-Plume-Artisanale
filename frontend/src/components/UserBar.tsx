@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme, ThemeMode } from '../contexts/ThemeContext';
 import PlumeLogo from './PlumeLogo';
+import PhotoBoiteTriWidget from './PhotoBoiteTriWidget';
 import type { LucideIcon } from 'lucide-react';
 import {
   Search,
@@ -611,6 +612,9 @@ const UserBar: React.FC<UserBarProps> = ({ topOffset = 0, leftOffset = 0 }) => {
           </div>
         )}
       </div>
+
+      {/* Photos justificatives à trier (§14quater.4) */}
+      <PhotoBoiteTriWidget />
 
       {/* Dashboards §14 — dropdown scrollable */}
       <div style={{ position: 'relative' }}>

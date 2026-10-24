@@ -131,12 +131,14 @@ export const entrepotService = {
   deleteEntrepot: (id: number) => api.delete(`/entrepots/${id}`),
 };
 
+// fournitureService — repointé Phase E4 sur /api/v2/stock/fournitures
+// (alias v2 d'articles_catalogue filtré par type 'fourniture').
 export const fournitureService = {
-  getFournitures: (params?: any) => api.get('/fournitures', { params }),
-  getFourniture: (id: number) => api.get(`/fournitures/${id}`),
-  createFourniture: (data: any) => api.post('/fournitures', data),
-  updateFourniture: (id: number, data: any) => api.put(`/fournitures/${id}`, data),
-  deleteFourniture: (id: number) => api.delete(`/fournitures/${id}`),
+  getFournitures: (params?: any) => api.get('/v2/stock/fournitures', { params }),
+  getFourniture: (id: number) => api.get(`/v2/stock/fournitures/${id}`),
+  createFourniture: (data: any) => api.post('/v2/stock/fournitures', data),
+  updateFourniture: (id: number, data: any) => api.put(`/v2/stock/fournitures/${id}`, data),
+  deleteFourniture: (id: number) => api.delete(`/v2/stock/fournitures/${id}`),
 };
 
 export const planningService = {
@@ -299,25 +301,30 @@ export const bonsRetourService = {
   deleteBonRetour: (id: number) => api.delete(`/bons-retour/${id}`),
 };
 
+// machinesService — repointé Phase E4 sur /api/v2/fabrication/machines
+// (legacy backend/modules/machines supprimé, handlers portés verbatim).
 export const machinesService = {
-  getMachines: (params?: any) => api.get('/machines', { params }),
-  getMachine: (id: number) => api.get(`/machines/${id}`),
-  createMachine: (data: any) => api.post('/machines', data),
-  updateMachine: (id: number, data: any) => api.put(`/machines/${id}`, data),
-  deleteMachine: (id: number) => api.delete(`/machines/${id}`),
-  getTypesMachines: () => api.get('/machines/types'),
-  getMachinePlanning: (id: number, params?: any) => api.get(`/machines/${id}/planning`, { params }),
+  getMachines: (params?: any) => api.get('/v2/fabrication/machines', { params }),
+  getMachine: (id: number) => api.get(`/v2/fabrication/machines/${id}`),
+  createMachine: (data: any) => api.post('/v2/fabrication/machines', data),
+  updateMachine: (id: number, data: any) => api.put(`/v2/fabrication/machines/${id}`, data),
+  deleteMachine: (id: number) => api.delete(`/v2/fabrication/machines/${id}`),
+  getTypesMachines: () => api.get('/v2/fabrication/machines/types'),
+  getMachinePlanning: (id: number, params?: any) => api.get(`/v2/fabrication/machines/${id}/planning`, { params }),
 };
 
+// ofService — repointé Phase E4 sur /api/v2/fabrication/of
+// (legacy backend/modules/of supprimé, handlers portés verbatim ; actions
+// démarrer/terminer déléguent toujours au controller production legacy).
 export const ofService = {
-  getOFs: (params?: any) => api.get('/of', { params }),
-  getOF: (id: number) => api.get(`/of/${id}`),
-  createOF: (data: any) => api.post('/of', data),
-  updateOF: (id: number, data: any) => api.put(`/of/${id}`, data),
-  assignerMachine: (id: number, data: any) => api.post(`/of/${id}/assigner-machine`, data),
-  demarrerOF: (id: number) => api.post(`/of/${id}/demarrer`),
-  terminerOF: (id: number, data?: any) => api.post(`/of/${id}/terminer`, data),
-  getDetailComplet: (id: number) => api.get(`/of/${id}/detail-complet`),
+  getOFs: (params?: any) => api.get('/v2/fabrication/of', { params }),
+  getOF: (id: number) => api.get(`/v2/fabrication/of/${id}`),
+  createOF: (data: any) => api.post('/v2/fabrication/of', data),
+  updateOF: (id: number, data: any) => api.put(`/v2/fabrication/of/${id}`, data),
+  assignerMachine: (id: number, data: any) => api.post(`/v2/fabrication/of/${id}/assigner-machine`, data),
+  demarrerOF: (id: number) => api.post(`/v2/fabrication/of/${id}/demarrer`),
+  terminerOF: (id: number, data?: any) => api.post(`/v2/fabrication/of/${id}/terminer`, data),
+  getDetailComplet: (id: number) => api.get(`/v2/fabrication/of/${id}/detail-complet`),
 };
 
 /**
@@ -381,21 +388,25 @@ export const auditService = {
   getAuditedTables: () => api.get('/audit/tables'),
 };
 
+// matieresPremieresService — repointé Phase E4 sur /api/v2/stock/matieres-premieres
+// (legacy backend/modules/matieres-premieres supprimé, handlers portés verbatim).
 export const matieresPremieresService = {
-  getMatieresPremieres: (params?: any) => api.get('/matieres-premieres', { params }),
-  getMatierePremiere: (id: number) => api.get(`/matieres-premieres/${id}`),
-  createMatierePremiere: (data: any) => api.post('/matieres-premieres', data),
-  updateMatierePremiere: (id: number, data: any) => api.put(`/matieres-premieres/${id}`, data),
-  deleteMatierePremiere: (id: number) => api.delete(`/matieres-premieres/${id}`),
-  getTypesMP: () => api.get('/matieres-premieres/types'),
+  getMatieresPremieres: (params?: any) => api.get('/v2/stock/matieres-premieres', { params }),
+  getMatierePremiere: (id: number) => api.get(`/v2/stock/matieres-premieres/${id}`),
+  createMatierePremiere: (data: any) => api.post('/v2/stock/matieres-premieres', data),
+  updateMatierePremiere: (id: number, data: any) => api.put(`/v2/stock/matieres-premieres/${id}`, data),
+  deleteMatierePremiere: (id: number) => api.delete(`/v2/stock/matieres-premieres/${id}`),
+  getTypesMP: () => api.get('/v2/stock/matieres-premieres/types'),
 };
 
+// suiviFabricationService — repointé Phase E4 sur /api/v2/fabrication/suivi
+// (legacy backend/modules/suivi-fabrication supprimé, handlers portés verbatim).
 export const suiviFabricationService = {
-  getSuivisFabrication: (params?: any) => api.get('/suivi-fabrication', { params }),
-  getSuiviFabrication: (id: number) => api.get(`/suivi-fabrication/${id}`),
-  createSuiviFabrication: (data: any) => api.post('/suivi-fabrication', data),
-  updateSuiviFabrication: (id: number, data: any) => api.put(`/suivi-fabrication/${id}`, data),
-  getAvancementOF: (of_id: number) => api.get(`/suivi-fabrication/of/${of_id}/avancement`),
+  getSuivisFabrication: (params?: any) => api.get('/v2/fabrication/suivi', { params }),
+  getSuiviFabrication: (id: number) => api.get(`/v2/fabrication/suivi/${id}`),
+  createSuiviFabrication: (data: any) => api.post('/v2/fabrication/suivi', data),
+  updateSuiviFabrication: (id: number, data: any) => api.put(`/v2/fabrication/suivi/${id}`, data),
+  getAvancementOF: (of_id: number) => api.get(`/v2/fabrication/suivi/of/${of_id}/avancement`),
 };
 
 export const fournisseursService = {
@@ -425,22 +436,24 @@ export const articlesCatalogueService = {
   updateArticleCatalogue: (id: number, data: any) => api.put(`/articles-catalogue/${id}`, data),
 };
 
+// tracabiliteLotsService — repointé Phase E4 sur /api/v2/stock/tracabilite-lots
+// (legacy backend/modules/tracabilite-lots supprimé, handlers portés verbatim).
 export const tracabiliteLotsService = {
-  getLots: (params?: any) => api.get('/tracabilite-lots', { params }),
-  createLot: (data: any) => api.post('/tracabilite-lots', data),
-  getQRCodeLot: (id: number) => api.get(`/tracabilite-lots/${id}/qr-code`),
-  genererEtiquette: (id: number) => api.post(`/tracabilite-lots/${id}/imprimer-etiquette`),
-  getStatsGlobal: () => api.get('/tracabilite-lots/stats/global'),
-  scanQR: (code: string) => api.get(`/tracabilite-lots/qr/${encodeURIComponent(code)}`),
-  getLotsCoupe: (params?: any) => api.get('/tracabilite-lots/coupe', { params }),
-  getLotCoupe: (id: number) => api.get(`/tracabilite-lots/coupe/${id}`),
-  createLotCoupe: (data: any) => api.post('/tracabilite-lots/coupe', data),
-  updateLotCoupe: (id: number, data: any) => api.put(`/tracabilite-lots/coupe/${id}`, data),
+  getLots: (params?: any) => api.get('/v2/stock/tracabilite-lots', { params }),
+  createLot: (data: any) => api.post('/v2/stock/tracabilite-lots', data),
+  getQRCodeLot: (id: number) => api.get(`/v2/stock/tracabilite-lots/${id}/qr-code`),
+  genererEtiquette: (id: number) => api.post(`/v2/stock/tracabilite-lots/${id}/imprimer-etiquette`),
+  getStatsGlobal: () => api.get('/v2/stock/tracabilite-lots/stats/global'),
+  scanQR: (code: string) => api.get(`/v2/stock/tracabilite-lots/qr/${encodeURIComponent(code)}`),
+  getLotsCoupe: (params?: any) => api.get('/v2/stock/tracabilite-lots/coupe', { params }),
+  getLotCoupe: (id: number) => api.get(`/v2/stock/tracabilite-lots/coupe/${id}`),
+  createLotCoupe: (data: any) => api.post('/v2/stock/tracabilite-lots/coupe', data),
+  updateLotCoupe: (id: number, data: any) => api.put(`/v2/stock/tracabilite-lots/coupe/${id}`, data),
   updateStatutLot: (id: number, statut: string) =>
-    api.put(`/tracabilite-lots/coupe/${id}/statut`, { statut }),
-  deleteLotCoupe: (id: number) => api.delete(`/tracabilite-lots/coupe/${id}`),
-  getLotsByOF: (id_of: number) => api.get(`/tracabilite-lots/of/${id_of}`),
-  getChaine: (id: number) => api.get(`/tracabilite-lots/${id}/chaine`),
+    api.put(`/v2/stock/tracabilite-lots/coupe/${id}/statut`, { statut }),
+  deleteLotCoupe: (id: number) => api.delete(`/v2/stock/tracabilite-lots/coupe/${id}`),
+  getLotsByOF: (id_of: number) => api.get(`/v2/stock/tracabilite-lots/of/${id_of}`),
+  getChaine: (id: number) => api.get(`/v2/stock/tracabilite-lots/${id}/chaine`),
 };
 
 export const qualiteAvanceeService = {
@@ -530,6 +543,16 @@ export const multisocieteService = {
   getTransferts: (params?: any) => api.get('/multisociete/transferts', { params }),
   createTransfert: (data: any) => api.post('/multisociete/transferts', data),
   getConsolidations: (params?: any) => api.get('/multisociete/consolidations', { params }),
+};
+
+// ─── §14quater.1 — Multi-sociétés v2 (modules-v2/multi-societes) ──────
+// Les 5 entités du groupe (LP / CAPSCOR / AT / PMG / HS).
+export const societesV2Service = {
+  list:          () => api.get('/v2/societes'),
+  get:           (id: number) => api.get(`/v2/societes/${id}`),
+  update:        (id: number, data: any) => api.put(`/v2/societes/${id}`, data),
+  basculer:      (id: number) => api.post(`/v2/societes/${id}/basculer`),
+  consolideVentes: () => api.get('/v2/societes/consolide/ventes'),
 };
 
 export const communicationService = {

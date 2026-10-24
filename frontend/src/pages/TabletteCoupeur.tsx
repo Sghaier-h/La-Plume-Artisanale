@@ -55,7 +55,7 @@ const TabletteCoupeur: React.FC = () => {
     setScanning(true);
     setLotInfo(null);
     try {
-      const res = await api.get(`/tracabilite-lots/qr/${encodeURIComponent(qrCode.trim())}`);
+      const res = await api.get(`/v2/stock/tracabilite-lots/qr/${encodeURIComponent(qrCode.trim())}`);
       setLotInfo(res.data?.data ?? res.data);
     } catch {
       alert('Lot introuvable pour ce QR');
@@ -65,7 +65,7 @@ const TabletteCoupeur: React.FC = () => {
   const handleCreerLotCoupe = async () => {
     if (!lotInfo) { alert('Scannez un lot d\'abord'); return; }
     try {
-      await api.post('/tracabilite-lots/coupe', {
+      await api.post('/v2/stock/tracabilite-lots/coupe', {
         id_lot_source: lotInfo.id_lot,
         id_of: lotInfo.id_of,
         id_operateur: operateurId,

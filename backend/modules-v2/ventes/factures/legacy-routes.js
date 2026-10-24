@@ -19,6 +19,8 @@ import {
   streamPDF, drawInvoice, fetchFactureFull, loadSociete,
 } from '../../../src/services/pdf.service.js';
 import { sendError, handleError } from '../../../src/utils/error.helper.js';
+// §14quater.8-9 — édition tracée des documents validés (ADMIN only)
+import { wrapAdminEdit } from '../../_shared/admin-edit-guard.js';
 
 const router = express.Router();
 
@@ -41,7 +43,7 @@ router.get('/:id', authenticate, getFactureById);
 router.post('/', authenticate, validate(createFactureSchema), createFacture);
 router.post('/from-commande/:id', authenticate, createFactureFromCommande);
 router.post('/from-bl/:id', authenticate, createFactureFromBL);
-router.put('/:id', authenticate, updateFacture);
+router.put('/:id', authenticate, wrapAdminEdit(updateFacture, 'facture'));
 router.delete('/:id', authenticate, deleteFacture);
 
 export default router;

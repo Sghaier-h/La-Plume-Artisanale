@@ -358,6 +358,62 @@ export const rapprochementV2Service = {
                    api.post(`/v2/comptabilite/rapprochement/${id_ligne}/ignorer`),
 };
 
+// ─── Apport gérant (§14quater.6) · ADMIN only ───────────────────────
+export type TypeApportGerant = 'apport' | 'retrait';
+export type ModePaiementApport = 'espece' | 'cheque' | 'virement';
+
+export interface ApportGerantMouvement {
+  id_mvt_apport: number;
+  id_cca: number;
+  montant: number;
+  type_mvt: TypeApportGerant;
+  mode_paiement: ModePaiementApport;
+  id_caisse_destination: number;
+  caisse_code?: string;
+  caisse_libelle?: string;
+  id_mouvement_caisse?: number;
+  id_document_archive?: number;
+  reference?: string | null;
+  date_mouvement: string;
+  libelle?: string | null;
+  notes?: string | null;
+  saisi_par?: number | null;
+  cca_libelle?: string | null;
+}
+
+export interface SoldeCCA {
+  id_cca: number | null;
+  id_user_gerant: number;
+  id_societe?: number | null;
+  libelle?: string | null;
+  solde_calcule: number;
+  solde_stocke: number;
+  nb_mouvements: number;
+  dernier_mouvement?: string | null;
+}
+
+export interface SaisieApportPayload {
+  montant: number;
+  type_mvt: TypeApportGerant;
+  mode_paiement: ModePaiementApport;
+  id_caisse_destination: number;
+  id_document_archive?: number | null;
+  reference?: string | null;
+  libelle?: string | null;
+  notes?: string | null;
+  id_user_gerant?: number;      // ADMIN peut saisir pour un autre gérant
+  id_societe?: number | null;
+}
+
+export const apportGerantService = {
+  saisir:     (payload: SaisieApportPayload) =>
+                api.post('/v2/comptabilite/apport-gerant/saisir', payload),
+  historique: (params?: { id_user_gerant?: number; id_societe?: number; limit?: number; offset?: number }) =>
+                api.get('/v2/comptabilite/apport-gerant/historique', { params }),
+  solde:      (params?: { id_user_gerant?: number; id_societe?: number }) =>
+                api.get('/v2/comptabilite/apport-gerant/solde-cca', { params }),
+};
+
 // ─── Clôture d'exercice ─────────────────────────────────────────────
 export const clotureService = {
   getEtat: (annee: number) => api.get(`/v2/comptabilite/cloture/${annee}/etat`),

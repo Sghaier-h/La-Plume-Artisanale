@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { multisocieteService } from '../services/api';
+import { multisocieteService, societesV2Service } from '../services/api';
 import { Building2, PlusCircle, ArrowRightLeft, TrendingUp } from 'lucide-react';
 
 const MultiSociete: React.FC = () => {
@@ -16,13 +16,22 @@ const MultiSociete: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [societesRes, etablissementsRes, transfertsRes] = await Promise.all([
-        multisocieteService.getSocietes(),
-        multisocieteService.getEtablissements(),
-        multisocieteService.getTransferts()
+      // §14quater.1 — v2 d'abord, fallback legacy pour établissements/transferts
+      const societesPromise = societesV2Service.list().catch(() => null);
+      const [societesV2Res, etablissementsRes, transfertsRes] = await Promise.all([
+        societesPromise,
+        multisocieteService.getEtablissements().catch(() => ({ data: { data: [] } })),
+        multisocieteService.getTransferts().catch(() => ({ data: { data: [] } })),
       ]);
 
-      setSocietes(societesRes.data.data.societes || []);
+      const v2List = societesV2Res?.data?.data;
+      if (Array.isArray(v2List)) {
+        setSocietes(v2List);
+      } else {
+        // Fallback legacy si v2 indisponible
+        const legacyRes = await multisocieteService.getSocietes();
+        setSocietes(legacyRes.data.data.societes || []);
+      }
       setEtablissements((() => {
         const _r = etablissementsRes.data?.data;
         if (Array.isArray(_r)) return _r;

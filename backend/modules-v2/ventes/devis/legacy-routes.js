@@ -18,6 +18,8 @@ import {
   streamPDF, drawQuote, fetchDevisFull, loadSociete,
 } from '../../../src/services/pdf.service.js';
 import { sendError, handleError } from '../../../src/utils/error.helper.js';
+// §14quater.8-9 — édition tracée des documents validés (ADMIN only)
+import { wrapAdminEdit } from '../../_shared/admin-edit-guard.js';
 
 const router = express.Router();
 
@@ -38,7 +40,7 @@ router.get('/:id(\\d+)/pdf', authenticate, async (req, res) => {
 router.get('/', authenticate, getDevis);
 router.get('/:id', authenticate, getDevisById);
 router.post('/', authenticate, validate(createDevisSchema), createDevis);
-router.put('/:id', authenticate, updateDevis);
+router.put('/:id', authenticate, wrapAdminEdit(updateDevis, 'devis'));
 router.post('/:id/transformer', authenticate, transformerEnCommande);
 router.delete('/:id', authenticate, deleteDevis);
 

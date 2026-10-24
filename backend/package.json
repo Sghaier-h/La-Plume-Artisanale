@@ -22,6 +22,8 @@
     "seed:rh-etendu:dry": "node scripts/seed-rh-etendu.js --dry",
     "seed:sous-traitants": "node scripts/seed-sous-traitants.js",
     "seed:sous-traitants:dry": "node scripts/seed-sous-traitants.js --dry",
+    "seed:societes": "node scripts/seed-societes.js",
+    "seed:societes:dry": "node scripts/seed-societes.js --dry",
     "migrate:crm-v2": "node scripts/migrate-crm-to-schema-v2.js",
     "migrate:crm-v2:dry": "node scripts/migrate-crm-to-schema-v2.js --dry",
     "test:db": "node src/utils/test-db.js",

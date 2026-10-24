@@ -20,6 +20,8 @@ import {
   executerChoix,
   getCommandeWithOFs
 } from './legacy-controller.js';
+// §14quater.8-9 — édition tracée des documents validés (ADMIN only)
+import { wrapAdminEdit } from '../../_shared/admin-edit-guard.js';
 
 const router = express.Router();
 
@@ -57,7 +59,7 @@ router.get('/:id(\\d+)/with-ofs', authenticate, getCommandeWithOFs);
 router.get('/', authenticate, getCommandes);
 router.get('/:id(\\d+)', authenticate, getCommande);
 router.post('/', authenticate, validate(createCommandeSchema), createCommande);
-router.put('/:id(\\d+)', authenticate, updateCommande);
+router.put('/:id(\\d+)', authenticate, wrapAdminEdit(updateCommande, 'commande'));
 router.delete('/:id(\\d+)', authenticate, deleteCommande);
 
 export default router;

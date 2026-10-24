@@ -85,6 +85,7 @@ const ROUTE_LABELS: Record<string, string> = {
   '/comptabilite/cessions': 'Cessions intra-groupe',
   '/comptabilite/depenses-especes': 'Dépenses espèces',
   '/comptabilite/compensations': 'Compensations croisées',
+  '/comptabilite/apport-gerant': 'Apport gérant',
   '/comptabilite/rapprochement': 'Rapprochement bancaire',
   '/documents/archive': 'Archive documents',
   '/tablette/caissier': 'Tablette caissier',

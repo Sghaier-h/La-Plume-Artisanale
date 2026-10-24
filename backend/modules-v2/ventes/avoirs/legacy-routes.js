@@ -20,6 +20,8 @@ import {
 import {
   streamPDF, drawAvoir, fetchAvoirFull, loadSociete,
 } from '../../../src/services/pdf.service.js';
+// §14quater.8-9 — édition tracée des documents validés (ADMIN only)
+import { wrapAdminEdit } from '../../_shared/admin-edit-guard.js';
 
 const router = express.Router();
 
@@ -79,7 +81,7 @@ router.put('/:id(\\d+)/annuler',   annulerAvoir);
 router.get('/',            getAvoirs);
 router.post('/',           createAvoir);
 router.get('/:id(\\d+)',    getAvoirById);
-router.put('/:id(\\d+)',    updateAvoir);
+router.put('/:id(\\d+)',    wrapAdminEdit(updateAvoir, 'avoir'));
 router.delete('/:id(\\d+)', deleteAvoir);
 
 export default router;

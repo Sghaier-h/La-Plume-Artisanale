@@ -28,7 +28,7 @@ const TabletteMagasinier: React.FC = () => {
     if (!operateurId) return;
     try {
       const [alertesRes, tachesRes] = await Promise.all([
-        api.get('/matieres-premieres/alertes/stock'),
+        api.get('/v2/stock/matieres-premieres/alertes/stock'),
         api.get(`/taches/operateur/${operateurId}/day`),
       ]);
       setAlertes(toArr(alertesRes.data?.data ?? alertesRes.data));

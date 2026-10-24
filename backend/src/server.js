@@ -210,6 +210,22 @@ import { securityManager } from './core/SecurityManager.js';
     }
 
     // ═══════════════════════════════════════════════════════════════
+    // Webhooks publics v2 (§14quater.4 — photos justificatives
+    // Teams/WhatsApp/Email). HMAC-signés dans le controller, pas d'auth
+    // JWT. Monté hors buildV2Router car ils ont leur propre parser JSON
+    // qui capture le body brut pour la vérification HMAC.
+    // ═══════════════════════════════════════════════════════════════
+    try {
+      const { default: photosWebhooks } = await import(
+        '../modules-v2/documents/photos-boite-tri/webhooks.routes.js'
+      );
+      app.use('/api/v2/webhooks', photosWebhooks);
+      logger.info('[modules-v2] Webhooks photos montés sur /api/v2/webhooks/{teams,whatsapp,email}/photo');
+    } catch (err) {
+      logger.warn('[modules-v2] Webhooks photos non montés', { error: err.message });
+    }
+
+    // ═══════════════════════════════════════════════════════════════
     // Alias de compatibilité RH legacy → routeurs v2 rh.
     //
     // Les modules legacy `backend/modules/{hr,pointage,payroll-tunisia}` ont

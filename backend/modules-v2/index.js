@@ -12,6 +12,9 @@ const groups = [
   ['auth',         ['.']],
   ['users',        ['.']],
 
+  // Multi-sociétés étendues (§14quater.1 · 5 entités du groupe)
+  ['multi-societes', ['.']],
+
   // Paramètres
   ['params',       ['numerotation', 'societe']],
 
@@ -21,13 +24,15 @@ const groups = [
   ['produits',     ['familles', 'modeles', 'articles']],
   ['bom',          ['master', 'composants']],
 
-  // Stock
+  // Stock (Phase E4 : + tracabilite-lots, fournitures)
   ['stock',        ['entrepots', 'inventaires', 'matieres-premieres',
-                    'mouvements', 'pieces-rechange', 'produits-finis']],
+                    'mouvements', 'pieces-rechange', 'produits-finis',
+                    'tracabilite-lots', 'fournitures']],
 
-  // Fabrication
+  // Fabrication (Phase E4 : + of, machines, suivi)
   ['fabrication',  ['ordres', 'ourdissage', 'tissage', 'coupe',
-                    'finition', 'planning', 'snapshots']],
+                    'finition', 'planning', 'snapshots',
+                    'of', 'machines', 'suivi']],
   ['qualite',      ['controles', 'defauts', 'rapports']],
   ['sous-traitance', ['envois', 'retours', 'sous-traitants', 'travaux', 'bons', 'comptes']],
 
@@ -37,10 +42,13 @@ const groups = [
   ['achats',       ['fournisseurs', 'bc', 'receptions', 'factures-ff']],
   ['comptabilite', ['ecritures', 'tva', 'caisse', 'cloture',
                     'caisses', 'dossiers-import', 'cessions',
-                    'depenses-especes', 'compensations', 'rapprochement']],
+                    'depenses-especes', 'compensations', 'rapprochement',
+                    // §14quater.6 — Apport gérant (ADMIN seul)
+                    'apport-gerant']],
 
   // Archive centrale de documents (§14quater · Phase A)
-  ['documents',    ['archive']],
+  // + Boîte à trier des photos justificatives (§14quater.4 · Phase E3)
+  ['documents',    ['archive', 'photos-boite-tri']],
 
   // RH (dont primes de rendement §11bis.7bis + TV atelier + RH étendu Phase C)
   ['rh',           ['employes', 'contrats', 'paie', 'pointage', 'conges',
@@ -64,6 +72,12 @@ const groups = [
   ['publicite',    ['comptes', 'campagnes', 'metriques', 'conversions']],
 ];
 
+// Alias par GROUPE → segment URL racine (les autres suivent le nom du groupe).
+// Utile quand le dossier et l'URL publique ne doivent pas coïncider.
+const groupSlug = {
+  'multi-societes': 'societes',    // §14quater.1 — URL contrat = /api/v2/societes
+};
+
 // Alias par module → segment URL (les autres suivent le nom du module).
 const routeSlug = {
   bl: 'bl',
@@ -83,6 +97,7 @@ const routeSlug = {
   'dossiers-import': 'dossiers-import',
   'depenses-especes': 'depenses-especes',
   archive: 'archive',
+  'photos-boite-tri': 'photos-boite-tri',
 };
 
 export default async function buildV2Router() {
@@ -96,8 +111,11 @@ export default async function buildV2Router() {
       const importPath = isRoot
         ? `./${group}/routes.js`
         : `./${group}/${name}/routes.js`;
+      const groupSegment = groupSlug[group] || group;
       const slug = isRoot ? '' : (routeSlug[name] || name);
-      const mountPath = isRoot ? `/api/v2/${group}` : `/api/v2/${group}/${slug}`;
+      const mountPath = isRoot
+        ? `/api/v2/${groupSegment}`
+        : `/api/v2/${groupSegment}/${slug}`;
 
       try {
         const mod = await import(importPath);

@@ -12,6 +12,7 @@ import TabletteLayout from './components/TabletteLayout';
 import { AppProvider } from './store/AppContext';
 import { NotificationProvider } from './components/erp';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { SocieteProvider } from './contexts/SocieteContext';
 import { NavigationProvider } from './components/NavigationContext';
 import { BreadcrumbProvider } from './components/BreadcrumbContext';
 import ContextActions from './components/ContextActions';
@@ -19,6 +20,7 @@ import Breadcrumbs from './components/Breadcrumbs';
 import NotificationCenter from './components/NotificationCenter';
 import ChatWidget from './components/ChatWidget';
 import TaskNotification from './components/TaskNotification';
+import SessionTimeoutManager from './components/SessionTimeoutManager';
 
 // ── Lazy-loaded pages (code splitting) ─────────────────────────────────
 // Pages principales (chargées à la demande)
@@ -149,7 +151,10 @@ const DossierImportDetailsPage  = React.lazy(() => import('./pages/comptabilite/
 const CessionsIntragroupePage   = React.lazy(() => import('./pages/comptabilite/CessionsIntragroupe'));
 const DepensesEspecesPage       = React.lazy(() => import('./pages/comptabilite/DepensesEspeces'));
 const CompensationsCroiseesPage = React.lazy(() => import('./pages/comptabilite/CompensationsCroisees'));
+// §14quater.6 — Apport gérant (ADMIN seul)
+const ApportGerantPage          = React.lazy(() => import('./pages/comptabilite/ApportGerant'));
 const ArchiveDocumentsPage      = React.lazy(() => import('./pages/documents/ArchiveDocuments'));
+const PhotosBoiteTriPage        = React.lazy(() => import('./pages/documents/PhotosBoiteTri'));
 const TabletteCaissierPage      = React.lazy(() => import('./pages/TabletteCaissier'));
 
 // ── Achats & Fournisseurs (§9 domain.md) ─────────────────────────────
@@ -407,6 +412,8 @@ const AppContent: React.FC = () => {
         <ContextActions />
         <ChatWidget />
         <TaskNotification />
+        {/* §14quater.10 — Session timeout 15 min inactivité (modal + logout) */}
+        <SessionTimeoutManager />
         <ErrorBoundary>
         <Suspense fallback={<LoadingSpinner />}>
         <Routes>
@@ -1417,7 +1424,10 @@ const AppContent: React.FC = () => {
           <Route path="/comptabilite/cessions" element={<ProtectedRoute requiredRole={['ADMIN', 'COMPTABLE']}><CessionsIntragroupePage /></ProtectedRoute>} />
           <Route path="/comptabilite/depenses-especes" element={<ProtectedRoute requiredRole={['ADMIN', 'COMPTABLE']}><DepensesEspecesPage /></ProtectedRoute>} />
           <Route path="/comptabilite/compensations" element={<ProtectedRoute requiredRole={['ADMIN', 'COMPTABLE']}><CompensationsCroiseesPage /></ProtectedRoute>} />
+          {/* §14quater.6 — Apport gérant · ADMIN SEUL */}
+          <Route path="/comptabilite/apport-gerant" element={<ProtectedRoute requiredRole="ADMIN"><ApportGerantPage /></ProtectedRoute>} />
           <Route path="/documents/archive" element={<ProtectedRoute><ArchiveDocumentsPage /></ProtectedRoute>} />
+          <Route path="/documents/boite-tri" element={<ProtectedRoute requiredRole={['ADMIN', 'COMPTABLE']}><PhotosBoiteTriPage /></ProtectedRoute>} />
 
           {/* ── CRM (§3) ────────────────────────────────────────────── */}
           <Route path="/crm/contacts" element={<ProtectedRoute requiredRole={['ADMIN', 'COMMERCIAL']}><CrmContacts /></ProtectedRoute>} />
@@ -1505,11 +1515,13 @@ function App() {
   return (
     <ThemeProvider>
       <Router>
-        <AppProvider>
-          <NotificationProvider>
-            <AppContent />
-          </NotificationProvider>
-        </AppProvider>
+        <SocieteProvider>
+          <AppProvider>
+            <NotificationProvider>
+              <AppContent />
+            </NotificationProvider>
+          </AppProvider>
+        </SocieteProvider>
       </Router>
     </ThemeProvider>
   );

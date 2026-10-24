@@ -181,7 +181,7 @@ const MachinesMaintenance: React.FC = () => {
     (async () => {
       setLoading(true);
       const results = await Promise.allSettled([
-        api.get('/machines'),
+        api.get('/v2/fabrication/machines'),
         api.get('/maintenance/planification'),
         api.get('/maintenance/interventions'),
         api.get('/maintenance/pieces'),

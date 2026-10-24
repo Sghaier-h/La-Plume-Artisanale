@@ -30,7 +30,7 @@ const TabletteTisseur: React.FC = () => {
     try {
       const [tachesRes, suiviRes] = await Promise.all([
         api.get(`/taches/operateur/${operateurId}/day`),
-        api.get(`/suivi-fabrication/operateur/${operateurId}/day`),
+        api.get(`/v2/fabrication/suivi/operateur/${operateurId}/day`),
       ]);
       const tachesData = toArr(tachesRes.data?.data ?? tachesRes.data);
       setTaches(tachesData);
@@ -76,7 +76,7 @@ const TabletteTisseur: React.FC = () => {
     if (!ofCourant || !quantite) return;
     setSaving(true);
     try {
-      await api.post('/suivi-fabrication', {
+      await api.post('/v2/fabrication/suivi', {
         id_of: ofCourant.id_of,
         id_operateur: operateurId,
         id_machine: machineId,
@@ -103,7 +103,7 @@ const TabletteTisseur: React.FC = () => {
   const handleIncident = async (statut: 'PANNE' | 'OPERATIONNELLE') => {
     if (!machineId) { alert('Aucune machine associée'); return; }
     try {
-      await api.put(`/machines/${machineId}/statut`, { statut });
+      await api.put(`/v2/fabrication/machines/${machineId}/statut`, { statut });
       loadData();
     } catch { alert('Erreur changement statut machine'); }
   };
