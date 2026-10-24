@@ -4341,6 +4341,36 @@ Décisions prises en session avec le PO. Priorité contractuelle : ces règles s
 - Tous nouveaux modules backend v2 : `comptes`, `contacts`, `adresses`, `leads`, `interactions`, `opportunites`, `parametres`.
 - Permissions middleware v2 accepte `role` legacy ET `role_principal` schema-v2.
 
+### 14ter.17b Responsive design — adaptable à tous les écrans (RÈGLE PO)
+
+**Le système doit être pleinement utilisable sur TOUS les écrans sans scroll horizontal ni débordement.**
+
+**Breakpoints standards :**
+- **≥ 1920 px** TV atelier / écrans de supervision — densité info max, grands chiffres
+- **1280–1919 px** PC bureau standard — densité normale
+- **1024–1279 px** PC portable — compacte, sidebar réduite
+- **768–1023 px** Tablette paysage — layout tablette kiosque XL
+- **480–767 px** Tablette portrait / grand téléphone — colonne unique scrollable, boutons touch (44px min)
+- **< 480 px** Smartphone — layout mobile dédié, menus en bottom-sheet
+
+**Règles techniques :**
+- Grids `grid-template-columns: repeat(auto-fit, minmax(220px, 1fr))` partout (jamais de nombre fixe de colonnes).
+- Padding et marges en `clamp(a, Xvw, b)` pour s'adapter sans breakpoint explicite.
+- Font-size titres : `clamp(1.5rem, 2.5vw, 2.25rem)`.
+- Images, cards, SVG : `max-width: 100%` et `height: auto`.
+- Jamais de `min-width` supérieur à 320 px sur un élément visible.
+- Tableaux larges : wrapper `overflow-x: auto` sur conteneur dédié uniquement (pas scroll global).
+- Boutons et zones cliquables : **minimum 44×44 px** en tablette et mobile.
+- Media queries utilisées en complément si et seulement si le fluide pur ne suffit pas.
+
+**Dashboards TV atelier** (§14.XX) :
+- Densité info maximale, chiffres énormes (clamp(3rem, 6vw, 6rem) sur KPI).
+- Rotation d'écrans automatique possible (cycle de 5 vues toutes les 10 s).
+
+**Testing responsive avant chaque livraison** (§14quater.11) :
+- Vérifier en 400px, 768px, 1024px, 1440px, 1920px minimum.
+- Les outils : Chrome DevTools device toolbar + Firefox Responsive Design Mode.
+
 ### 14ter.17 Permissions & ADMIN bypass
 
 - Admin accède à TOUT, sans restrictions de permission par ressource.
