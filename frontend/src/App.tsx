@@ -308,17 +308,14 @@ const PrivateRoute: React.FC<{ children: React.ReactNode; showNav?: boolean }> =
   const roleUpper = (user as any)?.role?.toUpperCase() || '';
   const isTabletteRole = PRIVATE_TABLETTE_ROLES.has(roleUpper);
 
-  // Rôles tablette → UserBar + TabletteLayout kiosque (pas de sidebar)
-  if (showNav && isTabletteRole) {
-    return (
-      <>
-        <UserBar />
-        <TabletteLayout>{children}</TabletteLayout>
-      </>
-    );
+  // §14quater.14 — KIOSQUE STRICT atelier (TISSEUR / COUPEUR / OURDISSEUR)
+  // AUCUNE barre système transversale (UserBar), AUCUN menu §15, quel que
+  // soit showNav. Seul le header TabletteLayout minimal est rendu.
+  if (isTabletteRole) {
+    return <TabletteLayout>{children}</TabletteLayout>;
   }
 
-  // Autres rôles bureau → UserBar + sidebar §15 filtrée
+  // Rôles PC → NavigationTopBar + UserBar + contenu
   return (
     <PrivateRouteBody showNav={showNav}>
       {children}

@@ -29,19 +29,28 @@ const groups = [
   ['fabrication',  ['ordres', 'ourdissage', 'tissage', 'coupe',
                     'finition', 'planning', 'snapshots']],
   ['qualite',      ['controles', 'defauts', 'rapports']],
-  ['sous-traitance', ['envois', 'retours']],
+  ['sous-traitance', ['envois', 'retours', 'sous-traitants', 'travaux', 'bons', 'comptes']],
 
   // Ventes / Achats / Compta
   ['ventes',       ['devis', 'commandes', 'bl', 'factures', 'avoirs',
                     'paiements', 'colisage', 'palettes']],
   ['achats',       ['fournisseurs', 'bc', 'receptions', 'factures-ff']],
-  ['comptabilite', ['ecritures', 'tva', 'caisse', 'cloture']],
+  ['comptabilite', ['ecritures', 'tva', 'caisse', 'cloture',
+                    'caisses', 'dossiers-import', 'cessions',
+                    'depenses-especes', 'compensations', 'rapprochement']],
 
-  // RH (dont primes de rendement §11bis.7bis + TV atelier)
+  // Archive centrale de documents (§14quater · Phase A)
+  ['documents',    ['archive']],
+
+  // RH (dont primes de rendement §11bis.7bis + TV atelier + RH étendu Phase C)
   ['rh',           ['employes', 'contrats', 'paie', 'pointage', 'conges',
                     'recrutement', 'cnss', 'irpp',
                     'primes-cagnottes', 'primes-scores', 'primes-bordereaux',
-                    'tv-atelier']],
+                    'tv-atelier',
+                    // Phase C — RH étendu + tablettes (§11bis + §14quater.5-7)
+                    'comptes-employes', 'avances', 'ajustements',
+                    'compensations-rh', 'pin-tablette', 'demandes-rh',
+                    'planning-employes']],
 
   // IA agents (§11ter + §14bis.6bis)
   ['ia-agents',    ['config', 'runs', 'findings', 'scheduler']],
@@ -71,6 +80,9 @@ const routeSlug = {
   notifications: 'notifications',
   colisage: 'colis',
   parametres: 'parametres',
+  'dossiers-import': 'dossiers-import',
+  'depenses-especes': 'depenses-especes',
+  archive: 'archive',
 };
 
 export default async function buildV2Router() {

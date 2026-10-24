@@ -128,7 +128,12 @@ export const ROLE_TO_PERMISSIONS = {
   MAGASINIER_PREPARATION: [...BASE, ...STOCK_WRITE, 'preparation_mp:consulter'],
   MAGASINIER_STOCK: [...BASE, ...STOCK_WRITE, ...VENTE_READ, 'colisage:gerer'],
   MAGASINIER_SOUSTRAITANTS: [
-    ...BASE, ...STOCK_READ, 'sous_traitant:consulter', 'bon_soustraitant:gerer',
+    ...BASE, ...STOCK_READ,
+    'sous_traitant:consulter', 'sous_traitant:gerer',
+    'bon_soustraitant:gerer',
+    'travail_soustraitant:consulter', 'travail_soustraitant:gerer',
+    'compte_soustraitant:consulter', 'compte_soustraitant:gerer',
+    'anomalie_soustraitant:gerer',
   ],
 
   MECANICIEN: [

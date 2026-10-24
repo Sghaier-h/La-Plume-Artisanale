@@ -4371,6 +4371,84 @@ Décisions prises en session avec le PO. Priorité contractuelle : ces règles s
 - Vérifier en 400px, 768px, 1024px, 1440px, 1920px minimum.
 - Les outils : Chrome DevTools device toolbar + Firefox Responsive Design Mode.
 
+### 14ter.17c Pattern dashboard-hub avec alertes (RÈGLE PO)
+
+**Chaque dashboard opérateur = page d'accueil hub d'icônes + bandeau alertes. PAS de scroll long qui affiche tout d'un coup.**
+
+#### Layout obligatoire de tout dashboard opérateur
+
+```
+┌───────────────────────────────────────────┐
+│ Header TabletteLayout / UserBar           │  ← contexte user
+├───────────────────────────────────────────┤
+│ 🚨 ALERTES & URGENCES  (2)                │  ← badge rouge
+│  • Remarque qualité OF-249780 — URGENT    │
+│  • Message chef production — URGENT       │
+│  [Voir toutes les alertes ↗]              │
+├───────────────────────────────────────────┤
+│ Bonjour {prénom}  ·  {heure}  ·  {date}   │  ← accueil chaleureux
+│                                            │
+│  ┌──────┐  ┌──────┐  ┌──────┐  ┌──────┐  │
+│  │  🧵  │  │  📋  │  │  🔧  │  │  📊  │  │  ← grille 4-6 icônes
+│  │ Mes  │  │ Mes  │  │Signal│  │ Mes  │  │
+│  │ OF   │  │tâches│  │défaut│  │stats │  │
+│  │ (3)  │  │ (5)  │  │      │  │      │  │  ← compteurs par section
+│  └──────┘  └──────┘  └──────┘  └──────┘  │
+│                                            │
+│  ┌──────┐  ┌──────┐                        │
+│  │  💬  │  │  📅  │                        │
+│  │ Mes  │  │ Mon  │                        │
+│  │msgs  │  │plan- │                        │
+│  │ (2)  │  │ ning │                        │
+│  └──────┘  └──────┘                        │
+└───────────────────────────────────────────┘
+```
+
+#### Règles
+
+1. **Section "🚨 Alertes & urgences"** fixée en haut, visible dès le chargement :
+   - Compteur rouge si > 0 alerte, grisé si vide.
+   - Max 3 alertes affichées en liste, bouton "Voir toutes" pour le reste.
+   - Alertes = messages urgents du chef prod, remarques contrôleur qualité sur SES OF, pannes machines ayant impact sur son poste, consignes de sécurité.
+   - Chaque alerte est clickable pour aller directement sur la pièce concernée.
+   - Alertes marquées lues disparaissent du badge (mais consultables en historique).
+
+2. **Section "Accueil / Bonjour {prénom}"** :
+   - Message personnalisé + horloge + date.
+   - Optionnel : indicateur météo atelier (température machine, taux humidité) pour tisseurs.
+
+3. **Grille d'icônes-hub** :
+   - 4 à 8 icônes **grands carrés tactiles** (min 120×120 px tablette, 100×100 mobile).
+   - Chaque icône = une **section fonctionnelle** du métier (ses OF, ses tâches, ses stats, signalement, messagerie, planning, mon compte, etc.).
+   - Compteur en badge sur chaque icône si éléments en attente.
+   - Click → navigation vers une **sous-page dédiée** (pas de modal superposé).
+   - Jamais plus de 2 lignes d'icônes visibles au premier écran : ce qui dépasse → la grille s'étend en 2e écran via scroll vertical court.
+
+4. **Interdit sur le dashboard principal** :
+   - Tableaux volumineux d'OF ou données (trop long à scroller).
+   - Multiples KPI empilés (max 2-3 KPI sous forme de badges dans la zone alertes).
+   - Formulaires longs.
+   - Rapports complets.
+   - → Tout ça va dans les sous-pages atteintes depuis les icônes.
+
+5. **Navigation entre sous-pages** :
+   - Chaque sous-page a son header avec bouton **← Retour accueil** et son titre.
+   - URL dédiée (ex: `/dashboard-tisseur/mes-of`, `/dashboard-tisseur/signaler-defaut`).
+
+#### Mapping sous-pages par rôle (exemples)
+
+| Rôle | Icônes hub |
+|---|---|
+| TISSEUR | Mes OF · Mes machines · Signaler défaut · Mon rendement · Messagerie · Planning |
+| COUPEUR | Mes OF à couper · Scan QR MP · Signaler défaut · Mon rendement · Messagerie · Planning |
+| OURDISSEUR | Mes ensouples · Préparer chaîne · Signaler défaut · Mes stats · Messagerie · Planning |
+| CONTROLEUR_QUALITE | Lots à contrôler · Mes rapports · Signaler non-conformité · Historique · Messagerie |
+| MAGASINIER_MP | Entrées MP · Sorties MP · Préparation OF · Inventaire · Alertes stock · Messagerie |
+| CHEF_ATELIER | Mon équipe · Mes OF · Signalements reçus · Planning jour · Rapport perf · Messagerie |
+
+#### Appliquer la même logique aux dashboards PC (chefs, magasiniers, compta…)
+Même pattern : icônes-hub + alertes séparées. Le menu §15 reste accessible dans la UserBar pour navigation libre, mais le dashboard **lui-même** est un hub, pas un tableau exhaustif.
+
 ### 14ter.17 Permissions & ADMIN bypass
 
 - Admin accède à TOUT, sans restrictions de permission par ressource.

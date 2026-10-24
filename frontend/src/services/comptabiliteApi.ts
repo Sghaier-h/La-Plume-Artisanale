@@ -114,6 +114,250 @@ export const rapportsService = {
     api.get(`/v2/comptabilite/rapports/${rapport}/excel`, { params, responseType: 'blob' }),
 };
 
+// ═══════════════════════════════════════════════════════════════════
+// PHASE A — COMPTABILITÉ ÉTENDUE (§14quater)
+// ═══════════════════════════════════════════════════════════════════
+
+export type TypeCaisseEtendue =
+  | 'principale' | 'cheques_clients' | 'compensation'
+  | 'apport_gerant' | 'showroom' | 'custom';
+
+export interface CaisseEtendue {
+  id_caisse: number;
+  code: string;
+  libelle: string;
+  type_caisse: TypeCaisseEtendue;
+  ordre: number;
+  solde_initial: number;
+  solde_theorique: number;
+  solde_calcule?: number;
+  actif: boolean;
+  compte_compta?: string;
+  responsable?: number;
+}
+
+export interface MouvementCaisseEtendu {
+  id_mouvement: number;
+  id_caisse: number;
+  date_mouvement: string;
+  type_mvt: 'entree' | 'sortie' | 'transfert';
+  montant: number;
+  mode_paiement?: string;
+  libelle?: string;
+  id_piece_liee?: number;
+  piece_type?: string;
+  cree_par?: number;
+  justificatif_url?: string;
+}
+
+export interface RoutageCaisse {
+  id_routage: number;
+  mode_paiement: string;
+  id_caisse_default: number;
+  caisse_code: string;
+  caisse_libelle: string;
+  libelle?: string;
+  actif: boolean;
+}
+
+export const caissesService = {
+  list:         ()                            => api.get('/v2/comptabilite/caisses'),
+  getOne:       (id: number)                  => api.get(`/v2/comptabilite/caisses/${id}`),
+  create:       (data: Partial<CaisseEtendue>) => api.post('/v2/comptabilite/caisses', data),
+  update:       (id: number, data: Partial<CaisseEtendue>) => api.put(`/v2/comptabilite/caisses/${id}`, data),
+  remove:       (id: number)                  => api.delete(`/v2/comptabilite/caisses/${id}`),
+  mouvements:   (id: number, params?: { date_from?: string; date_to?: string; limit?: number }) =>
+                  api.get(`/v2/comptabilite/caisses/${id}/mouvements`, { params }),
+  transfert:    (payload: { id_caisse_source: number; id_caisse_dest: number; montant: number; libelle?: string }) =>
+                  api.post('/v2/comptabilite/caisses/transfert', payload),
+  routage:      () => api.get('/v2/comptabilite/caisses/routage'),
+};
+
+export type StatutDossierImport = 'ouvert' | 'en_douane' | 'arrive' | 'liquide' | 'ferme' | 'annule';
+
+export interface DossierImport {
+  id_dossier: number;
+  numero_dossier: string;
+  date_ouverture: string;
+  pays_origine: string;
+  fournisseur_etranger: string;
+  nb_colis?: number;
+  poids_total_kg?: number;
+  incoterm?: string;
+  devise_etrangere?: string;
+  taux_change?: number;
+  cout_total_dt?: number;
+  statut: StatutDossierImport;
+  numero_declaration_douane?: string;
+  date_dedouanement?: string;
+  notes?: string;
+  nb_lignes?: number;
+  nb_frais?: number;
+  total_frais_dt?: number;
+}
+
+export interface DossierImportLigne {
+  id_ligne: number;
+  id_dossier: number;
+  description_marchandise: string;
+  quantite: number;
+  unite?: string;
+  poids_kg?: number;
+  prix_unitaire_devise?: number;
+  montant_devise?: number;
+  cout_prorata_kg?: number;
+  id_article?: number;
+}
+
+export type TypeFraisImport =
+  | 'fret' | 'assurance' | 'douane' | 'taxe'
+  | 'transport_local' | 'manutention' | 'commission' | 'autre';
+
+export interface DossierImportFrais {
+  id_frais: number;
+  id_dossier: number;
+  type_frais: TypeFraisImport;
+  libelle?: string;
+  montant_dt: number;
+  repartition_prorata: boolean;
+  date_frais?: string;
+}
+
+export const dossiersImportService = {
+  list:        (params?: { statut?: string; pays?: string }) => api.get('/v2/comptabilite/dossiers-import', { params }),
+  kpi:         ()                            => api.get('/v2/comptabilite/dossiers-import/kpi'),
+  getOne:      (id: number)                  => api.get(`/v2/comptabilite/dossiers-import/${id}`),
+  create:      (data: Partial<DossierImport>) => api.post('/v2/comptabilite/dossiers-import', data),
+  update:      (id: number, data: Partial<DossierImport>) => api.put(`/v2/comptabilite/dossiers-import/${id}`, data),
+  addLigne:    (id: number, data: Partial<DossierImportLigne>) => api.post(`/v2/comptabilite/dossiers-import/${id}/lignes`, data),
+  addFrais:    (id: number, data: Partial<DossierImportFrais>) => api.post(`/v2/comptabilite/dossiers-import/${id}/frais`, data),
+  recalculer:  (id: number, data?: { marge_pct?: number }) => api.post(`/v2/comptabilite/dossiers-import/${id}/recalculer-cessions`, data || {}),
+};
+
+export type StatutCession = 'calculee' | 'vendue' | 'facturee' | 'soldee' | 'annulee';
+
+export interface Cession {
+  id_cession: number;
+  cle_unique: string;
+  numero_cession?: string;
+  id_dossier_import?: number;
+  numero_dossier?: string;
+  pays_origine?: string;
+  poids_kg?: number;
+  cout_cession_dt: number;
+  marge_pct?: number;
+  statut: StatutCession;
+  date_calcul: string;
+  notes?: string;
+}
+
+export const cessionsService = {
+  list:    (params?: { statut?: string; id_dossier_import?: number }) => api.get('/v2/comptabilite/cessions', { params }),
+  getOne:  (id: number)                  => api.get(`/v2/comptabilite/cessions/${id}`),
+  annuler: (id: number, motif?: string)  => api.post(`/v2/comptabilite/cessions/${id}/annuler`, { motif }),
+};
+
+export interface DepenseEspece {
+  id_depense: number;
+  id_caisse?: number;
+  date_depense: string;
+  categorie: string;
+  libelle?: string;
+  montant: number;
+  beneficiaire?: string;
+  signature_svg?: string;
+  comptabilisee?: boolean;
+  id_ecriture_bloc?: number;
+  notes?: string;
+}
+
+export const depensesEspecesService = {
+  list:        (params?: { periode?: string; id_caisse?: number; comptabilisee?: boolean }) =>
+                  api.get('/v2/comptabilite/depenses-especes', { params }),
+  totaux:      (periode: string)             => api.get('/v2/comptabilite/depenses-especes/totaux', { params: { periode } }),
+  create:      (data: Partial<DepenseEspece>) => api.post('/v2/comptabilite/depenses-especes', data),
+  update:      (id: number, data: Partial<DepenseEspece>) => api.put(`/v2/comptabilite/depenses-especes/${id}`, data),
+  remove:      (id: number)                  => api.delete(`/v2/comptabilite/depenses-especes/${id}`),
+  cloturerMois:(periode: string)             => api.post(`/v2/comptabilite/depenses-especes/cloturer-mois/${periode}`),
+};
+
+export type StatutCompensation = 'brouillon' | 'validee' | 'annulee';
+
+export interface CompensationLigne {
+  id_ligne_comp?: number;
+  id_compensation?: number;
+  sens: 'debit' | 'credit';
+  id_tiers?: number;
+  type_tiers: 'client' | 'fournisseur' | 'employe' | 'autre';
+  nom_tiers?: string;
+  libelle?: string;
+  montant: number;
+  id_piece_liee?: number;
+  piece_type?: string;
+}
+
+export interface Compensation {
+  id_compensation: number;
+  numero_compensation: string;
+  date_compensation: string;
+  libelle: string;
+  montant_total: number;
+  statut: StatutCompensation;
+  cree_par?: number;
+  valide_par?: number;
+  notes?: string;
+  nb_lignes?: number;
+  lignes?: CompensationLigne[];
+}
+
+export const compensationsService = {
+  list:    (params?: { statut?: StatutCompensation }) => api.get('/v2/comptabilite/compensations', { params }),
+  getOne:  (id: number)                 => api.get(`/v2/comptabilite/compensations/${id}`),
+  create:  (data: { libelle: string; date_compensation?: string; notes?: string; lignes: CompensationLigne[] }) =>
+             api.post('/v2/comptabilite/compensations', data),
+  valider: (id: number)                 => api.post(`/v2/comptabilite/compensations/${id}/valider`),
+  annuler: (id: number, motif?: string) => api.post(`/v2/comptabilite/compensations/${id}/annuler`, { motif }),
+};
+
+export interface RapprochementImport {
+  id_import_bq: number;
+  id_compte_bancaire?: number;
+  date_import: string;
+  fichier_source: string;
+  format: 'ofx' | 'csv' | 'xlsx' | 'pdf';
+  nb_lignes_total: number;
+  nb_lignes_rapprochees: number;
+  nb_rapprochees?: number;
+  nb_non_matchees?: number;
+}
+
+export interface RapprochementLigne {
+  id_ligne_bq: number;
+  id_import_bq: number;
+  date_valeur: string;
+  libelle_bq: string;
+  montant_debit?: number;
+  montant_credit?: number;
+  reference_bq?: string;
+  matching_statut: 'non_matche' | 'suggere' | 'rapproche' | 'ignore';
+  id_mouvement_journal_matche?: number;
+  score_matching?: number;
+}
+
+export const rapprochementV2Service = {
+  listImports:  ()                                => api.get('/v2/comptabilite/rapprochement/imports'),
+  listLignes:   (params?: { id_import_bq?: number; matching_statut?: string }) =>
+                   api.get('/v2/comptabilite/rapprochement/lignes', { params }),
+  createImport: (data: { id_compte_bancaire?: number; fichier_source: string; format: string; lignes: any[] }) =>
+                   api.post('/v2/comptabilite/rapprochement/imports', data),
+  matchingAuto: (id_import_bq: number) =>
+                   api.post(`/v2/comptabilite/rapprochement/${id_import_bq}/matching-auto`),
+  rapprocher:   (id_ligne: number, id_mouvement_journal_matche: number) =>
+                   api.post(`/v2/comptabilite/rapprochement/${id_ligne}/rapprocher`, { id_mouvement_journal_matche }),
+  ignorer:      (id_ligne: number) =>
+                   api.post(`/v2/comptabilite/rapprochement/${id_ligne}/ignorer`),
+};
+
 // ─── Clôture d'exercice ─────────────────────────────────────────────
 export const clotureService = {
   getEtat: (annee: number) => api.get(`/v2/comptabilite/cloture/${annee}/etat`),

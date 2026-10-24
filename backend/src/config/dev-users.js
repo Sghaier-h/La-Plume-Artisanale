@@ -224,6 +224,19 @@ export const mockUsers = [
       role: 'RESPONSABLE_SECURITE',
       dashboardsAttribues: ['securite']
     }
+  },
+  // §14quater.14 — Caissier (kiosque strict, pas de UserBar transversale)
+  {
+    email: 'caissier@entreprise.local',
+    password: DEV_PASSWORD,
+    user: {
+      id: '19',
+      email: 'caissier@entreprise.local',
+      nom: 'Caissier',
+      prenom: 'Showroom',
+      role: 'CAISSIER',
+      dashboardsAttribues: ['caissier']
+    }
   }
 ];
 

@@ -6,23 +6,31 @@ import TabletteLayout from './TabletteLayout';
 import UserBar from './UserBar';
 
 /**
- * Rôles TABLETTE ATELIER — mode kiosque terrain sans sidebar.
- * Alignement strict sur docs/domain.md §15 qui marque explicitement
- * « (tablette) » uniquement pour Tisseur / Coupeur / Ourdisseur.
+ * Rôles TABLETTE / KIOSQUE STRICT — mode kiosque terrain sans sidebar.
+ * Alignement strict sur docs/domain.md §15 + §14quater.14 (kiosque strict).
  *
  * Ces postes ont une **application terrain** (interface tactile, gros
  * boutons XL, saisie chiffres au pavé, scan QR). Ils naviguent depuis
- * l'écran métier lui-même (pas de menu §15 gauche).
+ * l'écran métier lui-même (pas de menu §15 gauche, pas de UserBar
+ * transversale) — contrat §14quater.14.
  *
- * Tous les autres postes (Chef Production, Chef Atelier, Magasiniers,
- * Contrôleur Qualité, Mécanicien, Commercial, Comptable, RH Manager,
- * Marketing, Sécurité) sont sur PC de bureau : ils voient le menu §15
- * latéral, filtré par leurs permissions (§2.4 + rolePermissions.ts).
+ * Opérateurs atelier : TISSEUR, COUPEUR, OURDISSEUR + les magasiniers
+ * et le mécanicien quand ils tournent sur leur tablette dédiée. Le
+ * CAISSIER (showroom) rejoint le kiosque strict car il tourne sur
+ * tablette caisse.
+ *
+ * Les postes PC (Chef Production, Chef Atelier, Contrôleur Qualité,
+ * Commercial, Comptable, RH Manager, Marketing, Sécurité, ADMIN) voient
+ * le menu §15 latéral + UserBar, filtrés par leurs permissions
+ * (§2.4 + rolePermissions.ts).
  */
 const TABLETTE_ROLES = new Set([
+  // Opérateurs atelier
   'TISSEUR',
   'COUPEUR',
   'OURDISSEUR',
+  // Showroom / caisse (§14quater.14 kiosque strict)
+  'CAISSIER',
 ]);
 
 interface ProtectedRouteProps {
