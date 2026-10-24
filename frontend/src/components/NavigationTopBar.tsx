@@ -716,7 +716,7 @@ const NavigationTopBar: React.FC = () => {
           e.currentTarget.style.background = 'transparent';
         }}
       >
-        <Home size={16} style={{ color: 'var(--accent-terracotta)' }} />
+        <Home size={20} style={{ color: 'var(--accent-terracotta)' }} />
         <span>Accueil</span>
       </button>
 
@@ -782,11 +782,11 @@ const NavigationTopBar: React.FC = () => {
                   e.currentTarget.style.background = 'transparent';
               }}
             >
-              <CategoryIcon size={16} style={{ flexShrink: 0 }} />
+              <CategoryIcon size={20} style={{ flexShrink: 0, color: 'var(--accent-terracotta)' }} />
               <span>{category.label}</span>
               {hasSubItems && (
                 <ChevronDown
-                  size={12}
+                  size={14}
                   style={{
                     flexShrink: 0,
                     transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
