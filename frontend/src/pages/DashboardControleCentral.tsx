@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   BarChart, Bar, LineChart, Line, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
@@ -8,6 +8,9 @@ import {
   CheckCircle, ShieldCheck, AlertTriangle, ClipboardCheck, TrendingUp, Activity, FileText, X,
 } from 'lucide-react';
 import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
+import { qualiteService, dashboardService } from '../services/api';
+
+type ControleRow = { date: string; poste: string; qr: string; type: string; statut: string; controleur: string };
 
 const DashboardControleCentral: React.FC = () => {
   const navigate = useNavigate();
@@ -15,45 +18,57 @@ const DashboardControleCentral: React.FC = () => {
   const [showSecurityModal, setShowSecurityModal] = useState(false);
   const [selectedRating, setSelectedRating] = useState<{ [key: string]: number }>({});
 
-  // Chart series (mock — swap for API data when available)
-  const dataQualiteFab = [
-    { name: 'Tissage', contrôles: 28, nonConf: 3 },
-    { name: 'Coupe', contrôles: 15, nonConf: 1 },
-    { name: 'Atelier', contrôles: 32, nonConf: 2 },
-    { name: 'Magasin PF', contrôles: 18, nonConf: 1 },
-    { name: 'Entrepôt', contrôles: 12, nonConf: 1 },
-  ];
+  // Phase F2 — données chargées depuis /api/v2/qualite/controles/*
+  // Les séries de charts (secteur / radar / incidents) n'ont pas encore
+  // d'endpoint dédié : on les démarre à [] et on les hydrate quand disponible.
+  const [dataQualiteFab, setDataQualiteFab] = useState<Array<{ name: string; contrôles: number; nonConf: number }>>([]);
+  const [dataConformite, setDataConformite] = useState<Array<{ name: string; taux: number }>>([]);
+  const [dataSecuriteZones, setDataSecuriteZones] = useState<Array<{ subject: string; value: number }>>([]);
+  const [dataIncidents, setDataIncidents] = useState<Array<{ name: string; incidents: number }>>([]);
+  const [controlesRecents, setControlesRecents] = useState<ControleRow[]>([]);
+  const [kpiTaux, setKpiTaux] = useState<number | null>(null);
+  const [kpiTotalPeriode, setKpiTotalPeriode] = useState<number>(0);
+  const [kpiNonConf, setKpiNonConf] = useState<number>(0);
+  const [alertesCount, setAlertesCount] = useState<number>(0);
 
-  const dataConformite = [
-    { name: 'S-5', taux: 95.2 },
-    { name: 'S-4', taux: 95.8 },
-    { name: 'S-3', taux: 96.1 },
-    { name: 'S-2', taux: 96.4 },
-    { name: 'S-1', taux: 96.8 },
-    { name: 'S0', taux: 97.1 },
-  ];
+  useEffect(() => {
+    let cancelled = false;
+    const unwrap = (r: any) => r?.data?.data ?? r?.data ?? [];
+    const load = async () => {
+      try {
+        const [tauxR, recentsR, alertesR] = await Promise.all([
+          qualiteService.getTauxConformite('30j'),
+          qualiteService.getControlesRecents(20),
+          dashboardService.getAlertes().catch(() => ({ data: { data: [] } })),
+        ]);
+        if (cancelled) return;
+        const taux = (tauxR as any)?.data?.data || {};
+        setKpiTaux(typeof taux.taux === 'number' ? taux.taux : null);
+        setKpiTotalPeriode(Number(taux.total || 0));
+        setKpiNonConf(Number(taux.non_conformes || 0));
 
-  const dataSecuriteZones = [
-    { subject: 'Tissage', value: 9.1 },
-    { subject: 'Coupe', value: 8.5 },
-    { subject: 'Atelier', value: 9.5 },
-    { subject: 'Magasin MP', value: 9.8 },
-    { subject: 'Magasin PF', value: 9.5 },
-    { subject: 'Entrepôt', value: 9.3 },
-  ];
-
-  const dataIncidents = [
-    { name: 'Mai', incidents: 1 }, { name: 'Juin', incidents: 3 },
-    { name: 'Juil', incidents: 2 }, { name: 'Août', incidents: 1 },
-    { name: 'Sep', incidents: 2 }, { name: 'Oct', incidents: 2 },
-  ];
-
-  const controlesRecents = [
-    { date: '19/10 14:23', poste: 'Tissage M-01', qr: 'QR-TIS-2025-047', type: 'Conformité matière', statut: 'Conforme', controleur: 'CQ Central' },
-    { date: '19/10 13:15', poste: 'Tissage M-05', qr: 'QR-TIS-2025-046', type: 'Densité', statut: 'Non conforme', controleur: 'CQ Central' },
-    { date: '19/10 11:40', poste: 'Coupe #3', qr: 'QR-COU-2025-018', type: 'Dimensions', statut: 'Conforme', controleur: 'CQ Central' },
-    { date: '19/10 10:12', poste: 'Atelier Finition', qr: 'QR-ATE-2025-091', type: 'Finition visuelle', statut: 'Conforme', controleur: 'CQ Central' },
-  ];
+        const recRows: any[] = Array.isArray(unwrap(recentsR)) ? unwrap(recentsR) : [];
+        setControlesRecents(recRows.map((c: any) => {
+          const d = c.date_controle ? new Date(c.date_controle) : null;
+          return {
+            date: d ? d.toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) : '',
+            poste: c.numero_of || `OF ${c.id_of ?? ''}`,
+            qr: c.qr_code || c.reference || '',
+            type: c.type_controle || '—',
+            statut: c.est_bloquant ? 'Non conforme' : 'Conforme',
+            controleur: c.id_controleur ? `CTR-${c.id_controleur}` : 'Contrôle central',
+          };
+        }));
+        const alertesRaw: any[] = Array.isArray(unwrap(alertesR)) ? unwrap(alertesR) : [];
+        setAlertesCount(alertesRaw.length);
+      } catch {
+        // garde les tableaux vides
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+    // intentionally no deps : fire-once hydrate on mount
+  }, []);
 
   const handleRatingClick = (criterion: string, value: number) => {
     setSelectedRating({ ...selectedRating, [criterion]: value });
@@ -102,63 +117,31 @@ const DashboardControleCentral: React.FC = () => {
         <div className="lp-metric-grid">
           <KpiCard
             label="Taux de conformité"
-            value="96.8%"
+            value={kpiTaux == null ? '—' : `${kpiTaux}%`}
             hint="30 derniers jours"
             icon={<ShieldCheck size={18} />}
             tone="sage"
           />
           <KpiCard
-            label="Contrôles du jour"
-            value={47}
-            hint="Effectués aujourd'hui"
+            label="Contrôles 30j"
+            value={kpiTotalPeriode}
+            hint="Volume cumulé"
             icon={<ClipboardCheck size={18} />}
             tone="indigo"
           />
           <KpiCard
             label="Non-conformités"
-            value={8}
-            hint="En attente de correction"
+            value={kpiNonConf}
+            hint="Détectées sur 30j"
             icon={<AlertTriangle size={18} />}
             tone="terracotta"
           />
           <KpiCard
-            label="Jours sans incident"
-            value={247}
-            hint="Objectif : 365 jours"
+            label="Alertes ouvertes"
+            value={alertesCount}
+            hint="Toutes sources (production + qualité)"
             icon={<CheckCircle size={18} />}
             tone="gold"
-          />
-        </div>
-
-        {/* SECONDARY KPIs */}
-        <div className="lp-metric-grid">
-          <KpiCard
-            label="Conformité sécurité"
-            value="97%"
-            hint="Taux global"
-            icon={<ShieldCheck size={16} />}
-            tone="sage"
-          />
-          <KpiCard
-            label="Propreté zones"
-            value="9.2/10"
-            hint="Note moyenne"
-            icon={<CheckCircle size={16} />}
-            tone="rose"
-          />
-          <KpiCard
-            label="Incidents mois"
-            value={2}
-            hint="Sécurité & environnement"
-            icon={<AlertTriangle size={16} />}
-            tone="brown"
-          />
-          <KpiCard
-            label="Contrôleurs actifs"
-            value={5}
-            hint="Postes couverts"
-            icon={<Activity size={16} />}
-            tone="indigo"
           />
         </div>
 

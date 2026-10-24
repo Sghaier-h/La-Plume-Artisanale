@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Camera, Package, AlertTriangle, Printer, Clock, ArrowRight, Scissors, Tag, Zap,
   PackageCheck, Bell, XCircle, CheckCircle, AlertCircle, Activity, Users, Wrench,
 } from 'lucide-react';
 import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
+import { ofService } from '../services/api';
+import { soustraitantsApi } from '../services/soustraitanceApi';
 
 const ChefAtelierDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('operations');
@@ -24,7 +26,7 @@ const ChefAtelierDashboard: React.FC = () => {
     { id: 'emballage', label: 'Emballage', icon: PackageCheck },
   ];
 
-  const [commandesEnCours] = useState<any[]>([
+  const [commandesEnCours, setCommandesEnCours] = useState<any[]>([
     {
       id: 'CMD001',
       numCommande: 'CM-FT0108',
@@ -194,6 +196,58 @@ const ChefAtelierDashboard: React.FC = () => {
       description: "Vibrations importantes lors de l'utilisation",
     },
   ]);
+
+  // Phase F2 — Hydratation commandes depuis /api/v2/fabrication/of + sous-traitants
+  useEffect(() => {
+    let cancelled = false;
+    const unwrap = (r: any) => r?.data?.data ?? r?.data ?? [];
+    (async () => {
+      try {
+        const [ofsR, stR] = await Promise.all([
+          ofService.getOFs({ limit: 50 }).catch(() => null),
+          soustraitantsApi.list({ limit: 20 }).catch(() => null),
+        ]);
+        if (cancelled) return;
+        const ofs: any[] = Array.isArray(unwrap(ofsR)) ? unwrap(ofsR) : [];
+        const sts: any[] = Array.isArray(unwrap(stR)) ? unwrap(stR) : [];
+        if (ofs.length > 0) {
+          // Groupage simple par commande
+          const byCmd = new Map<string, any>();
+          ofs.forEach((o: any) => {
+            const key = o.numero_commande || `Stock-${o.id_of}`;
+            if (!byCmd.has(key)) {
+              byCmd.set(key, {
+                id: key,
+                numCommande: key,
+                client: o.client_nom || '-',
+                dateEnvoi: o.date_fin_prevue || '',
+                joursRestants: 0,
+                articles: [],
+                alertes: [],
+              });
+            }
+            byCmd.get(key).articles.push({
+              idArticle: `ART${o.id_of}`,
+              refCommercial: o.code_article || '-',
+              modele: o.article_designation || '-',
+              dimension: '',
+              qteCommandee: Number(o.quantite_a_produire) || 0,
+              suivis: [{
+                numSuivi: o.numero_of || `OF${o.id_of}`,
+                qteLot: Number(o.quantite_a_produire) || 0,
+                operations: {},
+                qteDeuxieme: 0, qteRebut: 0,
+                sousTraitant: sts[0]?.nom || null,
+              }],
+            });
+          });
+          const list = Array.from(byCmd.values()).slice(0, 10);
+          if (list.length > 0) setCommandesEnCours(list);
+        }
+      } catch { /* mock conservé */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const getStatsOperation = (operationId: string) => {
     let total = 0;

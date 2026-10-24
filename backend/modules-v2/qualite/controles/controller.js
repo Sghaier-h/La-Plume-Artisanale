@@ -25,3 +25,17 @@ export const decider = asyncHandler(async (req, res) => {
   if (!c) return res.status(404).json(fail('NOT_FOUND', 'Contrôle introuvable', null, 404));
   res.json(ok(c));
 });
+
+// Phase F2 — Taux de conformité (DashboardAdministrateur KPI Qualité)
+export const tauxConformite = asyncHandler(async (req, res) => {
+  const periode = String(req.query.periode || '30j');
+  const data = await svc.tauxConformite({ periode });
+  res.json(ok(data));
+});
+
+// Phase F2 — Contrôles récents (DashboardControleCentral tableau)
+export const recents = asyncHandler(async (req, res) => {
+  const limit = Math.min(Number(req.query.limit) || 20, 100);
+  const rows = await svc.recents({ limit });
+  res.json(ok(rows, { count: rows.length }));
+});

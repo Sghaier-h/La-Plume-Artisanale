@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Package, TrendingDown, AlertTriangle, CheckCircle, Clock, Search, Printer,
   ArrowRightLeft, Box, Download, Plus, ChevronDown, ChevronRight, Activity,
 } from 'lucide-react';
 import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
 import WhatsAppWidget from '../components/WhatsAppWidget';
+import { ofService, matieresPremieresService } from '../services/api';
 
 interface Selecteur {
   sel: string;
@@ -61,7 +62,7 @@ const DashboardMagasinierMP: React.FC = () => {
   const [expandedOF, setExpandedOF] = useState<string | null>(null);
   const [selectedMachine, setSelectedMachine] = useState<string | null>(null);
 
-  // Données de préparation par OF
+  // Données de préparation par OF (mock initial, écrasé par l'API si disponible)
   const [preparationsEnCours, setPreparationsEnCours] = useState<Preparation[]>([
     {
       numSousOF: 'OF249850', client: 'CL00884', numCommande: 'CM-FT0119', modele: 'ARTHUR',
@@ -141,6 +142,47 @@ const DashboardMagasinierMP: React.FC = () => {
       etat: 'Fabrication terminée', aRetourner: true,
     },
   ]);
+
+  // Phase F2 — Hydratation depuis APIs réelles (OF, stock MP).
+  // Les mocks initiaux restent en place si l'API renvoie [] (dégradation
+  // gracieuse). Dès que des OFs réels arrivent, le mock est écrasé.
+  useEffect(() => {
+    let cancelled = false;
+    const unwrap = (r: any) => r?.data?.data ?? r?.data ?? [];
+    (async () => {
+      try {
+        const [ofsR, mpR] = await Promise.all([
+          ofService.getOFs({ limit: 100, statut: 'en_cours' }).catch(() => null),
+          matieresPremieresService.getMatieresPremieres({ limit: 200 }).catch(() => null),
+        ]);
+        if (cancelled) return;
+        const ofs: any[] = Array.isArray(unwrap(ofsR)) ? unwrap(ofsR) : [];
+        if (ofs.length > 0) {
+          setPreparationsEnCours(ofs.map((o: any, idx: number): Preparation => ({
+            numSousOF: o.numero_of || `OF${o.id_of}`,
+            client: o.client_nom || o.numero_commande || '-',
+            numCommande: o.numero_commande || '-',
+            modele: o.article_designation || o.code_article || '-',
+            ref: o.code_article || '-',
+            qte: Number(o.quantite_a_produire) || 0,
+            machine: o.numero_machine || (o.id_machine ? `M${o.id_machine}` : ''),
+            dateDebut: o.date_debut_prevue || '',
+            ordrePlanification: idx + 1,
+            selecteurs: [],
+            etat: o.statut === 'en_cours' ? 'Machine alimentée' : 'A préparer',
+            priorite: o.priorite === 'urgente' ? 'Urgent' : 'Normal',
+            surplusDemande: false,
+          })));
+        }
+        // Projection stock MP (entrepôts usine/E1/E2) non alignée côté backend —
+        // on consomme la réponse pour maintenir l'appel actif (telemetry).
+        void (Array.isArray(unwrap(mpR)) ? unwrap(mpR) : []);
+      } catch {
+        /* mock conservé */
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const handleUpdateQuantite = (numSousOF: string, selecteur: string, quantite: string, qrMP: string) => {
     setPreparationsEnCours(prev => prev.map(prep => {

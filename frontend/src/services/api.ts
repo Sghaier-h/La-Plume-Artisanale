@@ -356,6 +356,31 @@ export const userbarService = {
     api.get(`/v2/notifications/non-lues?limit=${limit}`).catch(() => ({ data: { data: [] } })),
 };
 
+// Phase F2 — Qualité (Dashboards Administrateur / Contrôle Central)
+export const qualiteService = {
+  getTauxConformite: (periode: string = '30j') =>
+    api.get(`/v2/qualite/controles/taux-conformite`, { params: { periode } })
+      .catch(() => ({ data: { data: { taux: 0, total: 0, conformes: 0 } } })),
+  getControlesRecents: (limit = 20) =>
+    api.get(`/v2/qualite/controles/recents`, { params: { limit } })
+      .catch(() => ({ data: { data: [] } })),
+};
+
+// Phase F2 — IA Agents (DashboardIA)
+export const iaAgentsService = {
+  getAgents: () => api.get('/v2/ia-agents/agents').catch(() => ({ data: { data: [] } })),
+  getRuns: (limit = 20) => api.get(`/v2/ia-agents/runs`, { params: { limit } }).catch(() => ({ data: { data: [] } })),
+  getFindings: (limit = 20) => api.get(`/v2/ia-agents/findings`, { params: { limit } }).catch(() => ({ data: { data: [] } })),
+};
+
+// Phase F2 — RH (DashboardRHManager)
+export const rhDashboardService = {
+  getComptesKpi: () => api.get('/v2/rh/comptes-employes/kpi').catch(() => ({ data: { data: {} } })),
+  getEmployes: (params?: any) => api.get('/v2/rh/employes', { params }).catch(() => ({ data: { data: [] } })),
+  getCandidatures: (params?: any) => api.get('/v2/rh/candidatures', { params }).catch(() => ({ data: { data: [] } })),
+  getPrimesBordereaux: (params?: any) => api.get('/v2/rh/primes-bordereaux', { params }).catch(() => ({ data: { data: [] } })),
+};
+
 export const parametrageService = {
   getSociete: () => api.get('/parametrage/societe'),
   updateSociete: (data: any) => api.put('/parametrage/societe', data),

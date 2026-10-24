@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Package, AlertTriangle, CheckCircle, Clock, Printer, Play, ChevronDown, ChevronRight,
   Wrench, Activity, Zap, Boxes, FileWarning, Box, FileText, RefreshCw,
 } from 'lucide-react';
 import WhatsAppWidget from '../components/WhatsAppWidget';
 import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
+import { ofService } from '../services/api';
 
 const DashboardTisseur = () => {
   const [activeSection, setActiveSection] = useState<'machines' | 'incidents' | 'rendement'>('machines');
@@ -108,6 +109,48 @@ const DashboardTisseur = () => {
     { id: 'INC001', numSousOF: 'OF249780', machine: 'M2303', type: 'Problème mécanique',
       date: '2025-10-18 10:30', statut: 'Résolu', description: 'Tension chaîne anormale', duree: 45 },
   ]);
+
+  // Phase F2 — Hydratation OF depuis /api/v2/fabrication/of (par machine)
+  useEffect(() => {
+    let cancelled = false;
+    const unwrap = (r: any) => r?.data?.data ?? r?.data ?? [];
+    (async () => {
+      try {
+        const r = await ofService.getOFs({ limit: 50 }).catch(() => null);
+        if (cancelled) return;
+        const ofs: any[] = Array.isArray(unwrap(r)) ? unwrap(r) : [];
+        if (ofs.length > 0) {
+          setMesOF(ofs.slice(0, 20).map((o: any, idx: number) => ({
+            numSousOF: o.numero_of || `OF${o.id_of}`,
+            client: o.client_nom || o.numero_commande || '-',
+            numCommande: o.numero_commande || '-',
+            modele: o.article_designation || o.code_article || '-',
+            ref: o.code_article || '-',
+            qtePieces: Number(o.quantite_a_produire) || 0,
+            machine: o.numero_machine || (o.id_machine ? `M${o.id_machine}` : 'M'),
+            uniteMesure: 'pièces',
+            typeCompteur: 'pieces',
+            compteurInitial: Number(o.quantite_a_produire) || 0,
+            compteurActuel: null,
+            dateDebut: o.date_debut_prevue || '',
+            ordrePlanification: idx + 1,
+            etat: o.statut === 'en_cours' ? 'En cours' : o.statut === 'termine' ? 'Terminé' : 'En attente',
+            statut: o.statut === 'en_cours' ? 'Fabrication en cours' : 'En attente de départ',
+            selecteurs: [],
+            vitesseDuites: 0, tempsPrevu: '', tempsReel: null,
+            tempsArretsMecanique: 0, tempsArretsMP: 0, tempsPlanification: 0,
+            piecesProduites: 0, deuxiemeChoix: 0, dechets: 0,
+            rendementTemps: null, rendementProduction: null,
+            dateHeureDebut: null,
+            priorite: o.priorite === 'urgente' ? 'Urgent' : 'Normal',
+            complementTissage: false, quantiteComplement: 0,
+            noteSpeciale: null, instructionSpeciale: null, noteTisseur: null,
+          })));
+        }
+      } catch { /* mock conservé */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const typesIncident = [
     { value: 'mp_manque', label: '🧶 Manque Matière Première', icon: Boxes, needsColor: true },

@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import * as c from './controller.js';
 const r = Router();
+r.get('/taux-conformite', c.tauxConformite);
+r.get('/recents',   c.recents);
 r.get('/',          c.list);
 r.get('/:id',       c.detail);
 r.post('/',         c.creer);

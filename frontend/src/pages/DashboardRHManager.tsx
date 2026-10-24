@@ -34,33 +34,35 @@ import {
   KpiCard,
   SectionCard,
 } from '../components/dashboard';
+import { rhDashboardService } from '../services/api';
 
-// ─── mock data (à brancher sur backend/modules-v2/rh) ─────────────
+// ─── types ──────────────────────────────────────────────────────
 type FunnelStage = { code: string; label: string; count: number; tone: 'terracotta' | 'sage' | 'indigo' | 'gold' };
 type Formation = { id: string; titre: string; date: string; nb: number; formateur: string };
 type Entretien = { id: string; collab: string; poste: string; date: string; type: string };
 type Prime = { id: string; collab: string; motif: string; montant: number; statut: 'a_payer' | 'validee' };
 
-const FUNNEL: FunnelStage[] = [
+// Mock initial — écrasé si l'API renvoie des données
+const INITIAL_FUNNEL: FunnelStage[] = [
   { code: 'CV_RECUS', label: 'CV reçus', count: 42, tone: 'terracotta' },
   { code: 'PRESELECT', label: 'Présélectionnés', count: 18, tone: 'sage' },
   { code: 'ENTRETIEN', label: 'Entretiens planifiés', count: 9, tone: 'indigo' },
   { code: 'OFFRE', label: 'Offres émises', count: 3, tone: 'gold' },
 ];
 
-const FORMATIONS: Formation[] = [
+const INITIAL_FORMATIONS: Formation[] = [
   { id: 'F1', titre: 'Sécurité machines tissage', date: '02/10/2026', nb: 12, formateur: 'ISST Tunis' },
   { id: 'F2', titre: 'Contrôle qualité §7 – niveau 2', date: '09/10/2026', nb: 6, formateur: 'Interne' },
   { id: 'F3', titre: 'Excel avancé RH', date: '17/10/2026', nb: 4, formateur: 'Cegos' },
 ];
 
-const ENTRETIENS: Entretien[] = [
+const INITIAL_ENTRETIENS: Entretien[] = [
   { id: 'E1', collab: 'Amira B.', poste: 'Chef atelier', date: '28/09/2026', type: 'Annuel' },
   { id: 'E2', collab: 'Karim S.', poste: 'Tisseur senior', date: '30/09/2026', type: 'Fin de période essai' },
   { id: 'E3', collab: 'Sonia H.', poste: 'Contrôleuse qualité', date: '02/10/2026', type: 'Annuel' },
 ];
 
-const PRIMES: Prime[] = [
+const INITIAL_PRIMES: Prime[] = [
   { id: 'P1', collab: 'Ines T.', motif: 'Rendement +20%', montant: 180, statut: 'a_payer' },
   { id: 'P2', collab: 'Ahmed K.', motif: 'Taux 1er choix > 95%', montant: 220, statut: 'validee' },
   { id: 'P3', collab: 'Fatma L.', motif: 'Zéro absence', montant: 90, statut: 'a_payer' },
@@ -71,6 +73,68 @@ const fmtMoney = (n: number) => n.toLocaleString('fr-FR', { style: 'currency', c
 
 const DashboardRHManager: React.FC = () => {
   const navigate = useNavigate();
+
+  // Phase F2 — KPIs & listes hydratés depuis les APIs v2
+  const [FUNNEL, setFunnel] = React.useState<FunnelStage[]>(INITIAL_FUNNEL);
+  const [FORMATIONS] = React.useState<Formation[]>(INITIAL_FORMATIONS);
+  const [ENTRETIENS] = React.useState<Entretien[]>(INITIAL_ENTRETIENS);
+  const [PRIMES, setPrimes] = React.useState<Prime[]>(INITIAL_PRIMES);
+  const [effectif, setEffectif] = React.useState<number>(87);
+  const [recrutementsOuverts, setRecrutementsOuverts] = React.useState<number>(6);
+  const [masseSalariale, setMasseSalariale] = React.useState<number>(146200);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    const unwrap = (r: any) => r?.data?.data ?? r?.data ?? {};
+    (async () => {
+      try {
+        const [kpiR, emplR, candR, primesR] = await Promise.all([
+          rhDashboardService.getComptesKpi(),
+          rhDashboardService.getEmployes({ limit: 1 }),
+          rhDashboardService.getCandidatures({ limit: 100 }),
+          rhDashboardService.getPrimesBordereaux({ limit: 10 }),
+        ]);
+        if (cancelled) return;
+        const kpi: any = unwrap(kpiR);
+        if (kpi && typeof kpi === 'object') {
+          if (typeof kpi.total_employes === 'number') setEffectif(kpi.total_employes);
+          if (kpi.montant_du_total != null) setMasseSalariale(Number(kpi.montant_du_total));
+        }
+        // Candidatures → funnel
+        const cands: any[] = Array.isArray(unwrap(candR)) ? unwrap(candR) as any[] : [];
+        if (cands.length > 0) {
+          const buckets: Record<string, number> = { CV_RECUS: 0, PRESELECT: 0, ENTRETIEN: 0, OFFRE: 0 };
+          cands.forEach((c: any) => {
+            const s = String(c.statut || '').toLowerCase();
+            if (s.includes('offre')) buckets.OFFRE += 1;
+            else if (s.includes('entretien')) { buckets.ENTRETIEN += 1; buckets.PRESELECT += 1; }
+            else if (s.includes('present') || s.includes('preselect')) buckets.PRESELECT += 1;
+            buckets.CV_RECUS += 1;
+          });
+          setFunnel([
+            { code: 'CV_RECUS',  label: 'CV reçus',             count: buckets.CV_RECUS,  tone: 'terracotta' },
+            { code: 'PRESELECT', label: 'Présélectionnés',      count: buckets.PRESELECT, tone: 'sage' },
+            { code: 'ENTRETIEN', label: 'Entretiens planifiés', count: buckets.ENTRETIEN, tone: 'indigo' },
+            { code: 'OFFRE',     label: 'Offres émises',        count: buckets.OFFRE,     tone: 'gold' },
+          ]);
+          setRecrutementsOuverts(buckets.OFFRE + buckets.ENTRETIEN);
+        }
+        // Primes
+        const primes: any[] = Array.isArray(unwrap(primesR)) ? unwrap(primesR) as any[] : [];
+        if (primes.length > 0) {
+          setPrimes(primes.slice(0, 6).map((p: any): Prime => ({
+            id: String(p.id_bordereau ?? p.id ?? Math.random()),
+            collab: p.employe_nom || p.nom_complet || `#${p.id_employe ?? '-'}`,
+            motif: p.motif || p.libelle || '—',
+            montant: Number(p.montant) || 0,
+            statut: p.statut === 'verse' ? 'validee' : 'a_payer',
+          })));
+        }
+        void emplR;
+      } catch { /* mock conservé */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   return (
     <DashboardShell
@@ -108,10 +172,9 @@ const DashboardRHManager: React.FC = () => {
       >
         <KpiCard
           label="Effectif actif"
-          value={fmtInt(87)}
+          value={fmtInt(effectif)}
           unit="collaborateurs"
           hint="LP · AF · FT confondus"
-          delta={{ value: 4, label: 'vs mois -1' }}
           icon={<Users size={18} />}
           tone="terracotta"
           onClick={() => navigate('/equipe')}
@@ -128,16 +191,15 @@ const DashboardRHManager: React.FC = () => {
         />
         <KpiCard
           label="Masse salariale"
-          value={fmtMoney(146200)}
+          value={fmtMoney(masseSalariale)}
           hint="Bulletins + primes rendement"
-          delta={{ value: 2.1, label: 'vs mois -1' }}
           icon={<CircleDollarSign size={18} />}
           tone="gold"
           onClick={() => navigate('/comptabilite')}
         />
         <KpiCard
           label="Recrutements ouverts"
-          value={fmtInt(6)}
+          value={fmtInt(recrutementsOuverts)}
           unit="postes"
           hint="§11bis.9 pipeline"
           icon={<Briefcase size={18} />}

@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Scissors, Calendar, Printer, TrendingUp, AlertTriangle, CheckCircle, Clock, Activity, Users } from 'lucide-react';
 import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
+import { ofService } from '../services/api';
 
 const DashboardPostCoupe: React.FC = () => {
   const [loading] = useState(false);
 
-  // Planning en cours (OF à couper)
-  const [planningEnCours] = useState([
+  // Planning en cours (OF à couper) — mock initial, hydraté par l'API
+  const [planningEnCours, setPlanningEnCours] = useState<any[]>([
     { numSousOF: 'OF246533', modele: 'MARINIERE', client: 'CL00296', qteAFabriquer: 50, statut: 'Fin Fabrication', tisseur: 'Badie', dateTissage: '2025-10-18 14:30', urgence: false },
     { numSousOF: 'CA250469', modele: 'FIL A FIL', client: 'All by Fouta', qteAFabriquer: 40, statut: 'En cours tissage', tisseur: 'Dimatex', dateTissage: '2025-10-18 10:15', urgence: false },
     { numSousOF: 'OF247821', modele: 'ST TROPEZ', client: 'CL00458', qteAFabriquer: 100, statut: 'Fin Poste', tisseur: 'Zied', dateTissage: '2025-10-18 16:00', urgence: true },
@@ -30,6 +31,36 @@ const DashboardPostCoupe: React.FC = () => {
   ]);
 
   const [etiquettesEnAttente] = useState<any[]>([]);
+
+  // Phase F2 — Hydratation depuis /api/v2/fabrication/of
+  useEffect(() => {
+    let cancelled = false;
+    const unwrap = (r: any) => r?.data?.data ?? r?.data ?? [];
+    (async () => {
+      try {
+        const r = await ofService.getOFs({ limit: 50 }).catch(() => null);
+        if (cancelled) return;
+        const ofs: any[] = Array.isArray(unwrap(r)) ? unwrap(r) : [];
+        // On ne garde que ceux en cours/terminés tissage (prêts à couper)
+        const filtered = ofs.filter((o: any) => ['en_cours', 'termine', 'controle'].includes(String(o.statut)));
+        if (filtered.length > 0) {
+          setPlanningEnCours(filtered.slice(0, 20).map((o: any) => ({
+            numSousOF: o.numero_of || `OF${o.id_of}`,
+            modele: o.article_designation || o.code_article || '-',
+            client: o.client_nom || o.numero_commande || '-',
+            qteAFabriquer: Number(o.quantite_a_produire) || 0,
+            statut: o.statut === 'termine' ? 'Fin Fabrication'
+              : o.statut === 'controle' ? 'Fin Poste'
+              : 'En cours tissage',
+            tisseur: o.operateur_nom || '-',
+            dateTissage: o.date_fin_reelle || o.date_fin_prevue || '',
+            urgence: o.priorite === 'urgente',
+          })));
+        }
+      } catch { /* mock conservé */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const totalPremiere = dataOperateurs.reduce((s, o) => s + o.premiere, 0);
   const totalDeuxieme = dataOperateurs.reduce((s, o) => s + o.deuxieme, 0);

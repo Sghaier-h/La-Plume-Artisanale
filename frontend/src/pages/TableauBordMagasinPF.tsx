@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Package, Camera, AlertCircle, ShoppingCart, Wrench, FileText, Box, CheckCircle,
   PlusCircle, Send, Scissors, RefreshCw,
 } from 'lucide-react';
 import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
+import { ofService } from '../services/api';
 
 // ─── Types ────────────────────────────────────────────────────────
 interface Commande {
@@ -227,8 +228,8 @@ const TableauBordMagasinPF: React.FC = () => {
   const [showDemandePliage, setShowDemandePliage] = useState(false);
   const [showDemandeRetourFrange, setShowDemandeRetourFrange] = useState(false);
 
-  // ── Données (mock — préservées) ──────────────────────────────
-  const commandes: Commande[] = [
+  // ── Données (mock initial, hydratées depuis /api/v2/fabrication/of) ──
+  const [commandes, setCommandes] = useState<Commande[]>([
     {
       id: 'C2025-001', client: 'CLIENT A', ref: 'REF-001', modele: 'Tapis Berbère',
       dimensions: '200x300', qteTotale: 100,
@@ -250,7 +251,45 @@ const TableauBordMagasinPF: React.FC = () => {
       etatAtelier: 'Non commencé', etatPliage: 'Non commencé', etatFrange: 'N/A',
       qtePrete: 0, priorite: 'Normale', delai: '2025-11-10',
     },
-  ];
+  ]);
+
+  // Phase F2 — Hydratation commandes depuis /api/v2/fabrication/of
+  useEffect(() => {
+    let cancelled = false;
+    const unwrap = (r: any) => r?.data?.data ?? r?.data ?? [];
+    (async () => {
+      try {
+        const r = await ofService.getOFs({ limit: 50 }).catch(() => null);
+        if (cancelled) return;
+        const ofs: any[] = Array.isArray(unwrap(r)) ? unwrap(r) : [];
+        if (ofs.length > 0) {
+          setCommandes(ofs.slice(0, 20).map((o: any): Commande => {
+            const statutLabel = (s: string) => s === 'termine' ? 'Terminé'
+              : s === 'en_cours' ? 'En cours'
+              : s === 'planifie' ? 'En attente' : 'Non commencé';
+            return {
+              id: o.numero_commande || `C${o.id_of}`,
+              client: o.client_nom || '-',
+              ref: o.code_article || '-',
+              modele: o.article_designation || '-',
+              dimensions: '',
+              qteTotale: Number(o.quantite_a_produire) || 0,
+              etatTissage: statutLabel(o.statut || ''),
+              etatCoupe: 'Non commencé',
+              etatST: 'Non commencé',
+              etatAtelier: 'Non commencé',
+              etatPliage: 'Non commencé',
+              etatFrange: 'N/A',
+              qtePrete: 0,
+              priorite: o.priorite === 'urgente' ? 'Urgente' : 'Normale',
+              delai: o.date_fin_prevue || '',
+            };
+          }));
+        }
+      } catch { /* mock conservé */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const [colis] = useState<Colis[]>([
     {

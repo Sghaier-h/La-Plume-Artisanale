@@ -7,7 +7,7 @@ import {
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
 import { useDashboardKpis } from '../hooks/useDashboardKpis';
-import { dashboardService } from '../services/api';
+import { dashboardService, qualiteService } from '../services/api';
 
 const fmtInt = (v: string | number | undefined) => {
   const n = Number(v ?? 0);
@@ -46,6 +46,8 @@ const DashboardAdministrateur: React.FC = () => {
   const [ventesData, setVentesData] = React.useState<Array<{ mois: string; ca: number }>>([]);
   const [productionData, setProductionData] = React.useState<Array<{ jour: string; of: number; termines: number }>>([]);
   const [repartitionPoste, setRepartitionPoste] = React.useState<Array<{ name: string; value: number; color: string }>>([]);
+  // Phase F2 — Taux de conformité qualité (remplace la valeur hardcodée "98%")
+  const [tauxQualite, setTauxQualite] = React.useState<number | null>(null);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -54,12 +56,16 @@ const DashboardAdministrateur: React.FC = () => {
 
     const load = async () => {
       try {
-        const [vp, ph, rp] = await Promise.all([
+        const [vp, ph, rp, tq] = await Promise.all([
           dashboardService.getVentesParMois().catch(() => ({ data: { data: [] } })),
           dashboardService.getProductionHebdo(7).catch(() => ({ data: { data: [] } })),
           dashboardService.getRepartitionPoste().catch(() => ({ data: { data: [] } })),
+          qualiteService.getTauxConformite('30j').catch(() => ({ data: { data: { taux: null } } })),
         ]);
         if (cancelled) return;
+        // Phase F2 — taux qualité : {taux: 96.8, total, conformes, non_conformes}
+        const tauxRaw = (tq as any)?.data?.data?.taux;
+        setTauxQualite(typeof tauxRaw === 'number' ? tauxRaw : null);
         // ventes : [{mois:'2026-05', total_ttc:…}] → 6 derniers mois en kDT
         const rawVentes = unwrap(vp);
         setVentesData(Array.isArray(rawVentes) ? rawVentes.slice(-6).map((r: any) => {
@@ -188,7 +194,7 @@ const DashboardAdministrateur: React.FC = () => {
           />
           <KpiCard
             label="Qualité"
-            value="98%"
+            value={tauxQualite == null ? '—' : `${tauxQualite}%`}
             unit="conforme"
             hint="Taux de conformité 30 derniers jours"
             icon={<ShieldCheck size={16} />}

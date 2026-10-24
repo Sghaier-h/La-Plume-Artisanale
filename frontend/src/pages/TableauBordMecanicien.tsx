@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Wrench, AlertTriangle, Calendar, Settings, Package, FileText, CheckCircle, Clock, TrendingUp, Plus, Eye, Edit, Trash2, Send, PlayCircle, PauseCircle, Download, CheckSquare, XCircle, AlertCircle, Printer, Save, Mail, Droplet, Activity } from 'lucide-react';
+import { machinesService, ofService } from '../services/api';
 
 const TableauBordMecanicien = () => {
   const [activeTab, setActiveTab] = useState('planning');
@@ -238,6 +239,49 @@ const TableauBordMecanicien = () => {
     nbPannesMeca: 1,
     nbPannesElec: 1,
   });
+
+  // Phase F2 — Hydratation depuis /api/v2/fabrication/machines + /of
+  useEffect(() => {
+    let cancelled = false;
+    const unwrap = (r: any) => r?.data?.data ?? r?.data ?? [];
+    (async () => {
+      try {
+        const [machinesR, ofsR] = await Promise.all([
+          machinesService.getMachines({ limit: 50 }).catch(() => null),
+          ofService.getOFs({ limit: 50, statut: 'en_cours' }).catch(() => null),
+        ]);
+        if (cancelled) return;
+        const machinesRaw: any[] = Array.isArray(unwrap(machinesR)) ? unwrap(machinesR) : (unwrap(machinesR)?.machines || []);
+        const ofs: any[] = Array.isArray(unwrap(ofsR)) ? unwrap(ofsR) : [];
+        if (machinesRaw.length > 0) {
+          setPlanningMachines(machinesRaw.map((m: any) => {
+            const ofM = ofs.find((o: any) => o.id_machine === m.id_machine);
+            const etat = m.statut === 'operationnelle' ? 'En marche'
+              : m.statut === 'en_panne' ? 'En panne'
+              : m.statut || 'Inactive';
+            return {
+              id: m.numero_machine || `M${m.id_machine}`,
+              ofActuel: ofM?.numero_of || '',
+              modeleActuel: ofM?.article_designation || '',
+              metrageActuel: 0,
+              metrageTotal: ofM?.quantite_a_produire || 0,
+              ensoupleActuelle: '',
+              ofSuivant: '',
+              modeleSuivant: '',
+              urgence: ofM?.priorite === 'urgente' ? 'Haute' : 'Basse',
+              alerteChangement: false,
+              etat,
+              derniereControle: m.date_dernier_controle || '',
+              configuration: m.type_machine_libelle || '',
+              vitesse: Number(m.vitesse_nominale) || 0,
+              rendement: 0, productionJour: 0, joursRestants: 0,
+            };
+          }));
+        }
+      } catch { /* mock conservé */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const openModal = (type: any, item: any = null) => {
     setModalType(type);

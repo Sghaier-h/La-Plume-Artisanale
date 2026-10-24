@@ -36,8 +36,9 @@ import {
   KpiCard,
   SectionCard,
 } from '../components/dashboard';
+import { iaAgentsService } from '../services/api';
 
-// ─── types & mock (à brancher sur backend/modules-v2/ia) ─────────
+// ─── types ───────────────────────────────────────────────────────
 type AgentStatut = 'actif' | 'en_pause' | 'apprentissage';
 
 type Agent = {
@@ -54,74 +55,6 @@ type Agent = {
   route: string;
 };
 
-const AGENTS: Agent[] = [
-  {
-    id: 'commercial',
-    code: 'AGT-COM',
-    nom: 'Agent Commercial',
-    role: 'Relances devis · scoring leads · CRM',
-    statut: 'actif',
-    tone: 'terracotta',
-    icon: <MessagesSquare size={18} />,
-    actions_24h: 42,
-    taux_conf: 87,
-    derniere_action: 'Il y a 4 min · relance Hotel Marina',
-    route: '/dashboard-commercial',
-  },
-  {
-    id: 'achats',
-    code: 'AGT-ACH',
-    nom: 'Agent Achats',
-    role: 'Réappro fournisseurs · alertes prix',
-    statut: 'actif',
-    tone: 'gold',
-    icon: <ShoppingBag size={18} />,
-    actions_24h: 17,
-    taux_conf: 92,
-    derniere_action: 'Il y a 22 min · devis SOTUFIL',
-    route: '/fournisseurs',
-  },
-  {
-    id: 'fabrication',
-    code: 'AGT-FAB',
-    nom: 'Agent Fabrication',
-    role: 'Planification OF · anti-goulot machines',
-    statut: 'actif',
-    tone: 'indigo',
-    icon: <Factory size={18} />,
-    actions_24h: 63,
-    taux_conf: 84,
-    derniere_action: 'Il y a 12 min · OF-2609015 replanifié',
-    route: '/planning',
-  },
-  {
-    id: 'qualite',
-    code: 'AGT-QLT',
-    nom: 'Agent Qualité',
-    role: 'Analyse défauts · causes racines · 5M',
-    statut: 'apprentissage',
-    tone: 'sage',
-    icon: <ShieldCheck size={18} />,
-    actions_24h: 9,
-    taux_conf: 76,
-    derniere_action: 'Il y a 1 h · lot LT-2609-008',
-    route: '/qualite-avancee',
-  },
-  {
-    id: 'rh',
-    code: 'AGT-RH',
-    nom: 'Agent RH',
-    role: 'Bilans · rapports masse salariale',
-    statut: 'en_pause',
-    tone: 'rose',
-    icon: <Users size={18} />,
-    actions_24h: 0,
-    taux_conf: 0,
-    derniere_action: 'En pause depuis 3 j',
-    route: '/dashboard-rh-manager',
-  },
-];
-
 type Rapport = {
   id: string;
   titre: string;
@@ -130,12 +63,15 @@ type Rapport = {
   type: 'PDF' | 'XLSX' | 'MD';
 };
 
-const RAPPORTS: Rapport[] = [
-  { id: 'R1', titre: 'Synthèse commerciale hebdo · S39', agent: 'AGT-COM', date: '24/09/2026 08:15', type: 'PDF' },
-  { id: 'R2', titre: 'Alertes stock MP · seuil critique', agent: 'AGT-ACH', date: '23/09/2026 17:42', type: 'XLSX' },
-  { id: 'R3', titre: 'Analyse défauts trame · lot LT-2609-006', agent: 'AGT-QLT', date: '22/09/2026 11:03', type: 'MD' },
-  { id: 'R4', titre: 'Charge atelier semaine 40', agent: 'AGT-FAB', date: '21/09/2026 09:28', type: 'PDF' },
-];
+// Mapping code agent → tone / icon / route (static UI config)
+const AGENT_UI: Record<string, { tone: Agent['tone']; icon: React.ReactNode; route: string }> = {
+  'AGT-COM':  { tone: 'terracotta', icon: <MessagesSquare size={18} />, route: '/dashboard-commercial' },
+  'AGT-ACH':  { tone: 'gold',       icon: <ShoppingBag size={18} />,    route: '/fournisseurs' },
+  'AGT-FAB':  { tone: 'indigo',     icon: <Factory size={18} />,        route: '/planning' },
+  'AGT-QLT':  { tone: 'sage',       icon: <ShieldCheck size={18} />,    route: '/qualite-avancee' },
+  'AGT-RH':   { tone: 'rose',       icon: <Users size={18} />,          route: '/dashboard-rh-manager' },
+};
+const defaultAgentUi = { tone: 'indigo' as const, icon: <BrainCircuit size={18} />, route: '/ia' };
 
 const badgeStatut: Record<AgentStatut, { label: string; bg: string; fg: string }> = {
   actif: { label: 'Actif', bg: 'var(--color-success-bg)', fg: 'var(--color-success)' },
@@ -155,6 +91,88 @@ const fmtInt = (n: number) => n.toLocaleString('fr-FR');
 
 const DashboardIA: React.FC = () => {
   const navigate = useNavigate();
+
+  // Phase F2 — Agents, runs & rapports chargés depuis /api/v2/ia-agents/*
+  const [AGENTS, setAgents] = React.useState<Agent[]>([]);
+  const [RAPPORTS, setRapports] = React.useState<Rapport[]>([]);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    const unwrap = (r: any) => r?.data?.data ?? r?.data ?? [];
+
+    const normStatut = (s: any): AgentStatut => {
+      const v = String(s || 'actif').toLowerCase();
+      if (v === 'en_pause' || v === 'pause' || v === 'inactif') return 'en_pause';
+      if (v === 'apprentissage' || v === 'learning') return 'apprentissage';
+      return 'actif';
+    };
+    const normType = (t: any): Rapport['type'] => {
+      const v = String(t || 'PDF').toUpperCase();
+      if (v === 'XLSX' || v === 'XLS' || v === 'CSV') return 'XLSX';
+      if (v === 'MD' || v === 'MARKDOWN') return 'MD';
+      return 'PDF';
+    };
+
+    const load = async () => {
+      try {
+        const [a, f, r] = await Promise.all([
+          iaAgentsService.getAgents(),
+          iaAgentsService.getFindings(20),
+          iaAgentsService.getRuns(50),
+        ]);
+        if (cancelled) return;
+        const agentsRaw: any[] = Array.isArray(unwrap(a)) ? unwrap(a) : [];
+        const findingsRaw: any[] = Array.isArray(unwrap(f)) ? unwrap(f) : [];
+        const runsRaw: any[] = Array.isArray(unwrap(r)) ? unwrap(r) : [];
+
+        // Agrège runs par code agent → actions_24h & dernière action
+        const dayAgo = Date.now() - 24 * 3600 * 1000;
+        const runStats = new Map<string, { count24h: number; last?: string }>();
+        for (const run of runsRaw) {
+          const code = String(run.code_agent || run.id_agent || '').toUpperCase();
+          const d = run.started_at || run.date_run || run.created_at;
+          const t = d ? new Date(d).getTime() : 0;
+          const s = runStats.get(code) || { count24h: 0, last: undefined };
+          if (t >= dayAgo) s.count24h += 1;
+          if (!s.last || (t && t > new Date(s.last).getTime())) s.last = d;
+          runStats.set(code, s);
+        }
+
+        setAgents(agentsRaw.map((row: any): Agent => {
+          const code = String(row.code || row.code_agent || row.id_agent || 'AGT').toUpperCase();
+          const ui = AGENT_UI[code] || defaultAgentUi;
+          const stat = runStats.get(code) || { count24h: 0, last: undefined };
+          return {
+            id: String(row.id_agent ?? row.id ?? code),
+            code,
+            nom: row.nom || row.libelle || code,
+            role: row.role || row.description || '',
+            statut: normStatut(row.statut),
+            tone: ui.tone,
+            icon: ui.icon,
+            route: ui.route,
+            actions_24h: Number(stat.count24h) || Number(row.actions_24h) || 0,
+            taux_conf: Number(row.taux_confiance ?? row.taux_conf ?? 0),
+            derniere_action: stat.last
+              ? new Date(stat.last).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })
+              : '—',
+          };
+        }));
+
+        setRapports(findingsRaw.map((row: any): Rapport => ({
+          id: String(row.id_finding ?? row.id ?? Math.random()),
+          titre: row.titre || row.libelle || row.message || 'Rapport',
+          agent: String(row.code_agent || row.id_agent || '').toUpperCase() || '—',
+          date: row.created_at ? new Date(row.created_at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) : '',
+          type: normType(row.type_rapport || row.format),
+        })));
+      } catch {
+        // garde les tableaux vides
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, []);
 
   const totalActions = AGENTS.reduce((s, a) => s + a.actions_24h, 0);
   const nbActifs = AGENTS.filter((a) => a.statut === 'actif').length;
