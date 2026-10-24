@@ -75,6 +75,15 @@ const ROUTE_LABELS: Record<string, string> = {
   '/tablette/demande-avance': 'Demande d\'avance',
   '/tablette/mon-compte': 'Mon compte',
   '/tablette/mes-demandes': 'Mes demandes',
+  // Phase H — sous-écrans tablette personnel étendue
+  '/tablette/demande-conge': 'Demande de congé',
+  '/tablette/demande-attestation': "Demande d'attestation",
+  '/tablette/bulletins': 'Mes bulletins',
+  '/tablette/avertissements': 'Mes avertissements',
+  '/tablette/recrutement-candidat': 'Candidature tablette',
+  // Phase H — admin RH
+  '/rh/avertissements': 'Avertissements RH',
+  '/rh/candidatures-tablette': 'Candidatures tablette',
   '/ecommerce': 'E-commerce',
   '/ia': 'Intelligence artificielle',
   '/notifications': 'Notifications',

@@ -54,6 +54,19 @@ interface RetourMatiere {
 
 type Tab = 'machines' | 'preparation' | 'stock' | 'transferts' | 'retours';
 
+// Phase G1 — projection stock MP par entrepôt (ligne renvoyée par /par-entrepot)
+interface StockEntrepotLigne {
+  id_entrepot: number;
+  code_entrepot: string;
+  nom_entrepot: string;
+  id_mp: number;
+  code_mp: string;
+  libelle: string;
+  quantite: number | string;
+  seuil_alerte: number | string;
+  en_alerte?: boolean;
+}
+
 const DashboardMagasinierMP: React.FC = () => {
   const [tab, setTab] = useState<Tab>('machines');
   const [searchTerm, setSearchTerm] = useState('');
@@ -143,17 +156,21 @@ const DashboardMagasinierMP: React.FC = () => {
     },
   ]);
 
+  // Phase G1 — projection stock MP par entrepôt (widget en bas de l'onglet Stock).
+  const [stockParEntrepot, setStockParEntrepot] = useState<StockEntrepotLigne[]>([]);
+
   // Phase F2 — Hydratation depuis APIs réelles (OF, stock MP).
-  // Les mocks initiaux restent en place si l'API renvoie [] (dégradation
-  // gracieuse). Dès que des OFs réels arrivent, le mock est écrasé.
+  // Phase G1 — + projection stock par entrepôt (lignes en alerte).
+  // Les mocks initiaux restent en place si l'API renvoie [] (dégradation gracieuse).
   useEffect(() => {
     let cancelled = false;
     const unwrap = (r: any) => r?.data?.data ?? r?.data ?? [];
     (async () => {
       try {
-        const [ofsR, mpR] = await Promise.all([
+        const [ofsR, mpR, parEntrepotR] = await Promise.all([
           ofService.getOFs({ limit: 100, statut: 'en_cours' }).catch(() => null),
           matieresPremieresService.getMatieresPremieres({ limit: 200 }).catch(() => null),
+          matieresPremieresService.getParEntrepot({ seuilBas: true }),
         ]);
         if (cancelled) return;
         const ofs: any[] = Array.isArray(unwrap(ofsR)) ? unwrap(ofsR) : [];
@@ -174,9 +191,14 @@ const DashboardMagasinierMP: React.FC = () => {
             surplusDemande: false,
           })));
         }
-        // Projection stock MP (entrepôts usine/E1/E2) non alignée côté backend —
-        // on consomme la réponse pour maintenir l'appel actif (telemetry).
         void (Array.isArray(unwrap(mpR)) ? unwrap(mpR) : []);
+
+        // Phase G1 — Projection stock par entrepôt (lignes en alerte uniquement)
+        const payload = unwrap(parEntrepotR);
+        const lignes: any[] = Array.isArray(payload)
+          ? payload
+          : (Array.isArray(payload?.lignes) ? payload.lignes : []);
+        setStockParEntrepot(lignes as StockEntrepotLigne[]);
       } catch {
         /* mock conservé */
       }
@@ -530,47 +552,120 @@ const DashboardMagasinierMP: React.FC = () => {
     );
   };
 
-  const renderStock = () => (
-    <SectionCard
-      title="Stock matières premières"
-      subtitle="Répartition par entrepôt"
-      icon={<Box size={16} />}
-      actions={
-        <button style={btnPrimary}>
-          <ArrowRightLeft size={12} /> Demander transfert
-        </button>
-      }
-    >
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
-          <thead>
-            <tr style={{ background: 'var(--bg-hover)' }}>
-              {['QR Code MP', 'Code Com', 'Couleur', 'Code Fab', 'Lot', 'Usine', 'E1', 'E2', 'État'].map(h => (
-                <th key={h} style={thStyle}>{h}</th>
+  const renderStock = () => {
+    // Phase G1 — groupage des lignes en alerte par entrepôt
+    const grouped = stockParEntrepot.reduce<Record<string, { nom: string; lignes: StockEntrepotLigne[] }>>((acc, l) => {
+      const key = String(l.id_entrepot ?? l.code_entrepot ?? l.nom_entrepot ?? '-');
+      if (!acc[key]) acc[key] = { nom: l.nom_entrepot || l.code_entrepot || `Entrepôt ${l.id_entrepot ?? '-'}`, lignes: [] };
+      acc[key].lignes.push(l);
+      return acc;
+    }, {});
+    const groupes = Object.values(grouped);
+
+    return (
+      <>
+        <SectionCard
+          title="Stock matières premières"
+          subtitle="Répartition par entrepôt"
+          icon={<Box size={16} />}
+          actions={
+            <button style={btnPrimary}>
+              <ArrowRightLeft size={12} /> Demander transfert
+            </button>
+          }
+        >
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
+              <thead>
+                <tr style={{ background: 'var(--bg-hover)' }}>
+                  {['QR Code MP', 'Code Com', 'Couleur', 'Code Fab', 'Lot', 'Usine', 'E1', 'E2', 'État'].map(h => (
+                    <th key={h} style={thStyle}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {stockMP.map(mp => (
+                  <tr key={mp.qr} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                    <td style={{ ...tdStyle, fontFamily: 'monospace', fontSize: 11 }}>{mp.qr}</td>
+                    <td style={tdStyle}>{mp.codeCom}</td>
+                    <td style={tdStyle}>{mp.couleur}</td>
+                    <td style={{ ...tdStyle, color: 'var(--fg-secondary)' }}>{mp.codeFab}</td>
+                    <td style={{ ...tdStyle, color: 'var(--fg-secondary)' }}>{mp.lot}</td>
+                    <td style={{ ...tdStyle, textAlign: 'right', color: mp.poidsUsine === 0 ? 'var(--color-danger)' : mp.poidsUsine < 50 ? 'var(--color-warning)' : 'var(--fg-primary)' }}>
+                      {mp.poidsUsine} kg
+                    </td>
+                    <td style={{ ...tdStyle, textAlign: 'right', color: 'var(--fg-secondary)' }}>{mp.poidsE1} kg</td>
+                    <td style={{ ...tdStyle, textAlign: 'right', color: 'var(--fg-secondary)' }}>{mp.poidsE2} kg</td>
+                    <td style={tdStyle}>{stockBadge(mp)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </SectionCard>
+
+        {/* Phase G1 — Projection stock par entrepôt (lignes en alerte) */}
+        <SectionCard
+          title="Projection stock par entrepôt"
+          subtitle="Lignes MP sous seuil d'alerte, groupées par entrepôt"
+          icon={<AlertTriangle size={16} />}
+        >
+          {groupes.length === 0 ? (
+            <div style={{ padding: 'var(--s-4)', color: 'var(--fg-muted)', fontSize: 'var(--text-sm)', textAlign: 'center' }}>
+              Aucune ligne en alerte — ou projection stock non disponible.
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--s-3)' }}>
+              {groupes.map((g, idx) => (
+                <div key={idx} style={{ border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
+                  <div style={{ padding: 'var(--s-2) var(--s-4)', background: 'var(--bg-hover)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <strong style={{ color: 'var(--fg-primary)' }}>
+                      <Box size={12} style={{ marginRight: 6, verticalAlign: 'middle' }} />
+                      {g.nom}
+                    </strong>
+                    <span style={{ ...badgeBase, background: 'var(--color-warning-bg)', color: 'var(--color-warning)' }}>
+                      {g.lignes.length} ligne{g.lignes.length > 1 ? 's' : ''} en alerte
+                    </span>
+                  </div>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
+                      <thead>
+                        <tr style={{ background: 'var(--bg-elevated)' }}>
+                          {['Code MP', 'Désignation', 'Qté dispo', 'Seuil alerte', 'État'].map(h => (
+                            <th key={h} style={thStyle}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {g.lignes.map(l => {
+                          const q = Number(l.quantite) || 0;
+                          const seuil = Number(l.seuil_alerte) || 0;
+                          const rupture = q <= 0;
+                          return (
+                            <tr key={`${l.id_entrepot}-${l.id_mp}`} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                              <td style={{ ...tdStyle, fontFamily: 'monospace', fontSize: 11 }}>{l.code_mp}</td>
+                              <td style={tdStyle}>{l.libelle}</td>
+                              <td style={{ ...tdStyle, textAlign: 'right', color: rupture ? 'var(--color-danger)' : 'var(--color-warning)' }}>{q}</td>
+                              <td style={{ ...tdStyle, textAlign: 'right', color: 'var(--fg-secondary)' }}>{seuil}</td>
+                              <td style={tdStyle}>
+                                <span style={{ ...badgeBase, background: rupture ? 'var(--color-danger-bg)' : 'var(--color-warning-bg)', color: rupture ? 'var(--color-danger)' : 'var(--color-warning)' }}>
+                                  {rupture ? 'Rupture' : 'Stock bas'}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               ))}
-            </tr>
-          </thead>
-          <tbody>
-            {stockMP.map(mp => (
-              <tr key={mp.qr} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                <td style={{ ...tdStyle, fontFamily: 'monospace', fontSize: 11 }}>{mp.qr}</td>
-                <td style={tdStyle}>{mp.codeCom}</td>
-                <td style={tdStyle}>{mp.couleur}</td>
-                <td style={{ ...tdStyle, color: 'var(--fg-secondary)' }}>{mp.codeFab}</td>
-                <td style={{ ...tdStyle, color: 'var(--fg-secondary)' }}>{mp.lot}</td>
-                <td style={{ ...tdStyle, textAlign: 'right', color: mp.poidsUsine === 0 ? 'var(--color-danger)' : mp.poidsUsine < 50 ? 'var(--color-warning)' : 'var(--fg-primary)' }}>
-                  {mp.poidsUsine} kg
-                </td>
-                <td style={{ ...tdStyle, textAlign: 'right', color: 'var(--fg-secondary)' }}>{mp.poidsE1} kg</td>
-                <td style={{ ...tdStyle, textAlign: 'right', color: 'var(--fg-secondary)' }}>{mp.poidsE2} kg</td>
-                <td style={tdStyle}>{stockBadge(mp)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </SectionCard>
-  );
+            </div>
+          )}
+        </SectionCard>
+      </>
+    );
+  };
 
   const renderTransferts = () => (
     <SectionCard

@@ -13,6 +13,7 @@
  * Signature tactile canvas, soumission → notification RH_MANAGER.
  */
 import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Coins as HandCoins, Palmtree, FileText, Wrench, Calendar, Wallet,
   AlertCircle, CheckCircle, Send, Eraser, ChevronLeft,
@@ -29,6 +30,7 @@ const fmtMoney = (n: number) =>
 type Action = null | 'avance' | 'conge' | 'document' | 'probleme' | 'planning' | 'compte';
 
 const TabletteMesDemandes: React.FC = () => {
+  const navigate = useNavigate();
   const [step, setStep] = useState<'matricule' | 'pin' | 'hub'>('matricule');
   const [matricule, setMatricule] = useState('');
   const [pin, setPin] = useState('');
@@ -150,12 +152,15 @@ const TabletteMesDemandes: React.FC = () => {
                   gap: 'clamp(16px, 3vw, 24px)',
                 }}
               >
-                <HubIcon icon={<HandCoins size={56} />}  label="Demander une avance" tone="gold"       onClick={() => setAction('avance')} />
-                <HubIcon icon={<Palmtree size={56} />}   label="Demander un congé"  tone="sage"       onClick={() => setAction('conge')} />
-                <HubIcon icon={<FileText size={56} />}   label="Demander un document" tone="indigo"   onClick={() => setAction('document')} />
-                <HubIcon icon={<Wrench size={56} />}     label="Signaler un problème" tone="rose"     onClick={() => setAction('probleme')} />
-                <HubIcon icon={<Calendar size={56} />}   label="Voir mon planning"  tone="terracotta" onClick={() => setAction('planning')} />
-                <HubIcon icon={<Wallet size={56} />}     label="Mon compte"         tone="sage"       onClick={() => setAction('compte')} />
+                {/* Phase H : les 6 icônes pointent vers les sous-écrans dédiés
+                    (3 nouveaux : congé, attestation, bulletins) + 3 existants
+                    (avance, solde, pointeuse). */}
+                <HubIcon icon={<HandCoins size={56} />}  label="Demander une avance"   tone="gold"       onClick={() => navigate('/tablette/demande-avance')} />
+                <HubIcon icon={<Palmtree size={56} />}   label="Demander un congé"     tone="sage"       onClick={() => navigate('/tablette/demande-conge')} />
+                <HubIcon icon={<FileText size={56} />}   label="Demander une attestation" tone="indigo"  onClick={() => navigate('/tablette/demande-attestation')} />
+                <HubIcon icon={<Wallet size={56} />}     label="Mes bulletins"         tone="gold"       onClick={() => navigate('/tablette/bulletins')} />
+                <HubIcon icon={<Calendar size={56} />}   label="Mon compte"            tone="terracotta" onClick={() => navigate('/tablette/mon-compte')} />
+                <HubIcon icon={<Wrench size={56} />}     label="Pointeuse"             tone="rose"       onClick={() => navigate('/tablette/pointeuse')} />
               </div>
             </>
           )}

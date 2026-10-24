@@ -112,6 +112,8 @@ const RhSanctionsPrimes = React.lazy(() => import('./pages/rh/SanctionsPrimes'))
 const RhBulletinsPaie = React.lazy(() => import('./pages/rh/BulletinsPaie'));
 const RhPaieTunisie = React.lazy(() => import('./pages/rh/PaieTunisie'));
 const RhFormations = React.lazy(() => import('./pages/rh/Formations'));
+// Phase G2 — Entretiens annuels (§11bis.11)
+const RhEntretiensAnnuels = React.lazy(() => import('./pages/rh/EntretiensAnnuels'));
 
 // ── RH étendu Phase C (§11bis + §14quater.5-7)
 const RhComptesEmployes       = React.lazy(() => import('./pages/rh/ComptesEmployes'));
@@ -125,6 +127,15 @@ const TablettePointeuseRH             = React.lazy(() => import('./pages/Tablett
 const TabletteDemandeAvance           = React.lazy(() => import('./pages/TabletteDemandeAvance'));
 const TabletteConsultationSoldeEmp    = React.lazy(() => import('./pages/TabletteConsultationSoldeEmploye'));
 const TabletteMesDemandes             = React.lazy(() => import('./pages/TabletteMesDemandes'));
+// Phase H — sous-écrans mes-demandes + avertissements + recrutement candidat
+const TabletteDemandeConge            = React.lazy(() => import('./pages/TabletteDemandeConge'));
+const TabletteDemandeAttestation      = React.lazy(() => import('./pages/TabletteDemandeAttestation'));
+const TabletteConsultationBulletins   = React.lazy(() => import('./pages/TabletteConsultationBulletins'));
+const TabletteAvertissements          = React.lazy(() => import('./pages/TabletteAvertissements'));
+const TabletteRecrutementCandidat     = React.lazy(() => import('./pages/TabletteRecrutementCandidat'));
+// Phase H — admin RH avertissements + candidatures tablette
+const RhAvertissements                = React.lazy(() => import('./pages/rh/AvertissementsRh'));
+const RhCandidaturesTablette          = React.lazy(() => import('./pages/rh/CandidaturesTablette'));
 
 // ── Ventes §8 (colisage / palettes / transporteurs / paiements / relances)
 const VentesListeColisage = React.lazy(() => import('./pages/ventes/ListeColisage'));
@@ -436,6 +447,13 @@ const AppContent: React.FC = () => {
           <Route path="/tablette/demande-avance" element={<TabletteDemandeAvance />} />
           <Route path="/tablette/mon-compte"     element={<TabletteConsultationSoldeEmp />} />
           <Route path="/tablette/mes-demandes"   element={<TabletteMesDemandes />} />
+          {/* Phase H — sous-écrans mes-demandes */}
+          <Route path="/tablette/demande-conge"       element={<TabletteDemandeConge />} />
+          <Route path="/tablette/demande-attestation" element={<TabletteDemandeAttestation />} />
+          <Route path="/tablette/bulletins"           element={<TabletteConsultationBulletins />} />
+          <Route path="/tablette/avertissements"      element={<TabletteAvertissements />} />
+          {/* Phase H — recrutement candidat tablette publique (pas de PrivateRoute) */}
+          <Route path="/tablette/recrutement-candidat" element={<TabletteRecrutementCandidat />} />
 
           {/* Portail Client — auth séparée, hors PrivateRoute admin */}
           <Route path="/portail/login" element={<PortailLogin />} />
@@ -1212,6 +1230,15 @@ const AppContent: React.FC = () => {
               </ProtectedRoute>
             }
           />
+          {/* Phase G2 — Entretiens annuels (§11bis.11) */}
+          <Route
+            path="/rh/entretiens"
+            element={
+              <ProtectedRoute requiredRole={['ADMIN', 'RH_MANAGER']}>
+                <RhEntretiensAnnuels />
+              </ProtectedRoute>
+            }
+          />
 
           {/* ─── RH étendu Phase C §11bis + §14quater.5-7
               Accès : ADMIN | RH_MANAGER */}
@@ -1220,6 +1247,9 @@ const AppContent: React.FC = () => {
           <Route path="/rh/avances"                element={<ProtectedRoute requiredRole={['ADMIN','RH_MANAGER']}><RhAvancesSalaires /></ProtectedRoute>} />
           <Route path="/rh/ajustements"            element={<ProtectedRoute requiredRole={['ADMIN','RH_MANAGER']}><RhAjustementsComptes /></ProtectedRoute>} />
           <Route path="/rh/compensations"          element={<ProtectedRoute requiredRole={['ADMIN','RH_MANAGER']}><RhCompensationsRh /></ProtectedRoute>} />
+          {/* Phase H — Avertissements + candidatures tablette */}
+          <Route path="/rh/avertissements"         element={<ProtectedRoute requiredRole={['ADMIN','RH_MANAGER']}><RhAvertissements /></ProtectedRoute>} />
+          <Route path="/rh/candidatures-tablette"  element={<ProtectedRoute requiredRole={['ADMIN','RH_MANAGER']}><RhCandidaturesTablette /></ProtectedRoute>} />
 
           {/* ─── Ventes §8 — Colisage · Palettes · Transporteurs · Paiements · Relances
               Accès : ADMIN | COMMERCIAL | COMPTABLE */}

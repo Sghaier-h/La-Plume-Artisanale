@@ -6,9 +6,9 @@
 // `./legacy-controller.js` + `./legacy-alimentation-controller.js` +
 // `./legacy-routes.js`.
 //
-// Les actions `demarrer`/`terminer` s'appuient toujours sur les handlers du
-// module legacy `backend/modules/production/` (non supprimé en Phase E4 : à
-// porter avec un futur sous-module v2 `fabrication/production`).
+// Phase G3 : les actions `demarrer`/`terminer` s'appuient désormais sur
+// `./legacy-production-controller.js` (copie verbatim du contrôleur legacy
+// `backend/modules/production/` — supprimé en Phase G3).
 //
 // Endpoints sous `/api/v2/fabrication/of` :
 //   GET    /alimentation/analyse

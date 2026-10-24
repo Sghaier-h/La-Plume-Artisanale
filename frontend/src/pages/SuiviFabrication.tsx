@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+} from 'recharts';
 import { suiviFabricationService, ofService, machinesService } from '../services/api';
 import { TrendingUp, Clock, CheckCircle, XCircle, AlertTriangle, Search, Filter, X, Plus, Edit, Play, Square, Calendar, Package, Settings, User, Percent, BarChart3 } from 'lucide-react';
 
@@ -43,6 +46,28 @@ const SuiviFabrication: React.FC = () => {
     temps_production: '',
     observations: ''
   });
+
+  // Phase G1 — agrégation par opération (BarChart temps/opération)
+  const [parOperation, setParOperation] = useState<Array<{ type_operation: string; temps_minutes: number; rendement: number; of_count: number }>>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const unwrap = (r: any) => r?.data?.data ?? r?.data ?? [];
+    (async () => {
+      try {
+        const r = await suiviFabricationService.getParOperation({});
+        if (cancelled) return;
+        const rows: any[] = Array.isArray(unwrap(r)) ? unwrap(r) : [];
+        setParOperation(rows.map((o: any) => ({
+          type_operation: String(o.type_operation || '').replace(/_/g, ' '),
+          temps_minutes: Number(o.temps_minutes) || 0,
+          rendement:     Number(o.rendement)     || 0,
+          of_count:      Number(o.of_count)      || 0,
+        })));
+      } catch { /* [] par défaut */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     loadData();
@@ -219,6 +244,41 @@ const SuiviFabrication: React.FC = () => {
             {error}
           </div>
         )}
+
+        {/* Phase G1 — BarChart "Temps par opération" */}
+        <div className="bg-white rounded-lg shadow p-4 mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <BarChart3 className="w-5 h-5 text-blue-600" />
+            <h3 className="font-semibold text-gray-800">Temps par opération</h3>
+            <span className="text-xs text-gray-500 ml-2">(agrégation sur toutes périodes)</span>
+          </div>
+          <div style={{ width: '100%', height: 260 }}>
+            {parOperation.length === 0 ? (
+              <div className="flex items-center justify-center h-full text-sm text-gray-400 italic">
+                Aucune donnée d'opération disponible
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={parOperation} margin={{ top: 8, right: 12, left: -8, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="type_operation" fontSize={11} />
+                  <YAxis fontSize={11} />
+                  <Tooltip
+                    formatter={(value: any, name: string) => {
+                      if (name === 'temps_minutes') return [`${Number(value).toFixed(1)} min`, 'Temps'];
+                      if (name === 'rendement')     return [`${Number(value).toFixed(1)} %`, 'Rendement'];
+                      if (name === 'of_count')      return [value, 'OFs'];
+                      return [value, name];
+                    }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                  <Bar dataKey="temps_minutes" fill="#2563eb" radius={[4, 4, 0, 0]} name="Temps (min)" />
+                  <Bar dataKey="rendement"     fill="#10b981" radius={[4, 4, 0, 0]} name="Rendement (%)" />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
 
         {/* Filtres */}
         <div className="bg-white p-4 rounded-lg shadow mb-6">

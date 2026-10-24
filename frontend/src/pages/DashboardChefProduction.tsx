@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  LineChart, Line, PieChart, Pie, Cell,
+  LineChart, Line, PieChart, Pie, Cell, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
 import {
@@ -14,6 +14,7 @@ import {
   machinesService,
   matieresPremieresService,
   dashboardService,
+  suiviFabricationService,
 } from '../services/api';
 import { soustraitantsApi } from '../services/soustraitanceApi';
 
@@ -126,10 +127,12 @@ const DashboardChefProduction: React.FC = () => {
   const [kpisProd, setKpisProd] = useState<any | null>(null);
   const [kpisGeneral, setKpisGeneral] = useState<any | null>(null);
   const [alertesBackend, setAlertesBackend] = useState<any[]>([]);
+  // Phase G1 — Temps par opération (BarChart)
+  const [parOperation, setParOperation] = useState<Array<{ type_operation: string; temps_minutes: number; rendement: number; of_count: number }>>([]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    const [ofsRes, machinesRes, mpsRes, kpisProdRes, kpisRes, stRes, alertesRes] = await Promise.all([
+    const [ofsRes, machinesRes, mpsRes, kpisProdRes, kpisRes, stRes, alertesRes, parOpRes] = await Promise.all([
       ofService.getOFs({ limit: 200 }).catch(() => null),
       machinesService.getMachines({ limit: 200 }).catch(() => null),
       matieresPremieresService.getMatieresPremieres({ limit: 200 }).catch(() => null),
@@ -137,6 +140,8 @@ const DashboardChefProduction: React.FC = () => {
       dashboardService.getKPIs().catch(() => null),
       soustraitantsApi.list({ limit: 50 }).then((r) => ({ data: r.data })).catch(() => null),
       dashboardService.getAlertes().catch(() => null),
+      // Phase G1 — temps par opération
+      suiviFabricationService.getParOperation({}),
     ]);
 
     setOfs(unwrapList<OF>(ofsRes, ['data']));
@@ -146,6 +151,14 @@ const DashboardChefProduction: React.FC = () => {
     setKpisGeneral(unwrapObject<any>(kpisRes));
     setSousTraitants(unwrapList<Soustraitant>(stRes, ['items', 'soustraitants']));
     setAlertesBackend(unwrapList<any>(alertesRes, ['items']));
+    // Phase G1 — par-opération
+    const parOpRows = unwrapList<any>(parOpRes, ['data']);
+    setParOperation(parOpRows.map((o: any) => ({
+      type_operation: String(o.type_operation || '').replace(/_/g, ' '),
+      temps_minutes: Number(o.temps_minutes) || 0,
+      rendement:     Number(o.rendement)     || 0,
+      of_count:      Number(o.of_count)      || 0,
+    })));
     setLoading(false);
   }, []);
 
@@ -493,6 +506,27 @@ const DashboardChefProduction: React.FC = () => {
             </div>
           </SectionCard>
         </div>
+
+        {/* Phase G1 — Temps par opération (BarChart) */}
+        <SectionCard title="Temps par opération" subtitle="Agrégation du temps passé par type d'opération" icon={<Scissors size={16} />}>
+          <div style={{ height: 260 }}>
+            {parOperation.length === 0 ? (
+              <div style={emptyStyle}>Aucune donnée d'opération disponible</div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={parOperation} margin={{ top: 8, right: 12, left: -8, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
+                  <XAxis dataKey="type_operation" stroke="var(--fg-muted)" fontSize={11} />
+                  <YAxis stroke="var(--fg-muted)" fontSize={11} />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Legend wrapperStyle={{ fontSize: 12, color: 'var(--fg-secondary)' }} />
+                  <Bar dataKey="temps_minutes" fill="var(--accent-indigo)" radius={[4, 4, 0, 0]} name="Temps (min)" />
+                  <Bar dataKey="rendement"     fill="var(--accent-sage)"   radius={[4, 4, 0, 0]} name="Rendement (%)" />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </SectionCard>
 
         {/* PLANNING WITH DRAG & DROP */}
         <SectionCard

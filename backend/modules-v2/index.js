@@ -21,7 +21,9 @@ const groups = [
   // CRM & Produits
   ['crm',          ['comptes', 'tarification', 'contacts', 'adresses',
                     'leads', 'interactions', 'opportunites', 'parametres']],
-  ['produits',     ['familles', 'modeles', 'articles']],
+  // Produits (Phase G3 : + catalogue, attributs, articles-generes)
+  ['produits',     ['familles', 'modeles', 'articles',
+                    'catalogue', 'attributs', 'articles-generes']],
   ['bom',          ['master', 'composants']],
 
   // Stock (Phase E4 : + tracabilite-lots, fournitures)
@@ -30,15 +32,20 @@ const groups = [
                     'tracabilite-lots', 'fournitures']],
 
   // Fabrication (Phase E4 : + of, machines, suivi)
+  // Phase G3 : + mrp, taches, maintenance, planning-gantt
   ['fabrication',  ['ordres', 'ourdissage', 'tissage', 'coupe',
                     'finition', 'planning', 'snapshots',
-                    'of', 'machines', 'suivi']],
-  ['qualite',      ['controles', 'defauts', 'rapports']],
+                    'of', 'machines', 'suivi',
+                    'mrp', 'taches', 'maintenance', 'planning-gantt']],
+  // Qualité (Phase G3 : + avance — fusion qualite-avance + qualite-avancee + quality)
+  ['qualite',      ['controles', 'defauts', 'rapports', 'avance']],
   ['sous-traitance', ['envois', 'retours', 'sous-traitants', 'travaux', 'bons', 'comptes']],
 
   // Ventes / Achats / Compta
   ['ventes',       ['devis', 'commandes', 'bl', 'factures', 'avoirs',
-                    'paiements', 'colisage', 'palettes']],
+                    'paiements', 'colisage', 'palettes',
+                    // Phase G2 — courbe CA 12 mois (DashboardCommercial)
+                    'stats']],
   ['achats',       ['fournisseurs', 'bc', 'receptions', 'factures-ff']],
   ['comptabilite', ['ecritures', 'tva', 'caisse', 'cloture',
                     'caisses', 'dossiers-import', 'cessions',
@@ -58,7 +65,12 @@ const groups = [
                     // Phase C — RH étendu + tablettes (§11bis + §14quater.5-7)
                     'comptes-employes', 'avances', 'ajustements',
                     'compensations-rh', 'pin-tablette', 'demandes-rh',
-                    'planning-employes']],
+                    'planning-employes',
+                    // Phase G2 — formations (§11bis.10) + entretiens annuels (§11bis.11)
+                    'formations', 'entretiens',
+                    // Phase H — avertissements auto (§11bis + §14ter.17c)
+                    // + recrutement candidat tablette public (§11bis.recrutement)
+                    'avertissements', 'recrutement-tablette']],
 
   // IA agents (§11ter + §14bis.6bis)
   ['ia-agents',    ['config', 'runs', 'findings', 'scheduler']],

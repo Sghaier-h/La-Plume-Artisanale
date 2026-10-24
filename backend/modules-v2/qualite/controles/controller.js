@@ -39,3 +39,23 @@ export const recents = asyncHandler(async (req, res) => {
   const rows = await svc.recents({ limit });
   res.json(ok(rows, { count: rows.length }));
 });
+
+// Phase G1 — Répartition par type de défaut (chart secteur DashboardControleCentral)
+export const parTypeDefaut = asyncHandler(async (req, res) => {
+  const periode = String(req.query.periode || '30j');
+  const rows = await svc.parTypeDefaut({ periode });
+  res.json(ok(rows, { count: rows.length }));
+});
+
+// Phase G1 — Incidents / contrôles bloquants par jour (chart ligne)
+export const incidentsParJour = asyncHandler(async (req, res) => {
+  const jours = Math.min(Math.max(Number(req.query.jours) || 30, 1), 365);
+  const rows = await svc.incidentsParJour({ jours });
+  res.json(ok(rows, { count: rows.length }));
+});
+
+// Phase G1 — Radar critères qualité (tissage / nouage / coupe / finition / emballage)
+export const radarCriteres = asyncHandler(async (_req, res) => {
+  const rows = await svc.radarCriteres();
+  res.json(ok(rows, { count: rows.length }));
+});

@@ -166,6 +166,66 @@ export const getOperateurDay = async (req, res) => {
   }
 };
 
+// ─── GET /api/suivi-fabrication/par-operation ─────────────────────
+// Phase G1 — Agrégation temps passé / rendement / OFs distincts par type
+// d'opération (ourdissage, tissage, coupe, finition, …). Essaie d'abord
+// `of_postes` (code_poste + duree_reelle_sec), fallback `suivi_fabrication`
+// (sans ventilation par type → une seule ligne "tissage"), fallback [].
+export const getSuiviParOperation = async (req, res) => {
+  const { date_debut, date_fin } = req.query || {};
+  // 1) Essai via of_postes (schema v2)
+  try {
+    const params = [];
+    const where = [];
+    if (date_debut) { params.push(date_debut); where.push(`COALESCE(op.date_debut_reel, op.date_debut_prevue) >= $${params.length}`); }
+    if (date_fin)   { params.push(date_fin);   where.push(`COALESCE(op.date_fin_reel,   op.date_fin_prevue)   <= $${params.length}`); }
+    const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+    const sql = `
+      SELECT op.code_poste::text                                                   AS type_operation,
+             ROUND(COALESCE(SUM(op.duree_reelle_sec), 0) / 60.0, 2)::numeric       AS temps_minutes,
+             CASE WHEN SUM(op.quantite_produite) + SUM(op.quantite_rebut) > 0
+                  THEN ROUND((SUM(op.quantite_produite)
+                              / NULLIF(SUM(op.quantite_produite) + SUM(op.quantite_rebut), 0)) * 100, 2)
+                  ELSE 0 END::numeric                                              AS rendement,
+             COUNT(DISTINCT op.id_of)::int                                         AS of_count
+        FROM of_postes op
+        ${whereSql}
+        GROUP BY op.code_poste
+        ORDER BY op.code_poste
+    `;
+    const r = await pool.query(sql, params);
+    if (r.rows && r.rows.length > 0) {
+      return sendSuccess(res, r.rows, 'Agrégation par opération (of_postes)');
+    }
+  } catch { /* table absente — fallback */ }
+
+  // 2) Fallback : suivi_fabrication global → une seule ligne "tissage"
+  try {
+    const params = [];
+    const where = [];
+    if (date_debut) { params.push(date_debut); where.push(`date_debut >= $${params.length}`); }
+    if (date_fin)   { params.push(date_fin);   where.push(`date_debut <= $${params.length}`); }
+    const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+    const sql = `
+      SELECT 'tissage'::text                                             AS type_operation,
+             COALESCE(SUM(temps_production), 0)::numeric                 AS temps_minutes,
+             COALESCE(ROUND(AVG(rendement)::numeric, 2), 0)              AS rendement,
+             COUNT(DISTINCT id_of)::int                                  AS of_count
+        FROM suivi_fabrication
+        ${whereSql}
+    `;
+    const r = await pool.query(sql, params);
+    return sendSuccess(res, r.rows || [], 'Agrégation par opération (fallback)');
+  } catch (error) {
+    // 3) Fallback ultime : []
+    try {
+      return sendSuccess(res, [], 'Aucune donnée disponible');
+    } catch {
+      return handleError(res, error, 'getSuiviParOperation');
+    }
+  }
+};
+
 // ─── GET /api/suivi-fabrication/:id ───────────────────────────────
 export const getSuiviFabricationById = async (req, res) => {
   try {

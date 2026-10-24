@@ -2,10 +2,11 @@
 
 Ordres de fabrication (CRUD + détail complet + alimentation stock + actions
 démarrer/terminer/assigner-machine) — handlers legacy portés verbatim
-(Phase E4).
+(Phase E4 + G3).
 
-Les actions `démarrer`/`terminer` restent délégués aux contrôleurs du module
-legacy `backend/modules/production/` (non supprimé — port prévu dans une passe
-ultérieure).
+Phase G3 : le contrôleur legacy `backend/modules/production/` a été absorbé
+ici sous `./legacy-production-controller.js` (actions `lancerProduction` /
+`terminerProduction` / `updateProduction`). Le module legacy `production/` est
+désormais supprimé.
 
 Endpoints sous `/api/v2/fabrication/of`.

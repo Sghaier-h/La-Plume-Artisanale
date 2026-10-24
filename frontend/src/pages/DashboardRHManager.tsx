@@ -34,7 +34,11 @@ import {
   KpiCard,
   SectionCard,
 } from '../components/dashboard';
-import { rhDashboardService } from '../services/api';
+import {
+  rhDashboardService,
+  rhFormationsService,
+  rhEntretiensService,
+} from '../services/api';
 
 // ─── types ──────────────────────────────────────────────────────
 type FunnelStage = { code: string; label: string; count: number; tone: 'terracotta' | 'sage' | 'indigo' | 'gold' };
@@ -75,24 +79,37 @@ const DashboardRHManager: React.FC = () => {
   const navigate = useNavigate();
 
   // Phase F2 — KPIs & listes hydratés depuis les APIs v2
+  // Phase G2 — formations + entretiens live
   const [FUNNEL, setFunnel] = React.useState<FunnelStage[]>(INITIAL_FUNNEL);
-  const [FORMATIONS] = React.useState<Formation[]>(INITIAL_FORMATIONS);
-  const [ENTRETIENS] = React.useState<Entretien[]>(INITIAL_ENTRETIENS);
+  const [FORMATIONS, setFormations] = React.useState<Formation[]>(INITIAL_FORMATIONS);
+  const [ENTRETIENS, setEntretiens] = React.useState<Entretien[]>(INITIAL_ENTRETIENS);
   const [PRIMES, setPrimes] = React.useState<Prime[]>(INITIAL_PRIMES);
   const [effectif, setEffectif] = React.useState<number>(87);
   const [recrutementsOuverts, setRecrutementsOuverts] = React.useState<number>(6);
   const [masseSalariale, setMasseSalariale] = React.useState<number>(146200);
+  const [heuresFormation, setHeuresFormation] = React.useState<number>(42);
 
   React.useEffect(() => {
     let cancelled = false;
     const unwrap = (r: any) => r?.data?.data ?? r?.data ?? {};
+    const fmtDateFR = (iso: string) => {
+      try {
+        return new Date(iso).toLocaleDateString('fr-FR');
+      } catch { return iso; }
+    };
     (async () => {
       try {
-        const [kpiR, emplR, candR, primesR] = await Promise.all([
+        const [
+          kpiR, emplR, candR, primesR,
+          formListR, formKpiR, entListR,
+        ] = await Promise.all([
           rhDashboardService.getComptesKpi(),
           rhDashboardService.getEmployes({ limit: 1 }),
           rhDashboardService.getCandidatures({ limit: 100 }),
           rhDashboardService.getPrimesBordereaux({ limit: 10 }),
+          rhFormationsService.getUpcoming(5),
+          rhFormationsService.getKpi(),
+          rhEntretiensService.getUpcoming(5),
         ]);
         if (cancelled) return;
         const kpi: any = unwrap(kpiR);
@@ -128,6 +145,36 @@ const DashboardRHManager: React.FC = () => {
             motif: p.motif || p.libelle || '—',
             montant: Number(p.montant) || 0,
             statut: p.statut === 'verse' ? 'validee' : 'a_payer',
+          })));
+        }
+        // Phase G2 — Formations à venir
+        const formList: any[] = Array.isArray(unwrap(formListR)) ? unwrap(formListR) as any[] : [];
+        if (formList.length > 0) {
+          setFormations(formList.slice(0, 5).map((f: any): Formation => ({
+            id: String(f.id_formation ?? f.id ?? Math.random()),
+            titre: f.titre || f.intitule || 'Formation',
+            date: f.date_debut ? fmtDateFR(f.date_debut) : '—',
+            nb: Number(f.nb_participants ?? f.participants ?? 0),
+            formateur: f.formateur || f.organisme || '—',
+          })));
+        }
+        const formKpi: any = unwrap(formKpiR);
+        if (formKpi && typeof formKpi === 'object' && typeof formKpi.heures_annee === 'number') {
+          setHeuresFormation(formKpi.heures_annee);
+        }
+        // Phase G2 — Entretiens à réaliser
+        const entList: any[] = Array.isArray(unwrap(entListR)) ? unwrap(entListR) as any[] : [];
+        if (entList.length > 0) {
+          const TYPE_LABEL: Record<string, string> = {
+            annuel: 'Annuel', probatoire: 'Fin période essai',
+            recadrage: 'Recadrage', depart: 'Départ',
+          };
+          setEntretiens(entList.slice(0, 5).map((e: any): Entretien => ({
+            id: String(e.id_entretien ?? e.id ?? Math.random()),
+            collab: `${e.employe_prenom ?? ''} ${e.employe_nom ?? ''}`.trim() || `#${e.id_employe}`,
+            poste: e.matricule || '—',
+            date: e.date_entretien ? fmtDateFR(e.date_entretien) : '—',
+            type: TYPE_LABEL[String(e.type)] || String(e.type || ''),
           })));
         }
         void emplR;
@@ -373,16 +420,13 @@ const DashboardRHManager: React.FC = () => {
           title="Formations à venir"
           subtitle="Plan de développement des compétences"
           actions={
-            <span
-              style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: 'var(--text-xs)',
-                color: 'var(--fg-muted)',
-                textTransform: 'uppercase',
-              }}
+            <button
+              type="button"
+              onClick={() => navigate('/rh/formations')}
+              style={linkStyle}
             >
-              {FORMATIONS.length} sessions
-            </span>
+              {FORMATIONS.length} sessions <ArrowRight size={12} />
+            </button>
           }
         >
           <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 'var(--s-2)' }}>
@@ -441,16 +485,13 @@ const DashboardRHManager: React.FC = () => {
           title="Entretiens à réaliser"
           subtitle="Annuels · fin de période d'essai"
           actions={
-            <span
-              style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: 'var(--text-xs)',
-                color: 'var(--fg-muted)',
-                textTransform: 'uppercase',
-              }}
+            <button
+              type="button"
+              onClick={() => navigate('/rh/entretiens')}
+              style={linkStyle}
             >
-              {ENTRETIENS.length} planifiés
-            </span>
+              {ENTRETIENS.length} planifiés <ArrowRight size={12} />
+            </button>
           }
         >
           <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 'var(--s-2)' }}>
@@ -520,7 +561,7 @@ const DashboardRHManager: React.FC = () => {
           <MiniStat icon={<TrendingUp size={16} />} label="Arrivées" value={3} tone="var(--accent-sage)" />
           <MiniStat icon={<TrendingDown size={16} />} label="Départs" value={1} tone="var(--color-danger)" />
           <MiniStat icon={<Award size={16} />} label="Primes versées" value={fmtMoney(4180)} tone="var(--accent-gold)" mono />
-          <MiniStat icon={<GraduationCap size={16} />} label="Heures formation" value="42 h" tone="var(--accent-indigo)" />
+          <MiniStat icon={<GraduationCap size={16} />} label="Heures formation" value={`${Math.round(heuresFormation)} h`} tone="var(--accent-indigo)" />
         </div>
       </SectionCard>
     </DashboardShell>

@@ -11,7 +11,7 @@ import {
 } from 'recharts';
 import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
 import { useAuth } from '../hooks/useAuth';
-import api from '../services/api';
+import api, { ventesStatsService } from '../services/api';
 
 // ─── helpers ───────────────────────────────────────────────────────
 const fmtMoney = (v: number | string | undefined): string => {
@@ -111,19 +111,24 @@ const DashboardCommercial: React.FC = () => {
   const [leaderboard, setLeaderboard] = useState<LeaderRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeModal, setActiveModal] = useState<null | 'devis' | 'opportunite' | 'rdv'>(null);
+  // Phase G2 — courbe CA 12 mois live via /api/v2/ventes/stats/ca-12-mois
+  const [ca12Mois, setCa12Mois] = useState<Array<{ mois: string; montant_ht: number; nb_factures: number; panier_moyen: number }>>([]);
 
   const fetchAll = useCallback(async () => {
     if (!targetId) return;
     setLoading(true);
     try {
-      const [dash, lb] = await Promise.all([
+      const [dash, lb, caR] = await Promise.all([
         api.get(`/commercial/${targetId}/dashboard`).catch(() => null),
         api.get(`/commercial/leaderboard`).catch(() => null),
+        ventesStatsService.getCA12Mois().catch(() => null),
       ]);
       const payload = dash?.data?.data ?? dash?.data ?? null;
       const lbPayload = lb?.data?.data ?? lb?.data ?? [];
+      const caPayload = (caR as any)?.data?.data ?? (caR as any)?.data ?? [];
       setData(payload);
       setLeaderboard(Array.isArray(lbPayload) ? lbPayload : []);
+      setCa12Mois(Array.isArray(caPayload) ? caPayload : []);
     } finally {
       setLoading(false);
     }
@@ -131,18 +136,25 @@ const DashboardCommercial: React.FC = () => {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  // Mock 12-month series (backend endpoint TBD): assemble from ca_annee + objectif
+  // Phase G2 — courbe CA 12 mois réelle (fallback [] si pas de ventes)
   const evolutionCA = useMemo(() => {
-    const mois = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
+    const MOIS_FR = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
+    if (!ca12Mois || ca12Mois.length === 0) return [];
     const objectif = (data?.objectifs.mensuel ?? 0);
-    const base = (data?.performance.ca_mois ?? 0);
-    return mois.map((m, i) => ({
-      mois: m,
-      objectif,
-      realise: i <= new Date().getMonth() ? Math.round(base * (0.6 + Math.random() * 0.6)) : null,
-      prevision: i > new Date().getMonth() ? Math.round(objectif * (0.9 + Math.random() * 0.2)) : null,
-    }));
-  }, [data]);
+    return ca12Mois.map((row) => {
+      const [, mm] = String(row.mois).split('-');
+      const monthIdx = Math.max(0, Math.min(11, Number(mm) - 1));
+      return {
+        mois: MOIS_FR[monthIdx] || row.mois,
+        periode: row.mois,
+        realise: Number(row.montant_ht ?? 0),
+        objectif,
+        prevision: null,
+        nb_factures: Number(row.nb_factures ?? 0),
+        panier_moyen: Number(row.panier_moyen ?? 0),
+      };
+    });
+  }, [ca12Mois, data]);
 
   const progressionSemaines = useMemo(() => {
     const total = data?.performance.ca_mois ?? 0;
@@ -481,29 +493,44 @@ const DashboardCommercial: React.FC = () => {
           </SectionCard>
         </div>
 
-        {/* ROW 6 — Évolution CA 12 mois */}
+        {/* ROW 6 — Évolution CA 12 mois (Phase G2 · live /api/v2/ventes/stats/ca-12-mois) */}
         <SectionCard
           title="Évolution CA — 12 mois"
-          subtitle="Réalisé (barres) · Objectif (ligne) · Prévisions (pointillé)"
+          subtitle="Réalisé (barres) · Objectif mensuel (ligne) · Source : factures émises"
           icon={<TrendingUp size={16} />}
         >
-          <div style={{ height: 300 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={evolutionCA} margin={{ top: 8, right: 12, left: -8, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
-                <XAxis dataKey="mois" stroke="var(--fg-muted)" fontSize={11} />
-                <YAxis stroke="var(--fg-muted)" fontSize={11} tickFormatter={(v) => fmtMoney(v)} />
-                <Tooltip contentStyle={tooltipStyle} formatter={(v) => v == null ? '—' : `${fmtMoney(v as number)} DT`} />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar dataKey="realise" name="Réalisé" fill="var(--accent-terracotta)" radius={[4, 4, 0, 0]} />
-                <Line type="monotone" dataKey="objectif" name="Objectif" stroke="var(--accent-gold)" strokeWidth={2} dot={false} />
-                <Line
-                  type="monotone" dataKey="prevision" name="Prévisions"
-                  stroke="var(--accent-indigo)" strokeDasharray="5 5" strokeWidth={2} dot={false}
-                />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </div>
+          {evolutionCA.length === 0 ? (
+            <div
+              style={{
+                height: 240,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--fg-muted)',
+                fontSize: 'var(--text-sm)',
+                fontStyle: 'italic',
+                background: 'var(--bg-canvas)',
+                border: '1px dashed var(--border-subtle)',
+                borderRadius: 'var(--radius-sm)',
+              }}
+            >
+              Pas encore de ventes sur les 12 derniers mois.
+            </div>
+          ) : (
+            <div style={{ height: 300 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={evolutionCA} margin={{ top: 8, right: 12, left: -8, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
+                  <XAxis dataKey="mois" stroke="var(--fg-muted)" fontSize={11} />
+                  <YAxis stroke="var(--fg-muted)" fontSize={11} tickFormatter={(v) => fmtMoney(v)} />
+                  <Tooltip contentStyle={tooltipStyle} formatter={(v) => v == null ? '—' : `${fmtMoney(v as number)} DT`} />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                  <Bar dataKey="realise" name="Réalisé (HT)" fill="var(--accent-terracotta)" radius={[4, 4, 0, 0]} />
+                  <Line type="monotone" dataKey="objectif" name="Objectif" stroke="var(--accent-gold)" strokeWidth={2} dot={false} />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </SectionCard>
 
         {isAdmin && targetId && String(targetId) !== String(user?.id) && (

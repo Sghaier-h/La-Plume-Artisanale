@@ -16,6 +16,7 @@ import {
   restaurerMatierePremiere,
   getMatieresPremieresStats,
   getAlertesStock,
+  getStockParEntrepot,
 } from './legacy-controller.js';
 
 const router = express.Router();
@@ -33,6 +34,8 @@ router.get('/types', async (req, res) => {
 });
 router.get('/stats/global', getMatieresPremieresStats);
 router.get('/alertes/stock', getAlertesStock);
+// Phase G1 — Projection stock MP par entrepôt (DashboardMagasinierMP)
+router.get('/par-entrepot', getStockParEntrepot);
 router.get('/code/:code', getMatiereByCode);
 
 // CRUD standard

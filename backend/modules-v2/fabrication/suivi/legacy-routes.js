@@ -13,6 +13,7 @@ import {
   getOfSummary,
   getMachineStats,
   getOperateurDay,
+  getSuiviParOperation,
 } from './legacy-controller.js';
 
 const router = express.Router();
@@ -24,6 +25,8 @@ router.get('/of/:id_of(\\d+)/summary',            getOfSummary);
 router.get('/of/:id_of(\\d+)/avancement',         getOfSummary);
 router.get('/machine/:id_machine(\\d+)/stats',    getMachineStats);
 router.get('/operateur/:id_operateur(\\d+)/day',  getOperateurDay);
+// Phase G1 — Agrégation du temps / rendement par opération (SuiviFabrication)
+router.get('/par-operation',                      getSuiviParOperation);
 
 // CRUD standard
 router.get('/',             getSuiviFabrication);

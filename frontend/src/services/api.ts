@@ -1,6 +1,6 @@
-import axios from 'axios';
+﻿import axios from 'axios';
 
-// Utiliser localhost en développement, VPS en production
+// Utiliser localhost en dÃ©veloppement, VPS en production
 const API_URL = process.env.REACT_APP_API_URL || 
   (process.env.NODE_ENV === 'production' 
     ? 'https://fabrication.laplume-artisanale.tn/api'
@@ -13,7 +13,7 @@ const api = axios.create({
   },
 });
 
-// Intercepteur pour ajouter le token et la société active
+// Intercepteur pour ajouter le token et la sociÃ©tÃ© active
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -21,7 +21,7 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
     
-    // Ajouter l'ID de la société active dans les headers si disponible
+    // Ajouter l'ID de la sociÃ©tÃ© active dans les headers si disponible
     const activeCompanyStr = localStorage.getItem('app_active_company');
     if (activeCompanyStr) {
       try {
@@ -30,7 +30,7 @@ api.interceptors.request.use(
           config.headers['X-Active-Company-Id'] = activeCompany.id_societe.toString();
         }
       } catch (e) {
-        console.warn('Erreur parsing société active:', e);
+        console.warn('Erreur parsing sociÃ©tÃ© active:', e);
       }
     }
     
@@ -41,25 +41,25 @@ api.interceptors.request.use(
   }
 );
 
-// Intercepteur pour gérer les erreurs
+// Intercepteur pour gÃ©rer les erreurs
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Gérer les erreurs de connexion
+    // GÃ©rer les erreurs de connexion
     if (error.code === 'ECONNREFUSED' || error.code === 'ERR_NETWORK') {
       console.error('Erreur de connexion au serveur:', error.message);
-      // Ne pas afficher d'alerte si on est en mode développement et que l'API n'est pas disponible
+      // Ne pas afficher d'alerte si on est en mode dÃ©veloppement et que l'API n'est pas disponible
       if (process.env.NODE_ENV === 'development') {
-        console.warn('Le backend n\'est pas accessible. Vérifiez qu\'il est démarré sur http://localhost:5000');
+        console.warn('Le backend n\'est pas accessible. VÃ©rifiez qu\'il est dÃ©marrÃ© sur http://localhost:5000');
       }
     }
     
     if (error.response?.status === 401) {
-      // Ne rediriger que si on n'est pas déjà sur la page de login
-      // et seulement si le token existe (pour éviter les redirections en boucle)
+      // Ne rediriger que si on n'est pas dÃ©jÃ  sur la page de login
+      // et seulement si le token existe (pour Ã©viter les redirections en boucle)
       const token = localStorage.getItem('token');
       if (token && window.location.pathname !== '/login') {
-        console.warn('Token invalide ou expiré, déconnexion...');
+        console.warn('Token invalide ou expirÃ©, dÃ©connexion...');
       localStorage.removeItem('token');
         localStorage.removeItem('user');
       window.location.href = '/login';
@@ -67,16 +67,16 @@ api.interceptors.response.use(
     }
 
     if (error.response?.status === 429) {
-      // Gérer l'erreur de rate limiting
+      // GÃ©rer l'erreur de rate limiting
       const retryAfter = error.response.headers['retry-after'];
       const message = error.response.data?.error?.message || 
         (retryAfter 
-          ? `Trop de requêtes. Veuillez patienter ${retryAfter} secondes.`
-          : 'Trop de requêtes. Veuillez patienter quelques instants.');
+          ? `Trop de requÃªtes. Veuillez patienter ${retryAfter} secondes.`
+          : 'Trop de requÃªtes. Veuillez patienter quelques instants.');
       
       console.warn('Rate limit atteint:', message);
       
-      // Afficher une notification si disponible (sera géré par le composant)
+      // Afficher une notification si disponible (sera gÃ©rÃ© par le composant)
       error.rateLimitMessage = message;
     }
 
@@ -94,13 +94,18 @@ export const authService = {
   getCurrentUser: () => api.get('/auth/me'),
 };
 
+// productionService â€” faÃ§ade legacy repointÃ©e Phase G3 sur l'API v2 :
+//   OFs      â†’ /api/v2/fabrication/of/*
+//   machines â†’ /api/v2/fabrication/machines
+//   planning â†’ /api/v2/fabrication/planning
+// Les anciens chemins /production/* ne sont plus exposÃ©s par le backend.
 export const productionService = {
-  getOFs: () => api.get('/production/ofs'),
-  getOF: (id: number) => api.get(`/production/ofs/${id}`),
-  createOF: (data: any) => api.post('/production/ofs', data),
-  updateOF: (id: number, data: any) => api.put(`/production/ofs/${id}`, data),
-  getMachines: () => api.get('/production/machines'),
-  getPlanning: () => api.get('/production/planning'),
+  getOFs: () => api.get('/v2/fabrication/of'),
+  getOF: (id: number) => api.get(`/v2/fabrication/of/${id}`),
+  createOF: (data: any) => api.post('/v2/fabrication/of', data),
+  updateOF: (id: number, data: any) => api.put(`/v2/fabrication/of/${id}`, data),
+  getMachines: () => api.get('/v2/fabrication/machines'),
+  getPlanning: () => api.get('/v2/fabrication/planning'),
 };
 
 export const stockService = {
@@ -131,8 +136,8 @@ export const entrepotService = {
   deleteEntrepot: (id: number) => api.delete(`/entrepots/${id}`),
 };
 
-// fournitureService — repointé Phase E4 sur /api/v2/stock/fournitures
-// (alias v2 d'articles_catalogue filtré par type 'fourniture').
+// fournitureService â€” repointÃ© Phase E4 sur /api/v2/stock/fournitures
+// (alias v2 d'articles_catalogue filtrÃ© par type 'fourniture').
 export const fournitureService = {
   getFournitures: (params?: any) => api.get('/v2/stock/fournitures', { params }),
   getFourniture: (id: number) => api.get(`/v2/stock/fournitures/${id}`),
@@ -142,28 +147,28 @@ export const fournitureService = {
 };
 
 export const planningService = {
-  getPlanning: () => api.get('/planning-dragdrop'),
+  getPlanning: () => api.get('/v2/fabrication/planning-gantt'),
   updatePlanning: (data: any) => api.put('/planning', data),
   assignMachine: (machineId: number, data: any) =>
-    api.post('/planning-dragdrop/assigner', { ...data, machineId }),
+    api.post('/v2/fabrication/planning-gantt/assigner', { ...data, machineId }),
   reordonnerOF: (machineId: number, ofIds: number[]) =>
-    api.post('/planning-dragdrop/reordonner', { machineId, ofIds }),
+    api.post('/v2/fabrication/planning-gantt/reordonner', { machineId, ofIds }),
 };
 
-// clientsService — façade legacy repointée sur l'API v2 CRM (/api/v2/crm/*).
+// clientsService â€” faÃ§ade legacy repointÃ©e sur l'API v2 CRM (/api/v2/crm/*).
 // Les signatures publiques restent identiques pour ne pas casser les pages
 // consommatrices (Clients.tsx, ClientDetails.tsx, Commandes.tsx, etc.).
-// Le module backend legacy /api/clients a été supprimé — toute la logique
-// s'appuie désormais sur modules-v2/crm/comptes.
+// Le module backend legacy /api/clients a Ã©tÃ© supprimÃ© â€” toute la logique
+// s'appuie dÃ©sormais sur modules-v2/crm/comptes.
 export const clientsService = {
   getClients: (params?: any) => api.get('/v2/crm/comptes', { params }),
   getClient: (id: number, _options?: { loadRelations?: boolean }) =>
-    // Le controller v2 renvoie déjà le compte + contacts + adresses + historique.
+    // Le controller v2 renvoie dÃ©jÃ  le compte + contacts + adresses + historique.
     api.get(`/v2/crm/comptes/${id}`),
   createClient: (data: any) => api.post('/v2/crm/comptes', data),
   updateClient: (id: number, data: any) => api.put(`/v2/crm/comptes/${id}`, data),
-  // V2 : archive via DELETE — le motif n'est pas requis côté backend v2
-  // mais on l'envoie dans le corps de requête pour compat future / audit.
+  // V2 : archive via DELETE â€” le motif n'est pas requis cÃ´tÃ© backend v2
+  // mais on l'envoie dans le corps de requÃªte pour compat future / audit.
   deleteClient: (id: number, raison?: string) =>
     api.delete(`/v2/crm/comptes/${id}`, { data: { raison_desactivation: raison } }),
   getCategories: () => api.get('/v2/crm/comptes/categories'),
@@ -188,10 +193,10 @@ export const clientsService = {
     api.delete(`/v2/crm/comptes/${idClient}/contacts/${idContact}`),
 };
 
-// commandesService — façade legacy repointée sur l'API v2 ventes
+// commandesService â€” faÃ§ade legacy repointÃ©e sur l'API v2 ventes
 // (/api/v2/ventes/commandes/*). Le module backend legacy /api/commandes a
-// été supprimé — ses handlers (CRUD, valider, preview/generer/analyse-stock,
-// executer-choix, with-ofs) ont été portés tels quels dans
+// Ã©tÃ© supprimÃ© â€” ses handlers (CRUD, valider, preview/generer/analyse-stock,
+// executer-choix, with-ofs) ont Ã©tÃ© portÃ©s tels quels dans
 // backend/modules-v2/ventes/commandes/legacy-{controller,routes}.js.
 export const commandesService = {
   getCommandes: (params?: any) => api.get('/v2/ventes/commandes', { params }),
@@ -209,7 +214,7 @@ export const commandesService = {
 };
 
 /**
- * Télécharge un PDF depuis une URL d'API et déclenche le save-as navigateur.
+ * TÃ©lÃ©charge un PDF depuis une URL d'API et dÃ©clenche le save-as navigateur.
  */
 export const downloadPdf = async (url: string, filename: string) => {
   const res = await api.get(url, { responseType: 'blob' });
@@ -224,10 +229,10 @@ export const downloadPdf = async (url: string, filename: string) => {
   setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
 };
 
-// devisService — façade legacy repointée sur l'API v2 ventes
-// (/api/v2/ventes/devis/*). Le module backend legacy /api/devis a été
-// supprimé — ses handlers (CRUD avec lignes, transformer→commande, PDF)
-// ont été portés dans backend/modules-v2/ventes/devis/legacy-*.js.
+// devisService â€” faÃ§ade legacy repointÃ©e sur l'API v2 ventes
+// (/api/v2/ventes/devis/*). Le module backend legacy /api/devis a Ã©tÃ©
+// supprimÃ© â€” ses handlers (CRUD avec lignes, transformerâ†’commande, PDF)
+// ont Ã©tÃ© portÃ©s dans backend/modules-v2/ventes/devis/legacy-*.js.
 export const devisService = {
   getDevis: (params?: any) => api.get('/v2/ventes/devis', { params }),
   getDevisById: (id: number) => api.get(`/v2/ventes/devis/${id}`),
@@ -239,9 +244,9 @@ export const devisService = {
     downloadPdf(`/v2/ventes/devis/${id}/pdf`, `devis-${numero || id}`),
 };
 
-// bonsLivraisonService — façade legacy repointée sur /api/v2/ventes/bl/*.
-// Le module backend legacy /api/bons-livraison a été supprimé — handlers
-// portés dans backend/modules-v2/ventes/bl/legacy-*.js.
+// bonsLivraisonService â€” faÃ§ade legacy repointÃ©e sur /api/v2/ventes/bl/*.
+// Le module backend legacy /api/bons-livraison a Ã©tÃ© supprimÃ© â€” handlers
+// portÃ©s dans backend/modules-v2/ventes/bl/legacy-*.js.
 export const bonsLivraisonService = {
   getBonsLivraison: (params?: any) => api.get('/v2/ventes/bl', { params }),
   getBonLivraisonById: (id: number) => api.get(`/v2/ventes/bl/${id}`),
@@ -254,8 +259,8 @@ export const bonsLivraisonService = {
     downloadPdf(`/v2/ventes/bl/${id}/pdf`, `bl-${numero || id}`),
 };
 
-// facturesService — façade legacy repointée sur /api/v2/ventes/factures/*.
-// Le module backend legacy /api/factures a été supprimé — handlers portés
+// facturesService â€” faÃ§ade legacy repointÃ©e sur /api/v2/ventes/factures/*.
+// Le module backend legacy /api/factures a Ã©tÃ© supprimÃ© â€” handlers portÃ©s
 // dans backend/modules-v2/ventes/factures/legacy-*.js.
 export const facturesService = {
   getFactures: (params?: any) => api.get('/v2/ventes/factures', { params }),
@@ -271,8 +276,8 @@ export const facturesService = {
     downloadPdf(`/v2/ventes/factures/${id}/pdf`, `facture-${numero || id}`),
 };
 
-// avoirsService — façade legacy repointée sur /api/v2/ventes/avoirs/*.
-// Le module backend legacy /api/avoirs a été supprimé — handlers portés
+// avoirsService â€” faÃ§ade legacy repointÃ©e sur /api/v2/ventes/avoirs/*.
+// Le module backend legacy /api/avoirs a Ã©tÃ© supprimÃ© â€” handlers portÃ©s
 // dans backend/modules-v2/ventes/avoirs/legacy-*.js.
 export const avoirsService = {
   getAvoirs: (params?: any) => api.get('/v2/ventes/avoirs', { params }),
@@ -286,12 +291,12 @@ export const avoirsService = {
     downloadPdf(`/v2/ventes/avoirs/${id}/pdf`, `avoir-${numero || id}`),
 };
 
-// bonsRetourService — Option B (choix de consolidation ventes).
+// bonsRetourService â€” Option B (choix de consolidation ventes).
 // v2 `modules-v2/ventes/bons-retour/` n'existe pas encore. Le module backend
-// legacy `backend/modules/bons-retour/` est **temporairement conservé** et
-// reste la source de /api/bons-retour/*. Dépendance manifest.depends sur
-// "commandes" (module legacy supprimé) : ignorée par ModuleManager (warn).
-// À porter en v2 lors d'un prochain pass de consolidation.
+// legacy `backend/modules/bons-retour/` est **temporairement conservÃ©** et
+// reste la source de /api/bons-retour/*. DÃ©pendance manifest.depends sur
+// "commandes" (module legacy supprimÃ©) : ignorÃ©e par ModuleManager (warn).
+// Ã€ porter en v2 lors d'un prochain pass de consolidation.
 export const bonsRetourService = {
   getBonsRetour: (params?: any) => api.get('/bons-retour', { params }),
   getBonRetourById: (id: number) => api.get(`/bons-retour/${id}`),
@@ -301,8 +306,8 @@ export const bonsRetourService = {
   deleteBonRetour: (id: number) => api.delete(`/bons-retour/${id}`),
 };
 
-// machinesService — repointé Phase E4 sur /api/v2/fabrication/machines
-// (legacy backend/modules/machines supprimé, handlers portés verbatim).
+// machinesService â€” repointÃ© Phase E4 sur /api/v2/fabrication/machines
+// (legacy backend/modules/machines supprimÃ©, handlers portÃ©s verbatim).
 export const machinesService = {
   getMachines: (params?: any) => api.get('/v2/fabrication/machines', { params }),
   getMachine: (id: number) => api.get(`/v2/fabrication/machines/${id}`),
@@ -313,9 +318,9 @@ export const machinesService = {
   getMachinePlanning: (id: number, params?: any) => api.get(`/v2/fabrication/machines/${id}/planning`, { params }),
 };
 
-// ofService — repointé Phase E4 sur /api/v2/fabrication/of
-// (legacy backend/modules/of supprimé, handlers portés verbatim ; actions
-// démarrer/terminer déléguent toujours au controller production legacy).
+// ofService â€” repointÃ© Phase E4 sur /api/v2/fabrication/of
+// (legacy backend/modules/of supprimÃ©, handlers portÃ©s verbatim ; actions
+// dÃ©marrer/terminer dÃ©lÃ©guent toujours au controller production legacy).
 export const ofService = {
   getOFs: (params?: any) => api.get('/v2/fabrication/of', { params }),
   getOF: (id: number) => api.get(`/v2/fabrication/of/${id}`),
@@ -328,9 +333,9 @@ export const ofService = {
 };
 
 /**
- * @deprecated — `soustraitantsService` legacy supprimé (Phase B §14quater.3).
+ * @deprecated â€” `soustraitantsService` legacy supprimÃ© (Phase B Â§14quater.3).
  * Utiliser `soustraitantsApi` / `bonsSTApi` / `travauxApi` / `comptesSTApi`
- * depuis `services/soustraitanceApi.ts` (préfixe `/api/v2/sous-traitance/*`).
+ * depuis `services/soustraitanceApi.ts` (prÃ©fixe `/api/v2/sous-traitance/*`).
  */
 
 export const dashboardService = {
@@ -343,12 +348,12 @@ export const dashboardService = {
   getProductionStats: (params?: any) => api.get('/dashboard/production', { params }),
   getCommandesStats: (params?: any) => api.get('/dashboard/commandes', { params }),
   getAlertes: () => api.get('/dashboard/alertes'),
-  // Phase F — endpoints charts pour DashboardAdministrateur et autres
+  // Phase F â€” endpoints charts pour DashboardAdministrateur et autres
   getProductionHebdo: (jours = 7) => api.get(`/dashboard/production-hebdo?jours=${jours}`),
   getRepartitionPoste: () => api.get('/dashboard/repartition-poste'),
 };
 
-// Phase F — Messages / Notifications pour la UserBar (dropdowns)
+// Phase F â€” Messages / Notifications pour la UserBar (dropdowns)
 export const userbarService = {
   getRecentMessages: (limit = 5) =>
     api.get(`/v2/messages/recents?limit=${limit}`).catch(() => ({ data: { data: [] } })),
@@ -356,7 +361,8 @@ export const userbarService = {
     api.get(`/v2/notifications/non-lues?limit=${limit}`).catch(() => ({ data: { data: [] } })),
 };
 
-// Phase F2 — Qualité (Dashboards Administrateur / Contrôle Central)
+// Phase F2 â€” QualitÃ© (Dashboards Administrateur / ContrÃ´le Central)
+// Phase G1 â€” charts secondaires DashboardControleCentral (secteur / ligne / radar)
 export const qualiteService = {
   getTauxConformite: (periode: string = '30j') =>
     api.get(`/v2/qualite/controles/taux-conformite`, { params: { periode } })
@@ -364,21 +370,68 @@ export const qualiteService = {
   getControlesRecents: (limit = 20) =>
     api.get(`/v2/qualite/controles/recents`, { params: { limit } })
       .catch(() => ({ data: { data: [] } })),
+  // Phase G1
+  getParTypeDefaut: (periode: string = '30j') =>
+    api.get(`/v2/qualite/controles/par-type-defaut`, { params: { periode } })
+      .catch(() => ({ data: { data: [] } })),
+  getIncidentsParJour: (jours: number = 30) =>
+    api.get(`/v2/qualite/controles/incidents-par-jour`, { params: { jours } })
+      .catch(() => ({ data: { data: [] } })),
+  getRadarCriteres: () =>
+    api.get(`/v2/qualite/controles/radar-criteres`)
+      .catch(() => ({ data: { data: [] } })),
 };
 
-// Phase F2 — IA Agents (DashboardIA)
+// Phase F2 â€” IA Agents (DashboardIA)
 export const iaAgentsService = {
   getAgents: () => api.get('/v2/ia-agents/agents').catch(() => ({ data: { data: [] } })),
   getRuns: (limit = 20) => api.get(`/v2/ia-agents/runs`, { params: { limit } }).catch(() => ({ data: { data: [] } })),
   getFindings: (limit = 20) => api.get(`/v2/ia-agents/findings`, { params: { limit } }).catch(() => ({ data: { data: [] } })),
 };
 
-// Phase F2 — RH (DashboardRHManager)
+// Phase F2 â€” RH (DashboardRHManager)
 export const rhDashboardService = {
   getComptesKpi: () => api.get('/v2/rh/comptes-employes/kpi').catch(() => ({ data: { data: {} } })),
   getEmployes: (params?: any) => api.get('/v2/rh/employes', { params }).catch(() => ({ data: { data: [] } })),
   getCandidatures: (params?: any) => api.get('/v2/rh/candidatures', { params }).catch(() => ({ data: { data: [] } })),
   getPrimesBordereaux: (params?: any) => api.get('/v2/rh/primes-bordereaux', { params }).catch(() => ({ data: { data: [] } })),
+};
+
+// ─── Phase G2 — Formations (§11bis.10) ──────────────────────────────────
+export const rhFormationsService = {
+  list:         (params?: any) => api.get('/v2/rh/formations', { params }).catch(() => ({ data: { data: [] } })),
+  get:          (id: number)   => api.get(`/v2/rh/formations/${id}`),
+  create:       (data: any)    => api.post('/v2/rh/formations', data),
+  update:       (id: number, d: any) => api.put(`/v2/rh/formations/${id}`, d),
+  remove:       (id: number)   => api.delete(`/v2/rh/formations/${id}`),
+  getKpi:       () => api.get('/v2/rh/formations/kpi').catch(() => ({ data: { data: {} } })),
+  getParMois:   (annee?: number) => api.get('/v2/rh/formations/par-mois', { params: { annee } }).catch(() => ({ data: { data: [] } })),
+  getUpcoming:  (limit = 10) => api.get('/v2/rh/formations/upcoming', { params: { limit } }).catch(() => ({ data: { data: [] } })),
+  getBudgetTfp: (annee?: number) => api.get('/v2/rh/formations/budget-tfp', { params: { annee } }).catch(() => ({ data: { data: {} } })),
+  // Participants
+  listParticipants:   (id: number) => api.get(`/v2/rh/formations/${id}/participants`).catch(() => ({ data: { data: [] } })),
+  addParticipant:     (id: number, d: any) => api.post(`/v2/rh/formations/${id}/participants`, d),
+  removeParticipant:  (id: number, pid: number) => api.delete(`/v2/rh/formations/${id}/participants/${pid}`),
+};
+
+// ─── Phase G2 — Entretiens annuels (§11bis.11) ──────────────────────────
+export const rhEntretiensService = {
+  list:        (params?: any) => api.get('/v2/rh/entretiens', { params }).catch(() => ({ data: { data: [] } })),
+  get:         (id: number)   => api.get(`/v2/rh/entretiens/${id}`),
+  create:      (data: any)    => api.post('/v2/rh/entretiens', data),
+  update:      (id: number, d: any) => api.put(`/v2/rh/entretiens/${id}`, d),
+  remove:      (id: number)   => api.delete(`/v2/rh/entretiens/${id}`),
+  getKpi:      () => api.get('/v2/rh/entretiens/kpi').catch(() => ({ data: { data: {} } })),
+  getParMois:  (annee?: number) => api.get('/v2/rh/entretiens/par-mois', { params: { annee } }).catch(() => ({ data: { data: [] } })),
+  getUpcoming: (limit = 10) => api.get('/v2/rh/entretiens/upcoming', { params: { limit } }).catch(() => ({ data: { data: [] } })),
+  getEnRetard: (limit = 20) => api.get('/v2/rh/entretiens/en-retard', { params: { limit } }).catch(() => ({ data: { data: [] } })),
+};
+
+// ─── Phase G2 — Statistiques ventes (DashboardCommercial) ──────────────
+export const ventesStatsService = {
+  getCA12Mois: (id_commercial?: number) =>
+    api.get('/v2/ventes/stats/ca-12-mois', { params: id_commercial ? { id_commercial } : undefined })
+       .catch(() => ({ data: { data: [] } })),
 };
 
 export const parametrageService = {
@@ -404,7 +457,7 @@ export const utilisateursService = {
   getEquipe: () => api.get('/utilisateurs/equipe'),
   creerUtilisateurEquipe: (idOperateur: number, data: { email: string; password: string; dashboards: string[] }) =>
     api.post(`/utilisateurs/equipe/${idOperateur}/creer-utilisateur`, data),
-  // Rôles / Permissions (RBAC)
+  // RÃ´les / Permissions (RBAC)
   getRolesUtilisateur: (id: number) => api.get(`/utilisateurs/${id}/roles`),
   addRoleUtilisateur: (id: number, id_role: number) => api.post(`/utilisateurs/${id}/roles`, { id_role }),
   removeRoleUtilisateur: (id: number, id_role: number) => api.delete(`/utilisateurs/${id}/roles/${id_role}`),
@@ -424,8 +477,9 @@ export const auditService = {
   getAuditedTables: () => api.get('/audit/tables'),
 };
 
-// matieresPremieresService — repointé Phase E4 sur /api/v2/stock/matieres-premieres
-// (legacy backend/modules/matieres-premieres supprimé, handlers portés verbatim).
+// matieresPremieresService â€” repointÃ© Phase E4 sur /api/v2/stock/matieres-premieres
+// (legacy backend/modules/matieres-premieres supprimÃ©, handlers portÃ©s verbatim).
+// Phase G1 â€” ajout `getParEntrepot` pour la projection stock DashboardMagasinierMP.
 export const matieresPremieresService = {
   getMatieresPremieres: (params?: any) => api.get('/v2/stock/matieres-premieres', { params }),
   getMatierePremiere: (id: number) => api.get(`/v2/stock/matieres-premieres/${id}`),
@@ -433,16 +487,29 @@ export const matieresPremieresService = {
   updateMatierePremiere: (id: number, data: any) => api.put(`/v2/stock/matieres-premieres/${id}`, data),
   deleteMatierePremiere: (id: number) => api.delete(`/v2/stock/matieres-premieres/${id}`),
   getTypesMP: () => api.get('/v2/stock/matieres-premieres/types'),
+  // Phase G1
+  getParEntrepot: ({ seuilBas = true }: { seuilBas?: boolean } = {}) =>
+    api.get('/v2/stock/matieres-premieres/par-entrepot', { params: { seuil_bas: seuilBas ? 'true' : 'false' } })
+      .catch(() => ({ data: { data: { lignes: [], total: 0 } } })),
 };
 
-// suiviFabricationService — repointé Phase E4 sur /api/v2/fabrication/suivi
-// (legacy backend/modules/suivi-fabrication supprimé, handlers portés verbatim).
+// suiviFabricationService â€” repointÃ© Phase E4 sur /api/v2/fabrication/suivi
+// (legacy backend/modules/suivi-fabrication supprimÃ©, handlers portÃ©s verbatim).
+// Phase G1 â€” ajout `getParOperation` pour le BarChart temps/opÃ©ration.
 export const suiviFabricationService = {
   getSuivisFabrication: (params?: any) => api.get('/v2/fabrication/suivi', { params }),
   getSuiviFabrication: (id: number) => api.get(`/v2/fabrication/suivi/${id}`),
   createSuiviFabrication: (data: any) => api.post('/v2/fabrication/suivi', data),
   updateSuiviFabrication: (id: number, data: any) => api.put(`/v2/fabrication/suivi/${id}`, data),
   getAvancementOF: (of_id: number) => api.get(`/v2/fabrication/suivi/of/${of_id}/avancement`),
+  // Phase G1
+  getParOperation: ({ dateDebut, dateFin }: { dateDebut?: string; dateFin?: string } = {}) =>
+    api.get('/v2/fabrication/suivi/par-operation', {
+      params: {
+        ...(dateDebut ? { date_debut: dateDebut } : {}),
+        ...(dateFin   ? { date_fin:   dateFin }   : {}),
+      },
+    }).catch(() => ({ data: { data: [] } })),
 };
 
 export const fournisseursService = {
@@ -453,27 +520,27 @@ export const fournisseursService = {
 };
 
 export const parametresCatalogueService = {
-  getDimensions: () => api.get('/parametres-catalogue/dimensions'),
-  getFinitions: () => api.get('/parametres-catalogue/finitions'),
-  getTissages: () => api.get('/parametres-catalogue/tissages'),
-  getTypesProduits: () => api.get('/parametres-catalogue/types-produits'),
-  getCouleurs: () => api.get('/parametres-catalogue/couleurs'),
-  getNombreCouleurs: () => api.get('/parametres-catalogue/nombre-couleurs'),
-  getModeles: () => api.get('/parametres-catalogue/modeles'),
-  getTypesPersonnalisation: () => api.get('/parametres-catalogue/types-personnalisation'),
-  createParametre: (type: string, data: any) => api.post(`/parametres-catalogue/${type}`, data),
-  updateParametre: (type: string, id: number, data: any) => api.put(`/parametres-catalogue/${type}/${id}`, data),
+  getDimensions: () => api.get('/v2/produits/attributs/dimensions'),
+  getFinitions: () => api.get('/v2/produits/attributs/finitions'),
+  getTissages: () => api.get('/v2/produits/attributs/tissages'),
+  getTypesProduits: () => api.get('/v2/produits/attributs/types-produits'),
+  getCouleurs: () => api.get('/v2/produits/attributs/couleurs'),
+  getNombreCouleurs: () => api.get('/v2/produits/attributs/nombre-couleurs'),
+  getModeles: () => api.get('/v2/produits/attributs/modeles'),
+  getTypesPersonnalisation: () => api.get('/v2/produits/attributs/types-personnalisation'),
+  createParametre: (type: string, data: any) => api.post(`/v2/produits/attributs/${type}`, data),
+  updateParametre: (type: string, id: number, data: any) => api.put(`/v2/produits/attributs/${type}/${id}`, data),
 };
 
 export const articlesCatalogueService = {
-  getCatalogue: (params?: any) => api.get('/articles-catalogue', { params }),
-  getArticleCatalogue: (id: number) => api.get(`/articles-catalogue/${id}`),
-  createArticleCatalogue: (data: any) => api.post('/articles-catalogue', data),
-  updateArticleCatalogue: (id: number, data: any) => api.put(`/articles-catalogue/${id}`, data),
+  getCatalogue: (params?: any) => api.get('/v2/produits/catalogue', { params }),
+  getArticleCatalogue: (id: number) => api.get(`/v2/produits/catalogue/${id}`),
+  createArticleCatalogue: (data: any) => api.post('/v2/produits/catalogue', data),
+  updateArticleCatalogue: (id: number, data: any) => api.put(`/v2/produits/catalogue/${id}`, data),
 };
 
-// tracabiliteLotsService — repointé Phase E4 sur /api/v2/stock/tracabilite-lots
-// (legacy backend/modules/tracabilite-lots supprimé, handlers portés verbatim).
+// tracabiliteLotsService â€” repointÃ© Phase E4 sur /api/v2/stock/tracabilite-lots
+// (legacy backend/modules/tracabilite-lots supprimÃ©, handlers portÃ©s verbatim).
 export const tracabiliteLotsService = {
   getLots: (params?: any) => api.get('/v2/stock/tracabilite-lots', { params }),
   createLot: (data: any) => api.post('/v2/stock/tracabilite-lots', data),
@@ -493,11 +560,11 @@ export const tracabiliteLotsService = {
 };
 
 export const qualiteAvanceeService = {
-  getControles: (params?: any) => api.get('/qualite-avancee/controles', { params }),
-  enregistrerControlePremierePiece: (data: any) => api.post('/qualite-avancee/controle-premiere-piece', data),
-  getNonConformites: (params?: any) => api.get('/qualite-avancee/non-conformites', { params }),
-  createNonConformite: (data: any) => api.post('/qualite-avancee/non-conformites', data),
-  ajouterActionsCorrectives: (id: number, data: any) => api.post(`/qualite-avancee/non-conformites/${id}/actions-correctives`, data),
+  getControles: (params?: any) => api.get('/v2/qualite/avance/controles', { params }),
+  enregistrerControlePremierePiece: (data: any) => api.post('/v2/qualite/avance/controle-premiere-piece', data),
+  getNonConformites: (params?: any) => api.get('/v2/qualite/avance/non-conformites', { params }),
+  createNonConformite: (data: any) => api.post('/v2/qualite/avance/non-conformites', data),
+  ajouterActionsCorrectives: (id: number, data: any) => api.post(`/v2/qualite/avance/non-conformites/${id}/actions-correctives`, data),
 };
 
 export const documentsService = {
@@ -506,15 +573,15 @@ export const documentsService = {
 };
 
 export const tachesService = {
-  getTaches: (params?: any) => api.get('/taches', { params }),
-  getMesTaches: () => api.get('/taches/mes-taches'),
-  getTachesPoste: (poste: string) => api.get(`/taches/poste/${poste}`),
-  getTache: (id: number) => api.get(`/taches/${id}`),
-  createTache: (data: any) => api.post('/taches', data),
-  assignerTache: (id: number, data: any) => api.post(`/taches/${id}/assigner`, data),
-  demarrerTache: (id: number) => api.post(`/taches/${id}/demarrer`),
-  terminerTache: (id: number, data?: any) => api.post(`/taches/${id}/terminer`, data),
-  pauseTache: (id: number) => api.post(`/taches/${id}/pause`),
+  getTaches: (params?: any) => api.get('/v2/fabrication/taches', { params }),
+  getMesTaches: () => api.get('/v2/fabrication/taches/mes-taches'),
+  getTachesPoste: (poste: string) => api.get(`/v2/fabrication/taches/poste/${poste}`),
+  getTache: (id: number) => api.get(`/v2/fabrication/taches/${id}`),
+  createTache: (data: any) => api.post('/v2/fabrication/taches', data),
+  assignerTache: (id: number, data: any) => api.post(`/v2/fabrication/taches/${id}/assigner`, data),
+  demarrerTache: (id: number) => api.post(`/v2/fabrication/taches/${id}/demarrer`),
+  terminerTache: (id: number, data?: any) => api.post(`/v2/fabrication/taches/${id}/terminer`, data),
+  pauseTache: (id: number) => api.post(`/v2/fabrication/taches/${id}/pause`),
 };
 
 export const notificationsService = {
@@ -532,37 +599,37 @@ export const messagesService = {
 };
 
 export const maintenanceService = {
-  getMaintenances: (params?: any) => api.get('/maintenance', { params }),
-  getMaintenance: (id: number) => api.get(`/maintenance/${id}`),
-  createMaintenance: (data: any) => api.post('/maintenance', data),
-  updateMaintenance: (id: number, data: any) => api.put(`/maintenance/${id}`, data),
-  deleteMaintenance: (id: number) => api.delete(`/maintenance/${id}`),
-  getInterventions: (params?: any) => api.get('/maintenance/interventions', { params }),
-  createIntervention: (data: any) => api.post('/maintenance/interventions', data),
-  getAlertes: (params?: any) => api.get('/maintenance/alertes', { params }),
-  getPlanification: (params?: any) => api.get('/maintenance/planification', { params }),
-  getPieces: (params?: any) => api.get('/maintenance/pieces', { params }),
-  verifierAlertes: () => api.post('/maintenance/verifier-alertes'),
+  getMaintenances: (params?: any) => api.get('/v2/fabrication/maintenance', { params }),
+  getMaintenance: (id: number) => api.get(`/v2/fabrication/maintenance/${id}`),
+  createMaintenance: (data: any) => api.post('/v2/fabrication/maintenance', data),
+  updateMaintenance: (id: number, data: any) => api.put(`/v2/fabrication/maintenance/${id}`, data),
+  deleteMaintenance: (id: number) => api.delete(`/v2/fabrication/maintenance/${id}`),
+  getInterventions: (params?: any) => api.get('/v2/fabrication/maintenance/interventions', { params }),
+  createIntervention: (data: any) => api.post('/v2/fabrication/maintenance/interventions', data),
+  getAlertes: (params?: any) => api.get('/v2/fabrication/maintenance/alertes', { params }),
+  getPlanification: (params?: any) => api.get('/v2/fabrication/maintenance/planification', { params }),
+  getPieces: (params?: any) => api.get('/v2/fabrication/maintenance/pieces', { params }),
+  verifierAlertes: () => api.post('/v2/fabrication/maintenance/verifier-alertes'),
 };
 
 export const planificationGanttService = {
-  getProjets: (params?: any) => api.get('/planification-gantt/projets', { params }),
-  getTaches: (params?: any) => api.get('/planification-gantt/taches', { params }),
-  createTache: (data: any) => api.post('/planification-gantt/taches', data),
-  getRessources: () => api.get('/planification-gantt/ressources'),
-  getGanttData: (params?: any) => api.get('/planification-gantt/gantt-data', { params }),
+  getProjets: (params?: any) => api.get('/v2/fabrication/planning-gantt/projets', { params }),
+  getTaches: (params?: any) => api.get('/v2/fabrication/planning-gantt/taches', { params }),
+  createTache: (data: any) => api.post('/v2/fabrication/planning-gantt/taches', data),
+  getRessources: () => api.get('/v2/fabrication/planning-gantt/ressources'),
+  getGanttData: (params?: any) => api.get('/v2/fabrication/planning-gantt/gantt-data', { params }),
 };
 
 export const qualiteAvanceService = {
-  getControles: (params?: any) => api.get('/qualite-avance/controles', { params }),
-  getControle: (id: number) => api.get(`/qualite-avance/controles/${id}`),
-  createControle: (data: any) => api.post('/qualite-avance/controles', data),
-  updateControle: (id: number, data: any) => api.put(`/qualite-avance/controles/${id}`, data),
-  validerControle: (id: number, data?: any) => api.post(`/qualite-avance/controles/${id}/valider`, data),
-  refuserControle: (id: number, data?: any) => api.post(`/qualite-avance/controles/${id}/refuser`, data),
-  getNonConformites: (params?: any) => api.get('/qualite-avance/non-conformites', { params }),
-  getStatistiques: (params?: any) => api.get('/qualite-avance/statistiques', { params }),
-  getDiagrammes: (params?: any) => api.get('/qualite-avance/diagrammes', { params }),
+  getControles: (params?: any) => api.get('/v2/qualite/avance/controles', { params }),
+  getControle: (id: number) => api.get(`/v2/qualite/avance/controles/${id}`),
+  createControle: (data: any) => api.post('/v2/qualite/avance/controles', data),
+  updateControle: (id: number, data: any) => api.put(`/v2/qualite/avance/controles/${id}`, data),
+  validerControle: (id: number, data?: any) => api.post(`/v2/qualite/avance/controles/${id}/valider`, data),
+  refuserControle: (id: number, data?: any) => api.post(`/v2/qualite/avance/controles/${id}/refuser`, data),
+  getNonConformites: (params?: any) => api.get('/v2/qualite/avance/non-conformites', { params }),
+  getStatistiques: (params?: any) => api.get('/v2/qualite/avance/statistiques', { params }),
+  getDiagrammes: (params?: any) => api.get('/v2/qualite/avance/diagrammes', { params }),
 };
 
 export const coutsService = {
@@ -581,8 +648,8 @@ export const multisocieteService = {
   getConsolidations: (params?: any) => api.get('/multisociete/consolidations', { params }),
 };
 
-// ─── §14quater.1 — Multi-sociétés v2 (modules-v2/multi-societes) ──────
-// Les 5 entités du groupe (LP / CAPSCOR / AT / PMG / HS).
+// â”€â”€â”€ Â§14quater.1 â€” Multi-sociÃ©tÃ©s v2 (modules-v2/multi-societes) â”€â”€â”€â”€â”€â”€
+// Les 5 entitÃ©s du groupe (LP / CAPSCOR / AT / PMG / HS).
 export const societesV2Service = {
   list:          () => api.get('/v2/societes'),
   get:           (id: number) => api.get(`/v2/societes/${id}`),
@@ -643,16 +710,16 @@ export const modelesService = {
 };
 
 export const articlesGeneresService = {
-  getArticles: (params?: any) => api.get('/articles-generes', { params }),
-  getArticle: (id: number) => api.get(`/articles-generes/${id}`),
-  createArticle: (data: FormData) => api.post('/articles-generes', data, {
+  getArticles: (params?: any) => api.get('/v2/produits/articles-generes', { params }),
+  getArticle: (id: number) => api.get(`/v2/produits/articles-generes/${id}`),
+  createArticle: (data: FormData) => api.post('/v2/produits/articles-generes', data, {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
-  updateArticle: (id: number, data: FormData) => api.put(`/articles-generes/${id}`, data, {
+  updateArticle: (id: number, data: FormData) => api.put(`/v2/produits/articles-generes/${id}`, data, {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
-  deleteArticle: (id: number) => api.delete(`/articles-generes/${id}`),
-  uploadPhotoArticle: (id: number, formData: FormData) => api.post(`/articles-generes/${id}/upload-photo`, formData, {
+  deleteArticle: (id: number) => api.delete(`/v2/produits/articles-generes/${id}`),
+  uploadPhotoArticle: (id: number, formData: FormData) => api.post(`/v2/produits/articles-generes/${id}/upload-photo`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
 };
@@ -677,7 +744,7 @@ export const excelImportService = {
   getTemplates: () => api.get('/excel-import/templates'),
 };
 
-// Services de gestion avancée - Intégration native dans votre ERP
+// Services de gestion avancÃ©e - IntÃ©gration native dans votre ERP
 export const articlesService = {
   getArticles: (params?: any) => api.get('/articles', { params }),
   getArticle: (id: number) => api.get(`/articles/${id}`),
@@ -689,8 +756,8 @@ export const articlesService = {
 
 // ===== SERVICES ERP STANDARDS (Odoo-inspired) =====
 // Note: productTemplatesService, productsService, productCategoryService,
-// et pricelistsService supprimés — le module backend /api/product/* et l'arbre
-// frontend pages/erp/ ont été retirés. Utiliser produitsService à la place.
+// et pricelistsService supprimÃ©s â€” le module backend /api/product/* et l'arbre
+// frontend pages/erp/ ont Ã©tÃ© retirÃ©s. Utiliser produitsService Ã  la place.
 
 export const saleOrdersService = {
   getOrders: (params?: any) => api.get('/sale/orders', { params }),
@@ -731,26 +798,26 @@ export const stockPickingsService = {
 };
 
 export const productionsService = {
-  getProductions: (params?: any) => api.get('/mrp/productions', { params }),
+  getProductions: (params?: any) => api.get('/v2/fabrication/mrp/productions', { params }),
   getProduction: (id: number, options?: { loadRelations?: boolean }) => {
-    const url = `/mrp/productions/${id}`;
+    const url = `/v2/fabrication/mrp/productions/${id}`;
     return options?.loadRelations 
       ? api.get(url, { params: { loadRelations: true } })
       : api.get(url);
   },
-  createProduction: (data: any) => api.post('/mrp/productions', data),
-  updateProduction: (id: number, data: any) => api.put(`/mrp/productions/${id}`, data),
-  deleteProduction: (id: number) => api.delete(`/mrp/productions/${id}`),
-  startProduction: (id: number) => api.post(`/mrp/productions/${id}/start`),
-  finishProduction: (id: number) => api.post(`/mrp/productions/${id}/done`),
-  confirmProduction: (id: number) => api.post(`/mrp/productions/${id}/confirm`),
+  createProduction: (data: any) => api.post('/v2/fabrication/mrp/productions', data),
+  updateProduction: (id: number, data: any) => api.put(`/v2/fabrication/mrp/productions/${id}`, data),
+  deleteProduction: (id: number) => api.delete(`/v2/fabrication/mrp/productions/${id}`),
+  startProduction: (id: number) => api.post(`/v2/fabrication/mrp/productions/${id}/start`),
+  finishProduction: (id: number) => api.post(`/v2/fabrication/mrp/productions/${id}/done`),
+  confirmProduction: (id: number) => api.post(`/v2/fabrication/mrp/productions/${id}/confirm`),
   // Relations
-  getProductionMoves: (productionId: number) => api.get(`/mrp/productions/${productionId}/moves`),
+  getProductionMoves: (productionId: number) => api.get(`/v2/fabrication/mrp/productions/${productionId}/moves`),
 };
 
-// Legacy accountMovesService — redirigé vers l'API Comptabilité v2 (§10 domain.md ·
-// SYSCOA simplifié Tunisie). Les signatures publiques restent inchangées pour la
-// compatibilité avec les composants existants ; les endpoints visent désormais
+// Legacy accountMovesService â€” redirigÃ© vers l'API ComptabilitÃ© v2 (Â§10 domain.md Â·
+// SYSCOA simplifiÃ© Tunisie). Les signatures publiques restent inchangÃ©es pour la
+// compatibilitÃ© avec les composants existants ; les endpoints visent dÃ©sormais
 // `/v2/comptabilite/ecritures/*` (module modules-v2/comptabilite/ecritures).
 export const accountMovesService = {
   getMoves: (params?: any) => api.get('/v2/comptabilite/ecritures', { params }),
@@ -763,11 +830,11 @@ export const accountMovesService = {
   createMove: (data: any) => api.post('/v2/comptabilite/ecritures', data),
   updateMove: (id: number, data: any) => api.put(`/v2/comptabilite/ecritures/${id}`, data),
   deleteAccountMove: (id: number) => api.delete(`/v2/comptabilite/ecritures/${id}`),
-  // v1 `post` → v2 `valider` (passe l'écriture de brouillon à validée)
+  // v1 `post` â†’ v2 `valider` (passe l'Ã©criture de brouillon Ã  validÃ©e)
   postMove: (id: number) => api.post(`/v2/comptabilite/ecritures/${id}/valider`),
-  // v2 retourne l'écriture avec ses lignes imbriquées sur GET /:id ; on expose la même
-  // signature que l'ancien `getMoveLines`, mais la réponse contient maintenant l'écriture
-  // complète (consommateur doit lire `.lignes`).
+  // v2 retourne l'Ã©criture avec ses lignes imbriquÃ©es sur GET /:id ; on expose la mÃªme
+  // signature que l'ancien `getMoveLines`, mais la rÃ©ponse contient maintenant l'Ã©criture
+  // complÃ¨te (consommateur doit lire `.lignes`).
   getMoveLines: (moveId: number) => api.get(`/v2/comptabilite/ecritures/${moveId}`),
 };
 
@@ -824,22 +891,22 @@ export const crmActivitiesService = {
   markDone: (id: number) => api.post(`/crm/activities/${id}/done`),
 };
 
-// ═══════════════════════════════════════════════════════════════════
-// Services RH legacy — repointés vers modules-v2/rh/* (consolidation Phase C).
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// Services RH legacy â€” repointÃ©s vers modules-v2/rh/* (consolidation Phase C).
 //
-// Les modules backend `backend/modules/{hr,payroll-tunisia,pointage}` ont été
-// supprimés : toutes les routes sont désormais servies par les sous-modules
+// Les modules backend `backend/modules/{hr,payroll-tunisia,pointage}` ont Ã©tÃ©
+// supprimÃ©s : toutes les routes sont dÃ©sormais servies par les sous-modules
 // `backend/modules-v2/rh/{employes,recrutement,paie,...}`.
 //
-// Les signatures publiques (noms de fonctions, paramètres) sont préservées
-// pour ne pas casser les 5 pages consommatrices listées dans la Phase C.
-// Pour les méthodes dont l'équivalent v2 strict manquait, les endpoints
-// legacy ont été portés dans les sous-modules v2 (voir
+// Les signatures publiques (noms de fonctions, paramÃ¨tres) sont prÃ©servÃ©es
+// pour ne pas casser les 5 pages consommatrices listÃ©es dans la Phase C.
+// Pour les mÃ©thodes dont l'Ã©quivalent v2 strict manquait, les endpoints
+// legacy ont Ã©tÃ© portÃ©s dans les sous-modules v2 (voir
 // `backend/modules-v2/rh/recrutement/legacy-handlers.js` et
 // `backend/modules-v2/rh/pointage/legacy-*-handlers.js`).
-// ═══════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-// Correspondance : `/hr/employees/*` → `/v2/rh/employes/*`.
+// Correspondance : `/hr/employees/*` â†’ `/v2/rh/employes/*`.
 export const hrEmployeesService = {
   getEmployees: (params?: any) => api.get('/v2/rh/employes', { params }),
   getEmployee: (id: number, options?: { loadRelations?: boolean }) => {
@@ -853,14 +920,14 @@ export const hrEmployeesService = {
   deleteEmployee: (id: number) => api.delete(`/v2/rh/employes/${id}`),
 };
 
-// Correspondance : `/hr/recruitments/*` → `/v2/rh/candidatures/*`.
+// Correspondance : `/hr/recruitments/*` â†’ `/v2/rh/candidatures/*`.
 // Les endpoints enrichis (`/stages`, `/stats/global`, `/funnel`, `/postes`,
 // `/analytics/mensuel`, `/:id/timeline`, `/:id/notes`, `/:id/interview`,
-// `/:id/hire`, `/:id/reject`, `/:id/refuse`) ont été portés depuis
+// `/:id/hire`, `/:id/reject`, `/:id/refuse`) ont Ã©tÃ© portÃ©s depuis
 // `backend/modules/hr/controllers/hr_recruitment.controller.js` vers
 // `backend/modules-v2/rh/recrutement/legacy-handlers.js`.
-// En plus, server.js monte un alias `/api/hr/recruitments` → même routeur v2
-// pour que l'ancienne base URL continue de fonctionner côté runtime.
+// En plus, server.js monte un alias `/api/hr/recruitments` â†’ mÃªme routeur v2
+// pour que l'ancienne base URL continue de fonctionner cÃ´tÃ© runtime.
 export const hrRecruitmentService = {
   getApplicants: (params?: any) => api.get('/v2/rh/candidatures', { params }),
   getApplicant: (id: number) => api.get(`/v2/rh/candidatures/${id}`),
@@ -880,21 +947,21 @@ export const hrRecruitmentService = {
   getAnalytics: () => api.get('/v2/rh/candidatures/analytics/mensuel'),
 };
 
-// Correspondance : `/hr/payslips/*` → `/v2/rh/paies/*` (slug v2 pour `paie`).
-// NB : les méthodes `computePayslip` et `validatePayslip` étaient portées par
-// `hr_payslip.controller.js` legacy mais n'ont pas d'équivalent dédié dans le
+// Correspondance : `/hr/payslips/*` â†’ `/v2/rh/paies/*` (slug v2 pour `paie`).
+// NB : les mÃ©thodes `computePayslip` et `validatePayslip` Ã©taient portÃ©es par
+// `hr_payslip.controller.js` legacy mais n'ont pas d'Ã©quivalent dÃ©diÃ© dans le
 // sous-module v2 `paie` (CRUD seulement). Les workflows riches de bulletins
-// (générer, valider, marquer payé) utilisent plutôt `bulletinsService` dans
-// `services/rhApi.ts` (`/v2/rh/bulletins/*`). Ces deux méthodes restent
-// mappées sur `/v2/rh/paies/:id/{compute,validate}` ; backend à compléter si
-// elles redeviennent nécessaires.
+// (gÃ©nÃ©rer, valider, marquer payÃ©) utilisent plutÃ´t `bulletinsService` dans
+// `services/rhApi.ts` (`/v2/rh/bulletins/*`). Ces deux mÃ©thodes restent
+// mappÃ©es sur `/v2/rh/paies/:id/{compute,validate}` ; backend Ã  complÃ©ter si
+// elles redeviennent nÃ©cessaires.
 export const hrPayslipsService = {
   getPayslips: (params?: any) => api.get('/v2/rh/paies', { params }),
   getPayslip: (id: number) => api.get(`/v2/rh/paies/${id}`),
   createPayslip: (data: any) => api.post('/v2/rh/paies', data),
   updatePayslip: (id: number, data: any) => api.put(`/v2/rh/paies/${id}`, data),
   deletePayslip: (id: number) => api.delete(`/v2/rh/paies/${id}`),
-  // TODO backend : implémenter si workflow réactivé (voir bulletinsService v2).
+  // TODO backend : implÃ©menter si workflow rÃ©activÃ© (voir bulletinsService v2).
   computePayslip: (id: number) => api.post(`/v2/rh/paies/${id}/compute`),
   validatePayslip: (id: number) => api.post(`/v2/rh/paies/${id}/validate`),
 };
@@ -921,27 +988,27 @@ export const inventoryService = {
 };
 
 export const qualityChecksService = {
-  getChecks: (params?: any) => api.get('/quality/checks', { params }),
-  getCheck: (id: number) => api.get(`/quality/checks/${id}`),
-  createCheck: (data: any) => api.post('/quality/checks', data),
-  updateCheck: (id: number, data: any) => api.put(`/quality/checks/${id}`, data),
-  deleteCheck: (id: number) => api.delete(`/quality/checks/${id}`),
+  getChecks: (params?: any) => api.get('/v2/qualite/avance/checks', { params }),
+  getCheck: (id: number) => api.get(`/v2/qualite/avance/checks/${id}`),
+  createCheck: (data: any) => api.post('/v2/qualite/avance/checks', data),
+  updateCheck: (id: number, data: any) => api.put(`/v2/qualite/avance/checks/${id}`, data),
+  deleteCheck: (id: number) => api.delete(`/v2/qualite/avance/checks/${id}`),
 };
 
 export const qualityPointsService = {
-  getPoints: (params?: any) => api.get('/quality/points', { params }),
-  getPoint: (id: number) => api.get(`/quality/points/${id}`),
-  createPoint: (data: any) => api.post('/quality/points', data),
-  updatePoint: (id: number, data: any) => api.put(`/quality/points/${id}`, data),
-  deletePoint: (id: number) => api.delete(`/quality/points/${id}`),
+  getPoints: (params?: any) => api.get('/v2/qualite/avance/points', { params }),
+  getPoint: (id: number) => api.get(`/v2/qualite/avance/points/${id}`),
+  createPoint: (data: any) => api.post('/v2/qualite/avance/points', data),
+  updatePoint: (id: number, data: any) => api.put(`/v2/qualite/avance/points/${id}`, data),
+  deletePoint: (id: number) => api.delete(`/v2/qualite/avance/points/${id}`),
 };
 
 export const qualityAlertsService = {
-  getAlerts: (params?: any) => api.get('/quality/alerts', { params }),
-  getAlert: (id: number) => api.get(`/quality/alerts/${id}`),
-  createAlert: (data: any) => api.post('/quality/alerts', data),
-  updateAlert: (id: number, data: any) => api.put(`/quality/alerts/${id}`, data),
-  deleteAlert: (id: number) => api.delete(`/quality/alerts/${id}`),
+  getAlerts: (params?: any) => api.get('/v2/qualite/avance/alerts', { params }),
+  getAlert: (id: number) => api.get(`/v2/qualite/avance/alerts/${id}`),
+  createAlert: (data: any) => api.post('/v2/qualite/avance/alerts', data),
+  updateAlert: (id: number, data: any) => api.put(`/v2/qualite/avance/alerts/${id}`, data),
+  deleteAlert: (id: number) => api.delete(`/v2/qualite/avance/alerts/${id}`),
 };
 
 export const emailService = {
@@ -977,20 +1044,20 @@ export const settingsService = {
   updateSettings: (module: string, data: any) => api.put(`/settings/${module}`, data),
 };
 
-// Correspondance : `/payroll-tunisia/*` → `/v2/rh/paie-tunisie/*`.
-// Le module legacy `backend/modules/payroll-tunisia` a été supprimé. Les
-// workflows paie Tunisie sont dorénavant servis par les endpoints
-// `paieTunisieService` (dashboard, bordereau CNSS, déclaration IRPP, grille
-// de salaires, tranches IRPP, clôture) exposés par `services/rhApi.ts` sous
+// Correspondance : `/payroll-tunisia/*` â†’ `/v2/rh/paie-tunisie/*`.
+// Le module legacy `backend/modules/payroll-tunisia` a Ã©tÃ© supprimÃ©. Les
+// workflows paie Tunisie sont dorÃ©navant servis par les endpoints
+// `paieTunisieService` (dashboard, bordereau CNSS, dÃ©claration IRPP, grille
+// de salaires, tranches IRPP, clÃ´ture) exposÃ©s par `services/rhApi.ts` sous
 // `/v2/rh/paie-tunisie/*`.
 //
-// Les méthodes ci-dessous (`computePayslip`, `getSalaryRules`, structures,
-// `getCNSSRates`, `getIRPPBracket`) n'ont pas d'équivalent strict dans le
-// backend v2 à ce jour — aucune page consommatrice ne les appelle (grep
-// confirme : seule la définition subsiste). On préserve la signature publique
-// pour éviter de casser un éventuel import externe ; les routes v2
-// correspondantes restent à implémenter si/quand ces méthodes redeviennent
-// nécessaires (voir `backend/modules-v2/rh/paie/`, `.../cnss/`, `.../irpp/`).
+// Les mÃ©thodes ci-dessous (`computePayslip`, `getSalaryRules`, structures,
+// `getCNSSRates`, `getIRPPBracket`) n'ont pas d'Ã©quivalent strict dans le
+// backend v2 Ã  ce jour â€” aucune page consommatrice ne les appelle (grep
+// confirme : seule la dÃ©finition subsiste). On prÃ©serve la signature publique
+// pour Ã©viter de casser un Ã©ventuel import externe ; les routes v2
+// correspondantes restent Ã  implÃ©menter si/quand ces mÃ©thodes redeviennent
+// nÃ©cessaires (voir `backend/modules-v2/rh/paie/`, `.../cnss/`, `.../irpp/`).
 export const payrollTunisiaService = {
   // TODO backend : POST /v2/rh/paie-tunisie/compute (calcul live d'un bulletin).
   computePayslip: (data: any) => api.post('/v2/rh/paie-tunisie/compute', data),
@@ -999,16 +1066,16 @@ export const payrollTunisiaService = {
   // TODO backend : GET/POST /v2/rh/paie-tunisie/structures.
   getSalaryStructures: (params?: any) => api.get('/v2/rh/paie-tunisie/structures', { params }),
   createSalaryStructure: (data: any) => api.post('/v2/rh/paie-tunisie/structures', data),
-  // Équivalent couvert par `paieTunisieService.tranchesIRPP` (rhApi.ts).
+  // Ã‰quivalent couvert par `paieTunisieService.tranchesIRPP` (rhApi.ts).
   getCNSSRates: () => api.get('/v2/rh/paie-tunisie/cnss-rates'),
   getIRPPBracket: () => api.get('/v2/rh/paie-tunisie/irpp-bracket'),
 };
 
-// Legacy accountingTunisiaService — redirigé vers l'API Comptabilité v2.
-// • Taxes / fiscal positions / tax reports → `/v2/comptabilite/tva/*`
-// • Chart of accounts → `/v2/comptabilite/plan-comptes`
-// Les signatures publiques sont conservées ; les endpoints exacts suivent la
-// convention v2 (§14quater Phase A).
+// Legacy accountingTunisiaService â€” redirigÃ© vers l'API ComptabilitÃ© v2.
+// â€¢ Taxes / fiscal positions / tax reports â†’ `/v2/comptabilite/tva/*`
+// â€¢ Chart of accounts â†’ `/v2/comptabilite/plan-comptes`
+// Les signatures publiques sont conservÃ©es ; les endpoints exacts suivent la
+// convention v2 (Â§14quater Phase A).
 export const accountingTunisiaService = {
   getTaxes: (params?: any) => api.get('/v2/comptabilite/tva', { params }),
   getTaxById: (id: number) => api.get(`/v2/comptabilite/tva/${id}`),
@@ -1035,13 +1102,13 @@ export const warehouseService = {
 };
 
 export const bomService = {
-  getBOMs: (params?: any) => api.get('/mrp/boms', { params }),
-  getBOM: (id: number) => api.get(`/mrp/boms/${id}`),
-  createBOM: (data: any) => api.post('/mrp/boms', data),
-  updateBOM: (id: number, data: any) => api.put(`/mrp/boms/${id}`, data),
-  deleteBOM: (id: number) => api.delete(`/mrp/boms/${id}`),
-  getBOMHierarchy: (id: number) => api.get(`/mrp/boms/${id}/hierarchy`),
-  calculateBOMCost: (id: number) => api.get(`/mrp/boms/${id}/cost`),
+  getBOMs: (params?: any) => api.get('/v2/fabrication/mrp/boms', { params }),
+  getBOM: (id: number) => api.get(`/v2/fabrication/mrp/boms/${id}`),
+  createBOM: (data: any) => api.post('/v2/fabrication/mrp/boms', data),
+  updateBOM: (id: number, data: any) => api.put(`/v2/fabrication/mrp/boms/${id}`, data),
+  deleteBOM: (id: number) => api.delete(`/v2/fabrication/mrp/boms/${id}`),
+  getBOMHierarchy: (id: number) => api.get(`/v2/fabrication/mrp/boms/${id}/hierarchy`),
+  calculateBOMCost: (id: number) => api.get(`/v2/fabrication/mrp/boms/${id}/cost`),
 };
 
 export const companiesService = {
@@ -1119,11 +1186,11 @@ export const purchaseReceptionsService = {
   validateReception: (id: number) => api.post(`/purchase/receptions/${id}/validate`),
 };
 
-// Legacy bankReconciliationService — redirigé vers l'API Rapprochement v2
+// Legacy bankReconciliationService â€” redirigÃ© vers l'API Rapprochement v2
 // (`/v2/comptabilite/rapprochement/*`, module modules-v2/comptabilite/rapprochement).
-// Les signatures publiques sont conservées ; le modèle de données passe du
-// couple `account.reconciliation` (Odoo-like) aux « imports bancaires »
-// (RapprochementImport) + « lignes » (RapprochementLigne) avec statut de matching.
+// Les signatures publiques sont conservÃ©es ; le modÃ¨le de donnÃ©es passe du
+// couple `account.reconciliation` (Odoo-like) aux Â« imports bancaires Â»
+// (RapprochementImport) + Â« lignes Â» (RapprochementLigne) avec statut de matching.
 export const bankReconciliationService = {
   getReconciliations: (params?: any) => api.get('/v2/comptabilite/rapprochement/imports', { params }),
   getReconciliation: (id: number, _options?: { loadRelations?: boolean }) =>
@@ -1204,11 +1271,11 @@ export const multisocieteCompaniesService = {
   deleteCompany: (id: number) => api.delete(`/multisociete/companies/${id}`),
 };
 
-// Legacy relancesService — l'implémentation v2 vit dans
+// Legacy relancesService â€” l'implÃ©mentation v2 vit dans
 // `services/ventesComplementsApi.ts` (`relancesFacturesService`) et expose un
 // contrat plus riche. Ce wrapper redirige les signatures legacy sur
-// `/v2/ventes/relances-factures/*` pour préserver la compatibilité des
-// composants historiques ; la page racine `RelancesFactures.tsx` est retirée au
+// `/v2/ventes/relances-factures/*` pour prÃ©server la compatibilitÃ© des
+// composants historiques ; la page racine `RelancesFactures.tsx` est retirÃ©e au
 // profit de `pages/ventes/RelancesFactures.tsx`.
 export const relancesService = {
   getRelances: (params?: any) => api.get('/v2/ventes/relances-factures', { params }),

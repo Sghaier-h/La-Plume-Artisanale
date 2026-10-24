@@ -21,7 +21,7 @@ import {
   lancerProduction,
   terminerProduction,
   updateProduction,
-} from '../../../modules/production/controllers/production.controller.js';
+} from './legacy-production-controller.js';
 import { pool } from '../../../src/utils/db.js';
 import { sendSuccess, handleError } from '../../../src/utils/error.helper.js';
 

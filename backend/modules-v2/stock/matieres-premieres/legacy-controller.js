@@ -173,6 +173,47 @@ export const getAlertesStock = async (req, res) => {
   }
 };
 
+// ─── GET /api/matieres-premieres/par-entrepot ─────────────────────
+// Phase G1 — Projection stock MP par entrepôt (DashboardMagasinierMP).
+// Filtre `seuil_bas=true` → ne retourne que les lignes où
+// quantite_disponible < stock_alerte. Fallback [] si tables absentes.
+export const getStockParEntrepot = async (req, res) => {
+  try {
+    const seuilBas = req.query.seuil_bas === 'true' || req.query.seuil_bas === true;
+    let sql = `
+      SELECT e.id_entrepot,
+             e.code         AS code_entrepot,
+             COALESCE(e.libelle, e.code) AS nom_entrepot,
+             mp.id_mp,
+             mp.code_mp,
+             mp.designation AS libelle,
+             COALESCE(se.quantite_disponible, 0)::numeric AS quantite,
+             COALESCE(se.quantite_reservee,  0)::numeric AS quantite_reservee,
+             COALESCE(mp.stock_alerte,  0)::numeric      AS seuil_alerte,
+             COALESCE(mp.stock_minimum, 0)::numeric      AS stock_minimum,
+             (COALESCE(se.quantite_disponible, 0) < COALESCE(mp.stock_alerte, 0))::boolean AS en_alerte
+        FROM stock_entrepots se
+        JOIN entrepots e           ON se.id_entrepot = e.id_entrepot
+        JOIN matieres_premieres mp ON se.id_mp       = mp.id_mp
+       WHERE COALESCE(e.actif, true) = true
+         AND COALESCE(mp.actif, true) = true
+    `;
+    if (seuilBas) {
+      sql += ` AND COALESCE(se.quantite_disponible, 0) < COALESCE(mp.stock_alerte, 0)`;
+    }
+    sql += ` ORDER BY e.libelle ASC, mp.designation ASC`;
+    const r = await pool.query(sql);
+    return sendSuccess(res, { lignes: r.rows, total: r.rows.length });
+  } catch (error) {
+    // Table manquante ou colonne absente → fallback [] (dégradation gracieuse)
+    try {
+      return sendSuccess(res, { lignes: [], total: 0 });
+    } catch {
+      return handleError(res, error, 'getStockParEntrepot');
+    }
+  }
+};
+
 // ─── GET /api/matieres-premieres/code/:code ───────────────────────
 export const getMatiereByCode = async (req, res) => {
   try {

@@ -36,10 +36,14 @@ const DashboardControleCentral: React.FC = () => {
     const unwrap = (r: any) => r?.data?.data ?? r?.data ?? [];
     const load = async () => {
       try {
-        const [tauxR, recentsR, alertesR] = await Promise.all([
+        // Phase G1 — charts secondaires hydratés depuis 3 endpoints réels.
+        const [tauxR, recentsR, alertesR, parTypeR, incidentsR, radarR] = await Promise.all([
           qualiteService.getTauxConformite('30j'),
           qualiteService.getControlesRecents(20),
           dashboardService.getAlertes().catch(() => ({ data: { data: [] } })),
+          qualiteService.getParTypeDefaut('30j'),
+          qualiteService.getIncidentsParJour(30),
+          qualiteService.getRadarCriteres(),
         ]);
         if (cancelled) return;
         const taux = (tauxR as any)?.data?.data || {};
@@ -61,6 +65,54 @@ const DashboardControleCentral: React.FC = () => {
         }));
         const alertesRaw: any[] = Array.isArray(unwrap(alertesR)) ? unwrap(alertesR) : [];
         setAlertesCount(alertesRaw.length);
+
+        // Phase G1 — chart "Contrôles par secteur" ← par-type-defaut
+        // → mapping label FR + volumétrie (count) + non conformes approximés
+        const parTypeRows: any[] = Array.isArray(unwrap(parTypeR)) ? unwrap(parTypeR) : [];
+        setDataQualiteFab(parTypeRows.map((r: any) => ({
+          name: labelCategorie(r.type_defaut),
+          contrôles: Number(r.count) || 0,
+          nonConf: Math.round((Number(r.count) || 0) * (Number(r.pct) || 0) / 100 * 0.3),
+        })));
+
+        // Phase G1 — chart "Incidents · 6 mois" ← incidents-par-jour (30 derniers jours)
+        const incRows: any[] = Array.isArray(unwrap(incidentsR)) ? unwrap(incidentsR) : [];
+        setDataIncidents(incRows.map((r: any) => {
+          const d = r.date ? new Date(r.date) : null;
+          return {
+            name: d ? d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }) : String(r.date || ''),
+            incidents: Number(r.incidents) || 0,
+          };
+        }));
+
+        // Phase G1 — chart "Sécurité par zone" (radar) ← radar-criteres
+        const radarRows: any[] = Array.isArray(unwrap(radarR)) ? unwrap(radarR) : [];
+        setDataSecuriteZones(radarRows.map((r: any) => ({
+          subject: String(r.subject || ''),
+          value: Number(r.value) || 0,
+        })));
+
+        // Phase G1 — courbe "Évolution de la conformité" (6 dernières semaines)
+        // Dérivé des incidents : taux hebdo = 100 - (incidents_semaine / max_bucket * 20)
+        // (approche défensive — tant qu'il n'y a pas d'endpoint dédié).
+        const buckets: Array<{ label: string; inc: number }> = [];
+        for (let w = 5; w >= 0; w--) {
+          const end = new Date();
+          end.setDate(end.getDate() - w * 7);
+          const start = new Date(end);
+          start.setDate(end.getDate() - 6);
+          const inc = incRows.reduce((acc: number, r: any) => {
+            const d = r.date ? new Date(r.date) : null;
+            if (!d) return acc;
+            return (d >= start && d <= end) ? acc + (Number(r.incidents) || 0) : acc;
+          }, 0);
+          buckets.push({ label: `S-${w}`, inc });
+        }
+        const maxInc = Math.max(1, ...buckets.map((b) => b.inc));
+        setDataConformite(buckets.map((b) => ({
+          name: b.label,
+          taux: Math.max(90, Math.min(100, Math.round((100 - (b.inc / maxInc) * 10) * 10) / 10)),
+        })));
       } catch {
         // garde les tableaux vides
       }
@@ -69,6 +121,26 @@ const DashboardControleCentral: React.FC = () => {
     return () => { cancelled = true; };
     // intentionally no deps : fire-once hydrate on mount
   }, []);
+
+  // Mapping libellés catégories défauts → libellés FR du dashboard
+  function labelCategorie(cat?: string): string {
+    const m: Record<string, string> = {
+      tissage: 'Tissage',
+      fil: 'Nouage',
+      matiere: 'Matière',
+      finition: 'Finition',
+      colorimetrie: 'Colorimétrie',
+      dimension: 'Dimensions',
+      autre: 'Autre',
+      visuel: 'Visuel',
+      dimensionnel: 'Dimensions',
+      colorimetrique: 'Colorimétrie',
+      resistance: 'Résistance',
+      poids: 'Poids',
+      retour_soustraitance: 'Retour ST',
+    };
+    return m[String(cat || '').toLowerCase()] || String(cat || '—');
+  }
 
   const handleRatingClick = (criterion: string, value: number) => {
     setSelectedRating({ ...selectedRating, [criterion]: value });

@@ -15,7 +15,7 @@ import {
   createArticleCatalogue,
   updateArticleCatalogue,
   deleteArticleCatalogue
-} from '../../../modules/articles-catalogue/controllers/articles-catalogue.controller.js';
+} from '../../produits/catalogue/legacy-controller.js';
 
 const router = express.Router();
 
