@@ -89,7 +89,7 @@ const TabletteRecrutementCandidat: React.FC = () => {
   );
 
   const recommencer = () => {
-    if (!confirm('Recommencer la candidature ? Toutes les saisies seront effacées.')) return;
+    if (!window.confirm('Recommencer la candidature ? Toutes les saisies seront effacées.')) return;
     try { localStorage.removeItem(LS_KEY); } catch { /* ignore */ }
     setPoste(posteInit); setIdentite({}); setParcours({});
     setQuestions([]); setQIndex(0); setReponses({}); setTestLogique({});

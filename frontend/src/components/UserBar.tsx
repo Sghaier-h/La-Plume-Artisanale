@@ -149,10 +149,74 @@ const DASHBOARDS: DashboardEntry[] = [
   { path: '/planning', label: 'Planification & Suivis', icon: Calendar, perm: 'mrp.production.read' },
 ];
 
+// Mapping rôle → paths de dashboards visibles dans le menu "Dashboards" de la UserBar.
+// ADMIN et SUPER_ADMIN voient tout. Les autres rôles ne voient que leur propre dashboard
+// + éventuellement ceux de leur périmètre de supervision.
+const ROLE_TO_VISIBLE_DASHBOARDS: Record<string, string[]> = {
+  ADMIN: ['*'],
+  SUPER_ADMIN: ['*'],
+  COMMERCIAL: ['/dashboard-commercial'],
+  CHEF_PRODUCTION: [
+    '/dashboard-chef-production',
+    '/dashboard-tisseur',
+    '/dashboard-post-coupe',
+    '/dashboard-controle-central',
+    '/chef-atelier-dashboard',
+    '/planning',
+  ],
+  CHEF_ATELIER: [
+    '/chef-atelier-dashboard',
+    '/dashboard-tisseur',
+    '/dashboard-post-coupe',
+    '/dashboard-controle-central',
+  ],
+  TISSEUR: ['/dashboard-tisseur'],
+  COUPEUR: ['/dashboard-post-coupe'],
+  OURDISSEUR: ['/dashboard-tisseur'],
+  CONTROLEUR_QUALITE: ['/dashboard-controle-central'],
+  MAGASINIER: ['/tablette/magasinier'],
+  MAGASINIER_PREPARATION: ['/tablette/magasinier', '/dashboard-magasinier-mp'],
+  MAGASINIER_STOCK: ['/magasin-pf'],
+  MAGASINIER_SOUSTRAITANTS: ['/dashboard-magasinier-soustraitants'],
+  MECANICIEN: ['/mecanicien'],
+  COMPTABLE: ['/dashboard-comptable'],
+  RH_MANAGER: ['/dashboard-rh-manager'],
+  RH_ASSISTANT: ['/dashboard-rh-manager'],
+  MARKETING: ['/dashboard-commercial'],
+  CAISSIER: ['/tablette/caissier'],
+};
+
+const getVisibleDashboards = (role: string | undefined, dashboardsAttribues?: string[]): DashboardEntry[] => {
+  const roleUp = String(role || '').toUpperCase();
+  const allowed = ROLE_TO_VISIBLE_DASHBOARDS[roleUp];
+  // ADMIN / SUPER_ADMIN → tous
+  if (allowed?.includes('*')) return DASHBOARDS;
+  // Combine config rôle + dashboardsAttribues du JWT
+  const paths = new Set<string>([
+    ...(allowed || []),
+    ...((dashboardsAttribues || []).map((k) => {
+      // Mapping tolérant: "tisseur" → "/dashboard-tisseur", "admin" → "/dashboard-admin"
+      const kLow = k.toLowerCase();
+      const match = DASHBOARDS.find(
+        (d) =>
+          d.path === k ||
+          d.path.endsWith(`-${kLow}`) ||
+          d.path.endsWith(`/${kLow}`),
+      );
+      return match?.path || '';
+    }).filter(Boolean)),
+  ]);
+  return DASHBOARDS.filter((d) => paths.has(d.path));
+};
+
 const UserBar: React.FC<UserBarProps> = ({ topOffset = 0, leftOffset = 0 }) => {
   const { user, logout } = useAuth();
   const { theme, setMode, isDark } = useTheme();
   const navigate = useNavigate();
+  const visibleDashboards = React.useMemo(
+    () => getVisibleDashboards((user as any)?.role, (user as any)?.dashboardsAttribues),
+    [user]
+  );
   const [societeIdx, setSocieteIdx] = React.useState(0);
   const [societeOpen, setSocieteOpen] = React.useState(false);
   const [themeOpen, setThemeOpen] = React.useState(false);
@@ -718,11 +782,16 @@ const UserBar: React.FC<UserBarProps> = ({ topOffset = 0, leftOffset = 0 }) => {
                 Dashboards §14
               </div>
               <div style={{ fontFamily: 'var(--font-mono, monospace)', fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase' }}>
-                {DASHBOARDS.length} vues
+                {visibleDashboards.length} vue{visibleDashboards.length > 1 ? 's' : ''}
               </div>
             </div>
             <div style={{ flex: 1, overflowY: 'auto', padding: 4 }}>
-              {DASHBOARDS.map((d) => {
+              {visibleDashboards.length === 0 && (
+                <div style={{ padding: '12px 14px', color: 'var(--fg-muted, #8B7F6D)', fontSize: 12, fontStyle: 'italic' }}>
+                  Aucun dashboard accessible pour votre rôle.
+                </div>
+              )}
+              {visibleDashboards.map((d) => {
                 const Icon = d.icon;
                 return (
                   <button
