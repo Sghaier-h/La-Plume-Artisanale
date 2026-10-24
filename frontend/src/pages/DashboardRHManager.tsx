@@ -1,0 +1,680 @@
+/**
+ * Dashboard RH Manager (§14.14)
+ * — Vue synthétique pour le/la responsable des Ressources Humaines
+ *   La Plume Artisanale. Reprend l'index §14 du contrat métier :
+ *     • effectifs actifs / arrivées / départs
+ *     • absentéisme + soldes congés
+ *     • coût masse salariale mensuel (bulletins §11bis + primes §11bis.7bis)
+ *     • funnel recrutement §11bis.9
+ *     • formations & entretiens à venir
+ *
+ * Le design suit strictement le design system La Plume :
+ * palette terracotta / sage / indigo / gold / cream, typographie
+ * Fraunces italic titres + Inter texte + JetBrains Mono chiffres,
+ * via les composants <DashboardShell> / <KpiCard> / <SectionCard>.
+ */
+
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Users,
+  CalendarClock,
+  CircleDollarSign,
+  Briefcase,
+  Award,
+  TrendingUp,
+  TrendingDown,
+  Clock,
+  ArrowRight,
+  GraduationCap,
+  FileCheck2,
+} from 'lucide-react';
+import {
+  DashboardShell,
+  KpiCard,
+  SectionCard,
+} from '../components/dashboard';
+import {
+  rhDashboardService,
+  rhFormationsService,
+  rhEntretiensService,
+} from '../services/api';
+
+// ─── types ──────────────────────────────────────────────────────
+type FunnelStage = { code: string; label: string; count: number; tone: 'terracotta' | 'sage' | 'indigo' | 'gold' };
+type Formation = { id: string; titre: string; date: string; nb: number; formateur: string };
+type Entretien = { id: string; collab: string; poste: string; date: string; type: string };
+type Prime = { id: string; collab: string; motif: string; montant: number; statut: 'a_payer' | 'validee' };
+
+// Mock initial — écrasé si l'API renvoie des données
+const INITIAL_FUNNEL: FunnelStage[] = [
+  { code: 'CV_RECUS', label: 'CV reçus', count: 42, tone: 'terracotta' },
+  { code: 'PRESELECT', label: 'Présélectionnés', count: 18, tone: 'sage' },
+  { code: 'ENTRETIEN', label: 'Entretiens planifiés', count: 9, tone: 'indigo' },
+  { code: 'OFFRE', label: 'Offres émises', count: 3, tone: 'gold' },
+];
+
+const INITIAL_FORMATIONS: Formation[] = [
+  { id: 'F1', titre: 'Sécurité machines tissage', date: '02/10/2026', nb: 12, formateur: 'ISST Tunis' },
+  { id: 'F2', titre: 'Contrôle qualité §7 – niveau 2', date: '09/10/2026', nb: 6, formateur: 'Interne' },
+  { id: 'F3', titre: 'Excel avancé RH', date: '17/10/2026', nb: 4, formateur: 'Cegos' },
+];
+
+const INITIAL_ENTRETIENS: Entretien[] = [
+  { id: 'E1', collab: 'Amira B.', poste: 'Chef atelier', date: '28/09/2026', type: 'Annuel' },
+  { id: 'E2', collab: 'Karim S.', poste: 'Tisseur senior', date: '30/09/2026', type: 'Fin de période essai' },
+  { id: 'E3', collab: 'Sonia H.', poste: 'Contrôleuse qualité', date: '02/10/2026', type: 'Annuel' },
+];
+
+const INITIAL_PRIMES: Prime[] = [
+  { id: 'P1', collab: 'Ines T.', motif: 'Rendement +20%', montant: 180, statut: 'a_payer' },
+  { id: 'P2', collab: 'Ahmed K.', motif: 'Taux 1er choix > 95%', montant: 220, statut: 'validee' },
+  { id: 'P3', collab: 'Fatma L.', motif: 'Zéro absence', montant: 90, statut: 'a_payer' },
+];
+
+const fmtInt = (n: number) => n.toLocaleString('fr-FR');
+const fmtMoney = (n: number) => n.toLocaleString('fr-FR', { style: 'currency', currency: 'TND', maximumFractionDigits: 0 });
+
+const DashboardRHManager: React.FC = () => {
+  const navigate = useNavigate();
+
+  // Phase F2 — KPIs & listes hydratés depuis les APIs v2
+  // Phase G2 — formations + entretiens live
+  const [FUNNEL, setFunnel] = React.useState<FunnelStage[]>(INITIAL_FUNNEL);
+  const [FORMATIONS, setFormations] = React.useState<Formation[]>(INITIAL_FORMATIONS);
+  const [ENTRETIENS, setEntretiens] = React.useState<Entretien[]>(INITIAL_ENTRETIENS);
+  const [PRIMES, setPrimes] = React.useState<Prime[]>(INITIAL_PRIMES);
+  const [effectif, setEffectif] = React.useState<number>(87);
+  const [recrutementsOuverts, setRecrutementsOuverts] = React.useState<number>(6);
+  const [masseSalariale, setMasseSalariale] = React.useState<number>(146200);
+  const [heuresFormation, setHeuresFormation] = React.useState<number>(42);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    const unwrap = (r: any) => r?.data?.data ?? r?.data ?? {};
+    const fmtDateFR = (iso: string) => {
+      try {
+        return new Date(iso).toLocaleDateString('fr-FR');
+      } catch { return iso; }
+    };
+    (async () => {
+      try {
+        const [
+          kpiR, emplR, candR, primesR,
+          formListR, formKpiR, entListR,
+        ] = await Promise.all([
+          rhDashboardService.getComptesKpi(),
+          rhDashboardService.getEmployes({ limit: 1 }),
+          rhDashboardService.getCandidatures({ limit: 100 }),
+          rhDashboardService.getPrimesBordereaux({ limit: 10 }),
+          rhFormationsService.getUpcoming(5),
+          rhFormationsService.getKpi(),
+          rhEntretiensService.getUpcoming(5),
+        ]);
+        if (cancelled) return;
+        const kpi: any = unwrap(kpiR);
+        if (kpi && typeof kpi === 'object') {
+          if (typeof kpi.total_employes === 'number') setEffectif(kpi.total_employes);
+          if (kpi.montant_du_total != null) setMasseSalariale(Number(kpi.montant_du_total));
+        }
+        // Candidatures → funnel
+        const cands: any[] = Array.isArray(unwrap(candR)) ? unwrap(candR) as any[] : [];
+        if (cands.length > 0) {
+          const buckets: Record<string, number> = { CV_RECUS: 0, PRESELECT: 0, ENTRETIEN: 0, OFFRE: 0 };
+          cands.forEach((c: any) => {
+            const s = String(c.statut || '').toLowerCase();
+            if (s.includes('offre')) buckets.OFFRE += 1;
+            else if (s.includes('entretien')) { buckets.ENTRETIEN += 1; buckets.PRESELECT += 1; }
+            else if (s.includes('present') || s.includes('preselect')) buckets.PRESELECT += 1;
+            buckets.CV_RECUS += 1;
+          });
+          setFunnel([
+            { code: 'CV_RECUS',  label: 'CV reçus',             count: buckets.CV_RECUS,  tone: 'terracotta' },
+            { code: 'PRESELECT', label: 'Présélectionnés',      count: buckets.PRESELECT, tone: 'sage' },
+            { code: 'ENTRETIEN', label: 'Entretiens planifiés', count: buckets.ENTRETIEN, tone: 'indigo' },
+            { code: 'OFFRE',     label: 'Offres émises',        count: buckets.OFFRE,     tone: 'gold' },
+          ]);
+          setRecrutementsOuverts(buckets.OFFRE + buckets.ENTRETIEN);
+        }
+        // Primes
+        const primes: any[] = Array.isArray(unwrap(primesR)) ? unwrap(primesR) as any[] : [];
+        if (primes.length > 0) {
+          setPrimes(primes.slice(0, 6).map((p: any): Prime => ({
+            id: String(p.id_bordereau ?? p.id ?? Math.random()),
+            collab: p.employe_nom || p.nom_complet || `#${p.id_employe ?? '-'}`,
+            motif: p.motif || p.libelle || '—',
+            montant: Number(p.montant) || 0,
+            statut: p.statut === 'verse' ? 'validee' : 'a_payer',
+          })));
+        }
+        // Phase G2 — Formations à venir
+        const formList: any[] = Array.isArray(unwrap(formListR)) ? unwrap(formListR) as any[] : [];
+        if (formList.length > 0) {
+          setFormations(formList.slice(0, 5).map((f: any): Formation => ({
+            id: String(f.id_formation ?? f.id ?? Math.random()),
+            titre: f.titre || f.intitule || 'Formation',
+            date: f.date_debut ? fmtDateFR(f.date_debut) : '—',
+            nb: Number(f.nb_participants ?? f.participants ?? 0),
+            formateur: f.formateur || f.organisme || '—',
+          })));
+        }
+        const formKpi: any = unwrap(formKpiR);
+        if (formKpi && typeof formKpi === 'object' && typeof formKpi.heures_annee === 'number') {
+          setHeuresFormation(formKpi.heures_annee);
+        }
+        // Phase G2 — Entretiens à réaliser
+        const entList: any[] = Array.isArray(unwrap(entListR)) ? unwrap(entListR) as any[] : [];
+        if (entList.length > 0) {
+          const TYPE_LABEL: Record<string, string> = {
+            annuel: 'Annuel', probatoire: 'Fin période essai',
+            recadrage: 'Recadrage', depart: 'Départ',
+          };
+          setEntretiens(entList.slice(0, 5).map((e: any): Entretien => ({
+            id: String(e.id_entretien ?? e.id ?? Math.random()),
+            collab: `${e.employe_prenom ?? ''} ${e.employe_nom ?? ''}`.trim() || `#${e.id_employe}`,
+            poste: e.matricule || '—',
+            date: e.date_entretien ? fmtDateFR(e.date_entretien) : '—',
+            type: TYPE_LABEL[String(e.type)] || String(e.type || ''),
+          })));
+        }
+        void emplR;
+      } catch { /* mock conservé */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  return (
+    <DashboardShell
+      eyebrow="§14.14 · Dashboard RH"
+      title="Ressources Humaines"
+      subtitle="Vue synthétique effectifs, masse salariale, recrutement et développement des compétences."
+      headerRight={
+        <>
+          <button
+            type="button"
+            onClick={() => navigate('/rh-recrutement')}
+            style={btnPrimary}
+          >
+            <Briefcase size={14} style={{ marginRight: 6 }} />
+            Voir le recrutement
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/pointage')}
+            style={btnGhost}
+          >
+            <Clock size={14} style={{ marginRight: 6 }} />
+            Pointage
+          </button>
+        </>
+      }
+    >
+      {/* ── KPI ─────────────────────────────────────────────────── */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: 'var(--s-4)',
+        }}
+      >
+        <KpiCard
+          label="Effectif actif"
+          value={fmtInt(effectif)}
+          unit="collaborateurs"
+          hint="LP · AF · FT confondus"
+          icon={<Users size={18} />}
+          tone="terracotta"
+          onClick={() => navigate('/equipe')}
+        />
+        <KpiCard
+          label="Absentéisme"
+          value={'3,2'}
+          unit="%"
+          hint="Objectif < 4 %"
+          delta={{ value: -0.4, label: 'vs mois -1' }}
+          icon={<CalendarClock size={18} />}
+          tone="sage"
+          onClick={() => navigate('/pointage')}
+        />
+        <KpiCard
+          label="Masse salariale"
+          value={fmtMoney(masseSalariale)}
+          hint="Bulletins + primes rendement"
+          icon={<CircleDollarSign size={18} />}
+          tone="gold"
+          onClick={() => navigate('/comptabilite')}
+        />
+        <KpiCard
+          label="Recrutements ouverts"
+          value={fmtInt(recrutementsOuverts)}
+          unit="postes"
+          hint="§11bis.9 pipeline"
+          icon={<Briefcase size={18} />}
+          tone="indigo"
+          onClick={() => navigate('/rh-recrutement')}
+        />
+      </div>
+
+      {/* ── Funnel recrutement + Primes à payer ─────────────────── */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1.4fr) minmax(0, 1fr)',
+          gap: 'var(--s-6)',
+        }}
+      >
+        <SectionCard
+          title="Funnel de recrutement"
+          subtitle="§11bis.9 · progression des candidatures"
+          actions={
+            <button
+              type="button"
+              onClick={() => navigate('/rh-recrutement')}
+              style={linkStyle}
+            >
+              Piloter <ArrowRight size={12} />
+            </button>
+          }
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--s-3)' }}>
+            {FUNNEL.map((s, idx) => {
+              const previous = idx === 0 ? s.count : FUNNEL[idx - 1].count;
+              const ratio = previous > 0 ? Math.round((s.count / FUNNEL[0].count) * 100) : 0;
+              const accent = toneAccent(s.tone);
+              return (
+                <div key={s.code}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'baseline',
+                      marginBottom: 6,
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: 'var(--font-sans)',
+                        fontWeight: 600,
+                        fontSize: 'var(--text-sm)',
+                        color: 'var(--fg-primary)',
+                      }}
+                    >
+                      {s.label}
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: 'var(--text-sm)',
+                        color: 'var(--fg-secondary)',
+                      }}
+                    >
+                      {fmtInt(s.count)}{' '}
+                      <span style={{ color: 'var(--fg-muted)' }}>· {ratio}%</span>
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      height: 8,
+                      background: 'var(--bg-canvas)',
+                      borderRadius: 999,
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${ratio}%`,
+                        height: '100%',
+                        background: `linear-gradient(90deg, ${accent}, ${accent}77)`,
+                        transition: 'width 400ms ease',
+                      }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </SectionCard>
+
+        <SectionCard
+          title="Primes rendement à valider"
+          subtitle="§11bis.7bis · hors bulletin"
+          actions={
+            <button
+              type="button"
+              onClick={() => navigate('/rh-primes-rendement')}
+              style={linkStyle}
+            >
+              Tout voir <ArrowRight size={12} />
+            </button>
+          }
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--s-3)' }}>
+            {PRIMES.map((p) => (
+              <div
+                key={p.id}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: 'var(--s-3)',
+                  background: 'var(--bg-canvas)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: 'var(--radius-sm)',
+                }}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontFamily: 'var(--font-sans)',
+                      fontWeight: 600,
+                      color: 'var(--fg-primary)',
+                      fontSize: 'var(--text-sm)',
+                    }}
+                  >
+                    {p.collab}
+                  </div>
+                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-muted)' }}>
+                    {p.motif}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontWeight: 700,
+                      color: 'var(--accent-gold)',
+                    }}
+                  >
+                    {fmtMoney(p.montant)}
+                  </span>
+                  <span
+                    style={{
+                      padding: '2px 8px',
+                      borderRadius: 999,
+                      fontSize: 'var(--text-xs)',
+                      fontFamily: 'var(--font-mono)',
+                      textTransform: 'uppercase',
+                      background: p.statut === 'validee' ? 'var(--color-success-bg)' : 'var(--color-warning-bg, #FDF3E0)',
+                      color: p.statut === 'validee' ? 'var(--color-success)' : 'var(--accent-terracotta)',
+                      fontWeight: 700,
+                    }}
+                  >
+                    {p.statut === 'validee' ? 'Validée' : 'À valider'}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+      </div>
+
+      {/* ── Formations + entretiens ────────────────────────────── */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+          gap: 'var(--s-6)',
+        }}
+      >
+        <SectionCard
+          title="Formations à venir"
+          subtitle="Plan de développement des compétences"
+          actions={
+            <button
+              type="button"
+              onClick={() => navigate('/rh/formations')}
+              style={linkStyle}
+            >
+              {FORMATIONS.length} sessions <ArrowRight size={12} />
+            </button>
+          }
+        >
+          <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 'var(--s-2)' }}>
+            {FORMATIONS.map((f) => (
+              <li
+                key={f.id}
+                style={{
+                  display: 'flex',
+                  gap: 'var(--s-3)',
+                  padding: 'var(--s-3)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: 'var(--radius-sm)',
+                }}
+              >
+                <div
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: 'var(--radius-sm)',
+                    background: 'color-mix(in srgb, var(--accent-sage) 15%, transparent)',
+                    color: 'var(--accent-sage)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <GraduationCap size={16} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, color: 'var(--fg-primary)', fontSize: 'var(--text-sm)' }}>
+                    {f.titre}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 'var(--text-xs)',
+                      color: 'var(--fg-muted)',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      gap: 8,
+                      marginTop: 2,
+                    }}
+                  >
+                    <span style={{ fontFamily: 'var(--font-mono)' }}>{f.date}</span>
+                    <span>
+                      {fmtInt(f.nb)} pers. · {f.formateur}
+                    </span>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </SectionCard>
+
+        <SectionCard
+          title="Entretiens à réaliser"
+          subtitle="Annuels · fin de période d'essai"
+          actions={
+            <button
+              type="button"
+              onClick={() => navigate('/rh/entretiens')}
+              style={linkStyle}
+            >
+              {ENTRETIENS.length} planifiés <ArrowRight size={12} />
+            </button>
+          }
+        >
+          <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 'var(--s-2)' }}>
+            {ENTRETIENS.map((e) => (
+              <li
+                key={e.id}
+                style={{
+                  display: 'flex',
+                  gap: 'var(--s-3)',
+                  padding: 'var(--s-3)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: 'var(--radius-sm)',
+                }}
+              >
+                <div
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: 'var(--radius-sm)',
+                    background: 'color-mix(in srgb, var(--accent-indigo) 15%, transparent)',
+                    color: 'var(--accent-indigo)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <FileCheck2 size={16} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, color: 'var(--fg-primary)', fontSize: 'var(--text-sm)' }}>
+                    {e.collab}{' '}
+                    <span style={{ fontWeight: 400, color: 'var(--fg-secondary)' }}>· {e.poste}</span>
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 'var(--text-xs)',
+                      color: 'var(--fg-muted)',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      gap: 8,
+                      marginTop: 2,
+                    }}
+                  >
+                    <span style={{ fontFamily: 'var(--font-mono)' }}>{e.date}</span>
+                    <span>{e.type}</span>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </SectionCard>
+      </div>
+
+      {/* ── Repères mensuels ───────────────────────────────────── */}
+      <SectionCard
+        title="Repères du mois"
+        subtitle="Mouvements et récompenses"
+      >
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+            gap: 'var(--s-4)',
+          }}
+        >
+          <MiniStat icon={<TrendingUp size={16} />} label="Arrivées" value={3} tone="var(--accent-sage)" />
+          <MiniStat icon={<TrendingDown size={16} />} label="Départs" value={1} tone="var(--color-danger)" />
+          <MiniStat icon={<Award size={16} />} label="Primes versées" value={fmtMoney(4180)} tone="var(--accent-gold)" mono />
+          <MiniStat icon={<GraduationCap size={16} />} label="Heures formation" value={`${Math.round(heuresFormation)} h`} tone="var(--accent-indigo)" />
+        </div>
+      </SectionCard>
+    </DashboardShell>
+  );
+};
+
+// ─── petites utilités locales ────────────────────────────────────
+const toneAccent = (t: 'terracotta' | 'sage' | 'indigo' | 'gold'): string => ({
+  terracotta: 'var(--accent-terracotta)',
+  sage: 'var(--accent-sage)',
+  indigo: 'var(--accent-indigo)',
+  gold: 'var(--accent-gold)',
+}[t]);
+
+const linkStyle: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 4,
+  background: 'transparent',
+  border: 'none',
+  color: 'var(--accent-terracotta)',
+  fontFamily: 'var(--font-sans)',
+  fontSize: 'var(--text-xs)',
+  fontWeight: 600,
+  cursor: 'pointer',
+  textTransform: 'uppercase',
+  letterSpacing: '0.05em',
+};
+
+const btnPrimary: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  padding: '8px 14px',
+  background: 'var(--accent-terracotta)',
+  color: '#FBF8F3',
+  border: '1px solid var(--accent-terracotta)',
+  borderRadius: 999,
+  fontFamily: 'var(--font-sans)',
+  fontSize: 'var(--text-sm)',
+  fontWeight: 600,
+  cursor: 'pointer',
+};
+
+const btnGhost: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  padding: '8px 14px',
+  background: 'var(--bg-canvas)',
+  color: 'var(--fg-secondary)',
+  border: '1px solid var(--border-subtle)',
+  borderRadius: 999,
+  fontFamily: 'var(--font-sans)',
+  fontSize: 'var(--text-sm)',
+  fontWeight: 500,
+  cursor: 'pointer',
+};
+
+const MiniStat: React.FC<{
+  icon: React.ReactNode;
+  label: string;
+  value: React.ReactNode;
+  tone: string;
+  mono?: boolean;
+}> = ({ icon, label, value, tone, mono }) => (
+  <div
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 'var(--s-3)',
+      padding: 'var(--s-3)',
+      background: 'var(--bg-canvas)',
+      border: '1px solid var(--border-subtle)',
+      borderRadius: 'var(--radius-sm)',
+    }}
+  >
+    <div
+      style={{
+        width: 32,
+        height: 32,
+        borderRadius: 'var(--radius-sm)',
+        background: `color-mix(in srgb, ${tone} 15%, transparent)`,
+        color: tone,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      {icon}
+    </div>
+    <div>
+      <div
+        style={{
+          fontSize: 'var(--text-xs)',
+          color: 'var(--fg-muted)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em',
+        }}
+      >
+        {label}
+      </div>
+      <div
+        style={{
+          fontFamily: mono ? 'var(--font-mono)' : 'var(--font-serif)',
+          fontSize: 'var(--text-lg)',
+          fontWeight: 700,
+          color: 'var(--fg-primary)',
+          fontStyle: mono ? 'normal' : 'italic',
+        }}
+      >
+        {value}
+      </div>
+    </div>
+  </div>
+);
+
+export default DashboardRHManager;

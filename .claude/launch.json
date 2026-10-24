@@ -14,20 +14,6 @@
       "runtimeArgs": ["start"],
       "port": 3000,
       "cwd": "frontend"
-    },
-    {
-      "name": "fouta-management",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
-      "port": 5173,
-      "cwd": "fouta-management"
-    },
-    {
-      "name": "mobile",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["start"],
-      "port": 8081,
-      "cwd": "mobile"
     }
   ]
 }

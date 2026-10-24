@@ -1,0 +1,97 @@
+name: Deploy Safe (zero data loss)
+
+# =====================================================================
+# Deploiement safe : tests -> backup DB -> pull -> migrations -> restart
+# -> healthcheck -> tag git en cas de succes, notif Slack/Discord sinon.
+#
+# Complete le workflow docker deploy.yml (image build). Ne le remplace
+# pas ; a activer une fois les secrets configures.
+# =====================================================================
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Tests backend + frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Install backend deps
+        working-directory: backend
+        run: npm ci
+
+      - name: Backend tests
+        working-directory: backend
+        run: npm test --if-present -- --ci --passWithNoTests
+
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm ci
+
+      - name: Frontend typecheck
+        working-directory: frontend
+        run: npx tsc --noEmit
+
+      - name: Migrate dry-run (sanity, no DB required)
+        working-directory: backend
+        run: node src/database/migrate.js --dry-run
+
+  deploy:
+    name: Deploy on VPS (safe)
+    needs: test
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: SSH deploy
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host:     ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key:      ${{ secrets.DEPLOY_SSH_KEY }}
+          port:     ${{ secrets.VPS_PORT }}
+          script: |
+            set -euo pipefail
+            cd /opt/laplume
+            bash scripts/deploy-safe.sh
+
+      - name: Tag deploiement (succes)
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="deploy-$(date -u +%Y-%m-%d-%H%M)"
+          git config user.email "actions@github.com"
+          git config user.name  "github-actions[bot]"
+          git tag -a "$TAG" -m "Deploy safe $TAG"
+          git push origin "$TAG"
+
+      - name: Notification Slack (echec)
+        if: failure() && env.SLACK_WEBHOOK_URL != ''
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          curl -X POST -H 'Content-Type: application/json' \
+            --data "{\"text\":\":rotating_light: Deploy safe ECHEC sur fabrication.laplume-artisanale.tn (commit ${GITHUB_SHA::7})\"}" \
+            "$SLACK_WEBHOOK_URL"
+
+      - name: Notification Discord (echec)
+        if: failure() && env.DISCORD_WEBHOOK_URL != ''
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          curl -X POST -H 'Content-Type: application/json' \
+            --data "{\"content\":\":rotating_light: Deploy safe ECHEC sur fabrication.laplume-artisanale.tn (commit ${GITHUB_SHA::7})\"}" \
+            "$DISCORD_WEBHOOK_URL"

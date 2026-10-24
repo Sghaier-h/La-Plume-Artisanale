@@ -1,154 +1,77 @@
 /**
- * CRM Activity Routes - Routes pour les activités CRM
+ * CRM Activity Routes — table réelle `activites_crm`
+ * Colonnes: id_activite, nom, type_activite, date_activite, description, created_at, ...
  */
 
 import express from 'express';
 import { authenticate } from '../../../src/middleware/auth.middleware.js';
 import { pool } from '../../../src/utils/db.js';
+import { sendSuccess, sendError, handleError } from '../../../src/utils/error.helper.js';
 
 const router = express.Router();
 
-// GET /api/crm/activities - Liste des activités
-router.get('/crm/activities', authenticate, async (req, res) => {
+router.get('/', authenticate, async (req, res) => {
   try {
-    const { opportunity_id, partner_id, user_id, activity_type, done } = req.query;
-    
-    let query = `
-      SELECT 
-        a.*,
-        p.raison_sociale as partner_name,
-        u.nom as user_name,
-        o.name as opportunity_name
-      FROM crm_activity a
-      LEFT JOIN clients p ON a.id_partner = p.id_client
-      LEFT JOIN utilisateurs u ON a.id_utilisateur = u.id_utilisateur
-      LEFT JOIN crm_opportunity o ON a.id_opportunite = o.id
-      WHERE 1=1
-    `;
-    
+    const { type_activite, search } = req.query;
+    const where = [];
     const params = [];
-    let paramCount = 0;
+    if (type_activite) { params.push(type_activite); where.push(`type_activite = $${params.length}`); }
+    if (search)        { params.push(`%${search}%`); where.push(`(nom ILIKE $${params.length} OR description ILIKE $${params.length})`); }
 
-    if (opportunity_id) {
-      paramCount++;
-      query += ` AND a.id_opportunite = $${paramCount}`;
-      params.push(opportunity_id);
-    }
-
-    if (partner_id) {
-      paramCount++;
-      query += ` AND a.id_partner = $${paramCount}`;
-      params.push(partner_id);
-    }
-
-    if (user_id) {
-      paramCount++;
-      query += ` AND a.id_utilisateur = $${paramCount}`;
-      params.push(user_id);
-    }
-
-    if (activity_type) {
-      paramCount++;
-      query += ` AND a.type_activite = $${paramCount}`;
-      params.push(activity_type);
-    }
-
-    if (done !== undefined) {
-      paramCount++;
-      query += ` AND a.done = $${paramCount}`;
-      params.push(done === 'true');
-    }
-
-    query += ` ORDER BY a.date_activite DESC`;
-
-    const result = await pool.query(query, params);
-    
-    const activities = result.rows.map(row => ({
-      id: row.id,
-      name: row.name,
-      activity_type: row.type_activite,
-      opportunity_id: row.id_opportunite ? { id: row.id_opportunite, name: row.opportunity_name } : null,
-      partner_id: row.id_partner ? { id: row.id_partner, name: row.partner_name } : null,
-      user_id: row.id_utilisateur ? { id: row.id_utilisateur, name: row.user_name } : null,
-      team_id: row.id_team,
-      date: row.date_activite,
-      duration: row.duree,
-      summary: row.summary,
-      description: row.description,
-      done: row.done || false,
-      state: row.state || 'planned',
-      create_date: row.date_creation,
-      write_date: row.date_modification
-    }));
-
-    res.json(activities);
-  } catch (error) {
-    console.error('Erreur récupération activités:', error);
-    res.status(500).json({ error: error.message });
-  }
+    const r = await pool.query(
+      `SELECT id_activite AS id, nom, type_activite, date_activite, description, created_at, updated_at
+       FROM activites_crm
+       ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
+       ORDER BY date_activite DESC NULLS LAST, id_activite DESC`,
+      params
+    );
+    return sendSuccess(res, { items: r.rows, total: r.rows.length });
+  } catch (error) { return handleError(res, error, 'getActivites'); }
 });
 
-// POST /api/crm/activities - Créer une activité
-router.post('/crm/activities', authenticate, async (req, res) => {
+router.get('/:id(\\d+)', authenticate, async (req, res) => {
   try {
-    const {
-      name,
-      activity_type,
-      opportunity_id,
-      partner_id,
-      user_id,
-      team_id,
-      date,
-      duration,
-      summary,
-      description
-    } = req.body;
-
-    const result = await pool.query(
-      `INSERT INTO crm_activity (
-        name, type_activite, id_opportunite, id_partner, id_utilisateur, id_team,
-        date_activite, duree, summary, description, done, state,
-        date_creation, date_modification
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())
-      RETURNING *`,
-      [
-        name,
-        activity_type,
-        opportunity_id,
-        partner_id,
-        user_id,
-        team_id,
-        date || new Date(),
-        duration,
-        summary,
-        description,
-        false,
-        'planned'
-      ]
-    );
-
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Erreur création activité:', error);
-    res.status(500).json({ error: error.message });
-  }
+    const r = await pool.query(`SELECT * FROM activites_crm WHERE id_activite = $1 LIMIT 1`, [req.params.id]);
+    if (!r.rows[0]) return sendError(res, 'Activité introuvable', 404);
+    return sendSuccess(res, r.rows[0]);
+  } catch (error) { return handleError(res, error, 'getActiviteById'); }
 });
 
-// POST /api/crm/activities/:id/done - Marquer une activité comme terminée
-router.post('/crm/activities/:id/done', authenticate, async (req, res) => {
+router.post('/', authenticate, async (req, res) => {
   try {
-    const { id } = req.params;
-    await pool.query(
-      `UPDATE crm_activity 
-       SET done = true, state = 'done', date_modification = NOW()
-       WHERE id = $1`,
-      [id]
+    const { nom, type_activite, date_activite, description } = req.body || {};
+    if (!nom) return sendError(res, 'nom requis', 400);
+    const r = await pool.query(
+      `INSERT INTO activites_crm (nom, type_activite, date_activite, description, created_by)
+       VALUES ($1, $2, COALESCE($3, CURRENT_TIMESTAMP), $4, $5) RETURNING *`,
+      [nom, type_activite || 'note', date_activite || null, description || null, req.user?.id || null]
     );
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Erreur activité terminée:', error);
-    res.status(500).json({ error: error.message });
-  }
+    return sendSuccess(res, r.rows[0], 'Activité créée', 201);
+  } catch (error) { return handleError(res, error, 'createActivite'); }
+});
+
+router.put('/:id(\\d+)', authenticate, async (req, res) => {
+  try {
+    const { nom, type_activite, date_activite, description } = req.body || {};
+    const r = await pool.query(
+      `UPDATE activites_crm
+         SET nom = COALESCE($2, nom), type_activite = COALESCE($3, type_activite),
+             date_activite = COALESCE($4, date_activite), description = COALESCE($5, description),
+             updated_by = $6
+       WHERE id_activite = $1 RETURNING *`,
+      [req.params.id, nom ?? null, type_activite ?? null, date_activite ?? null, description ?? null, req.user?.id || null]
+    );
+    if (!r.rows[0]) return sendError(res, 'Activité introuvable', 404);
+    return sendSuccess(res, r.rows[0]);
+  } catch (error) { return handleError(res, error, 'updateActivite'); }
+});
+
+router.delete('/:id(\\d+)', authenticate, async (req, res) => {
+  try {
+    const r = await pool.query(`DELETE FROM activites_crm WHERE id_activite = $1 RETURNING id_activite`, [req.params.id]);
+    if (!r.rows[0]) return sendError(res, 'Activité introuvable', 404);
+    return sendSuccess(res, { id: r.rows[0].id_activite }, 'Supprimée');
+  } catch (error) { return handleError(res, error, 'deleteActivite'); }
 });
 
 export default router;

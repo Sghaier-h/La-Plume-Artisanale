@@ -29,7 +29,15 @@ const ParametresProduitService: React.FC = () => {
     try {
       setLoading(true);
       const response = await produitsService.getAttributs();
-      setAttributs(response.data.data || []);
+      setAttributs((() => {
+        const _r = response.data?.data;
+        if (Array.isArray(_r)) return _r;
+        if (_r && Array.isArray(_r.data)) return _r.data;
+        if (_r && typeof _r === 'object') {
+          for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+        }
+        return [];
+      })());
     } catch (error) {
       console.error('Erreur chargement attributs:', error);
       setMessage({ type: 'error', text: 'Erreur lors du chargement des attributs' });
@@ -137,7 +145,7 @@ const ParametresProduitService: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 ml-64 p-6">
+    <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>

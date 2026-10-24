@@ -71,13 +71,22 @@ export const ERROR_MESSAGES = {
  * @param {Object} details - Détails supplémentaires (optionnel)
  */
 export const sendError = (res, message, statusCode = HTTP_STATUS.INTERNAL_SERVER_ERROR, code = null, details = null) => {
+  // Phase T3a — Beaucoup de controllers legacy appellent sendError(res, HTTP_STATUS.X, "message")
+  // au lieu de sendError(res, "message", HTTP_STATUS.X). On detecte et on swap pour
+  // ne pas renvoyer `{ error: { message: 404 } }` avec un code 500.
+  if (typeof message === 'number' && typeof statusCode === 'string') {
+    const tmp = statusCode;
+    statusCode = message;
+    message = tmp;
+  }
+
   // Protection : s'assurer que statusCode est un nombre valide
   let codeNum = statusCode;
   if (typeof codeNum !== 'number' || isNaN(codeNum)) {
     // Si statusCode n'est pas un nombre, utiliser la valeur par défaut
     codeNum = HTTP_STATUS.INTERNAL_SERVER_ERROR;
   }
-  
+
   const response = {
     success: false,
     error: {

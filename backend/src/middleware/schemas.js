@@ -19,7 +19,8 @@ export const createClientSchema = z.object({
   raison_sociale: z.string({ required_error: 'Raison sociale requise' })
     .min(1, 'Raison sociale requise'),
   code_client: z.string().optional(),
-  type_client: z.string().optional(),
+  statut_crm: z.enum(['lead', 'prospect', 'client', 'archive']).optional(),
+  type_compte: z.enum(['societe', 'particulier']).optional(),
   email: z.string().email('Format email invalide').optional().or(z.literal('')),
   telephone: z.string().optional(),
   adresse: z.string().optional(),

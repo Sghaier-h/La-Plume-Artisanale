@@ -1,4 +1,4 @@
-/**
+﻿/**
  * SaleOrder Model - Modèle de commande de vente
  * Système ERP La Plume Artisanale
  */
@@ -32,7 +32,7 @@ export class SaleOrder extends BaseModel {
         c.*,
         cl.raison_sociale as partner_name
       FROM ${tableName} c
-      LEFT JOIN clients cl ON c.id_client = cl.id_client
+      LEFT JOIN comptes cl ON c.id_client = cl.id_client
       WHERE 1=1
     `;
     const params = [];
@@ -100,7 +100,7 @@ export class SaleOrder extends BaseModel {
         c.*,
         cl.raison_sociale as partner_name
       FROM ${tableName} c
-      LEFT JOIN clients cl ON c.id_client = cl.id_client
+      LEFT JOIN comptes cl ON c.id_client = cl.id_client
       WHERE c.${idField} = ANY($1)
     `;
     

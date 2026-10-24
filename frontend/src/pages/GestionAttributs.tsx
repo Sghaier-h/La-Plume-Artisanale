@@ -40,7 +40,15 @@ const GestionAttributs: React.FC = () => {
       // Charger les attributs
       try {
         const attributsRes = await produitsService.getAttributs();
-        setAttributs(attributsRes.data.data || []);
+        setAttributs((() => {
+          const _r = attributsRes.data?.data;
+          if (Array.isArray(_r)) return _r;
+          if (_r && Array.isArray(_r.data)) return _r.data;
+          if (_r && typeof _r === 'object') {
+            for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+          }
+          return [];
+        })());
       } catch (error) {
         console.error('Erreur chargement attributs:', error);
         setMessage({ type: 'error', text: 'Erreur lors du chargement des attributs' });
@@ -193,7 +201,7 @@ const GestionAttributs: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="ml-64 p-6">
+      <div className="p-6">
         <div className="max-w-5xl mx-auto">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
@@ -395,7 +403,7 @@ const GestionAttributs: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {attributs.map((attribut) => (
-                  <tr key={attribut.id_attribut} className="hover:bg-gray-50">
+                  <tr key={attribut.id_attribut} className="hover:bg-gray-50 group">
                     <td className="px-6 py-4 whitespace-nowrap font-medium">{attribut.code_attribut}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{attribut.libelle}</td>
                     <td className="px-6 py-4 whitespace-nowrap">

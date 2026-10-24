@@ -24,7 +24,7 @@ const Couts: React.FC = () => {
   const loadBudgets = async () => {
     try {
       const res = await coutsService.getBudgets();
-      setBudgets(res.data.data.budgets || []);
+      setBudgets(res.data?.data?.budgets || (Array.isArray(res.data?.data) ? res.data.data : []) || []);
     } catch (error) {
       console.error('Erreur chargement budgets:', error);
     }
@@ -40,9 +40,9 @@ const Couts: React.FC = () => {
         coutsService.analyserEcarts(selectedOF)
       ]);
 
-      setCoutTheorique(theoriqueRes.data.data);
-      setCoutReel(reelRes.data.data);
-      setAnalyseEcarts(ecartsRes.data.data);
+      setCoutTheorique((() => { const _r = theoriqueRes.data?.data; return Array.isArray(_r) ? _r : (_r?.data || _r?.coutTheorique || []); })());
+      setCoutReel((() => { const _r = reelRes.data?.data; return Array.isArray(_r) ? _r : (_r?.data || _r?.coutReel || []); })());
+      setAnalyseEcarts((() => { const _r = ecartsRes.data?.data; return Array.isArray(_r) ? _r : (_r?.data || _r?.analyseEcarts || []); })());
     } catch (error) {
       console.error('Erreur chargement coûts:', error);
     } finally {
@@ -57,7 +57,7 @@ const Couts: React.FC = () => {
   };
 
   return (
-    <div className="ml-64 p-6">
+    <div className="p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
@@ -209,8 +209,8 @@ const Couts: React.FC = () => {
                       <YAxis />
                       <Tooltip formatter={(value: number) => `${value.toLocaleString('fr-FR')} TND`} />
                       <Legend />
-                      <Bar dataKey="théorique" fill="#3b82f6" />
-                      <Bar dataKey="réel" fill="#10b981" />
+                      <Bar dataKey="théorique" fill="#4A5D75" />
+                      <Bar dataKey="réel" fill="#6B8E4E" />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>

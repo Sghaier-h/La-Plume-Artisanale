@@ -1,9 +1,13 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Package, Plus, Edit, Trash2, Search, RefreshCw, Upload, Image as ImageIcon, Eye, CheckSquare, XSquare, Save, FileText, Settings, Tag, X, Warehouse, TrendingUp, History, List, Grid, BarChart3, ArrowLeft } from 'lucide-react';
+import { Package, Plus, Edit, Trash2, Search, RefreshCw, Upload, Image as ImageIcon, Eye, CheckSquare, XSquare, Save, FileText, Settings, Tag, X, Warehouse, TrendingUp, History, List, Grid, BarChart3, ArrowLeft, AlertTriangle, Star } from 'lucide-react';
 import { produitsService, articlesService, parametresCatalogueService, modelesService } from '../services/api';
 import { genererRefCommerciale, genererRefFabrication } from '../utils/references';
 import api from '../services/api';
+import { PageSkeleton, EmptyState } from '../components/ui';
+import { DataTable, Column } from '../components/ui/DataTable';
+import KpiCard from '../components/ecommerce/KpiCard';
+import { IconFouta } from '../components/ui/IconsLaPlume';
 
 interface Modele {
   id_modele: number;
@@ -255,7 +259,15 @@ const Articles: React.FC = () => {
       // Charger les couleurs depuis l'API
       try {
         const couleursRes = await parametresCatalogueService.getCouleurs();
-        setCouleurs(couleursRes.data?.data || couleursRes.data || []);
+        setCouleurs((() => {
+          const _r = couleursRes.data?.data;
+          if (Array.isArray(_r)) return _r;
+          if (_r && Array.isArray(_r.data)) return _r.data;
+          if (_r && typeof _r === 'object') {
+            for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+          }
+          return [];
+        })());
       } catch (error) {
         console.error('Erreur chargement couleurs:', error);
       }
@@ -263,7 +275,15 @@ const Articles: React.FC = () => {
       // Charger les nombre de couleurs depuis l'API
       try {
         const nbCouleursRes = await parametresCatalogueService.getNombreCouleurs();
-        setNombreCouleurs(nbCouleursRes.data?.data || nbCouleursRes.data || []);
+        setNombreCouleurs((() => {
+          const _r = nbCouleursRes.data?.data;
+          if (Array.isArray(_r)) return _r;
+          if (_r && Array.isArray(_r.data)) return _r.data;
+          if (_r && typeof _r === 'object') {
+            for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+          }
+          return [];
+        })());
       } catch (error) {
         console.error('Erreur chargement nombre de couleurs:', error);
       }
@@ -271,7 +291,15 @@ const Articles: React.FC = () => {
       // Charger les attributs (pour compatibilité)
       try {
         const attributsRes = await produitsService.getAttributs();
-        setAttributs(attributsRes.data.data || []);
+        setAttributs((() => {
+          const _r = attributsRes.data?.data;
+          if (Array.isArray(_r)) return _r;
+          if (_r && Array.isArray(_r.data)) return _r.data;
+          if (_r && typeof _r === 'object') {
+            for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+          }
+          return [];
+        })());
       } catch (error) {
         console.error('Erreur chargement attributs:', error);
       }
@@ -650,38 +678,73 @@ const Articles: React.FC = () => {
 
   const modelesUniques = Array.from(new Set(modeles.map(m => m.code_modele)));
 
+  const kpis = useMemo(() => {
+    const totalArticles = articles.length;
+    const actifs = articles.filter(a => a.actif).length;
+    const enRupture = articles.filter(a => (a.stock_total ?? 0) <= 0).length;
+    const catalogue = articles.filter(a => a.dans_catalogue_produit).length;
+    return { totalArticles, actifs, enRupture, catalogue };
+  }, [articles]);
+
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <PageSkeleton kpiCount={4} rows={8} cols={7} />;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 ml-64 p-6">
+    <div className="min-h-screen p-6" style={{ background: 'var(--bg-app)' }}>
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-              <Package className="w-8 h-8 text-blue-600" />
-              Gestion des Articles
-            </h1>
-            <p className="text-gray-600 mt-2">Création et gestion des articles générés à partir des modèles</p>
+        <div style={{ marginBottom: 'var(--s-6)' }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 'var(--s-2)' }}>
+            VENTES · CATALOGUE
           </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => {
-                setShowForm(true);
-                setEditingArticle(null);
-                resetForm();
-              }}
-              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Plus className="w-5 h-5" />
-              Nouvel Article
-            </button>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="la-plume-title-brush" style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 500, fontSize: 'var(--text-3xl)', color: 'var(--fg-primary)', marginBottom: 'var(--s-2)' }}>
+                Articles
+              </h1>
+              <p style={{ color: 'var(--fg-secondary)', fontSize: 'var(--text-md)' }}>
+                Catalogue de foutas, serviettes et tote bags — références commerciales et fabrication.
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  setShowForm(true);
+                  setEditingArticle(null);
+                  resetForm();
+                }}
+                className="inline-flex items-center gap-2 transition-shadow"
+                style={{
+                  background: 'var(--accent-terracotta)',
+                  color: 'var(--fg-inverse)',
+                  padding: '0.6rem 1.1rem',
+                  borderRadius: 'var(--radius-full)',
+                  boxShadow: 'var(--shadow-md)',
+                  fontWeight: 600,
+                  fontSize: 'var(--text-sm)',
+                }}
+              >
+                <Plus className="w-4 h-4" />
+                Nouvel article
+              </button>
+            </div>
           </div>
+        </div>
+
+        {/* KPI row */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <KpiCard label="Articles actifs" value={kpis.actifs} icon={<IconFouta size={20} />} color="terracotta"
+            active={filters.actif === 'true'}
+            onClick={() => setFilters({ ...filters, actif: filters.actif === 'true' ? '' : 'true' })} />
+          <KpiCard label="En stock" value={kpis.totalArticles - kpis.enRupture} icon={<Warehouse className="w-5 h-5" />} color="sage"
+            active={filters.actif === '' && filters.catalogue === ''}
+            onClick={() => setFilters({ modele: '', actif: '', catalogue: '' })} />
+          <KpiCard label="En rupture" value={kpis.enRupture} icon={<AlertTriangle className="w-5 h-5" />} color={kpis.enRupture > 0 ? 'warning' : 'neutral'}
+            active={filters.actif === 'false'}
+            onClick={() => setFilters({ ...filters, actif: filters.actif === 'false' ? '' : 'false' })} />
+          <KpiCard label="Dans le catalogue" value={kpis.catalogue} icon={<Star className="w-5 h-5" />} color="indigo"
+            active={filters.catalogue === 'true'}
+            onClick={() => setFilters({ ...filters, catalogue: filters.catalogue === 'true' ? '' : 'true' })} />
         </div>
 
         {/* Toggle Affichage et Filtres */}
@@ -691,18 +754,20 @@ const Articles: React.FC = () => {
               <span className="text-sm font-medium text-gray-700">Affichage:</span>
               <button
                 onClick={() => setAffichageMode('ligne')}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                  affichageMode === 'ligne' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors"
+                style={affichageMode === 'ligne'
+                  ? { background: 'var(--accent-terracotta)', color: 'var(--fg-inverse)' }
+                  : { background: 'var(--bg-canvas)', color: 'var(--fg-secondary)' }}
               >
                 <List className="w-4 h-4" />
                 Ligne
               </button>
               <button
                 onClick={() => setAffichageMode('catalogue')}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                  affichageMode === 'catalogue' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors"
+                style={affichageMode === 'catalogue'
+                  ? { background: 'var(--accent-terracotta)', color: 'var(--fg-inverse)' }
+                  : { background: 'var(--bg-canvas)', color: 'var(--fg-secondary)' }}
               >
                 <Grid className="w-4 h-4" />
                 Catalogue
@@ -717,13 +782,13 @@ const Articles: React.FC = () => {
                 placeholder="Rechercher..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
               />
             </div>
             <select
               value={filters.modele}
               onChange={(e) => setFilters({ ...filters, modele: e.target.value })}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
             >
               <option value="">Tous les modèles</option>
               {modelesUniques.map(code => (
@@ -733,7 +798,7 @@ const Articles: React.FC = () => {
             <select
               value={filters.catalogue}
               onChange={(e) => setFilters({ ...filters, catalogue: e.target.value })}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
             >
               <option value="">Tous</option>
               <option value="true">Dans catalogue</option>
@@ -742,7 +807,7 @@ const Articles: React.FC = () => {
             <select
               value={filters.actif}
               onChange={(e) => setFilters({ ...filters, actif: e.target.value })}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
             >
               <option value="">Tous les statuts</option>
               <option value="true">Actifs</option>
@@ -767,7 +832,7 @@ const Articles: React.FC = () => {
                     <select
                       value={selectedModele?.id_modele || ''}
                       onChange={(e) => handleModeleChange(parseInt(e.target.value))}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                       required
                     >
                       <option value="">Sélectionner un modèle...</option>
@@ -779,7 +844,7 @@ const Articles: React.FC = () => {
                     </select>
                   </div>
                   {selectedModele && (
-                    <div className="bg-blue-50 p-4 rounded-lg">
+                    <div className="p-4 rounded-lg" style={{ background: 'var(--bg-canvas)', border: '1px solid var(--border-subtle)' }}>
                       <div className="text-sm text-gray-600">
                         <div><strong>Produit:</strong> {selectedModele.produit}</div>
                         <div><strong>Type Tissage:</strong> {selectedModele.type_tissage}</div>
@@ -812,7 +877,7 @@ const Articles: React.FC = () => {
                           });
                           genererReferences();
                         }}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                         required
                       >
                         <option value="">Sélectionner...</option>
@@ -838,7 +903,7 @@ const Articles: React.FC = () => {
                           });
                           genererReferences();
                         }}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                         required
                       >
                         <option value="">Sélectionner...</option>
@@ -864,7 +929,7 @@ const Articles: React.FC = () => {
                           });
                           genererReferences();
                         }}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                         required
                       >
                         <option value="">Sélectionner...</option>
@@ -897,7 +962,7 @@ const Articles: React.FC = () => {
                         });
                         genererReferences();
                       }}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                       required
                     >
                       <option value="">Sélectionner...</option>
@@ -923,7 +988,7 @@ const Articles: React.FC = () => {
                             setFormData({ ...formData, code_selecteur_01: e.target.value });
                             genererReferences();
                           }}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                           required
                         >
                           <option value="">Sélectionner...</option>
@@ -945,7 +1010,7 @@ const Articles: React.FC = () => {
                               setFormData({ ...formData, code_selecteur_01: e.target.value });
                               genererReferences();
                             }}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                             required
                           >
                             <option value="">Sélectionner...</option>
@@ -964,7 +1029,7 @@ const Articles: React.FC = () => {
                               setFormData({ ...formData, code_selecteur_02: e.target.value });
                               genererReferences();
                             }}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                             required
                           >
                             <option value="">Sélectionner...</option>
@@ -979,7 +1044,7 @@ const Articles: React.FC = () => {
                     )}
                     {['T', 'Q', 'C', 'S'].includes(formData.code_nombre_couleur) && (
                       <>
-                        {[1, 2, 3, 4, 5, 6].slice(0, 
+                        {[1, 2, 3, 4, 5, 6].slice(0,
                           formData.code_nombre_couleur === 'T' ? 3 :
                           formData.code_nombre_couleur === 'Q' ? 4 :
                           formData.code_nombre_couleur === 'C' ? 5 : 6
@@ -996,7 +1061,7 @@ const Articles: React.FC = () => {
                                 setFormData(newData);
                                 genererReferences();
                               }}
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                               required
                             >
                               <option value="">Sélectionner...</option>
@@ -1019,7 +1084,7 @@ const Articles: React.FC = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Référence Commerciale</label>
-                      <div className="px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg font-mono text-sm">
+                      <div className="px-4 py-2 rounded-lg font-mono text-sm" style={{ background: 'var(--bg-canvas)', border: '1px solid var(--border-subtle)', color: 'var(--fg-primary)' }}>
                         {formData.ref_commercial || 'Génération automatique...'}
                       </div>
                     </div>
@@ -1043,7 +1108,7 @@ const Articles: React.FC = () => {
                       type="text"
                       value={formData.dimensions}
                       onChange={(e) => setFormData({ ...formData, dimensions: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                       placeholder="Ex: 100/200 CM"
                     />
                   </div>
@@ -1063,7 +1128,8 @@ const Articles: React.FC = () => {
                             });
                             genererReferences();
                           }}
-                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          className="w-4 h-4 border-gray-300 rounded"
+                          style={{ accentColor: 'var(--accent-terracotta)' }}
                         />
                         <span className="text-xs text-gray-600">Génération automatique</span>
                       </label>
@@ -1079,7 +1145,7 @@ const Articles: React.FC = () => {
                         });
                         genererReferences();
                       }}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                       placeholder="Ex: Ecru Rayé Naturel (généré automatiquement si activé)"
                     />
                     {formData.couleur_auto !== false && (
@@ -1103,7 +1169,8 @@ const Articles: React.FC = () => {
                               designation_article: auto ? genererDesignationArticle() : formData.designation_article
                             });
                           }}
-                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          className="w-4 h-4 border-gray-300 rounded"
+                          style={{ accentColor: 'var(--accent-terracotta)' }}
                         />
                         <span className="text-xs text-gray-600">Génération automatique</span>
                       </label>
@@ -1112,7 +1179,7 @@ const Articles: React.FC = () => {
                       type="text"
                       value={formData.designation_article || ''}
                       onChange={(e) => setFormData({ ...formData, designation_article: e.target.value, designation_auto: false })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                       placeholder="Désignation du modèle + Dimensions + Couleur S01 + Couleur S02 + ... (généré automatiquement si activé)"
                       required
                     />
@@ -1141,7 +1208,8 @@ const Articles: React.FC = () => {
                             });
                             genererReferences();
                           }}
-                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          className="w-4 h-4 border-gray-300 rounded"
+                          style={{ accentColor: 'var(--accent-terracotta)' }}
                         />
                         <span className="text-xs text-gray-600">Génération automatique</span>
                       </label>
@@ -1156,7 +1224,7 @@ const Articles: React.FC = () => {
                         });
                         genererReferences();
                       }}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                       rows={3}
                       placeholder="Description de l'article (générée automatiquement si activé : Description du modèle + ' Couleur ' + Couleur Article)"
                     />
@@ -1180,7 +1248,7 @@ const Articles: React.FC = () => {
                       step="0.01"
                       value={formData.prix_revient || ''}
                       onChange={(e) => setFormData({ ...formData, prix_revient: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                       placeholder="0.00"
                       required
                     />
@@ -1192,7 +1260,7 @@ const Articles: React.FC = () => {
                       step="0.01"
                       value={formData.prix_vente || ''}
                       onChange={(e) => setFormData({ ...formData, prix_vente: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                       placeholder="0.00"
                       required
                     />
@@ -1209,7 +1277,7 @@ const Articles: React.FC = () => {
                           qte_minimal_stock: dansCatalogue ? (formData.qte_minimal_stock || 0) : 0
                         });
                       }}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                       required
                     >
                       <option value="catalogue">Catalogue</option>
@@ -1226,7 +1294,7 @@ const Articles: React.FC = () => {
                         type="number"
                         value={formData.qte_minimal_stock || 0}
                         onChange={(e) => setFormData({ ...formData, qte_minimal_stock: parseInt(e.target.value) || 0 })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                         min="0"
                         required
                       />
@@ -1238,7 +1306,8 @@ const Articles: React.FC = () => {
                         type="checkbox"
                         checked={formData.vente_ecommerce || false}
                         onChange={(e) => setFormData({ ...formData, vente_ecommerce: e.target.checked })}
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        className="w-4 h-4 border-gray-300 rounded"
+                        style={{ accentColor: 'var(--accent-terracotta)' }}
                       />
                       <span className="text-sm font-medium text-gray-700">Vente E-commerce</span>
                     </label>
@@ -1271,7 +1340,8 @@ const Articles: React.FC = () => {
                             }
                             setFormData({ ...formData, composition_selecteurs: newComposition });
                           }}
-                          className="w-4 h-4 text-blue-600 border-gray-300 rounded"
+                          className="w-4 h-4 border-gray-300 rounded"
+                          style={{ accentColor: 'var(--accent-terracotta)' }}
                         />
                         <span className="text-sm text-gray-700">Sélecteur 01 ({formData.code_selecteur_01}) requis pour production</span>
                       </label>
@@ -1292,7 +1362,8 @@ const Articles: React.FC = () => {
                             }
                             setFormData({ ...formData, composition_selecteurs: newComposition });
                           }}
-                          className="w-4 h-4 text-blue-600 border-gray-300 rounded"
+                          className="w-4 h-4 border-gray-300 rounded"
+                          style={{ accentColor: 'var(--accent-terracotta)' }}
                         />
                         <span className="text-sm text-gray-700">Sélecteur 02 ({formData.code_selecteur_02}) requis pour production</span>
                       </label>
@@ -1313,7 +1384,8 @@ const Articles: React.FC = () => {
                             }
                             setFormData({ ...formData, composition_selecteurs: newComposition });
                           }}
-                          className="w-4 h-4 text-blue-600 border-gray-300 rounded"
+                          className="w-4 h-4 border-gray-300 rounded"
+                          style={{ accentColor: 'var(--accent-terracotta)' }}
                         />
                         <span className="text-sm text-gray-700">Sélecteur 03 ({formData.code_selecteur_03}) requis pour production</span>
                       </label>
@@ -1332,7 +1404,7 @@ const Articles: React.FC = () => {
                       type="number"
                       value={formData.total_commander}
                       onChange={(e) => setFormData({ ...formData, total_commander: parseInt(e.target.value) })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                       min="0"
                     />
                   </div>
@@ -1342,7 +1414,7 @@ const Articles: React.FC = () => {
                       type="number"
                       value={formData.total_envoyer}
                       onChange={(e) => setFormData({ ...formData, total_envoyer: parseInt(e.target.value) })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                       min="0"
                     />
                   </div>
@@ -1352,7 +1424,7 @@ const Articles: React.FC = () => {
                       type="number"
                       value={formData.total_a_fabriquer}
                       onChange={(e) => setFormData({ ...formData, total_a_fabriquer: parseInt(e.target.value) })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                       min="0"
                     />
                   </div>
@@ -1374,7 +1446,7 @@ const Articles: React.FC = () => {
                   <div className="flex-1">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Télécharger une photo</label>
                     <div className="flex items-center gap-2">
-                      <label className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors">
+                      <label className="flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer transition-colors hover:opacity-90" style={{ background: 'var(--bg-canvas)', color: 'var(--accent-terracotta)', border: '1px solid var(--border-subtle)' }}>
                         <Upload className="w-5 h-5" />
                         Choisir une photo
                         <input
@@ -1402,7 +1474,8 @@ const Articles: React.FC = () => {
                       type="checkbox"
                       checked={formData.dans_catalogue_produit}
                       onChange={(e) => setFormData({ ...formData, dans_catalogue_produit: e.target.checked })}
-                      className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      className="w-5 h-5 border-gray-300 rounded"
+                      style={{ accentColor: 'var(--accent-terracotta)' }}
                     />
                     <span className="text-sm font-medium text-gray-700">
                       Appartient au catalogue produit
@@ -1413,7 +1486,8 @@ const Articles: React.FC = () => {
                       type="checkbox"
                       checked={formData.actif}
                       onChange={(e) => setFormData({ ...formData, actif: e.target.checked })}
-                      className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      className="w-5 h-5 border-gray-300 rounded"
+                      style={{ accentColor: 'var(--accent-terracotta)' }}
                     />
                     <span className="text-sm font-medium text-gray-700">Article actif</span>
                   </label>
@@ -1423,7 +1497,8 @@ const Articles: React.FC = () => {
               <div className="flex gap-2 pt-4">
                 <button
                   type="submit"
-                  className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  className="flex items-center gap-2 px-6 py-2 rounded-lg hover:opacity-90 transition-colors"
+                  style={{ background: 'var(--accent-terracotta)', color: 'var(--fg-inverse)', fontWeight: 600 }}
                 >
                   <Save className="w-5 h-5" />
                   Enregistrer
@@ -1446,144 +1521,117 @@ const Articles: React.FC = () => {
 
         {/* Liste des articles */}
         {affichageMode === 'ligne' ? (
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Photo</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ref Commerciale</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ref Fabrication</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Modèle</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Couleur</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Prix (Modèle)</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stock</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">2ème Choix</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">À Fabriquer</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Catalogue</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredArticles.map((article) => (
-                <tr key={article.id_article} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    {article.photo_article ? (
-                      <img src={article.photo_article} alt={article.ref_commercial} className="w-12 h-12 object-cover rounded" />
-                    ) : (
-                      <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
-                        <ImageIcon className="w-6 h-6 text-gray-400" />
+          <DataTable<any>
+            columns={[
+              { key: 'photo_article', label: 'Photo', sortable: false, exportable: false, render: (a: any) => (
+                a.photo_article ? (
+                  <img src={a.photo_article} alt={a.ref_commercial} className="w-12 h-12 object-cover rounded" />
+                ) : (
+                  <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
+                    <ImageIcon className="w-6 h-6 text-gray-400" />
+                  </div>
+                )
+              ) },
+              { key: 'ref_commercial', label: 'Ref Commerciale', sortable: true, render: (a: any) => (
+                <span className="font-mono text-sm font-medium" style={{ color: 'var(--accent-terracotta)' }}>{a.ref_commercial}</span>
+              ) },
+              { key: 'ref_fabrication', label: 'Ref Fabrication', sortable: true, render: (a: any) => (
+                <span className="font-mono text-sm text-green-600">{a.ref_fabrication}</span>
+              ) },
+              { key: 'modele', label: 'Modèle', sortable: true, render: (a: any) => a.modele || '-' },
+              { key: 'couleur_article', label: 'Couleur', sortable: true, render: (a: any) => a.couleur_article || '-' },
+              { key: 'prix_vente', label: 'Prix (Modèle)', sortable: true, align: 'right', value: (a: any) => Number(getPrixFromModele(a).prix_vente) || 0, render: (a: any) => {
+                const prix = getPrixFromModele(a);
+                return (
+                  <div className="text-sm">
+                    <div className="font-semibold text-green-600">{Number(prix.prix_vente || 0).toFixed(2)} TND</div>
+                    <div className="text-xs text-gray-500">Reviens: {Number(prix.prix_reviens || 0).toFixed(2)} TND</div>
+                    {prix.prix_multiple && prix.prix_multiple.length > 0 && (
+                      <div className="text-xs mt-1" style={{ color: 'var(--accent-indigo)' }}>
+                        +{prix.prix_multiple.length} autre(s) prix
                       </div>
                     )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap font-mono text-sm font-medium text-blue-600">
-                    {article.ref_commercial}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap font-mono text-sm text-green-600">
-                    {article.ref_fabrication}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">{article.modele}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {article.couleur_article || '-'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {(() => {
-                      const prix = getPrixFromModele(article);
-                      return (
-                        <div className="text-sm">
-                          <div className="font-semibold text-green-600">{prix.prix_vente.toFixed(2)} TND</div>
-                          <div className="text-xs text-gray-500">Reviens: {prix.prix_reviens.toFixed(2)} TND</div>
-                          {prix.prix_multiple && prix.prix_multiple.length > 0 && (
-                            <div className="text-xs text-blue-600 mt-1">
-                              +{prix.prix_multiple.length} autre(s) prix
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <button
-                      onClick={() => {
-                        setSelectedArticleForStock(article);
-                        setShowStockDetail(true);
-                      }}
-                      className="text-left hover:bg-blue-50 p-2 rounded transition-colors"
-                    >
-                      <div className="font-semibold text-blue-600">{article.stock_total || 0}</div>
-                      <div className="text-xs text-gray-500">
-                        {article.stock_par_entrepot && article.stock_par_entrepot.length > 0
-                          ? `${article.stock_par_entrepot.length} entrepôt(s)`
-                          : 'Aucun stock'}
-                      </div>
-                    </button>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-medium">
-                      {article.quantite_deuxieme_choix || 0}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded text-xs font-medium">
-                      {article.total_a_fabriquer}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {article.dans_catalogue_produit ? (
-                      <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">Oui</span>
-                    ) : (
-                      <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs">Non</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex gap-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (article.id_article) navigate(`/articles/${article.id_article}`);
-                        }}
-                        className="text-green-600 hover:text-green-700"
-                        title="Voir les détails"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedArticleForStock(article);
-                          setShowStockDetail(true);
-                        }}
-                        className="text-blue-600 hover:text-blue-700"
-                        title="Voir Stock"
-                      >
-                        <Warehouse className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          article.id_article && handleEdit(article);
-                        }}
-                        className="text-gray-600 hover:text-gray-700"
-                        title="Modifier"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          article.id_article && handleDelete(article.id_article);
-                        }}
-                        className="text-red-600 hover:text-red-700"
-                        title="Supprimer"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  </div>
+                );
+              } },
+              { key: 'stock_total', label: 'Stock', sortable: true, align: 'right', value: (a: any) => Number(a.stock_total) || 0, render: (a: any) => (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedArticleForStock(a);
+                    setShowStockDetail(true);
+                  }}
+                  className="text-left p-2 rounded transition-colors"
+                  style={{ background: 'transparent' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <div className="font-semibold" style={{ color: 'var(--accent-indigo)' }}>{a.stock_total || 0}</div>
+                  <div className="text-xs text-gray-500">
+                    {a.stock_par_entrepot && a.stock_par_entrepot.length > 0 ? `${a.stock_par_entrepot.length} entrepôt(s)` : 'Aucun stock'}
+                  </div>
+                </button>
+              ) },
+              { key: 'quantite_deuxieme_choix', label: '2ème Choix', sortable: true, align: 'right', value: (a: any) => Number(a.quantite_deuxieme_choix) || 0, render: (a: any) => (
+                <span className="px-2 py-1 rounded text-xs font-medium" style={{ background: 'color-mix(in srgb, var(--accent-gold) 12%, var(--bg-elevated))', color: '#7A5C1F' }}>
+                  {a.quantite_deuxieme_choix || 0}
+                </span>
+              ) },
+              { key: 'total_a_fabriquer', label: 'À Fabriquer', sortable: true, align: 'right', value: (a: any) => Number(a.total_a_fabriquer) || 0, render: (a: any) => (
+                <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded text-xs font-medium">{a.total_a_fabriquer}</span>
+              ) },
+              { key: 'dans_catalogue_produit', label: 'Catalogue', sortable: true, value: (a: any) => a.dans_catalogue_produit ? 1 : 0, render: (a: any) => (
+                a.dans_catalogue_produit ? (
+                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">Oui</span>
+                ) : (
+                  <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs">Non</span>
+                )
+              ) },
+              { key: '_actions', label: 'Actions', sortable: false, exportable: false, render: (article: any) => (
+                <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setSelectedArticleForStock(article); setShowStockDetail(true); }}
+                    className="hover:opacity-70 transition"
+                    style={{ color: 'var(--accent-indigo)' }}
+                    title="Voir Stock"
+                  >
+                    <Warehouse className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); article.id_article && handleEdit(article); }}
+                    className="text-gray-600 hover:text-gray-700"
+                    title="Modifier"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); article.id_article && handleDelete(article.id_article); }}
+                    className="text-red-600 hover:text-red-700"
+                    title="Supprimer"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ) },
+            ] as Column<any>[]}
+            data={filteredArticles}
+            rowKey={(a: any) => a.id_article}
+            onRowClick={(a: any) => { if (a.id_article) navigate(`/articles/${a.id_article}`); }}
+            pageSize={25}
+            exportable
+            exportFilename="articles"
+            emptyState={
+              <EmptyState
+                variant={search || filters.modele || filters.actif || filters.catalogue ? 'search-no-result' : 'default'}
+                title={search || filters.modele || filters.actif || filters.catalogue ? 'Aucun article ne correspond' : 'Aucun article'}
+                description={search || filters.modele || filters.actif || filters.catalogue ? 'Réinitialisez vos filtres ou votre recherche.' : 'Créez votre premier article de catalogue.'}
+                cta={search || filters.modele || filters.actif || filters.catalogue
+                  ? { label: 'Réinitialiser', onClick: () => { setSearch(''); setFilters({ modele: '', actif: '', catalogue: '' }); } }
+                  : undefined}
+              />
+            }
+            loading={loading}
+          />
         ) : (
           // Mode Catalogue
           selectedModeleCatalogue ? (
@@ -1625,7 +1673,7 @@ const Articles: React.FC = () => {
                         <p><span className="font-medium">Couleur:</span> {article.couleur_article || 'N/A'}</p>
                         <p><span className="font-medium">Dimensions:</span> {article.dimensions || 'N/A'}</p>
                         {article.prix_vente && (
-                          <p><span className="font-medium">Prix:</span> {article.prix_vente.toFixed(2)} €</p>
+                          <p><span className="font-medium">Prix:</span> {Number(article.prix_vente || 0).toFixed(2)} €</p>
                         )}
                       </div>
                       <div className="flex items-center justify-between mb-3">
@@ -1652,7 +1700,8 @@ const Articles: React.FC = () => {
                         </button>
                         <button
                           onClick={() => handleEdit(article)}
-                          className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                          className="flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded hover:opacity-90 transition text-sm"
+                          style={{ background: 'var(--accent-terracotta)', color: 'var(--fg-inverse)', fontWeight: 600 }}
                         >
                           <Edit className="w-4 h-4" />
                           Modifier
@@ -1660,7 +1709,8 @@ const Articles: React.FC = () => {
                         {article.id_article && (
                           <button
                             onClick={() => handleDelete(article.id_article!)}
-                            className="px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
+                            className="px-3 py-2 rounded hover:opacity-90 transition text-sm"
+                            style={{ background: 'var(--color-danger)', color: 'var(--fg-inverse)' }}
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -1701,7 +1751,8 @@ const Articles: React.FC = () => {
                           e.stopPropagation();
                           setSelectedModeleCatalogue(modele.code_modele);
                         }}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded hover:opacity-90 transition text-sm"
+                        style={{ background: 'var(--accent-terracotta)', color: 'var(--fg-inverse)', fontWeight: 600 }}
                       >
                         <Eye className="w-4 h-4" />
                         Voir les articles ({modele.nombre_articles})
@@ -1749,8 +1800,8 @@ const Articles: React.FC = () => {
                       const prix = getPrixFromModele(article);
                       return (
                         <div className="mt-2 pt-2 border-t">
-                          <p className="font-semibold text-green-600">{prix.prix_vente.toFixed(2)} TND</p>
-                          <p className="text-xs text-gray-500">Reviens: {prix.prix_reviens.toFixed(2)} TND</p>
+                          <p className="font-semibold text-green-600">{Number(prix.prix_vente || 0).toFixed(2)} TND</p>
+                          <p className="text-xs text-gray-500">Reviens: {Number(prix.prix_reviens || 0).toFixed(2)} TND</p>
                         </div>
                       );
                     })()}
@@ -1761,12 +1812,13 @@ const Articles: React.FC = () => {
                         setSelectedArticleForStock(article);
                         setShowStockDetail(true);
                       }}
-                      className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium hover:bg-blue-200"
+                      className="px-2 py-1 rounded text-xs font-medium hover:opacity-80 transition"
+                      style={{ background: '#EDF0F5', color: '#3B4E68' }}
                     >
                       Stock: {article.stock_total || 0}
                     </button>
                     {article.quantite_deuxieme_choix && article.quantite_deuxieme_choix > 0 && (
-                      <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-medium">
+                      <span className="px-2 py-1 rounded text-xs font-medium" style={{ background: 'color-mix(in srgb, var(--accent-gold) 12%, var(--bg-elevated))', color: '#7A5C1F' }}>
                         2ème: {article.quantite_deuxieme_choix}
                       </span>
                     )}
@@ -1789,7 +1841,8 @@ const Articles: React.FC = () => {
                     </button>
                     <button
                       onClick={() => handleEdit(article)}
-                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded hover:opacity-90 transition text-sm"
+                      style={{ background: 'var(--accent-terracotta)', color: 'var(--fg-inverse)', fontWeight: 600 }}
                     >
                       <Edit className="w-4 h-4" />
                       Modifier
@@ -1812,12 +1865,12 @@ const Articles: React.FC = () => {
 
         {/* Modal Détail Stock et Historique */}
         {showStockDetail && selectedArticleForStock && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-              <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
-                  <Warehouse className="w-7 h-7 text-blue-600" />
-                  Détail du Stock - {selectedArticleForStock.ref_commercial}
+          <div className="fixed inset-0 flex items-center justify-center z-50" style={{ background: 'rgba(20,12,6,0.45)', backdropFilter: 'blur(6px)' }}>
+            <div className="rounded-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto" style={{ background: 'var(--bg-elevated)', boxShadow: 'var(--shadow-xl)' }}>
+              <div className="sticky top-0 border-b px-6 py-4 flex items-center justify-between" style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-subtle)' }}>
+                <h2 className="text-2xl flex items-center gap-3" style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 500, color: 'var(--fg-primary)' }}>
+                  <Warehouse className="w-7 h-7" style={{ color: 'var(--accent-terracotta)' }} />
+                  Détail du Stock — {selectedArticleForStock.ref_commercial}
                 </h2>
                 <button
                   onClick={() => {
@@ -1856,14 +1909,14 @@ const Articles: React.FC = () => {
 
                 {/* Stock Total et 2ème Choix */}
                 <div className="grid grid-cols-3 gap-4">
-                  <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                    <div className="text-sm text-blue-600 font-medium mb-1">Stock Total</div>
-                    <div className="text-3xl font-bold text-blue-700">{selectedArticleForStock.stock_total || 0}</div>
+                  <div className="rounded-lg p-4" style={{ background: '#EDF0F5', border: '1px solid #C5D2E0' }}>
+                    <div className="text-sm font-medium mb-1" style={{ color: '#3B4E68' }}>Stock Total</div>
+                    <div className="text-3xl font-bold" style={{ color: '#2F3F55' }}>{selectedArticleForStock.stock_total || 0}</div>
                   </div>
-                  <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
-                    <div className="text-sm text-purple-600 font-medium mb-1">2ème Choix</div>
-                    <div className="text-3xl font-bold text-purple-700">{selectedArticleForStock.quantite_deuxieme_choix || 0}</div>
-                    <div className="text-xs text-purple-500 mt-1">À calculer prochainement</div>
+                  <div className="rounded-lg p-4" style={{ background: 'color-mix(in srgb, var(--accent-gold) 12%, var(--bg-elevated))', border: '1px solid #DFCFA9' }}>
+                    <div className="text-sm font-medium mb-1" style={{ color: '#7A5C1F' }}>2ème Choix</div>
+                    <div className="text-3xl font-bold" style={{ color: '#5B4514' }}>{selectedArticleForStock.quantite_deuxieme_choix || 0}</div>
+                    <div className="text-xs mt-1" style={{ color: '#9E7B2E' }}>À calculer prochainement</div>
                   </div>
                   <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
                     <div className="text-sm text-orange-600 font-medium mb-1">À Fabriquer</div>
@@ -1873,8 +1926,8 @@ const Articles: React.FC = () => {
 
                 {/* Stock par Entrepôt */}
                 <div>
-                  <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                    <Warehouse className="w-5 h-5 text-blue-600" />
+                  <h3 className="font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--fg-primary)' }}>
+                    <Warehouse className="w-5 h-5" style={{ color: 'var(--accent-terracotta)' }} />
                     Stock par Entrepôt
                   </h3>
                   {selectedArticleForStock.stock_par_entrepot && selectedArticleForStock.stock_par_entrepot.length > 0 ? (
@@ -1889,10 +1942,10 @@ const Articles: React.FC = () => {
                         </thead>
                         <tbody className="divide-y divide-gray-200">
                           {selectedArticleForStock.stock_par_entrepot.map((stock, index) => (
-                            <tr key={index} className="hover:bg-gray-50">
+                            <tr key={index} className="hover:bg-gray-50 group">
                               <td className="px-4 py-3 font-medium">{stock.entrepot}</td>
                               <td className="px-4 py-3">
-                                <span className="font-semibold text-blue-600">{stock.quantite}</span>
+                                <span className="font-semibold" style={{ color: 'var(--accent-indigo)' }}>{stock.quantite}</span>
                               </td>
                               <td className="px-4 py-3">
                                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -1922,8 +1975,8 @@ const Articles: React.FC = () => {
 
                 {/* Historique des Mouvements */}
                 <div>
-                  <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                    <History className="w-5 h-5 text-blue-600" />
+                  <h3 className="font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--fg-primary)' }}>
+                    <History className="w-5 h-5" style={{ color: 'var(--accent-terracotta)' }} />
                     Historique des Mouvements
                   </h3>
                   {selectedArticleForStock.historique_mouvements && selectedArticleForStock.historique_mouvements.length > 0 ? (
@@ -1942,7 +1995,7 @@ const Articles: React.FC = () => {
                         </thead>
                         <tbody className="divide-y divide-gray-200">
                           {selectedArticleForStock.historique_mouvements.map((mouvement, index) => (
-                            <tr key={index} className="hover:bg-gray-50">
+                            <tr key={index} className="hover:bg-gray-50 group">
                               <td className="px-4 py-3 text-sm">
                                 {new Date(mouvement.date_mouvement).toLocaleString('fr-FR')}
                               </td>
@@ -1950,8 +2003,8 @@ const Articles: React.FC = () => {
                                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                                   mouvement.type_mouvement === 'entree' ? 'bg-green-100 text-green-800' :
                                   mouvement.type_mouvement === 'sortie' ? 'bg-red-100 text-red-800' :
-                                  mouvement.type_mouvement === 'transfert' ? 'bg-blue-100 text-blue-800' :
-                                  mouvement.type_mouvement === '2eme_choix' ? 'bg-purple-100 text-purple-800' :
+                                  mouvement.type_mouvement === 'transfert' ? 'bg-[#EDF0F5] text-[#3B4E68]' :
+                                  mouvement.type_mouvement === '2eme_choix' ? 'bg-[#F2E7D6] text-[#7A5C1F]' :
                                   'bg-gray-100 text-gray-800'
                                 }`}>
                                   {mouvement.type_mouvement === 'entree' ? 'Entrée' :
@@ -1986,7 +2039,8 @@ const Articles: React.FC = () => {
                     setShowStockDetail(false);
                     setSelectedArticleForStock(null);
                   }}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  className="px-6 py-2 rounded-lg hover:opacity-90 transition"
+                  style={{ background: 'var(--accent-terracotta)', color: 'var(--fg-inverse)', fontWeight: 600 }}
                 >
                   Fermer
                 </button>

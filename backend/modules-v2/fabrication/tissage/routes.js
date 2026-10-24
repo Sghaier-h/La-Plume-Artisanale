@@ -1,0 +1,11 @@
+import { Router } from 'express';
+import * as c from './controller.js';
+const r = Router();
+r.get('/sessions',                 c.list);
+r.get('/sessions/:id',             c.detail);
+r.post('/sessions',                c.demarrer);
+r.post('/sessions/:id/pause',      c.pauser);
+r.post('/sessions/:id/reprendre',  c.reprendre);
+r.post('/sessions/:id/cloturer',   c.cloturer);
+r.post('/sessions/:id/incident',   c.incident);
+export default r;

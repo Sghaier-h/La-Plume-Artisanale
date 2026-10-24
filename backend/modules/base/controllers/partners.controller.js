@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Contrôleur Partners - Module base
  */
 
@@ -9,7 +9,7 @@ import { sendError, sendSuccess, handleError } from '../../../src/utils/error.he
 // GET /api/partners - Liste tous les partenaires (clients/fournisseurs)
 export const getPartners = async (req, res) => {
   try {
-    const query = `SELECT * FROM clients ORDER BY date_creation DESC`;
+    const query = `SELECT * FROM comptes ORDER BY date_creation DESC`;
     const result = await pool.query(query);
     return sendSuccess(res, result.rows, 'Partenaires récupérés avec succès');
   } catch (error) {
@@ -21,7 +21,7 @@ export const getPartners = async (req, res) => {
 export const getPartnerById = async (req, res) => {
   try {
     const { id } = req.params;
-    const query = `SELECT * FROM clients WHERE id_client = $1`;
+    const query = `SELECT * FROM comptes WHERE id_client = $1`;
     const result = await pool.query(query, [id]);
     
     if (result.rows.length === 0) {
@@ -53,7 +53,7 @@ export const createPartner = async (req, res) => {
     const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
     
     const query = `
-      INSERT INTO clients (${fields.join(', ')}, date_creation, created_by)
+      INSERT INTO comptes (${fields.join(', ')}, date_creation, created_by)
       VALUES (${placeholders}, NOW(), $${values.length + 1})
       RETURNING *
     `;
@@ -85,8 +85,8 @@ export const updatePartner = async (req, res) => {
     const setClause = fields.map((field, i) => `${field} = $${i + 1}`).join(', ');
     
     const query = `
-      UPDATE clients
-      SET ${setClause}, date_modification = NOW(), updated_by = $${values.length + 1}
+      UPDATE comptes
+      SET ${setClause}, updated_at = NOW(), modifie_par = $${values.length + 1}
       WHERE id_client = $${values.length + 2}
       RETURNING *
     `;
@@ -113,7 +113,7 @@ export const deletePartner = async (req, res) => {
     const checkActiveQuery = `
       SELECT column_name 
       FROM information_schema.columns 
-      WHERE table_name = 'clients' AND (column_name = 'active' OR column_name = 'actif')
+      WHERE table_name = 'comptes' AND (column_name = 'active' OR column_name = 'actif')
     `;
     
     let query;
@@ -127,8 +127,8 @@ export const deletePartner = async (req, res) => {
         const activeField = checkResult.rows[0].column_name;
         // Suppression logique
         query = `
-          UPDATE clients
-          SET ${activeField} = false, date_modification = NOW(), updated_by = $1
+          UPDATE comptes
+          SET ${activeField} = false, updated_at = NOW(), modifie_par = $1
           WHERE id_client = $2
           RETURNING *
         `;
@@ -136,7 +136,7 @@ export const deletePartner = async (req, res) => {
       } else {
         // Suppression physique
         query = `
-          DELETE FROM clients
+          DELETE FROM comptes
           WHERE id_client = $1
           RETURNING *
         `;
@@ -145,7 +145,7 @@ export const deletePartner = async (req, res) => {
     } catch (checkError) {
       // En cas d'erreur, utiliser la suppression physique
       query = `
-        DELETE FROM clients
+        DELETE FROM comptes
         WHERE id_client = $1
         RETURNING *
       `;

@@ -1,23 +1,28 @@
 /**
- * Routes Ai - Module modulaire
+ * Routes AI
  */
 
 import express from 'express';
 import { authenticate } from '../../../src/middleware/auth.middleware.js';
 import {
-  getAi,
-  getAiById,
-  createAi,
-  updateAi,
-  deleteAi
+  getHistory,
+  getUsageStats,
+  ask,
+  summarizeOF,
+  suggestPlanning,
+  detectAnomalies,
+  updateFeedback,
 } from '../controllers/ai.controller.js';
 
 const router = express.Router();
+router.use(authenticate);
 
-router.get('/', authenticate, getAi);
-router.get('/:id', authenticate, getAiById);
-router.post('/', authenticate, createAi);
-router.put('/:id', authenticate, updateAi);
-router.delete('/:id', authenticate, deleteAi);
+router.get('/history', getHistory);
+router.get('/usage/stats', getUsageStats);
+router.post('/ask', ask);
+router.post('/summarize/of/:id_of(\\d+)', summarizeOF);
+router.post('/suggest/planning', suggestPlanning);
+router.post('/detect/anomalies', detectAnomalies);
+router.put('/history/:id(\\d+)/feedback', updateFeedback);
 
 export default router;

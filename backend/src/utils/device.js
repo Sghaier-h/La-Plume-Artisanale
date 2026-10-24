@@ -1,4 +1,4 @@
-// Gestion des devices mobiles
+﻿// Gestion des devices mobiles
 import { pool } from './db.js';
 
 export const registerDevice = async (userId, deviceId, deviceInfo) => {
@@ -18,7 +18,7 @@ export const registerDevice = async (userId, deviceId, deviceInfo) => {
 export const getDeviceInfo = async (userId, deviceId) => {
   try {
     const result = await pool.query(
-      'SELECT * FROM devices_mobile WHERE id_utilisateur = $1 AND device_id = $2',
+      'SELECT * FROM devices_mobile WHERE id_user = $1 AND device_id = $2',
       [userId, deviceId]
     );
     return result.rows[0];

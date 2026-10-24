@@ -1,0 +1,10 @@
+import { Router } from 'express';
+import * as c from './controller.js';
+const r = Router();
+r.get('/sous-traitants',  c.listSousTraitants);
+r.get('/',                c.list);
+r.get('/:id',             c.detail);
+r.post('/',               c.creer);
+r.post('/:id/expedier',   c.expedier);
+r.put('/:id',             c.maj);
+export default r;

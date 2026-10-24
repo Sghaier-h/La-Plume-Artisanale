@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+} from 'recharts';
 import { suiviFabricationService, ofService, machinesService } from '../services/api';
-import { TrendingUp, Clock, CheckCircle, XCircle, AlertTriangle, Search, Filter, Eye, X, Plus, Edit, Play, Square, Calendar, Package, Settings, User, Percent, BarChart3 } from 'lucide-react';
+import { TrendingUp, Clock, CheckCircle, XCircle, AlertTriangle, Search, Filter, X, Plus, Edit, Play, Square, Calendar, Package, Settings, User, Percent, BarChart3 } from 'lucide-react';
 
 interface SuiviFabrication {
   id_suivi: number;
@@ -44,6 +47,28 @@ const SuiviFabrication: React.FC = () => {
     observations: ''
   });
 
+  // Phase G1 — agrégation par opération (BarChart temps/opération)
+  const [parOperation, setParOperation] = useState<Array<{ type_operation: string; temps_minutes: number; rendement: number; of_count: number }>>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const unwrap = (r: any) => r?.data?.data ?? r?.data ?? [];
+    (async () => {
+      try {
+        const r = await suiviFabricationService.getParOperation({});
+        if (cancelled) return;
+        const rows: any[] = Array.isArray(unwrap(r)) ? unwrap(r) : [];
+        setParOperation(rows.map((o: any) => ({
+          type_operation: String(o.type_operation || '').replace(/_/g, ' '),
+          temps_minutes: Number(o.temps_minutes) || 0,
+          rendement:     Number(o.rendement)     || 0,
+          of_count:      Number(o.of_count)      || 0,
+        })));
+      } catch { /* [] par défaut */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   useEffect(() => {
     loadData();
   }, [filters, search]);
@@ -58,8 +83,24 @@ const SuiviFabrication: React.FC = () => {
         machinesService.getMachines({ actif: 'true' }).catch(() => ({ data: { data: [] } }))
       ]);
       setSuivis(suivisRes.data?.data?.suivis || []);
-      setOfs(ofsRes.data?.data || []);
-      setMachines(machinesRes.data?.data || []);
+      setOfs((() => {
+        const _r = ofsRes.data?.data;
+        if (Array.isArray(_r)) return _r;
+        if (_r && Array.isArray(_r.data)) return _r.data;
+        if (_r && typeof _r === 'object') {
+          for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+        }
+        return [];
+      })());
+      setMachines((() => {
+        const _r = machinesRes.data?.data;
+        if (Array.isArray(_r)) return _r;
+        if (_r && Array.isArray(_r.data)) return _r.data;
+        if (_r && typeof _r === 'object') {
+          for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+        }
+        return [];
+      })());
     } catch (err: any) {
       console.error('Erreur chargement suivis:', err);
       setError(err.response?.data?.error?.message || 'Erreur lors du chargement');
@@ -71,16 +112,16 @@ const SuiviFabrication: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.id_of || !formData.id_machine) {
-      alert('OF et Machine requis');
+      window.showToast?.('info', "OF et Machine requis");
       return;
     }
     try {
       if (editingSuivi) {
         await suiviFabricationService.updateSuiviFabrication(editingSuivi.id_suivi, formData);
-        alert('Suivi modifié avec succès');
+        window.showToast?.('success', "Suivi modifié");
       } else {
         await suiviFabricationService.createSuiviFabrication(formData);
-        alert('Suivi créé avec succès');
+        window.showToast?.('success', "Suivi créé");
       }
       setShowForm(false);
       setEditingSuivi(null);
@@ -88,7 +129,7 @@ const SuiviFabrication: React.FC = () => {
       loadData();
     } catch (error: any) {
       console.error('Erreur sauvegarde suivi:', error);
-      alert(error.response?.data?.error?.message || 'Erreur lors de la sauvegarde');
+      window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de la sauvegarde'));
     }
   };
 
@@ -114,7 +155,7 @@ const SuiviFabrication: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Erreur chargement suivi:', error);
-      alert(error.response?.data?.error?.message || 'Erreur lors du chargement');
+      window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors du chargement'));
     }
   };
 
@@ -168,14 +209,14 @@ const SuiviFabrication: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="ml-64 p-6 flex items-center justify-center min-h-screen">
+      <div className="p-6 flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 ml-64 p-6">
+    <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <div>
@@ -203,6 +244,41 @@ const SuiviFabrication: React.FC = () => {
             {error}
           </div>
         )}
+
+        {/* Phase G1 — BarChart "Temps par opération" */}
+        <div className="bg-white rounded-lg shadow p-4 mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <BarChart3 className="w-5 h-5 text-blue-600" />
+            <h3 className="font-semibold text-gray-800">Temps par opération</h3>
+            <span className="text-xs text-gray-500 ml-2">(agrégation sur toutes périodes)</span>
+          </div>
+          <div style={{ width: '100%', height: 260 }}>
+            {parOperation.length === 0 ? (
+              <div className="flex items-center justify-center h-full text-sm text-gray-400 italic">
+                Aucune donnée d'opération disponible
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={parOperation} margin={{ top: 8, right: 12, left: -8, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="type_operation" fontSize={11} />
+                  <YAxis fontSize={11} />
+                  <Tooltip
+                    formatter={(value: any, name: string) => {
+                      if (name === 'temps_minutes') return [`${Number(value).toFixed(1)} min`, 'Temps'];
+                      if (name === 'rendement')     return [`${Number(value).toFixed(1)} %`, 'Rendement'];
+                      if (name === 'of_count')      return [value, 'OFs'];
+                      return [value, name];
+                    }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                  <Bar dataKey="temps_minutes" fill="#2563eb" radius={[4, 4, 0, 0]} name="Temps (min)" />
+                  <Bar dataKey="rendement"     fill="#10b981" radius={[4, 4, 0, 0]} name="Rendement (%)" />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
 
         {/* Filtres */}
         <div className="bg-white p-4 rounded-lg shadow mb-6">
@@ -444,7 +520,21 @@ const SuiviFabrication: React.FC = () => {
                   filteredSuivis.map((suivi) => {
                     const rendement = calculerRendement(suivi.quantite_bonne || 0, suivi.quantite_produite || 0);
                     return (
-                      <tr key={suivi.id_suivi} className="hover:bg-gray-50">
+                      <tr
+                        key={suivi.id_suivi}
+                        className="hover:bg-gray-50 group cursor-pointer"
+                        onClick={async () => {
+                          try {
+                            const result = await suiviFabricationService.getSuiviFabrication(suivi.id_suivi);
+                            if (result.data?.data) {
+                              setSelectedSuivi(result.data?.data);
+                            }
+                          } catch (error: any) {
+                            console.error('Erreur chargement suivi:', error);
+                            setSelectedSuivi(suivi);
+                          }
+                        }}
+                      >
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{suivi.numero_suivi}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">{suivi.numero_of}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">{suivi.machine_designation}</td>
@@ -467,26 +557,9 @@ const SuiviFabrication: React.FC = () => {
                           {getStatutBadge(suivi.statut)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex gap-2">
-                            <button 
-                              onClick={async () => {
-                                try {
-                                  const result = await suiviFabricationService.getSuiviFabrication(suivi.id_suivi);
-                                  if (result.data?.data) {
-                                    setSelectedSuivi(result.data.data);
-                                  }
-                                } catch (error: any) {
-                                  console.error('Erreur chargement suivi:', error);
-                                  setSelectedSuivi(suivi);
-                                }
-                              }}
-                              className="text-blue-600 hover:text-blue-700"
-                              title="Consulter"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
-                            <button 
-                              onClick={() => handleEdit(suivi)}
+                          <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleEdit(suivi); }}
                               className="text-gray-600 hover:text-gray-700"
                               title="Modifier"
                             >

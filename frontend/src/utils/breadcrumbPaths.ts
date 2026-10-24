@@ -21,7 +21,11 @@ export const BREADCRUMB_PATHS: Record<string, string> = {
   'Qualité': '/quality/checks',
   'Maintenance': '/maintenance',
   'Point de Vente': '/pos',
-  'Rapports': '/reports'
+  'Rapports': '/reports',
+  // Phase G2 — Formations & entretiens RH
+  'Formations': '/rh/formations',
+  'Entretiens': '/rh/entretiens',
+  'Entretiens annuels': '/rh/entretiens'
 };
 
 /**

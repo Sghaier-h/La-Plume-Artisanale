@@ -1,4 +1,4 @@
-import { pool } from '../../../src/utils/db.js';
+﻿import { pool } from '../../../src/utils/db.js';
 import { logger } from '../../../src/utils/logger.js';
 
 // GET /api/multisociete/societes - Liste sociétés
@@ -250,7 +250,7 @@ export const getEtablissements = async (req, res) => {
       SELECT e.*, s.raison_sociale, u.nom_utilisateur as responsable_nom
       FROM etablissements e
       LEFT JOIN societes s ON e.id_societe = s.id_societe
-      LEFT JOIN utilisateurs u ON e.id_responsable = u.id_utilisateur
+      LEFT JOIN users u ON e.id_responsable = u.id_user
       WHERE e.actif = TRUE
     `;
     const params = [];

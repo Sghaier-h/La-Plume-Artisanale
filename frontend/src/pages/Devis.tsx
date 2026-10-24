@@ -1,6 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { FileText, Plus, Edit, Trash2, Search, Download, Eye, X, CheckCircle } from 'lucide-react';
+import React, { useEffect, useState, useMemo } from 'react';
+import { FileText, Plus, Edit, Trash2, Search, Download, X, CheckCircle, ShoppingCart, TrendingUp, Clock, Award } from 'lucide-react';
 import { devisService, commandesService, clientsService, articlesService } from '../services/api';
+import ArticlePicker from '../components/ArticlePicker';
+import KpiCard from '../components/ecommerce/KpiCard';
+import { PageSkeleton, EmptyState } from '../components/ui';
+import { DataTable, Column } from '../components/ui/DataTable';
 
 interface LigneDevis {
   id_article?: number;
@@ -21,6 +25,7 @@ const Devis: React.FC = () => {
   const [selectedDevis, setSelectedDevis] = useState<any>(null);
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState({ statut: '', client_id: '' });
+  const [pickerIndex, setPickerIndex] = useState<number | null>(null);
 
   const [formData, setFormData] = useState({
     id_client: '',
@@ -55,13 +60,21 @@ const Devis: React.FC = () => {
       ]);
       
       if (devisRes.data?.success) {
-        setDevis(devisRes.data.data || []);
+        const devisRaw = devisRes.data.data; setDevis(Array.isArray(devisRaw) ? devisRaw : (devisRaw?.data || devisRaw?.devis || []));
       } else {
         setDevis([]);
       }
       
-      setClients(clientsRes.data?.data || []);
-      setArticles(articlesRes.data?.data || []);
+      const clientsRaw = clientsRes.data?.data; setClients(Array.isArray(clientsRaw) ? clientsRaw : (clientsRaw?.data || clientsRaw?.clients || []));
+      setArticles((() => {
+        const _r = articlesRes.data?.data;
+        if (Array.isArray(_r)) return _r;
+        if (_r && Array.isArray(_r.data)) return _r.data;
+        if (_r && typeof _r === 'object') {
+          for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+        }
+        return [];
+      })());
     } catch (error) {
       console.error('Erreur chargement devis:', error);
       setDevis([]);
@@ -73,11 +86,11 @@ const Devis: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.lignes.length === 0) {
-      alert('Ajoutez au moins une ligne de devis');
+      window.showToast?.('success', "Ajoutez au moins une ligne de devis");
       return;
     }
     if (!formData.id_client) {
-      alert('Sélectionnez un client');
+      window.showToast?.('info', "Sélectionnez un client");
       return;
     }
     try {
@@ -132,7 +145,7 @@ const Devis: React.FC = () => {
       loadData();
     } catch (error: any) {
       console.error('Erreur sauvegarde devis:', error);
-      alert(error.response?.data?.error?.message || 'Erreur lors de la sauvegarde du devis');
+      window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de la sauvegarde du devis'));
     }
   };
 
@@ -174,16 +187,16 @@ const Devis: React.FC = () => {
     const statutLower = statut?.toLowerCase() || '';
     const colors: { [key: string]: string } = {
       'brouillon': 'bg-gray-100 text-gray-800',
-      'envoye': 'bg-blue-100 text-blue-800',
-      'envoyé': 'bg-blue-100 text-blue-800',
-      'accepte': 'bg-green-100 text-green-800',
-      'accepté': 'bg-green-100 text-green-800',
-      'refuse': 'bg-red-100 text-red-800',
-      'refusé': 'bg-red-100 text-red-800',
-      'expire': 'bg-orange-100 text-orange-800',
-      'expiré': 'bg-orange-100 text-orange-800',
-      'transforme': 'bg-purple-100 text-purple-800',
-      'transformé': 'bg-purple-100 text-purple-800'
+      'envoye': 'bg-[#EDF0F5] text-[#3B4E68]',
+      'envoyé': 'bg-[#EDF0F5] text-[#3B4E68]',
+      'accepte': 'bg-[#EFF3E7] text-[#3F5E29]',
+      'accepté': 'bg-[#EFF3E7] text-[#3F5E29]',
+      'refuse': 'bg-[#FBEBE4] text-[#8A2E1D]',
+      'refusé': 'bg-[#FBEBE4] text-[#8A2E1D]',
+      'expire': 'bg-[#FBF3DE] text-[#8A6412]',
+      'expiré': 'bg-[#FBF3DE] text-[#8A6412]',
+      'transforme': 'bg-[#F2E7D6] text-[#7A5C1F]',
+      'transformé': 'bg-[#F2E7D6] text-[#7A5C1F]'
     };
     return colors[statutLower] || 'bg-gray-100 text-gray-800';
   };
@@ -202,48 +215,85 @@ const Devis: React.FC = () => {
     return true;
   });
 
+  const kpis = useMemo(() => {
+    const total = devis.length;
+    const brouillon = devis.filter(d => String(d.statut || '').toUpperCase() === 'BROUILLON').length;
+    const acceptes = devis.filter(d => String(d.statut || '').toUpperCase() === 'ACCEPTE').length;
+    const caPotentiel = devis
+      .filter(d => ['ENVOYE', 'ACCEPTE'].includes(String(d.statut || '').toUpperCase()))
+      .reduce((s, d) => s + Number(d.montant_ttc || 0), 0);
+    return { total, brouillon, acceptes, caPotentiel };
+  }, [devis]);
+
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <PageSkeleton kpiCount={4} rows={8} cols={7} />;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 ml-64 p-6">
+    <div className="min-h-screen p-6" style={{ background: 'var(--bg-app)' }}>
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-              <FileText className="w-8 h-8 text-blue-600" />
-              Gestion des Devis
-            </h1>
-            <p className="text-gray-600 mt-2">Création et suivi des devis clients</p>
+        <div style={{ marginBottom: 'var(--s-6)' }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 'var(--s-2)' }}>
+            VENTES · PROPOSITIONS
           </div>
-          <button
-            onClick={() => {
-              setShowForm(true);
-              setEditingDevis(null);
-              setFormData({
-                id_client: '',
-                date_devis: new Date().toISOString().split('T')[0],
-                date_validite: '',
-                statut: 'BROUILLON',
-                taux_tva: 20,
-                remise_globale: 0,
-                reference_client: '',
-                conditions_paiement: '',
-                conditions_livraison: '',
-                notes: '',
-                lignes: []
-              });
-            }}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            Nouveau Devis
-          </button>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 500, fontSize: 'var(--text-3xl)', color: 'var(--fg-primary)', marginBottom: 'var(--s-2)' }}>
+                Devis
+              </h1>
+              <p style={{ color: 'var(--fg-secondary)', fontSize: 'var(--text-md)' }}>
+                Propositions commerciales — création, envoi et transformation en commandes.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setShowForm(true);
+                setEditingDevis(null);
+                setFormData({
+                  id_client: '',
+                  date_devis: new Date().toISOString().split('T')[0],
+                  date_validite: '',
+                  statut: 'BROUILLON',
+                  taux_tva: 20,
+                  remise_globale: 0,
+                  reference_client: '',
+                  conditions_paiement: '',
+                  conditions_livraison: '',
+                  notes: '',
+                  lignes: []
+                });
+              }}
+              className="inline-flex items-center gap-2 transition-shadow"
+              style={{
+                background: 'var(--accent-terracotta)',
+                color: 'var(--fg-inverse)',
+                padding: '0.6rem 1.1rem',
+                borderRadius: 'var(--radius-full)',
+                boxShadow: 'var(--shadow-md)',
+                fontWeight: 600,
+                fontSize: 'var(--text-sm)',
+              }}
+            >
+              <Plus className="w-4 h-4" />
+              Nouveau devis
+            </button>
+          </div>
+        </div>
+
+        {/* KPI row */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <KpiCard label="Total devis" value={kpis.total} icon={<FileText className="w-5 h-5" />} color="terracotta"
+            active={filters.statut === ''}
+            onClick={() => setFilters({ ...filters, statut: '' })} />
+          <KpiCard label="En brouillon" value={kpis.brouillon} icon={<Clock className="w-5 h-5" />} color={kpis.brouillon > 0 ? 'warning' : 'neutral'}
+            active={filters.statut.toUpperCase() === 'BROUILLON'}
+            onClick={() => setFilters({ ...filters, statut: filters.statut.toUpperCase() === 'BROUILLON' ? '' : 'BROUILLON' })} />
+          <KpiCard label="Acceptés" value={kpis.acceptes} icon={<Award className="w-5 h-5" />} color="sage"
+            active={filters.statut.toUpperCase() === 'ACCEPTE'}
+            onClick={() => setFilters({ ...filters, statut: filters.statut.toUpperCase() === 'ACCEPTE' ? '' : 'ACCEPTE' })} />
+          <KpiCard label="CA potentiel" value={kpis.caPotentiel.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} suffix="TND" icon={<TrendingUp className="w-5 h-5" />} color="indigo"
+            active={filters.statut.toUpperCase() === 'ENVOYE'}
+            onClick={() => setFilters({ ...filters, statut: filters.statut.toUpperCase() === 'ENVOYE' ? '' : 'ENVOYE' })} />
         </div>
 
         {/* Filtres et recherche */}
@@ -256,13 +306,13 @@ const Devis: React.FC = () => {
                 placeholder="Rechercher..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
               />
             </div>
             <select
               value={filters.statut}
               onChange={(e) => setFilters({ ...filters, statut: e.target.value })}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
             >
               <option value="">Tous les statuts</option>
               <option value="BROUILLON">Brouillon</option>
@@ -275,7 +325,7 @@ const Devis: React.FC = () => {
             <select
               value={filters.client_id}
               onChange={(e) => setFilters({ ...filters, client_id: e.target.value })}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
             >
               <option value="">Tous les clients</option>
               {clients.map(c => (
@@ -298,7 +348,7 @@ const Devis: React.FC = () => {
                   <select
                     value={formData.id_client}
                     onChange={(e) => setFormData({ ...formData, id_client: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                     required
                   >
                     <option value="">Sélectionner un client</option>
@@ -313,7 +363,7 @@ const Devis: React.FC = () => {
                     type="date"
                     value={formData.date_devis}
                     onChange={(e) => setFormData({ ...formData, date_devis: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                     required
                   />
                 </div>
@@ -323,7 +373,7 @@ const Devis: React.FC = () => {
                     type="date"
                     value={formData.date_validite}
                     onChange={(e) => setFormData({ ...formData, date_validite: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                   />
                 </div>
                 <div>
@@ -331,7 +381,7 @@ const Devis: React.FC = () => {
                   <select
                     value={formData.statut}
                     onChange={(e) => setFormData({ ...formData, statut: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                   >
                     <option value="BROUILLON">Brouillon</option>
                     <option value="ENVOYE">Envoyé</option>
@@ -345,7 +395,7 @@ const Devis: React.FC = () => {
                     type="number"
                     value={formData.taux_tva}
                     onChange={(e) => setFormData({ ...formData, taux_tva: parseFloat(e.target.value) || 20 })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                     min="0"
                     max="100"
                     step="0.01"
@@ -357,7 +407,7 @@ const Devis: React.FC = () => {
                     type="number"
                     value={formData.remise_globale}
                     onChange={(e) => setFormData({ ...formData, remise_globale: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                     min="0"
                     max="100"
                     step="0.01"
@@ -369,7 +419,7 @@ const Devis: React.FC = () => {
                     type="text"
                     value={formData.reference_client}
                     onChange={(e) => setFormData({ ...formData, reference_client: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                     placeholder="Réf. commande client"
                   />
                 </div>
@@ -379,7 +429,7 @@ const Devis: React.FC = () => {
                     type="text"
                     value={formData.conditions_paiement}
                     onChange={(e) => setFormData({ ...formData, conditions_paiement: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                     placeholder="Ex: 30 jours"
                   />
                 </div>
@@ -389,7 +439,7 @@ const Devis: React.FC = () => {
                     type="text"
                     value={formData.conditions_livraison}
                     onChange={(e) => setFormData({ ...formData, conditions_livraison: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                     placeholder="Ex: Livraison sous 15 jours"
                   />
                 </div>
@@ -398,7 +448,7 @@ const Devis: React.FC = () => {
                   <textarea
                     value={formData.notes}
                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]/40"
                     rows={3}
                     placeholder="Notes additionnelles..."
                   />
@@ -412,7 +462,8 @@ const Devis: React.FC = () => {
                   <button
                     type="button"
                     onClick={addLigne}
-                    className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                    className="text-sm font-medium hover:underline"
+                    style={{ color: 'var(--accent-terracotta)' }}
                   >
                     + Ajouter une ligne
                   </button>
@@ -434,16 +485,13 @@ const Devis: React.FC = () => {
                       {formData.lignes.map((ligne, index) => (
                         <tr key={index} className="border-t">
                           <td className="px-4 py-2">
-                            <select
-                              value={ligne.id_article}
-                              onChange={(e) => updateLigne(index, 'id_article', parseInt(e.target.value))}
-                              className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                            <button
+                              type="button"
+                              onClick={() => setPickerIndex(index)}
+                              className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-left bg-white hover:bg-gray-50"
                             >
-                              <option value="0">Sélectionner</option>
-                              {articles.map(a => (
-                                <option key={a.id_article} value={a.id_article}>{a.designation || a.libelle}</option>
-                              ))}
-                            </select>
+                              {ligne.designation || (ligne.id_article ? `Article #${ligne.id_article}` : 'Sélectionner un article...')}
+                            </button>
                           </td>
                           <td className="px-4 py-2">
                             <input
@@ -516,7 +564,8 @@ const Devis: React.FC = () => {
               <div className="flex gap-2">
                 <button
                   type="submit"
-                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  className="px-6 py-2 rounded-lg hover:opacity-90 transition-colors"
+                  style={{ background: 'var(--accent-terracotta)', color: 'var(--fg-inverse)', fontWeight: 600 }}
                 >
                   Enregistrer
                 </button>
@@ -536,125 +585,149 @@ const Devis: React.FC = () => {
         )}
 
         {/* Liste des devis */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Numéro</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Montant HT</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredDevis.map((devis) => (
-                <tr key={devis.id_devis} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap font-medium">{devis.numero_devis}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">{devis.client_nom}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">{devis.date_devis}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">{devis.montant_ht?.toFixed(2)} TND</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${getStatutColor(devis.statut)}`}>
-                      {devis.statut}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex gap-2">
-                      <button 
-                        onClick={async () => {
+        {filteredDevis.length === 0 ? (
+          <EmptyState
+            variant={search || filters.statut || filters.client_id ? 'search-no-result' : 'default'}
+            title={search || filters.statut || filters.client_id ? 'Aucun devis ne correspond' : 'Aucun devis pour l’instant'}
+            description={search || filters.statut || filters.client_id ? 'Essayez d’élargir vos filtres.' : 'Créez votre premier devis client.'}
+            cta={search || filters.statut || filters.client_id
+              ? { label: 'Réinitialiser', onClick: () => { setSearch(''); setFilters({ statut: '', client_id: '' }); } }
+              : undefined}
+          />
+        ) : (
+          <DataTable<any>
+            columns={[
+              { key: 'numero_devis', label: 'Numéro', sortable: true, render: (d: any) => <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 500 }}>{d.numero_devis}</span> },
+              { key: 'client_nom', label: 'Client', sortable: true, render: (d: any) => d.client_nom || '-' },
+              { key: 'date_devis', label: 'Date', sortable: true, value: (d: any) => d.date_devis, render: (d: any) => d.date_devis || '-' },
+              { key: 'montant_ht', label: 'Montant HT', sortable: true, align: 'right', value: (d: any) => Number(d.montant_ht) || 0, render: (d: any) => `${Number(d.montant_ht || 0).toFixed(2)} TND` },
+              { key: 'statut', label: 'Statut', sortable: true, render: (d: any) => (
+                <span className={`px-2 py-1 rounded text-xs font-medium ${getStatutColor(d.statut)}`}>{d.statut}</span>
+              ) },
+              { key: '_actions', label: 'Actions', sortable: false, exportable: false, render: (devis: any) => {
+                const dejaTransforme = devis.statut && ['transforme', 'transformé', 'TRANSFORME'].includes(devis.statut);
+                const transformerRow = async (e: React.MouseEvent) => {
+                  e.stopPropagation();
+                  if (!window.confirm(`Transformer le devis ${devis.numero_devis} en commande ?`)) return;
+                  try {
+                    const result = await devisService.transformerEnCommande(devis.id_devis);
+                    if (result.data?.success) {
+                      window.showToast?.('success', "Devis transformé en commande");
+                      loadData();
+                    } else {
+                      window.showToast?.('error', 'Erreur', String(result.data?.error?.message || 'Erreur lors de la transformation'));
+                    }
+                  } catch (err: any) {
+                    console.error('Erreur transformation devis:', err);
+                    window.showToast?.('error', 'Erreur', String(err.response?.data?.error?.message || 'Erreur lors de la transformation'));
+                  }
+                };
+                return (
+                  <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                    {!dejaTransforme && (
+                      <button onClick={transformerRow} className="text-green-600 hover:text-green-700" title="Transformer en commande">
+                        <ShoppingCart className="w-4 h-4" />
+                      </button>
+                    )}
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        try { await devisService.downloadPDF(devis.id_devis, devis.numero_devis); }
+                        catch { window.showToast?.('error', 'Erreur', String('Erreur lors du téléchargement du PDF')); }
+                      }}
+                      className="text-[#C8663D] hover:text-[#a94f2b]"
+                      title="Télécharger PDF"
+                    >
+                      <Download className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        try {
+                          const result = await devisService.getDevisById(devis.id_devis);
+                          if (result.data?.success) {
+                            const devisData = result.data.data;
+                            setFormData({
+                              id_client: devisData.id_client?.toString() || '',
+                              date_devis: devisData.date_devis || new Date().toISOString().split('T')[0],
+                              date_validite: devisData.date_validite || '',
+                              statut: devisData.statut || 'BROUILLON',
+                              taux_tva: devisData.taux_tva || 20,
+                              remise_globale: devisData.remise_globale || 0,
+                              reference_client: devisData.reference_client || '',
+                              conditions_paiement: devisData.conditions_paiement || '',
+                              conditions_livraison: devisData.conditions_livraison || '',
+                              notes: devisData.notes || '',
+                              lignes: (devisData.lignes || []).map((l: any) => ({
+                                id_article: l.id_article,
+                                designation: l.designation,
+                                quantite: l.quantite,
+                                prix_unitaire_ht: l.prix_unitaire_ht,
+                                remise: l.remise || 0,
+                                taux_tva: l.taux_tva || 20
+                              }))
+                            });
+                            setEditingDevis(devis);
+                            setShowForm(true);
+                          } else {
+                            window.showToast?.('error', 'Erreur', String('Erreur lors du chargement du devis'));
+                          }
+                        } catch (error: any) {
+                          console.error('Erreur chargement devis:', error);
+                          window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors du chargement du devis'));
+                        }
+                      }}
+                      className="text-gray-600 hover:text-gray-700"
+                      title="Modifier"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        if (window.confirm(`Êtes-vous sûr de vouloir supprimer le devis ${devis.numero_devis} ?`)) {
                           try {
-                            const result = await devisService.getDevisById(devis.id_devis);
-                            if (result.data?.success) {
-                              setSelectedDevis(result.data.data);
-                            } else {
-                              alert('Erreur lors du chargement du devis');
-                            }
+                            await devisService.deleteDevis(devis.id_devis);
+                            loadData();
+                            window.showToast?.('success', "Devis supprimé");
                           } catch (error: any) {
-                            console.error('Erreur chargement devis:', error);
-                            alert(error.response?.data?.error?.message || 'Erreur lors du chargement du devis');
+                            console.error('Erreur suppression devis:', error);
+                            window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de la suppression du devis'));
                           }
-                        }}
-                        className="text-blue-600 hover:text-blue-700"
-                        title="Consulter"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button className="text-green-600 hover:text-green-700">
-                        <Download className="w-4 h-4" />
-                      </button>
-                      <button 
-                        onClick={async () => {
-                          try {
-                            const result = await devisService.getDevisById(devis.id_devis);
-                            if (result.data?.success) {
-                              const devisData = result.data.data;
-                              setFormData({
-                                id_client: devisData.id_client?.toString() || '',
-                                date_devis: devisData.date_devis || new Date().toISOString().split('T')[0],
-                                date_validite: devisData.date_validite || '',
-                                statut: devisData.statut || 'BROUILLON',
-                                taux_tva: devisData.taux_tva || 20,
-                                remise_globale: devisData.remise_globale || 0,
-                                reference_client: devisData.reference_client || '',
-                                conditions_paiement: devisData.conditions_paiement || '',
-                                conditions_livraison: devisData.conditions_livraison || '',
-                                notes: devisData.notes || '',
-                                lignes: (devisData.lignes || []).map((l: any) => ({
-                                  id_article: l.id_article,
-                                  designation: l.designation,
-                                  quantite: l.quantite,
-                                  prix_unitaire_ht: l.prix_unitaire_ht,
-                                  remise: l.remise || 0,
-                                  taux_tva: l.taux_tva || 20
-                                }))
-                              });
-                              setEditingDevis(devis);
-                              setShowForm(true);
-                            } else {
-                              alert('Erreur lors du chargement du devis');
-                            }
-                          } catch (error: any) {
-                            console.error('Erreur chargement devis:', error);
-                            alert(error.response?.data?.error?.message || 'Erreur lors du chargement du devis');
-                          }
-                        }}
-                        className="text-gray-600 hover:text-gray-700"
-                        title="Modifier"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button 
-                        onClick={async () => {
-                          if (window.confirm(`Êtes-vous sûr de vouloir supprimer le devis ${devis.numero_devis} ?`)) {
-                            try {
-                              await devisService.deleteDevis(devis.id_devis);
-                              loadData();
-                              alert('Devis supprimé avec succès');
-                            } catch (error: any) {
-                              console.error('Erreur suppression devis:', error);
-                              alert(error.response?.data?.error?.message || 'Erreur lors de la suppression du devis');
-                            }
-                          }
-                        }}
-                        className="text-red-600 hover:text-red-700"
-                        title="Supprimer"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                        }
+                      }}
+                      className="text-red-600 hover:text-red-700"
+                      title="Supprimer"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                );
+              } },
+            ] as Column<any>[]}
+            data={filteredDevis}
+            rowKey={(d: any) => d.id_devis}
+            onRowClick={async (devis: any) => {
+              try {
+                const result = await devisService.getDevisById(devis.id_devis);
+                if (result.data?.success) setSelectedDevis(result.data?.data);
+                else window.showToast?.('error', 'Erreur', String('Erreur lors du chargement du devis'));
+              } catch (error: any) {
+                console.error('Erreur chargement devis:', error);
+                window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors du chargement du devis'));
+              }
+            }}
+            pageSize={25}
+            exportable
+            exportFilename="devis"
+            loading={loading}
+          />
+        )}
 
         {/* Modal de consultation */}
         {selectedDevis && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 flex items-center justify-center z-50" style={{ background: 'rgba(20,12,6,0.45)', backdropFilter: 'blur(6px)' }}>
+            <div className="rounded-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto" style={{ background: 'var(--bg-elevated)', boxShadow: 'var(--shadow-xl)' }}>
               <div className="sticky top-0 bg-white border-b p-6 flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-gray-800">
                   Devis {selectedDevis.numero_devis}
@@ -717,11 +790,11 @@ const Devis: React.FC = () => {
                             <tr key={index}>
                               <td className="px-4 py-2">{ligne.designation}</td>
                               <td className="px-4 py-2">{ligne.quantite}</td>
-                              <td className="px-4 py-2">{ligne.prix_unitaire_ht?.toFixed(2)} TND</td>
+                              <td className="px-4 py-2">{Number(ligne.prix_unitaire_ht || 0).toFixed(2)} TND</td>
                               <td className="px-4 py-2">{ligne.remise || 0}%</td>
                               <td className="px-4 py-2">{ligne.taux_tva || 20}%</td>
                               <td className="px-4 py-2 font-semibold">
-                                {ligne.montant_ttc?.toFixed(2)} TND
+                                {Number(ligne.montant_ttc || 0).toFixed(2)} TND
                               </td>
                             </tr>
                           ))}
@@ -737,21 +810,21 @@ const Devis: React.FC = () => {
                     <div className="w-64 space-y-2">
                       <div className="flex justify-between">
                         <span className="text-gray-600">Montant HT:</span>
-                        <span className="font-semibold">{selectedDevis.montant_ht?.toFixed(2)} TND</span>
+                        <span className="font-semibold">{Number(selectedDevis.montant_ht || 0).toFixed(2)} TND</span>
                       </div>
                       {selectedDevis.remise_globale > 0 && (
                         <div className="flex justify-between text-red-600">
                           <span>Remise globale ({selectedDevis.remise_globale}%):</span>
-                          <span>-{selectedDevis.montant_remise?.toFixed(2)} TND</span>
+                          <span>-{Number(selectedDevis.montant_remise || 0).toFixed(2)} TND</span>
                         </div>
                       )}
                       <div className="flex justify-between">
                         <span className="text-gray-600">TVA ({selectedDevis.taux_tva || 20}%):</span>
-                        <span className="font-semibold">{selectedDevis.montant_tva?.toFixed(2)} TND</span>
+                        <span className="font-semibold">{Number(selectedDevis.montant_tva || 0).toFixed(2)} TND</span>
                       </div>
                       <div className="flex justify-between text-lg font-bold border-t pt-2">
                         <span>Total TTC:</span>
-                        <span>{selectedDevis.montant_ttc?.toFixed(2)} TND</span>
+                        <span>{Number(selectedDevis.montant_ttc || 0).toFixed(2)} TND</span>
                       </div>
                     </div>
                   </div>
@@ -815,10 +888,11 @@ const Devis: React.FC = () => {
                         }
                       } catch (error: any) {
                         console.error('Erreur chargement devis:', error);
-                        alert(error.response?.data?.error?.message || 'Erreur lors du chargement du devis');
+                        window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors du chargement du devis'));
                       }
                     }}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    className="px-4 py-2 rounded-lg hover:opacity-90 transition"
+                    style={{ background: 'var(--accent-terracotta)', color: 'var(--fg-inverse)', fontWeight: 600 }}
                   >
                     <Edit className="w-4 h-4 inline mr-2" />
                     Modifier
@@ -833,14 +907,14 @@ const Devis: React.FC = () => {
                             const message = commandeId 
                               ? `Devis transformé en commande avec succès !\nID Commande: ${commandeId}`
                               : 'Devis transformé en commande avec succès !';
-                            alert(message);
+                            window.showToast?.('info', 'Information', String(message));
                             setSelectedDevis(null);
                             loadData();
                             // Optionnel : rediriger vers la commande créée
                             // if (commandeId) navigate(`/commandes?highlight=${commandeId}`);
                           } catch (error: any) {
                             console.error('Erreur transformation:', error);
-                            alert(error.response?.data?.error?.message || 'Erreur lors de la transformation');
+                            window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de la transformation'));
                           }
                         }
                       }}
@@ -862,6 +936,24 @@ const Devis: React.FC = () => {
           </div>
         )}
       </div>
+
+      <ArticlePicker
+        isOpen={pickerIndex !== null}
+        onClose={() => setPickerIndex(null)}
+        onSelect={(article) => {
+          if (pickerIndex === null) return;
+          const newLignes = [...formData.lignes];
+          newLignes[pickerIndex] = {
+            ...newLignes[pickerIndex],
+            id_article: article.id_article,
+            designation: article.designation,
+            prix_unitaire_ht: article.prix_vente,
+            quantite: article.quantite,
+          };
+          setFormData({ ...formData, lignes: newLignes });
+          setPickerIndex(null);
+        }}
+      />
     </div>
   );
 };

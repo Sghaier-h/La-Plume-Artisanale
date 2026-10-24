@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, Plus, Edit, Trash2, Search, Download, Eye, X, FileText } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Trash2, Search, Download, X, FileText } from 'lucide-react';
 import { avoirsService, clientsService, facturesService } from '../services/api';
+import ArticlePicker from '../components/ArticlePicker';
+import { PageSkeleton, EmptyState } from '../components/ui';
 
 interface LigneAvoir {
   id_article?: number;
@@ -23,6 +25,7 @@ const Avoir: React.FC = () => {
   const [selectedAvoir, setSelectedAvoir] = useState<any>(null);
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState({ statut: '', client_id: '' });
+  const [pickerIndex, setPickerIndex] = useState<number | null>(null);
 
   const [formData, setFormData] = useState({
     id_facture: '',
@@ -56,14 +59,14 @@ const Avoir: React.FC = () => {
       ]);
       
       if (avoirsRes.data?.success) {
-        setAvoirs(avoirsRes.data.data || []);
+        const avRaw = avoirsRes.data.data; setAvoirs(Array.isArray(avRaw) ? avRaw : (avRaw?.data || avRaw?.avoirs || []));
       } else {
         setAvoirs([]);
       }
       
-      setClients(clientsRes.data?.data || []);
+      const clientsRaw = clientsRes.data?.data; setClients(Array.isArray(clientsRaw) ? clientsRaw : (clientsRaw?.data || clientsRaw?.clients || []));
       if (facturesRes.data?.success) {
-        setFactures(facturesRes.data.data || []);
+        const fRaw = facturesRes.data.data; setFactures(Array.isArray(fRaw) ? fRaw : (fRaw?.data || fRaw?.factures || []));
       }
     } catch (error) {
       console.error('Erreur chargement avoirs:', error);
@@ -76,11 +79,11 @@ const Avoir: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.lignes.length === 0) {
-      alert('Ajoutez au moins une ligne d\'avoir');
+      window.showToast?.('success', "Ajoutez au moins une ligne d'avoir");
       return;
     }
     if (!formData.id_client || !formData.date_avoir) {
-      alert('Client et date d\'avoir requis');
+      window.showToast?.('info', "Client et date d'avoir requis");
       return;
     }
     try {
@@ -93,10 +96,10 @@ const Avoir: React.FC = () => {
       setEditingAvoir(null);
       resetForm();
       loadData();
-      alert(editingAvoir ? 'Avoir modifié avec succès' : 'Avoir créé avec succès');
+      window.showToast?.('success', 'Enregistré', String(editingAvoir ? 'Avoir modifié avec succès' : 'Avoir créé avec succès'));
     } catch (error: any) {
       console.error('Erreur sauvegarde avoir:', error);
-      alert(error.response?.data?.error?.message || 'Erreur lors de la sauvegarde');
+      window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de la sauvegarde'));
     }
   };
 
@@ -107,12 +110,12 @@ const Avoir: React.FC = () => {
         statut: 'BROUILLON'
       });
       if (result.data?.success) {
-        alert('Avoir généré avec succès depuis la facture');
+        window.showToast?.('success', "Avoir généré avec succès depuis la facture");
         loadData();
       }
     } catch (error: any) {
       console.error('Erreur génération avoir:', error);
-      alert(error.response?.data?.error?.message || 'Erreur lors de la génération');
+      window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de la génération'));
     }
   };
 
@@ -193,20 +196,16 @@ const Avoir: React.FC = () => {
   });
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <PageSkeleton kpiCount={0} rows={8} cols={7} />;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 ml-64 p-6">
+    <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-              <ArrowLeft className="w-8 h-8 text-blue-600" />
+              <ArrowLeft className="w-8 h-8 text-[#C8663D]" />
               Avoirs
             </h1>
             <p className="text-gray-600 mt-2">Gestion des avoirs et crédits clients</p>
@@ -217,7 +216,7 @@ const Avoir: React.FC = () => {
               setEditingAvoir(null);
               resetForm();
             }}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-2 bg-[#C8663D] text-white px-4 py-2 rounded-lg hover:bg-[#a55231] transition-colors"
           >
             <Plus className="w-5 h-5" />
             Nouvel Avoir
@@ -234,13 +233,13 @@ const Avoir: React.FC = () => {
                 placeholder="Rechercher..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
               />
             </div>
             <select
               value={filters.statut}
               onChange={(e) => setFilters({ ...filters, statut: e.target.value })}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
             >
               <option value="">Tous les statuts</option>
               <option value="BROUILLON">Brouillon</option>
@@ -251,7 +250,7 @@ const Avoir: React.FC = () => {
             <select
               value={filters.client_id}
               onChange={(e) => setFilters({ ...filters, client_id: e.target.value })}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
             >
               <option value="">Tous les clients</option>
               {clients.map(c => (
@@ -284,7 +283,7 @@ const Avoir: React.FC = () => {
                         handleGenerateFromFacture(parseInt(e.target.value));
                       }
                     }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                   >
                     <option value="">Sélectionner une facture (optionnel)</option>
                     {factures.filter(f => f.statut === 'REGLEE' || f.statut === 'EN_ATTENTE').map(f => (
@@ -299,7 +298,7 @@ const Avoir: React.FC = () => {
                   <select
                     value={formData.id_client}
                     onChange={(e) => setFormData({ ...formData, id_client: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                     required
                   >
                     <option value="">Sélectionner un client</option>
@@ -314,7 +313,7 @@ const Avoir: React.FC = () => {
                     type="date"
                     value={formData.date_avoir}
                     onChange={(e) => setFormData({ ...formData, date_avoir: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                     required
                   />
                 </div>
@@ -323,7 +322,7 @@ const Avoir: React.FC = () => {
                   <select
                     value={formData.statut}
                     onChange={(e) => setFormData({ ...formData, statut: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                   >
                     <option value="BROUILLON">Brouillon</option>
                     <option value="EN_ATTENTE">En attente</option>
@@ -336,7 +335,7 @@ const Avoir: React.FC = () => {
                     type="text"
                     value={formData.motif_avoir}
                     onChange={(e) => setFormData({ ...formData, motif_avoir: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                     placeholder="Ex: Retour marchandise, Erreur facturation..."
                     required
                   />
@@ -347,7 +346,7 @@ const Avoir: React.FC = () => {
                     type="number"
                     value={formData.taux_tva}
                     onChange={(e) => setFormData({ ...formData, taux_tva: parseFloat(e.target.value) || 20 })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                     min="0"
                     max="100"
                     step="0.01"
@@ -359,7 +358,7 @@ const Avoir: React.FC = () => {
                     type="number"
                     value={formData.remise_globale}
                     onChange={(e) => setFormData({ ...formData, remise_globale: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                     min="0"
                     max="100"
                     step="0.01"
@@ -371,7 +370,7 @@ const Avoir: React.FC = () => {
                     type="text"
                     value={formData.reference_client}
                     onChange={(e) => setFormData({ ...formData, reference_client: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                     placeholder="Réf. avoir client"
                   />
                 </div>
@@ -380,7 +379,7 @@ const Avoir: React.FC = () => {
                   <textarea
                     value={formData.notes}
                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                     rows={3}
                     placeholder="Notes additionnelles..."
                   />
@@ -394,7 +393,7 @@ const Avoir: React.FC = () => {
                   <button
                     type="button"
                     onClick={addLigne}
-                    className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                    className="text-[#C8663D] hover:text-[#a55231] text-sm font-medium"
                   >
                     + Ajouter une ligne
                   </button>
@@ -417,13 +416,23 @@ const Avoir: React.FC = () => {
                       {formData.lignes.map((ligne, index) => (
                         <tr key={index} className="border-t">
                           <td className="px-4 py-2">
-                            <input
-                              type="text"
-                              value={ligne.designation || ''}
-                              onChange={(e) => updateLigne(index, 'designation', e.target.value)}
-                              className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                              placeholder="Désignation"
-                            />
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="text"
+                                value={ligne.designation || ''}
+                                onChange={(e) => updateLigne(index, 'designation', e.target.value)}
+                                className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
+                                placeholder="Désignation"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setPickerIndex(index)}
+                                title="Choisir un article du catalogue"
+                                className="px-2 py-1 border border-gray-300 rounded text-xs bg-white hover:bg-gray-50"
+                              >
+                                📦
+                              </button>
+                            </div>
                           </td>
                           <td className="px-4 py-2">
                             <input
@@ -516,7 +525,7 @@ const Avoir: React.FC = () => {
               <div className="flex gap-2">
                 <button
                   type="submit"
-                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  className="bg-[#C8663D] text-white px-6 py-2 rounded-lg hover:bg-[#a55231] transition-colors"
                 >
                   Enregistrer
                 </button>
@@ -537,6 +546,16 @@ const Avoir: React.FC = () => {
         )}
 
         {/* Liste */}
+        {filteredAvoirs.length === 0 ? (
+          <EmptyState
+            variant={search || filters.statut || filters.client_id ? 'search-no-result' : 'default'}
+            title={search || filters.statut || filters.client_id ? 'Aucun avoir ne correspond' : 'Aucun avoir'}
+            description={search || filters.statut || filters.client_id ? 'Réinitialisez vos filtres ou votre recherche.' : 'Les avoirs clients apparaîtront ici.'}
+            cta={search || filters.statut || filters.client_id
+              ? { label: 'Réinitialiser', onClick: () => { setSearch(''); setFilters({ statut: '', client_id: '' }); } }
+              : undefined}
+          />
+        ) : (
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <table className="w-full">
             <thead className="bg-gray-50">
@@ -551,49 +570,48 @@ const Avoir: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {filteredAvoirs.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
-                    Aucun avoir trouvé
-                  </td>
-                </tr>
-              ) : (
-                filteredAvoirs.map((avoir) => (
-                  <tr key={avoir.id_avoir} className="hover:bg-gray-50">
+              {filteredAvoirs.map((avoir) => (
+                  <tr
+                    key={avoir.id_avoir}
+                    onClick={async () => {
+                      try {
+                        const result = await avoirsService.getAvoirById(avoir.id_avoir);
+                        if (result.data?.success) {
+                          setSelectedAvoir(result.data?.data);
+                        }
+                      } catch (error: any) {
+                        console.error('Erreur chargement avoir:', error);
+                        window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors du chargement'));
+                      }
+                    }}
+                    className="hover:bg-gray-50 group cursor-pointer"
+                  >
                     <td className="px-6 py-4 whitespace-nowrap font-medium">{avoir.numero_avoir}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{avoir.numero_facture || '-'}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{avoir.client_nom}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{avoir.date_avoir}</td>
-                    <td className="px-6 py-4 whitespace-nowrap font-semibold text-red-600">{avoir.montant_ttc?.toFixed(2)} TND</td>
+                    <td className="px-6 py-4 whitespace-nowrap font-semibold text-red-600">{Number(avoir.montant_ttc || 0).toFixed(2)} TND</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 rounded text-xs font-medium ${getStatutColor(avoir.statut)}`}>
                         {avoir.statut}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex gap-2">
-                        <button 
-                          onClick={async () => {
-                            try {
-                              const result = await avoirsService.getAvoirById(avoir.id_avoir);
-                              if (result.data?.success) {
-                                setSelectedAvoir(result.data.data);
-                              }
-                            } catch (error: any) {
-                              console.error('Erreur chargement avoir:', error);
-                              alert(error.response?.data?.error?.message || 'Erreur lors du chargement');
-                            }
+                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            try { await avoirsService.downloadPDF(avoir.id_avoir, avoir.numero_avoir); }
+                            catch { window.showToast?.('error', 'Erreur', String('Erreur lors du téléchargement du PDF')); }
                           }}
-                          className="text-blue-600 hover:text-blue-700"
-                          title="Consulter"
+                          className="text-[#C8663D] hover:text-[#a94f2b]"
+                          title="Télécharger PDF"
                         >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button className="text-green-600 hover:text-green-700" title="Télécharger PDF">
                           <Download className="w-4 h-4" />
                         </button>
-                        <button 
-                          onClick={async () => {
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
                             try {
                               const result = await avoirsService.getAvoirById(avoir.id_avoir);
                               if (result.data?.success) {
@@ -624,7 +642,7 @@ const Avoir: React.FC = () => {
                               }
                             } catch (error: any) {
                               console.error('Erreur chargement avoir:', error);
-                              alert(error.response?.data?.error?.message || 'Erreur lors du chargement');
+                              window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors du chargement'));
                             }
                           }}
                           className="text-gray-600 hover:text-gray-700"
@@ -632,16 +650,17 @@ const Avoir: React.FC = () => {
                         >
                           <Edit className="w-4 h-4" />
                         </button>
-                        <button 
-                          onClick={async () => {
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
                             if (window.confirm(`Supprimer l'avoir ${avoir.numero_avoir} ?`)) {
                               try {
                                 await avoirsService.deleteAvoir(avoir.id_avoir);
                                 loadData();
-                                alert('Avoir supprimé avec succès');
+                                window.showToast?.('success', "Avoir supprimé");
                               } catch (error: any) {
                                 console.error('Erreur suppression avoir:', error);
-                                alert(error.response?.data?.error?.message || 'Erreur lors de la suppression');
+                                window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de la suppression'));
                               }
                             }
                           }}
@@ -653,11 +672,11 @@ const Avoir: React.FC = () => {
                       </div>
                     </td>
                   </tr>
-                ))
-              )}
+                ))}
             </tbody>
           </table>
         </div>
+        )}
 
         {/* Modal de consultation */}
         {selectedAvoir && (
@@ -727,11 +746,11 @@ const Avoir: React.FC = () => {
                             <tr key={index}>
                               <td className="px-4 py-2">{ligne.designation}</td>
                               <td className="px-4 py-2">{ligne.quantite}</td>
-                              <td className="px-4 py-2">{ligne.prix_unitaire_ht?.toFixed(2)} TND</td>
+                              <td className="px-4 py-2">{Number(ligne.prix_unitaire_ht || 0).toFixed(2)} TND</td>
                               <td className="px-4 py-2">{ligne.remise || 0}%</td>
                               <td className="px-4 py-2">{ligne.taux_tva || 20}%</td>
                               <td className="px-4 py-2 font-semibold text-red-600">
-                                {ligne.montant_ttc?.toFixed(2)} TND
+                                {Number(ligne.montant_ttc || 0).toFixed(2)} TND
                               </td>
                             </tr>
                           ))}
@@ -747,21 +766,21 @@ const Avoir: React.FC = () => {
                     <div className="w-64 space-y-2">
                       <div className="flex justify-between">
                         <span className="text-gray-600">Montant HT:</span>
-                        <span className="font-semibold">{selectedAvoir.montant_ht?.toFixed(2)} TND</span>
+                        <span className="font-semibold">{Number(selectedAvoir.montant_ht || 0).toFixed(2)} TND</span>
                       </div>
                       {selectedAvoir.remise_globale > 0 && (
                         <div className="flex justify-between text-red-600">
                           <span>Remise globale ({selectedAvoir.remise_globale}%):</span>
-                          <span>-{selectedAvoir.montant_remise?.toFixed(2)} TND</span>
+                          <span>-{Number(selectedAvoir.montant_remise || 0).toFixed(2)} TND</span>
                         </div>
                       )}
                       <div className="flex justify-between">
                         <span className="text-gray-600">TVA ({selectedAvoir.taux_tva || 20}%):</span>
-                        <span className="font-semibold">{selectedAvoir.montant_tva?.toFixed(2)} TND</span>
+                        <span className="font-semibold">{Number(selectedAvoir.montant_tva || 0).toFixed(2)} TND</span>
                       </div>
                       <div className="flex justify-between text-lg font-bold border-t pt-2 text-red-600">
                         <span>Total TTC:</span>
-                        <span>{selectedAvoir.montant_ttc?.toFixed(2)} TND</span>
+                        <span>{Number(selectedAvoir.montant_ttc || 0).toFixed(2)} TND</span>
                       </div>
                     </div>
                   </div>
@@ -802,10 +821,10 @@ const Avoir: React.FC = () => {
                         }
                       } catch (error: any) {
                         console.error('Erreur chargement avoir:', error);
-                        alert(error.response?.data?.error?.message || 'Erreur lors du chargement');
+                        window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors du chargement'));
                       }
                     }}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    className="px-4 py-2 bg-[#C8663D] text-white rounded-lg hover:bg-[#a55231]"
                   >
                     <Edit className="w-4 h-4 inline mr-2" />
                     Modifier
@@ -822,6 +841,24 @@ const Avoir: React.FC = () => {
           </div>
         )}
       </div>
+
+      <ArticlePicker
+        isOpen={pickerIndex !== null}
+        onClose={() => setPickerIndex(null)}
+        onSelect={(article) => {
+          if (pickerIndex === null) return;
+          const newLignes = [...formData.lignes];
+          newLignes[pickerIndex] = {
+            ...newLignes[pickerIndex],
+            id_article: article.id_article,
+            designation: article.designation,
+            prix_unitaire_ht: article.prix_vente,
+            quantite: article.quantite,
+          };
+          setFormData({ ...formData, lignes: newLignes });
+          setPickerIndex(null);
+        }}
+      />
     </div>
   );
 };

@@ -25,7 +25,6 @@ export { default as SaleOrderForm } from './forms/SaleOrderForm';
 
 // Modals
 export { default as PartialDeliveryModal } from './PartialDeliveryModal';
-export { default as ProductCatalogModal } from './ProductCatalogModal';
 
 // System
 export { default as NotificationProvider, useNotifications } from './NotificationSystem';

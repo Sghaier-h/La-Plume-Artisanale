@@ -5,12 +5,13 @@ import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { logger } from './utils/logger.js';
 import { errorHandler } from './utils/error.helper.js';
 import { pool } from './utils/db.js';
+import { loginRateLimit, apiRateLimit } from './middleware/rate-limit.middleware.js';
+import { autoAuditAll } from './middleware/audit.middleware.js';
 
 dotenv.config();
 
@@ -36,15 +37,31 @@ app.set('trust proxy', 1);
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
+// ── CORS : whitelist depuis CORS_ORIGIN (séparé par virgules), '*' en dev ──
+const corsWhitelist = (process.env.CORS_ORIGIN || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+const defaultOrigins = [
+  'http://localhost:3000',
+  'https://fabrication.laplume-artisanale.tn',
+  process.env.FRONTEND_URL || 'http://localhost:3000'
+];
+const allowedOrigins = corsWhitelist.length ? corsWhitelist : defaultOrigins;
+const isDev = process.env.NODE_ENV !== 'production';
+
 app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'https://fabrication.laplume-artisanale.tn',
-    process.env.FRONTEND_URL || 'http://localhost:3000'
-  ],
+  origin: (origin, cb) => {
+    // Requêtes non-CORS (Postman, curl) : pas d'origin → autorisé
+    if (!origin) return cb(null, true);
+    if (isDev && (allowedOrigins.includes('*') || corsWhitelist.length === 0)) return cb(null, true);
+    if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) return cb(null, true);
+    return cb(new Error(`CORS refusé pour l'origine ${origin}`));
+  },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Active-Company-Id']
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Active-Company-Id', 'x-societe-id', 'x-tablette-token', 'X-Webhook-Signature', 'X-Hub-Signature-256']
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -54,32 +71,18 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// ── Rate limiting ──────────────────────────────────────────────────────
+// ── Rate limiting (in-memory MVP) ──────────────────────────────────────
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: isDevelopment ? 1000 : 100,
-  message: {
-    success: false,
-    error: { message: 'Trop de requêtes. Veuillez patienter quelques instants.' }
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+// Limite spécifique au login (5 / IP / 15 min)
+app.use('/api/auth/login', loginRateLimit);
+// Limite globale API (300 / IP / min)
+app.use('/api/', apiRateLimit);
 
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: isDevelopment ? 50 : 10,
-  message: {
-    success: false,
-    error: { message: 'Trop de tentatives de connexion. Patientez 15 minutes.' }
-  },
-  skipSuccessfulRequests: true,
-});
-
-app.use('/api/auth/', authLimiter);
-app.use('/api/', limiter);
+// ── Audit automatique (attache res.on('finish') AVANT les routes) ──────
+// N'écrit dans `audit` que pour 2xx + POST/PUT/PATCH/DELETE et n'échoue
+// jamais silencieusement la requête utilisateur.
+app.use(autoAuditAll);
 
 // ── Swagger (optionnel) ────────────────────────────────────────────────
 (async function initSwagger() {
@@ -186,6 +189,68 @@ import { securityManager } from './core/SecurityManager.js';
     for (const route of routesToRegister) {
       app.use(route.path, route.router);
       logger.info(`Route: ${route.path}`);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Routes API v2 (modules-v2/ — groupes ventes/achats/comptabilite/
+    // rh/ia-agents/comms/personnalisation/ecommerce/publicite, préfixe
+    // /api/v2/*). N'entre PAS en conflit avec les routes v1 (/api/*).
+    // ═══════════════════════════════════════════════════════════════
+    try {
+      const { default: buildV2Router } = await import('../modules-v2/index.js');
+      const v2Router = await buildV2Router();
+      app.use(v2Router);
+      logger.info('[modules-v2] Router monté avec succès sur /api/v2/*');
+    } catch (err) {
+      // Ne pas planter le serveur : les routes v1 restent fonctionnelles
+      logger.error('[modules-v2] Échec chargement router', {
+        error: err.message,
+        stack: err.stack
+      });
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Webhooks publics v2 (§14quater.4 — photos justificatives
+    // Teams/WhatsApp/Email). HMAC-signés dans le controller, pas d'auth
+    // JWT. Monté hors buildV2Router car ils ont leur propre parser JSON
+    // qui capture le body brut pour la vérification HMAC.
+    // ═══════════════════════════════════════════════════════════════
+    try {
+      const { default: photosWebhooks } = await import(
+        '../modules-v2/documents/photos-boite-tri/webhooks.routes.js'
+      );
+      app.use('/api/v2/webhooks', photosWebhooks);
+      logger.info('[modules-v2] Webhooks photos montés sur /api/v2/webhooks/{teams,whatsapp,email}/photo');
+    } catch (err) {
+      logger.warn('[modules-v2] Webhooks photos non montés', { error: err.message });
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Alias de compatibilité RH legacy → routeurs v2 rh.
+    //
+    // Les modules legacy `backend/modules/{hr,pointage,payroll-tunisia}` ont
+    // été supprimés au profit des sous-modules v2 `backend/modules-v2/rh/*`
+    // (consolidation Phase C). On ré-expose cependant les chemins v1 utilisés
+    // par :
+    //  - Pointage.tsx / PointageTimeMoto.tsx / Equipe.tsx (`api.get('/pointage/...')`)
+    //  - services legacy `hr*` dans `frontend/src/services/api.ts`
+    //  - services legacy `payrollTunisia*` dans `frontend/src/services/api.ts`
+    //
+    // afin d'éviter la casse en attendant la migration complète des pages
+    // vers des services v2 (`rhApi.ts`, `tabletteApi.*`).
+    // ═══════════════════════════════════════════════════════════════
+    try {
+      const [{ default: v2PointageRouter }, { default: v2RecrutementRouter }] = await Promise.all([
+        import('../modules-v2/rh/pointage/routes.js'),
+        import('../modules-v2/rh/recrutement/routes.js'),
+      ]);
+      app.use('/api/pointage', v2PointageRouter);
+      app.use('/api/hr/recruitments', v2RecrutementRouter);
+      logger.info('[compat-rh] Alias /api/pointage → v2 rh/pointages + /api/hr/recruitments → v2 rh/candidatures');
+    } catch (err) {
+      logger.warn('[compat-rh] Échec montage alias RH legacy', {
+        error: err.message,
+      });
     }
 
   } catch (error) {
@@ -311,12 +376,17 @@ httpServer.on('error', (err) => {
   }
 });
 
-httpServer.listen(PORT, () => {
+httpServer.listen(PORT, async () => {
   logger.info(`Serveur démarré sur le port ${PORT}`);
   logger.info('Socket.IO actif');
   if (isDevelopment) {
     logger.info(`Documentation API: http://localhost:${PORT}/api-docs`);
   }
+
+  // ── Relances factures ──────────────────────────────────────────
+  // Scheduler legacy retiré : le module `modules/relances` a été supprimé au
+  // profit de `modules-v2/ventes/relances-factures` (§14quater). Un nouveau
+  // scheduler sera câblé lorsque le module v2 l'exposera.
 });
 
 export { io };

@@ -1,23 +1,30 @@
 /**
- * Routes Mobile - Module modulaire
+ * Routes Mobile — montées sur /api/v1/mobile (voir manifest.apiPaths)
  */
 
 import express from 'express';
 import { authenticate } from '../../../src/middleware/auth.middleware.js';
 import {
-  getMobile,
-  getMobileById,
-  createMobile,
-  updateMobile,
-  deleteMobile
+  registerDevice,
+  heartbeat,
+  getDevices,
+  getConfig,
+  getUserTasks,
+  getDeviceById,
+  deactivateDevice,
+  pushNotification,
 } from '../controllers/mobile.controller.js';
 
 const router = express.Router();
+router.use(authenticate);
 
-router.get('/', authenticate, getMobile);
-router.get('/:id', authenticate, getMobileById);
-router.post('/', authenticate, createMobile);
-router.put('/:id', authenticate, updateMobile);
-router.delete('/:id', authenticate, deleteMobile);
+router.post('/register', registerDevice);
+router.post('/heartbeat', heartbeat);
+router.get('/config', getConfig);
+router.get('/user/:id_user(\\d+)/tasks', getUserTasks);
+router.post('/notifications/push', pushNotification);
+router.get('/devices', getDevices);
+router.get('/devices/:id(\\d+)', getDeviceById);
+router.put('/devices/:id(\\d+)/deactivate', deactivateDevice);
 
 export default router;

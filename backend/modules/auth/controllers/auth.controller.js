@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Contrôleur Auth — Module modulaire
  * Login, logout, me (session courante)
  */
@@ -8,6 +8,7 @@ import jwt from 'jsonwebtoken';
 import { pool } from '../../../src/utils/db.js';
 import { logger } from '../../../src/utils/logger.js';
 import { mockUsers } from '../../../src/config/dev-users.js';
+import { getPermissionsForRole } from '../../../src/config/role-permissions.js';
 import { sendError, sendSuccess, handleError, HTTP_STATUS } from '../../../src/utils/error.helper.js';
 
 // ── POST /api/auth/login ────────────────────────────────────────────────
@@ -16,7 +17,7 @@ export const login = async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return sendError(res, HTTP_STATUS.BAD_REQUEST, 'Email et mot de passe requis');
+      return sendError(res, 'Email et mot de passe requis', HTTP_STATUS.BAD_REQUEST);
     }
 
     // Mode mock : strictement NODE_ENV=development + USE_MOCK_AUTH=true
@@ -27,41 +28,53 @@ export const login = async (req, res) => {
       const mockUser = mockUsers.find(u => u.email === email && u.password === password);
 
       if (mockUser) {
+        const permissions = getPermissionsForRole(mockUser.user.role);
         const token = jwt.sign(
-          { userId: mockUser.user.id, email: mockUser.user.email, role: mockUser.user.role },
+          {
+            userId: mockUser.user.id,
+            id: mockUser.user.id,
+            email: mockUser.user.email,
+            role: mockUser.user.role,
+            role_principal: mockUser.user.role,
+            permissions,
+          },
           process.env.JWT_SECRET || 'dev-secret-key',
           { expiresIn: process.env.JWT_EXPIRE || '24h' }
         );
 
-        logger.info('Login mock réussi', { email: mockUser.user.email, role: mockUser.user.role });
+        logger.info('Login mock réussi', {
+          email: mockUser.user.email,
+          role: mockUser.user.role,
+          permsCount: permissions.length,
+        });
         return sendSuccess(res, { token, user: mockUser.user });
       }
 
-      return sendError(res, HTTP_STATUS.UNAUTHORIZED, 'Identifiants invalides (mode développement)');
+      return sendError(res, 'Identifiants invalides (mode développement)', HTTP_STATUS.UNAUTHORIZED);
     }
 
     // Mode production — connexion BDD
     try {
       const result = await pool.query(
-        `SELECT u.id_utilisateur, u.email, u.nom_utilisateur, u.mot_de_passe_hash, u.actif,
+        `SELECT u.id_user, u.email, u.nom_utilisateur, u.mot_de_passe_hash, u.actif,
                 u.derniere_connexion, e.nom, e.prenom, e.fonction,
                 r.code_role as role
-         FROM utilisateurs u
+         FROM users u
          LEFT JOIN equipe_fabrication e ON u.id_operateur = e.id_operateur
-         LEFT JOIN utilisateurs_roles ur ON u.id_utilisateur = ur.id_utilisateur
+         LEFT JOIN utilisateurs_roles ur ON u.id_user = ur.id_utilisateur
          LEFT JOIN roles r ON ur.id_role = r.id_role
          WHERE u.email = $1 LIMIT 1`,
         [email]
       );
 
       if (result.rows.length === 0) {
-        return sendError(res, HTTP_STATUS.UNAUTHORIZED, 'Identifiants invalides');
+        return sendError(res, 'Identifiants invalides', HTTP_STATUS.UNAUTHORIZED);
       }
 
       const user = result.rows[0];
 
       if (!user.actif) {
-        return sendError(res, HTTP_STATUS.UNAUTHORIZED, 'Compte inactif');
+        return sendError(res, 'Compte inactif', HTTP_STATUS.UNAUTHORIZED);
       }
 
       // Vérifier mot de passe (bcrypt puis fallback crypt() PostgreSQL)
@@ -79,7 +92,7 @@ export const login = async (req, res) => {
       }
 
       if (!isValid) {
-        return sendError(res, HTTP_STATUS.UNAUTHORIZED, 'Identifiants invalides');
+        return sendError(res, 'Identifiants invalides', HTTP_STATUS.UNAUTHORIZED);
       }
 
       const roleMap = {
@@ -90,15 +103,15 @@ export const login = async (req, res) => {
       const mappedRole = roleMap[user.role] || 'USER';
 
       const token = jwt.sign(
-        { userId: user.id_utilisateur.toString(), email: user.email, role: mappedRole },
+        { userId: user.id_user.toString(), email: user.email, role: mappedRole },
         process.env.JWT_SECRET,
         { expiresIn: process.env.JWT_EXPIRE || '24h' }
       );
 
       // Mise à jour dernière connexion (non bloquant)
       pool.query(
-        'UPDATE utilisateurs SET derniere_connexion = CURRENT_TIMESTAMP WHERE id_utilisateur = $1',
-        [user.id_utilisateur]
+        'UPDATE users SET derniere_connexion = CURRENT_TIMESTAMP WHERE id_user = $1',
+        [user.id_user]
       ).catch(err => logger.warn('Impossible de mettre à jour la dernière connexion', { error: err.message }));
 
       logger.info('Login réussi', { email: user.email, role: mappedRole });
@@ -106,7 +119,7 @@ export const login = async (req, res) => {
       return sendSuccess(res, {
         token,
         user: {
-          id: user.id_utilisateur.toString(),
+          id: user.id_user.toString(),
           email: user.email,
           nom: user.nom || user.nom_utilisateur,
           prenom: user.prenom || '',
@@ -130,7 +143,7 @@ export const login = async (req, res) => {
         }
       }
 
-      return sendError(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, 'Erreur serveur');
+      return sendError(res, 'Erreur serveur', HTTP_STATUS.INTERNAL_SERVER_ERROR);
     }
   } catch (error) {
     return handleError(res, error, 'login');
@@ -161,18 +174,18 @@ export const me = async (req, res) => {
 
     try {
       const result = await pool.query(
-        `SELECT u.id_utilisateur, u.email, u.nom_utilisateur, u.derniere_connexion, u.actif,
+        `SELECT u.id_user, u.email, u.nom_utilisateur, u.derniere_connexion, u.actif,
                 e.nom, e.prenom, e.fonction, r.code_role as role
-         FROM utilisateurs u
+         FROM users u
          LEFT JOIN equipe_fabrication e ON u.id_operateur = e.id_operateur
-         LEFT JOIN utilisateurs_roles ur ON u.id_utilisateur = ur.id_utilisateur
+         LEFT JOIN utilisateurs_roles ur ON u.id_user = ur.id_utilisateur
          LEFT JOIN roles r ON ur.id_role = r.id_role
-         WHERE u.id_utilisateur = $1 LIMIT 1`,
+         WHERE u.id_user = $1 LIMIT 1`,
         [req.user.id]
       );
 
       if (result.rows.length === 0) {
-        return sendError(res, HTTP_STATUS.NOT_FOUND, 'Utilisateur non trouvé');
+        return sendError(res, 'Utilisateur non trouvé', HTTP_STATUS.NOT_FOUND);
       }
 
       const user = result.rows[0];
@@ -184,7 +197,7 @@ export const me = async (req, res) => {
 
       return sendSuccess(res, {
         user: {
-          id: user.id_utilisateur.toString(),
+          id: user.id_user.toString(),
           email: user.email,
           nom: user.nom || user.nom_utilisateur,
           prenom: user.prenom || '',
@@ -205,7 +218,7 @@ export const me = async (req, res) => {
         });
       }
 
-      return sendError(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, 'Erreur serveur');
+      return sendError(res, 'Erreur serveur', HTTP_STATUS.INTERNAL_SERVER_ERROR);
     }
   } catch (error) {
     return handleError(res, error, 'me');

@@ -283,7 +283,8 @@ const OperationsPanel: React.FC<OperationsPanelProps> = ({
               label: 'Comptabiliser',
               icon: CheckCircle,
               action: async () => {
-                await api.put(`/api/account/moves/${record.id}/post`);
+                // Migration §14quater : v2 `valider` remplace v1 `post`
+                await api.post(`/api/v2/comptabilite/ecritures/${record.id}/valider`);
               },
               variant: 'primary',
               confirm: 'Comptabiliser cette écriture ?',
@@ -309,8 +310,10 @@ const OperationsPanel: React.FC<OperationsPanelProps> = ({
             label: 'Dupliquer',
             icon: Copy,
             action: async () => {
-              const response = await api.post(`/api/account/moves/${record.id}/duplicate`);
-              window.location.href = `/account-moves/${response.data.data.id}`;
+              // TODO §14quater : exposer un endpoint `duplicate` sur `/api/v2/comptabilite/ecritures/:id`.
+              // En attendant, on relit l'écriture (le composant appelant branchera la duplication côté UI).
+              const response = await api.get(`/api/v2/comptabilite/ecritures/${record.id}`);
+              window.location.href = `/comptabilite/journal?duplicateFrom=${response.data?.data?.id ?? record.id}`;
             },
             variant: 'default',
           },
@@ -319,7 +322,8 @@ const OperationsPanel: React.FC<OperationsPanelProps> = ({
             label: 'Imprimer',
             icon: Printer,
             action: async () => {
-              window.open(`/api/account/moves/${record.id}/print`, '_blank');
+              // TODO §14quater : endpoint `print` à exposer sur `/api/v2/comptabilite/ecritures/:id/pdf`.
+              window.open(`/api/v2/comptabilite/ecritures/${record.id}/pdf`, '_blank');
             },
             variant: 'default',
           }

@@ -29,12 +29,12 @@ import StockLocation from '../../modules/stock/models/StockLocation.js';
 import StockMove from '../../modules/stock/models/StockMove.js';
 import StockPicking from '../../modules/stock/models/StockPicking.js';
 
-// Module MRP
-import MrpProduction from '../../modules/mrp/models/MrpProduction.js';
-import MrpBOM from '../../modules/mrp/models/MrpBOM.js';
+// Module MRP (Phase G3 : porté dans modules-v2/fabrication/mrp)
+import MrpProduction from '../../modules-v2/fabrication/mrp/models/MrpProduction.js';
+import MrpBOM from '../../modules-v2/fabrication/mrp/models/MrpBOM.js';
 
-// Module Account
-import AccountMove from '../../modules/account/models/AccountMove.js';
+// Module Account — supprimé (fusion dans modules-v2/comptabilite/ecritures).
+// Les écritures comptables sont désormais gérées par le router v2.
 
 // Module Purchase
 import PurchaseOrder from '../../modules/purchase/models/PurchaseOrder.js';
@@ -65,9 +65,8 @@ export function registerAllModels() {
   registry.register('mrp.production', MrpProduction);
   registry.register('mrp.bom', MrpBOM);
   
-  // Account
-  registry.register('account.move', AccountMove);
-  
+  // Account — ancien `account.move` retiré ; voir modules-v2/comptabilite/ecritures.
+
   // Purchase
   registry.register('purchase.order', PurchaseOrder);
   

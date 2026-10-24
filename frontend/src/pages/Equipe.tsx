@@ -111,7 +111,7 @@ const Equipe: React.FC = () => {
       setLoading(true);
       const response = await utilisateursService.getEquipe();
       if (response.data.success) {
-        const membresData = response.data.data.membres.map((m: any) => ({
+        const membresData = (response.data?.data?.membres || []).map((m: any) => ({
           id: m.id,
           nom: m.nom,
           prenom: m.prenom,
@@ -333,7 +333,7 @@ const Equipe: React.FC = () => {
   const echelons = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
   return (
-    <div className="min-h-screen bg-gray-50 ml-64 p-6">
+    <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -584,7 +584,7 @@ const Equipe: React.FC = () => {
                 <div className="grid grid-cols-2 gap-2">
                   <div className="bg-blue-50 p-2 rounded">
                     <p className="text-xs text-blue-600">Horaire Brut</p>
-                    <p className="font-bold text-blue-900">{membre.horaireBrut.toFixed(2)} DT</p>
+                    <p className="font-bold text-blue-900">{Number(membre.horaireBrut || 0).toFixed(2)} DT</p>
                   </div>
                   <div className="bg-green-50 p-2 rounded">
                     <p className="text-xs text-green-600">Salaire Brut</p>
@@ -980,22 +980,22 @@ const Equipe: React.FC = () => {
                 onClick={async () => {
                   // Validation
                   if (!dashboardFormData.email) {
-                    alert('Veuillez saisir un email');
+                    window.showToast?.('info', "Veuillez saisir un email");
                     return;
                   }
                   
                   if (!selectedMembre.utiliseSysteme && !dashboardFormData.password) {
-                    alert('Veuillez saisir un mot de passe');
+                    window.showToast?.('info', "Veuillez saisir un mot de passe");
                     return;
                   }
                   
                   if (!selectedMembre.utiliseSysteme && dashboardFormData.password !== dashboardFormData.confirmPassword) {
-                    alert('Les mots de passe ne correspondent pas');
+                    window.showToast?.('info', "Les mots de passe ne correspondent pas");
                     return;
                   }
                   
                   if (dashboardFormData.dashboards.length === 0) {
-                    alert('Veuillez sélectionner au moins un dashboard');
+                    window.showToast?.('info', "Veuillez sélectionner au moins un dashboard");
                     return;
                   }
                   
@@ -1015,7 +1015,7 @@ const Equipe: React.FC = () => {
                     setDashboardFormData({ email: '', password: '', confirmPassword: '', dashboards: [] });
                   } catch (error: any) {
                     console.error('Erreur sauvegarde:', error);
-                    alert(error.response?.data?.error?.message || 'Erreur lors de la sauvegarde');
+                    window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de la sauvegarde'));
                   } finally {
                     setSavingDashboard(false);
                   }
@@ -1224,7 +1224,7 @@ const Equipe: React.FC = () => {
               <button
                 onClick={() => {
                   // TODO: Appel API pour créer la demande
-                  alert(`Demande ${demandeData.type} créée pour la période ${demandeData.dateDebut} - ${demandeData.dateFin}`);
+                  window.showToast?.('success', 'Enregistré', String(`Demande ${demandeData.type} créée pour la période ${demandeData.dateDebut} - ${demandeData.dateFin}`));
                   setShowDemandeModal(false);
                   setDemandeData({ type: 'absence', dateDebut: '', dateFin: '', raison: '', remarque: '' });
                 }}

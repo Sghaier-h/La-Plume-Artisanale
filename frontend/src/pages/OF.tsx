@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ofService, articlesService, machinesService, commandesService, suiviFabricationService, stockService, qualiteAvanceeService } from '../services/api';
-import { FileText, Plus, Edit, Trash2, Search, Eye, X, Play, Square, CheckCircle, Settings, Package, Calendar, AlertCircle, TrendingUp, Clock, User } from 'lucide-react';
+import { FileText, Plus, Edit, Trash2, Search, X, Play, Square, CheckCircle, Settings, Package, Calendar, AlertCircle, TrendingUp, Clock, User } from 'lucide-react';
+import { PageSkeleton, EmptyState } from '../components/ui';
+import { DataTable, Column } from '../components/ui/DataTable';
+import { IconMetierATisser } from '../components/ui/IconsLaPlume';
 
 interface LigneOF {
   id_operation?: number;
@@ -51,10 +54,42 @@ const OF: React.FC = () => {
         machinesService.getMachines({ actif: 'true' }).catch(() => ({ data: { data: [] } })),
         commandesService.getCommandes({ statut: 'validee' }).catch(() => ({ data: { data: [] } }))
       ]);
-      setOfs(ofsRes.data?.data || []);
-      setArticles(articlesRes.data?.data || []);
-      setMachines(machinesRes.data?.data || []);
-      setCommandes(cmdRes.data?.data || []);
+      setOfs((() => {
+        const _r = ofsRes.data?.data;
+        if (Array.isArray(_r)) return _r;
+        if (_r && Array.isArray(_r.data)) return _r.data;
+        if (_r && typeof _r === 'object') {
+          for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+        }
+        return [];
+      })());
+      setArticles((() => {
+        const _r = articlesRes.data?.data;
+        if (Array.isArray(_r)) return _r;
+        if (_r && Array.isArray(_r.data)) return _r.data;
+        if (_r && typeof _r === 'object') {
+          for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+        }
+        return [];
+      })());
+      setMachines((() => {
+        const _r = machinesRes.data?.data;
+        if (Array.isArray(_r)) return _r;
+        if (_r && Array.isArray(_r.data)) return _r.data;
+        if (_r && typeof _r === 'object') {
+          for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+        }
+        return [];
+      })());
+      setCommandes((() => {
+        const _r = cmdRes.data?.data;
+        if (Array.isArray(_r)) return _r;
+        if (_r && Array.isArray(_r.data)) return _r.data;
+        if (_r && typeof _r === 'object') {
+          for (const k of Object.keys(_r)) if (Array.isArray((_r as any)[k])) return (_r as any)[k];
+        }
+        return [];
+      })());
     } catch (error) {
       console.error('Erreur chargement OF:', error);
       setOfs([]);
@@ -66,16 +101,16 @@ const OF: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.id_article || !formData.quantite_a_produire) {
-      alert('Article et quantité requis');
+      window.showToast?.('info', "Article et quantité requis");
       return;
     }
     try {
       if (editingOF) {
         await ofService.updateOF(editingOF.id_of, formData);
-        alert('OF modifié avec succès');
+        window.showToast?.('success', "OF modifié");
       } else {
         await ofService.createOF(formData);
-        alert('OF créé avec succès');
+        window.showToast?.('success', "OF créé");
       }
       setShowForm(false);
       setEditingOF(null);
@@ -83,21 +118,21 @@ const OF: React.FC = () => {
       loadData();
     } catch (error: any) {
       console.error('Erreur sauvegarde OF:', error);
-      alert(error.response?.data?.error?.message || 'Erreur lors de la sauvegarde');
+      window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de la sauvegarde'));
     }
   };
 
   const handleAssignerMachine = async (id: number, id_machine: number, date_debut: string, date_fin: string) => {
     if (!date_debut || !date_fin) {
-      alert('Dates de début et fin requises');
+      window.showToast?.('info', "Dates de début et fin requises");
       return;
     }
     try {
       await ofService.assignerMachine(id, { id_machine, date_debut_prevue: date_debut, date_fin_prevue: date_fin });
       loadData();
-      alert('Machine assignée avec succès');
+      window.showToast?.('success', "Machine assignée");
     } catch (error: any) {
-      alert(error.response?.data?.error?.message || 'Erreur lors de l\'assignation');
+      window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de l\'assignation'));
     }
   };
 
@@ -128,16 +163,16 @@ const OF: React.FC = () => {
         }
         
         loadData();
-        alert('OF démarré avec succès\nSuivi de fabrication créé automatiquement');
+        window.showToast?.('success', 'Enregistré', String('OF démarré avec succès\nSuivi de fabrication créé automatiquement'));
       } catch (error: any) {
-        alert(error.response?.data?.error?.message || 'Erreur lors du démarrage');
+        window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors du démarrage'));
       }
     }
   };
 
   const handleTerminer = async (id: number, quantite: string) => {
     if (!quantite || parseFloat(quantite) <= 0) {
-      alert('Quantité produite invalide');
+      window.showToast?.('error', 'Erreur', String('Quantité produite invalide'));
       return;
     }
     if (window.confirm(`Terminer cet ordre de fabrication avec ${quantite} unités produites ?\n\nCeci va :\n- Créer un mouvement de stock (entrée produits finis)\n- Créer un contrôle qualité`)) {
@@ -205,9 +240,9 @@ const OF: React.FC = () => {
         }
         
         loadData();
-        alert('OF terminé avec succès\n✅ Mouvement de stock créé\n✅ Contrôle qualité créé');
+        window.showToast?.('success', 'Enregistré', String('OF terminé avec succès\n✅ Mouvement de stock créé\n✅ Contrôle qualité créé'));
       } catch (error: any) {
-        alert(error.response?.data?.error?.message || 'Erreur lors de la finalisation');
+        window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de la finalisation'));
       }
     }
   };
@@ -233,9 +268,9 @@ const OF: React.FC = () => {
       try {
         await ofService.updateOF(id, { statut: 'annule' });
         loadData();
-        alert('OF annulé avec succès');
+        window.showToast?.('success', "OF annulé");
       } catch (error: any) {
-        alert(error.response?.data?.error?.message || 'Erreur lors de l\'annulation');
+        window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de l\'annulation'));
       }
     }
   };
@@ -259,7 +294,7 @@ const OF: React.FC = () => {
     const colors: { [key: string]: string } = {
       'planifie': 'bg-gray-100 text-gray-800',
       'attribue': 'bg-yellow-100 text-yellow-800',
-      'en_cours': 'bg-blue-100 text-blue-800',
+      'en_cours': 'bg-[#F5EFE5] text-[#4A5D75]',
       'termine': 'bg-green-100 text-green-800',
       'arrete': 'bg-red-100 text-red-800',
       'annule': 'bg-orange-100 text-orange-800'
@@ -291,35 +326,59 @@ const OF: React.FC = () => {
   });
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <PageSkeleton kpiCount={4} rows={8} cols={7} />;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 ml-64 p-6">
+    <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-              <FileText className="w-8 h-8 text-blue-600" />
+            <h1
+              className="la-plume-title-brush text-3xl font-bold text-gray-800 flex items-center gap-3"
+              style={{ fontFamily: 'var(--font-serif)' }}
+            >
+              <IconMetierATisser size={32} style={{ color: 'var(--accent-terracotta)' }} />
               Ordres de Fabrication
             </h1>
             <p className="text-gray-600 mt-2">Gestion et suivi de la production</p>
           </div>
-          <button
-            onClick={() => {
-              setShowForm(true);
-              setEditingOF(null);
-              resetForm();
-            }}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            Nouvel OF
-          </button>
+          <div className="flex items-center gap-3">
+            {/* KPI « En fabrication » avec motif tissage animé */}
+            <div
+              className="la-plume-weave-badge"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '8px 14px',
+                borderRadius: 'var(--radius-full)',
+                border: '1px solid var(--border-default)',
+                background: 'var(--bg-elevated)',
+                color: 'var(--fg-primary)',
+                fontSize: 'var(--text-sm)',
+                fontWeight: 600,
+              }}
+              title="OF en cours de fabrication"
+            >
+              <IconMetierATisser size={18} style={{ color: 'var(--accent-indigo)' }} />
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-base)' }}>
+                {ofs.filter(o => (o.statut || '').toLowerCase() === 'en_cours').length}
+              </span>
+              <span style={{ color: 'var(--fg-secondary)', fontWeight: 500 }}>en fabrication</span>
+            </div>
+            <button
+              onClick={() => {
+                setShowForm(true);
+                setEditingOF(null);
+                resetForm();
+              }}
+              className="flex items-center gap-2 bg-[#C8663D] text-white px-4 py-2 rounded-lg hover:bg-[#a55231] transition-colors"
+            >
+              <Plus className="w-5 h-5" />
+              Nouvel OF
+            </button>
+          </div>
         </div>
 
         {/* Filtres */}
@@ -332,13 +391,13 @@ const OF: React.FC = () => {
                 placeholder="Rechercher..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
               />
             </div>
             <select
               value={filters.statut}
               onChange={(e) => setFilters({ ...filters, statut: e.target.value })}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
             >
               <option value="">Tous les statuts</option>
               <option value="planifie">Planifié</option>
@@ -350,7 +409,7 @@ const OF: React.FC = () => {
             <select
               value={filters.article_id}
               onChange={(e) => setFilters({ ...filters, article_id: e.target.value })}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
             >
               <option value="">Tous les articles</option>
               {articles.map(a => (
@@ -360,7 +419,7 @@ const OF: React.FC = () => {
             <select
               value={filters.commande_id}
               onChange={(e) => setFilters({ ...filters, commande_id: e.target.value })}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
             >
               <option value="">Toutes les commandes</option>
               {commandes.map(c => (
@@ -390,10 +449,10 @@ const OF: React.FC = () => {
                         id_article: cmd?.id_article?.toString() || formData.id_article
                       });
                     }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                   >
                     <option value="">Sélectionner une commande (optionnel)</option>
-                    {commandes.filter(c => c.statut === 'validee' || c.statut === 'en_production').map(c => (
+                    {commandes.filter(c => !['Annuler', 'Solder', 'annulee', 'annulée', 'termine', 'terminée'].includes(c.statut)).map(c => (
                       <option key={c.id_commande} value={c.id_commande}>
                         {c.numero_commande} - {c.client_nom}
                       </option>
@@ -406,7 +465,7 @@ const OF: React.FC = () => {
                     required
                     value={formData.id_article}
                     onChange={(e) => setFormData({ ...formData, id_article: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                   >
                     <option value="">Sélectionner un article</option>
                     {articles.map((article) => (
@@ -424,7 +483,7 @@ const OF: React.FC = () => {
                     required
                     value={formData.quantite_a_produire}
                     onChange={(e) => setFormData({ ...formData, quantite_a_produire: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                     min="0.01"
                   />
                 </div>
@@ -433,7 +492,7 @@ const OF: React.FC = () => {
                   <select
                     value={formData.id_machine}
                     onChange={(e) => setFormData({ ...formData, id_machine: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                   >
                     <option value="">Sélectionner une machine (optionnel)</option>
                     {machines.filter(m => m.statut === 'operationnel').map((machine) => (
@@ -457,7 +516,7 @@ const OF: React.FC = () => {
                         setFormData({ ...formData, date_debut_prevue: date, date_fin_prevue: dateFin.toISOString().split('T')[0] });
                       }
                     }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                   />
                 </div>
                 <div>
@@ -466,7 +525,7 @@ const OF: React.FC = () => {
                     type="date"
                     value={formData.date_fin_prevue}
                     onChange={(e) => setFormData({ ...formData, date_fin_prevue: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                   />
                 </div>
                 <div>
@@ -474,7 +533,7 @@ const OF: React.FC = () => {
                   <select
                     value={formData.priorite}
                     onChange={(e) => setFormData({ ...formData, priorite: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                   >
                     <option value="normale">Normale</option>
                     <option value="haute">Haute</option>
@@ -486,7 +545,7 @@ const OF: React.FC = () => {
                   <textarea
                     value={formData.observations}
                     onChange={(e) => setFormData({ ...formData, observations: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#C8663D]"
                     rows={3}
                     placeholder="Notes et observations..."
                   />
@@ -496,7 +555,7 @@ const OF: React.FC = () => {
               <div className="flex gap-2">
                 <button
                   type="submit"
-                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  className="bg-[#C8663D] text-white px-6 py-2 rounded-lg hover:bg-[#a55231] transition-colors"
                 >
                   {editingOF ? 'Modifier' : 'Créer'}
                 </button>
@@ -517,141 +576,80 @@ const OF: React.FC = () => {
         )}
 
         {/* Liste */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">N° OF</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Article</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quantité</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Avancement</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Machine</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dates</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredOFs.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
-                    Aucun ordre de fabrication trouvé
-                  </td>
-                </tr>
-              ) : (
-                filteredOFs.map((of) => (
-                  <tr key={of.id_of} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap font-medium">{of.numero_of}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="font-medium">{of.article_designation || of.code_article}</div>
-                        {of.numero_commande && (
-                          <div className="text-xs text-gray-500">Commande: {of.numero_commande}</div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="font-semibold">{of.quantite_produite || 0} / {of.quantite_a_produire}</div>
-                        <div className="text-xs text-gray-500">Reste: {Math.max(0, (of.quantite_a_produire || 0) - (of.quantite_produite || 0))}</div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-blue-600 h-2 rounded-full transition-all"
-                            style={{ width: `${calculerAvancement(of)}%` }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-medium">{calculerAvancement(of)}%</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {of.machine_designation || of.numero_machine || '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <div>
-                        {of.date_debut_prevue && (
-                          <div>Début: {new Date(of.date_debut_prevue).toLocaleDateString()}</div>
-                        )}
-                        {of.date_fin_prevue && (
-                          <div>Fin: {new Date(of.date_fin_prevue).toLocaleDateString()}</div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${getStatutColor(of.statut)}`}>
-                        {of.statut}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex gap-2">
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (of.id_of) navigate(`/of/${of.id_of}`);
-                          }}
-                          className="text-green-600 hover:text-green-700"
-                          title="Voir les détails"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        {of.statut === 'planifie' && (
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDemarrer(of.id_of);
-                            }}
-                            className="text-green-600 hover:text-green-700"
-                            title="Démarrer"
-                          >
-                            <Play className="w-4 h-4" />
-                          </button>
-                        )}
-                        {of.statut === 'en_cours' && (
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const qte = prompt(`Quantité produite ? (Max: ${of.quantite_a_produire})`);
-                              if (qte) handleTerminer(of.id_of, qte);
-                            }}
-                            className="text-orange-600 hover:text-orange-700"
-                            title="Terminer"
-                          >
-                            <CheckCircle className="w-4 h-4" />
-                          </button>
-                        )}
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEdit(of);
-                          }}
-                          className="text-blue-600 hover:text-blue-700"
-                          title="Modifier"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        {of.statut === 'planifie' && (
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDelete(of.id_of);
-                            }}
-                            className="text-red-600 hover:text-red-700"
-                            title="Supprimer"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+        <DataTable<any>
+          columns={[
+            { key: 'numero_of', label: 'N° OF', sortable: true, render: (of: any) => <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 500 }}>{of.numero_of}</span> },
+            { key: 'article_designation', label: 'Article', sortable: true, value: (of: any) => of.article_designation || of.code_article, render: (of: any) => (
+              <div>
+                <div className="font-medium">{of.article_designation || of.code_article}</div>
+                {of.numero_commande && (<div className="text-xs text-gray-500">Commande: {of.numero_commande}</div>)}
+              </div>
+            ) },
+            { key: 'quantite_a_produire', label: 'Quantité', sortable: true, align: 'right', value: (of: any) => Number(of.quantite_a_produire) || 0, render: (of: any) => (
+              <div>
+                <div className="font-semibold">{of.quantite_produite || 0} / {of.quantite_a_produire}</div>
+                <div className="text-xs text-gray-500">Reste: {Math.max(0, (of.quantite_a_produire || 0) - (of.quantite_produite || 0))}</div>
+              </div>
+            ) },
+            { key: 'avancement', label: 'Avancement', sortable: true, value: (of: any) => calculerAvancement(of), render: (of: any) => (
+              <div className="flex items-center gap-2">
+                <div className="flex-1 bg-gray-200 rounded-full h-2">
+                  <div className="bg-[#C8663D] h-2 rounded-full transition-all" style={{ width: `${calculerAvancement(of)}%` }}></div>
+                </div>
+                <span className="text-sm font-medium">{calculerAvancement(of)}%</span>
+              </div>
+            ) },
+            { key: 'machine_designation', label: 'Machine', sortable: true, value: (of: any) => of.machine_designation || of.numero_machine, render: (of: any) => of.machine_designation || of.numero_machine || '-' },
+            { key: 'date_debut_prevue', label: 'Dates', sortable: true, value: (of: any) => of.date_debut_prevue, render: (of: any) => (
+              <div>
+                {of.date_debut_prevue && (<div>Début: {new Date(of.date_debut_prevue).toLocaleDateString()}</div>)}
+                {of.date_fin_prevue && (<div>Fin: {new Date(of.date_fin_prevue).toLocaleDateString()}</div>)}
+              </div>
+            ) },
+            { key: 'statut', label: 'Statut', sortable: true, render: (of: any) => (
+              <span className={`px-2 py-1 rounded text-xs font-medium ${getStatutColor(of.statut)}`}>{of.statut}</span>
+            ) },
+            { key: '_actions', label: 'Actions', sortable: false, exportable: false, render: (of: any) => (
+              <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                {of.statut === 'planifie' && (
+                  <button onClick={(e) => { e.stopPropagation(); handleDemarrer(of.id_of); }} className="text-green-600 hover:text-green-700" title="Démarrer">
+                    <Play className="w-4 h-4" />
+                  </button>
+                )}
+                {of.statut === 'en_cours' && (
+                  <button onClick={(e) => { e.stopPropagation(); const qte = prompt(`Quantité produite ? (Max: ${of.quantite_a_produire})`); if (qte) handleTerminer(of.id_of, qte); }} className="text-orange-600 hover:text-orange-700" title="Terminer">
+                    <CheckCircle className="w-4 h-4" />
+                  </button>
+                )}
+                <button onClick={(e) => { e.stopPropagation(); handleEdit(of); }} className="text-[#C8663D] hover:text-[#a55231]" title="Modifier">
+                  <Edit className="w-4 h-4" />
+                </button>
+                {of.statut === 'planifie' && (
+                  <button onClick={(e) => { e.stopPropagation(); handleDelete(of.id_of); }} className="text-red-600 hover:text-red-700" title="Supprimer">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            ) },
+          ] as Column<any>[]}
+          data={filteredOFs}
+          rowKey={(of: any) => of.id_of}
+          onRowClick={(of: any) => { if (of.id_of) navigate(`/of/${of.id_of}`); }}
+          pageSize={25}
+          exportable
+          exportFilename="ordres_fabrication"
+          emptyState={
+            <EmptyState
+              variant={search || filters.statut || filters.article_id || filters.commande_id ? 'search-no-result' : 'default'}
+              title={search || filters.statut || filters.article_id || filters.commande_id ? 'Aucun ordre ne correspond' : 'Aucun ordre de fabrication'}
+              description={search || filters.statut || filters.article_id || filters.commande_id ? 'Réinitialisez vos filtres ou votre recherche.' : 'Les OF créés apparaîtront ici.'}
+              cta={search || filters.statut || filters.article_id || filters.commande_id
+                ? { label: 'Réinitialiser', onClick: () => { setSearch(''); setFilters({ statut: '', article_id: '', commande_id: '' }); } }
+                : undefined}
+            />
+          }
+          loading={loading}
+        />
 
         {/* Modal de consultation */}
         {selectedOF && (
@@ -659,7 +657,7 @@ const OF: React.FC = () => {
             <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
               <div className="sticky top-0 bg-white border-b p-6 flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                  <FileText className="w-6 h-6 text-blue-600" />
+                  <FileText className="w-6 h-6 text-[#C8663D]" />
                   OF {selectedOF.numero_of}
                 </h2>
                 <button
@@ -674,7 +672,7 @@ const OF: React.FC = () => {
                 {/* Informations générales */}
                 <div>
                   <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <Package className="w-5 h-5 text-blue-600" />
+                    <Package className="w-5 h-5 text-[#C8663D]" />
                     Informations Générales
                   </h3>
                   <div className="grid grid-cols-2 gap-4">
@@ -699,7 +697,7 @@ const OF: React.FC = () => {
                       <div className="flex items-center gap-2 mt-1">
                         <div className="flex-1 bg-gray-200 rounded-full h-3">
                           <div 
-                            className="bg-blue-600 h-3 rounded-full transition-all"
+                            className="bg-[#C8663D] h-3 rounded-full transition-all"
                             style={{ width: `${calculerAvancement(selectedOF)}%` }}
                           ></div>
                         </div>
@@ -767,7 +765,7 @@ const OF: React.FC = () => {
                 {selectedOF.operations && selectedOF.operations.length > 0 && (
                   <div>
                     <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                      <Settings className="w-5 h-5 text-blue-600" />
+                      <Settings className="w-5 h-5 text-[#C8663D]" />
                       Opérations
                     </h3>
                     <div className="border rounded-lg overflow-hidden">
@@ -866,10 +864,10 @@ const OF: React.FC = () => {
                         }
                       } catch (error: any) {
                         console.error('Erreur chargement OF:', error);
-                        alert(error.response?.data?.error?.message || 'Erreur lors du chargement');
+                        window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors du chargement'));
                       }
                     }}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                    className="px-4 py-2 bg-[#C8663D] text-white rounded-lg hover:bg-[#a55231] flex items-center gap-2"
                   >
                     <Edit className="w-4 h-4" />
                     Modifier

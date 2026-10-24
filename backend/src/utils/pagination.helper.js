@@ -12,18 +12,28 @@
  * @param {number} maxPageSize - Taille de page maximum (défaut: 100)
  * @returns {Object} - { page, limit, offset }
  */
-export const getPaginationParams = (req, defaultPageSize = 20, maxPageSize = 100) => {
-  const page = Math.max(1, parseInt(req.query.page || '1', 10) || 1);
-  let limit = parseInt(req.query.limit || String(defaultPageSize), 10) || defaultPageSize;
-  
-  // Limiter la taille de page maximum
+export const getPaginationParams = (reqOrPage, limitOrDefault = 20, maxPageSize = 100) => {
+  let page, limit;
+
+  // Ancienne signature: getPaginationParams(pageValue, limitValue) — utilisée par de nombreux contrôleurs
+  if (reqOrPage === null || reqOrPage === undefined || typeof reqOrPage !== 'object' || !reqOrPage.query) {
+    page = Math.max(1, parseInt(reqOrPage || '1', 10) || 1);
+    limit = parseInt(limitOrDefault || '20', 10) || 20;
+  } else {
+    // Nouvelle signature: getPaginationParams(req, defaultPageSize, maxPageSize)
+    const req = reqOrPage;
+    page = Math.max(1, parseInt(req.query.page || '1', 10) || 1);
+    limit = parseInt(req.query.limit || String(limitOrDefault), 10) || limitOrDefault;
+  }
+
   if (limit > maxPageSize) {
     limit = maxPageSize;
   }
-  
+
   const offset = (page - 1) * limit;
 
-  return { page, limit, offset };
+  // pageSize est un alias de limit pour compatibilité (les 9 contrôleurs déstructurent { offset, pageSize })
+  return { page, limit, offset, pageSize: limit };
 };
 
 /**
@@ -55,7 +65,27 @@ export const getTotalPages = (total, limit) => {
  * @param {number} total - Nombre total d'éléments
  * @returns {Object} - Réponse paginée standardisée
  */
-export const buildPaginationResponse = (data, page, limit, total) => {
+export const buildPaginationResponse = (dataOrPage, pageOrLimit, limitOrTotal, total) => {
+  // Signature courte utilisée par les contrôleurs: buildPaginationResponse(page, limit, total) → renvoie l'objet pagination seul
+  if (total === undefined) {
+    const page = parseInt(dataOrPage, 10) || 1;
+    const limit = parseInt(pageOrLimit, 10) || 20;
+    const totalCount = parseInt(limitOrTotal, 10) || 0;
+    const totalPages = getTotalPages(totalCount, limit);
+    return {
+      page,
+      limit,
+      total: totalCount,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1
+    };
+  }
+
+  // Signature longue: buildPaginationResponse(data, page, limit, total) → enveloppe complète
+  const data = dataOrPage;
+  const page = pageOrLimit;
+  const limit = limitOrTotal;
   const totalPages = getTotalPages(total, limit);
 
   return {
