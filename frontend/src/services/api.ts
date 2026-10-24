@@ -343,6 +343,17 @@ export const dashboardService = {
   getProductionStats: (params?: any) => api.get('/dashboard/production', { params }),
   getCommandesStats: (params?: any) => api.get('/dashboard/commandes', { params }),
   getAlertes: () => api.get('/dashboard/alertes'),
+  // Phase F — endpoints charts pour DashboardAdministrateur et autres
+  getProductionHebdo: (jours = 7) => api.get(`/dashboard/production-hebdo?jours=${jours}`),
+  getRepartitionPoste: () => api.get('/dashboard/repartition-poste'),
+};
+
+// Phase F — Messages / Notifications pour la UserBar (dropdowns)
+export const userbarService = {
+  getRecentMessages: (limit = 5) =>
+    api.get(`/v2/messages/recents?limit=${limit}`).catch(() => ({ data: { data: [] } })),
+  getUnreadNotifs: (limit = 5) =>
+    api.get(`/v2/notifications/non-lues?limit=${limit}`).catch(() => ({ data: { data: [] } })),
 };
 
 export const parametrageService = {

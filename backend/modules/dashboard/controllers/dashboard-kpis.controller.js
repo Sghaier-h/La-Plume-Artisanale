@@ -267,6 +267,120 @@ export const getAlertes = async (req, res) => {
   }
 };
 
+// ── GET /api/dashboard/production-hebdo?jours=7 ─ Phase F ─────────────
+// Retourne la production de la semaine : OF créés + OF terminés par jour.
+// Shape : [{ jour: 'L', of: 4, termines: 3 }, …]
+export const getProductionHebdo = async (req, res) => {
+  try {
+    const jours = Math.min(parseInt(req.query.jours, 10) || 7, 31);
+    // Génère la série de jours (du plus ancien au plus récent)
+    const r = await pool.query(`
+      WITH jours AS (
+        SELECT generate_series(
+          CURRENT_DATE - INTERVAL '${jours - 1} days',
+          CURRENT_DATE,
+          INTERVAL '1 day'
+        )::date AS d
+      ),
+      lancements AS (
+        SELECT date_creation::date AS d, COUNT(*)::int AS n
+        FROM ordres_fabrication
+        WHERE date_creation >= CURRENT_DATE - INTERVAL '${jours} days'
+        GROUP BY date_creation::date
+      ),
+      finitions AS (
+        SELECT date_fin_reelle::date AS d, COUNT(*)::int AS n
+        FROM ordres_fabrication
+        WHERE statut = 'termine' AND date_fin_reelle >= CURRENT_DATE - INTERVAL '${jours} days'
+        GROUP BY date_fin_reelle::date
+      )
+      SELECT
+        j.d AS date,
+        TO_CHAR(j.d, 'Dy') AS jour,
+        COALESCE(l.n, 0)::int AS of_lances,
+        COALESCE(f.n, 0)::int AS termines
+      FROM jours j
+      LEFT JOIN lancements l ON l.d = j.d
+      LEFT JOIN finitions  f ON f.d = j.d
+      ORDER BY j.d
+    `);
+    // Map 'Dy' (Mon/Tue/..) → 1 lettre fr
+    const letterMap = { Mon: 'L', Tue: 'M', Wed: 'M', Thu: 'J', Fri: 'V', Sat: 'S', Sun: 'D' };
+    const data = r.rows.map(row => ({
+      jour: letterMap[String(row.jour).trim()] || String(row.jour).trim().charAt(0),
+      date: row.date,
+      of: row.of_lances,
+      termines: row.termines,
+    }));
+    return sendSuccess(res, data);
+  } catch (error) {
+    // Table absente → renvoie 7 jours à 0 (dashboard reste fonctionnel)
+    const jours = Math.min(parseInt(req.query.jours, 10) || 7, 31);
+    const empty = Array.from({ length: jours }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - (jours - 1 - i));
+      const letters = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
+      return { jour: letters[d.getDay()], of: 0, termines: 0 };
+    });
+    return sendSuccess(res, empty);
+  }
+};
+
+// ── GET /api/dashboard/repartition-poste ─ Phase F ────────────────────
+// Retourne la répartition des OF en cours par poste (tissage/coupe/finition
+// /contrôle via les colonnes etat_* si présentes, sinon fallback statut).
+// Shape : [{ name: 'Tissage', value: 42, color: 'var(--accent-terracotta)' }]
+export const getRepartitionPoste = async (req, res) => {
+  const PALETTE = {
+    Tissage:   'var(--accent-terracotta)',
+    Coupe:     'var(--accent-gold)',
+    Finition:  'var(--accent-rose)',
+    Qualité:   'var(--accent-sage)',
+    Magasin:   'var(--accent-indigo)',
+    Autre:     'var(--fg-muted)',
+  };
+  try {
+    // Essaie d'abord la table v2 ordres_fabrication (colonnes etat_tissage etc.)
+    const r = await pool.query(`
+      SELECT
+        COUNT(*) FILTER (WHERE etat_tissage IN ('en_cours','attente'))::int AS tissage,
+        COUNT(*) FILTER (WHERE etat_coupe   IN ('en_cours','en_attente'))::int AS coupe,
+        COUNT(*) FILTER (WHERE statut = 'controle' OR statut = 'qualite')::int AS qualite,
+        COUNT(*) FILTER (WHERE etat_preparation_mp IN ('en_cours','en_attente'))::int AS magasin
+      FROM ordres_fabrication
+      WHERE statut NOT IN ('termine','annule','livre')
+    `).catch(() => null);
+
+    if (r && r.rows[0]) {
+      const row = r.rows[0];
+      const data = [
+        { name: 'Tissage',  value: Number(row.tissage) || 0, color: PALETTE.Tissage  },
+        { name: 'Coupe',    value: Number(row.coupe)   || 0, color: PALETTE.Coupe    },
+        { name: 'Qualité',  value: Number(row.qualite) || 0, color: PALETTE.Qualité  },
+        { name: 'Magasin',  value: Number(row.magasin) || 0, color: PALETTE.Magasin  },
+      ].filter(p => p.value > 0);
+      if (data.length > 0) return sendSuccess(res, data);
+    }
+
+    // Fallback : agrège par statut
+    const r2 = await pool.query(`
+      SELECT statut, COUNT(*)::int AS n
+      FROM ordres_fabrication
+      WHERE statut NOT IN ('termine','annule')
+      GROUP BY statut
+      ORDER BY n DESC
+    `);
+    const data2 = r2.rows.map(row => {
+      const name = String(row.statut || 'Autre').replace(/_/g, ' ');
+      return { name: name.charAt(0).toUpperCase() + name.slice(1), value: row.n, color: PALETTE.Autre };
+    });
+    return sendSuccess(res, data2);
+  } catch (error) {
+    // Table absente → renvoie vide (le composant frontend n'affichera rien)
+    return sendSuccess(res, []);
+  }
+};
+
 // ── GET /api/dashboard/kpis-production — Dashboard Chef Production ─────
 export const getKpisProduction = async (req, res) => {
   try {

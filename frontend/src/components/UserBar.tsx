@@ -14,6 +14,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useTheme, ThemeMode } from '../contexts/ThemeContext';
 import PlumeLogo from './PlumeLogo';
 import PhotoBoiteTriWidget from './PhotoBoiteTriWidget';
+import { userbarService } from '../services/api';
 import type { LucideIcon } from 'lucide-react';
 import {
   Search,
@@ -62,23 +63,35 @@ interface UserBarProps {
 
 type MessageChannel = 'interne' | 'whatsapp' | 'telegram' | 'email' | 'sms';
 
-// Mock data — à remplacer par un fetch API. Regroupe messagerie inter-postes
-// (§12 domain) + messages externes (WhatsApp / Telegram / email).
-const MOCK_MESSAGES: Array<{
+interface MessageItem {
   id: number;
   from: string;
   preview: string;
   time: string;
   urgent: boolean;
   channel: MessageChannel;
-}> = [
-  { id: 1, from: 'Chef Production', preview: 'Machine 3 en pause depuis 15 min, tu vérifies ?', time: 'il y a 5 min', urgent: true, channel: 'interne' },
-  { id: 2, from: 'Hotel Marina · Djerba', preview: 'Nous confirmons la commande de 200 foutas plage 100×180.', time: 'il y a 12 min', urgent: false, channel: 'whatsapp' },
-  { id: 3, from: 'Magasinier MP', preview: 'Stock coton 20/1 en rupture, préparation OF-2609001 bloquée', time: 'il y a 22 min', urgent: false, channel: 'interne' },
-  { id: 4, from: 'SOTUFIL Achats', preview: 'Devis fournisseur mis à jour pour lot fil polyester NM40', time: 'il y a 45 min', urgent: false, channel: 'email' },
-  { id: 5, from: '+216 24 xxx xxx', preview: 'Bonjour, j\'aimerais un devis pour 500 serviettes hammam brodées', time: 'il y a 1 h', urgent: false, channel: 'telegram' },
-  { id: 6, from: 'Système', preview: 'Nouveau devis DV-2026-0148 en attente de validation', time: 'il y a 2 h', urgent: false, channel: 'interne' },
-];
+}
+
+interface NotifItem {
+  id: number;
+  title: string;
+  body: string;
+  time: string;
+  level: 'info' | 'success' | 'warning' | 'danger';
+}
+
+// Helper : affiche une date ISO en « il y a X min/h/j ». Fallback texte brut.
+const relativeTime = (iso: string | null | undefined): string => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return String(iso);
+  const diffSec = Math.max(0, Math.floor((Date.now() - d.getTime()) / 1000));
+  if (diffSec < 60) return 'à l\'instant';
+  if (diffSec < 3600) return `il y a ${Math.floor(diffSec / 60)} min`;
+  if (diffSec < 86400) return `il y a ${Math.floor(diffSec / 3600)} h`;
+  if (diffSec < 604800) return `il y a ${Math.floor(diffSec / 86400)} j`;
+  return d.toLocaleDateString('fr-FR');
+};
 
 // Icônes SVG WhatsApp / Telegram (compactes, cohérentes avec Lucide 14px)
 const WhatsAppIcon: React.FC<{ size?: number }> = ({ size = 14 }) => (
@@ -136,12 +149,6 @@ const DASHBOARDS: DashboardEntry[] = [
   { path: '/planning', label: 'Planification & Suivis', icon: Calendar, perm: 'mrp.production.read' },
 ];
 
-const MOCK_NOTIFS = [
-  { id: 1, title: 'Facture impayée', body: 'Hotel Marina Djerba · échéance dépassée de 15 j', time: 'il y a 12 min', level: 'danger' },
-  { id: 2, title: 'OF terminé', body: 'OF-2609015 finalisé, 180 pcs 1er choix', time: 'il y a 45 min', level: 'success' },
-  { id: 3, title: 'Nouvelle commande web', body: 'CMD-B2C-0088 · 340 €', time: 'il y a 1 h', level: 'info' },
-];
-
 const UserBar: React.FC<UserBarProps> = ({ topOffset = 0, leftOffset = 0 }) => {
   const { user, logout } = useAuth();
   const { theme, setMode, isDark } = useTheme();
@@ -152,8 +159,50 @@ const UserBar: React.FC<UserBarProps> = ({ topOffset = 0, leftOffset = 0 }) => {
   const [messagesOpen, setMessagesOpen] = React.useState(false);
   const [notifsOpen, setNotifsOpen] = React.useState(false);
   const [dashboardsOpen, setDashboardsOpen] = React.useState(false);
-  const [notifCount] = React.useState(MOCK_NOTIFS.length);
-  const [messageCount] = React.useState(MOCK_MESSAGES.length);
+
+  // Phase F — données réelles messages + notifications (fetch API v2 sur mount)
+  const [messages, setMessages] = React.useState<MessageItem[]>([]);
+  const [notifs, setNotifs] = React.useState<NotifItem[]>([]);
+  const messageCount = messages.length;
+  const notifCount = notifs.length;
+
+  React.useEffect(() => {
+    let cancelled = false;
+    const loadAll = async () => {
+      try {
+        const [msgResp, notifResp] = await Promise.all([
+          userbarService.getRecentMessages(5),
+          userbarService.getUnreadNotifs(5),
+        ]);
+        if (cancelled) return;
+        const rawMsgs = msgResp?.data?.data ?? msgResp?.data ?? [];
+        const rawNotifs = notifResp?.data?.data ?? notifResp?.data ?? [];
+        setMessages(Array.isArray(rawMsgs) ? rawMsgs.map((m: any): MessageItem => ({
+          id: Number(m.id),
+          from: String(m.from || 'Système'),
+          preview: String(m.preview || ''),
+          time: relativeTime(m.time),
+          urgent: !!m.urgent,
+          channel: (['interne','whatsapp','telegram','email','sms'] as const)
+            .includes(m.channel) ? m.channel : 'interne',
+        })) : []);
+        setNotifs(Array.isArray(rawNotifs) ? rawNotifs.map((n: any): NotifItem => ({
+          id: Number(n.id),
+          title: String(n.title || ''),
+          body: String(n.body || ''),
+          time: relativeTime(n.time),
+          level: (['info','success','warning','danger'] as const)
+            .includes(n.level) ? n.level : 'info',
+        })) : []);
+      } catch {
+        // silencieux : la UserBar reste fonctionnelle même sans API
+      }
+    };
+    loadAll();
+    // Rafraîchit toutes les 60s pour tenir le badge à jour
+    const t = window.setInterval(loadAll, 60_000);
+    return () => { cancelled = true; window.clearInterval(t); };
+  }, []);
 
   const currentModeLabel: Record<ThemeMode, string> = {
     light: 'Clair',
@@ -401,7 +450,12 @@ const UserBar: React.FC<UserBarProps> = ({ topOffset = 0, leftOffset = 0 }) => {
               </div>
             </div>
             <div style={{ flex: 1, overflowY: 'auto' }}>
-              {MOCK_MESSAGES.map((m) => {
+              {messages.length === 0 && (
+                <div style={{ padding: '14px 16px', fontSize: 12, color: 'var(--fg-muted)', fontStyle: 'italic' }}>
+                  Aucun message récent.
+                </div>
+              )}
+              {messages.map((m) => {
                 const ChannelIcon =
                   m.channel === 'whatsapp' ? WhatsAppIcon
                   : m.channel === 'telegram' ? TelegramIcon
@@ -563,7 +617,12 @@ const UserBar: React.FC<UserBarProps> = ({ topOffset = 0, leftOffset = 0 }) => {
               </div>
             </div>
             <div style={{ flex: 1, overflowY: 'auto' }}>
-              {MOCK_NOTIFS.map((n) => {
+              {notifs.length === 0 && (
+                <div style={{ padding: '14px 16px', fontSize: 12, color: 'var(--fg-muted)', fontStyle: 'italic' }}>
+                  Aucune notification non lue.
+                </div>
+              )}
+              {notifs.map((n) => {
                 const levelColor = n.level === 'danger' ? 'var(--color-danger, #B84A2F)'
                   : n.level === 'success' ? 'var(--accent-sage, #7A8C6A)'
                   : 'var(--accent-indigo, #4A5D75)';

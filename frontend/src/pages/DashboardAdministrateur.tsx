@@ -7,6 +7,7 @@ import {
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
 import { useDashboardKpis } from '../hooks/useDashboardKpis';
+import { dashboardService } from '../services/api';
 
 const fmtInt = (v: string | number | undefined) => {
   const n = Number(v ?? 0);
@@ -41,22 +42,55 @@ const DashboardAdministrateur: React.FC = () => {
   const facturesTotal = fmtInt(kpis?.factures?.total);
   const facturesPayees = kpis?.factures?.payees ?? '0';
 
-  // Mock chart series — replace with real endpoint data when available
-  const ventesData = [
-    { mois: 'Mai', ca: 2400 }, { mois: 'Juin', ca: 2800 }, { mois: 'Juil', ca: 3100 },
-    { mois: 'Août', ca: 2900 }, { mois: 'Sep', ca: 3400 }, { mois: 'Oct', ca: 3200 },
-  ];
-  const productionData = [
-    { jour: 'L', of: 4, termines: 3 }, { jour: 'M', of: 6, termines: 5 },
-    { jour: 'M', of: 5, termines: 4 }, { jour: 'J', of: 7, termines: 6 },
-    { jour: 'V', of: 8, termines: 6 }, { jour: 'S', of: 3, termines: 3 },
-  ];
-  const repartitionPoste = [
-    { name: 'Tissage', value: 42, color: 'var(--accent-terracotta)' },
-    { name: 'Coupe',   value: 28, color: 'var(--accent-gold)' },
-    { name: 'Qualité', value: 18, color: 'var(--accent-sage)' },
-    { name: 'Magasin', value: 12, color: 'var(--accent-indigo)' },
-  ];
+  // Phase F — séries de graphiques issues des endpoints réels Dashboard
+  const [ventesData, setVentesData] = React.useState<Array<{ mois: string; ca: number }>>([]);
+  const [productionData, setProductionData] = React.useState<Array<{ jour: string; of: number; termines: number }>>([]);
+  const [repartitionPoste, setRepartitionPoste] = React.useState<Array<{ name: string; value: number; color: string }>>([]);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    const unwrap = (r: any) => r?.data?.data ?? r?.data ?? [];
+    const MONTH_LABELS = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
+
+    const load = async () => {
+      try {
+        const [vp, ph, rp] = await Promise.all([
+          dashboardService.getVentesParMois().catch(() => ({ data: { data: [] } })),
+          dashboardService.getProductionHebdo(7).catch(() => ({ data: { data: [] } })),
+          dashboardService.getRepartitionPoste().catch(() => ({ data: { data: [] } })),
+        ]);
+        if (cancelled) return;
+        // ventes : [{mois:'2026-05', total_ttc:…}] → 6 derniers mois en kDT
+        const rawVentes = unwrap(vp);
+        setVentesData(Array.isArray(rawVentes) ? rawVentes.slice(-6).map((r: any) => {
+          const [, m] = String(r.mois || '').split('-');
+          const label = MONTH_LABELS[Math.max(0, Math.min(11, Number(m) - 1))] || r.mois;
+          return { mois: label, ca: Math.round(Number(r.total_ttc || r.ca || 0) / 1000) };
+        }) : []);
+        // production : [{jour:'L', of:N, termines:N}]
+        const rawProd = unwrap(ph);
+        setProductionData(Array.isArray(rawProd) ? rawProd.map((r: any) => ({
+          jour: String(r.jour || ''),
+          of: Number(r.of || 0),
+          termines: Number(r.termines || 0),
+        })) : []);
+        // répartition : [{name, value, color}]
+        const rawRep = unwrap(rp);
+        setRepartitionPoste(Array.isArray(rawRep) ? rawRep.map((r: any) => ({
+          name: String(r.name || ''),
+          value: Number(r.value || 0),
+          color: String(r.color || 'var(--fg-muted)'),
+        })).filter(x => x.value > 0) : []);
+      } catch {
+        // garde les tableaux vides
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Totaux dérivés pour la répartition par poste (évite division par 0)
+  const totalRepartition = repartitionPoste.reduce((s, p) => s + p.value, 0) || 1;
 
   return (
     <>
@@ -262,10 +296,15 @@ const DashboardAdministrateur: React.FC = () => {
               </ResponsiveContainer>
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--s-2)', marginTop: 'var(--s-3)' }}>
+              {repartitionPoste.length === 0 && (
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--fg-muted)', fontStyle: 'italic' }}>
+                  Pas d'OF en cours à répartir.
+                </div>
+              )}
               {repartitionPoste.map((p) => (
                 <div key={p.name} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 'var(--text-xs)', color: 'var(--fg-secondary)' }}>
                   <span style={{ width: 10, height: 10, borderRadius: 2, background: p.color, display: 'inline-block' }} />
-                  {p.name} <strong style={{ color: 'var(--fg-primary)' }}>{p.value}%</strong>
+                  {p.name} <strong style={{ color: 'var(--fg-primary)' }}>{Math.round((p.value / totalRepartition) * 100)}%</strong>
                 </div>
               ))}
             </div>

@@ -19,7 +19,9 @@ import {
   getTopClients,
   getProductionStats,
   getCommandesStats,
-  getAlertes
+  getAlertes,
+  getProductionHebdo,
+  getRepartitionPoste,
 } from '../controllers/dashboard-kpis.controller.js';
 
 const router = express.Router();
@@ -31,6 +33,8 @@ router.get('/kpis-production', authenticate, getKpisProduction);
 router.get('/activite-recente', authenticate, getActiviteRecente);
 router.get('/ventes-par-mois', authenticate, getVentesParMois);
 router.get('/top-clients', authenticate, getTopClients);
+router.get('/production-hebdo', authenticate, getProductionHebdo);
+router.get('/repartition-poste', authenticate, getRepartitionPoste);
 
 // Stats attendues par le frontend
 router.get('/production', authenticate, getProductionStats);
