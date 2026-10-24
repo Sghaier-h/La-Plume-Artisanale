@@ -4213,6 +4213,142 @@ Paramétrable par type de document dans `parametres_signatures_liens`.
 
 ---
 
+## 14ter. Amendements UX & architecture — session 2026-10-24
+
+Décisions prises en session avec le PO. Priorité contractuelle : ces règles s'appliquent à TOUTES les pages métier existantes et futures sauf exception explicite.
+
+### 14ter.1 Logo officiel & identité
+
+- Logo officiel : `/public/logo-la-plume.png` (manuscrit noir sur crème, extrait de `Logo & identité/LOGO LA PLUME ARTISANALE.png`).
+- Composant unique `<PlumeLogo size variant='icon'|'full' showTagline />` partout. Pas de SVG hardcodé.
+- Login : logo centré + nom "La Plume Artisanale" en Fraunces italic + tagline "ERP · Fabrication artisanale de foutas · Tunisie".
+- Tabline mention légale pied de page : `Convention Textile Tunisie · JORT N° 49 · 2024`.
+
+### 14ter.2 Design system La Plume (rappel contractuel)
+
+- Fonts : titres `Fraunces` italic ; texte `Inter` ; chiffres `JetBrains Mono`.
+- Palette (CSS vars obligatoires, zéro hex hardcodé dans les pages) :
+  `--accent-terracotta` · `--accent-sage` · `--accent-indigo` · `--accent-gold` · `--accent-rose`.
+  `--bg-app` · `--bg-canvas` · `--bg-elevated` · `--bg-hover` · `--bg-sunken`.
+  `--fg-primary` · `--fg-secondary` · `--fg-muted` · `--fg-inverse`.
+  `--border-subtle` · `--border-default` · `--border-strong`.
+  `--color-success/warning/danger/info` + `-bg` variants.
+- Composants réutilisables obligatoires : `DashboardShell`, `KpiCard`, `SectionCard`.
+
+### 14ter.3 Thème clair / sombre / auto
+
+- Toggle global dans la UserBar : Clair · Sombre · Auto (suit `prefers-color-scheme`).
+- Mécanique : `[data-theme="dark"]` ou `[data-theme="light"]` stampé sur `<html>` + `color-scheme` CSS pour les contrôles natifs. Auto → attribut retiré.
+- Tous les composants, dashboards et pages métier doivent rendre correctement dans les 3 modes. Audit effectué 2026-09-25 (90 occurrences de hex cream/beige remplacées par CSS vars).
+
+### 14ter.4 Interactions tableaux — row-click & actions
+
+- **Row-click = ouvre les détails** (navigation vers la fiche ou drawer selon le cas — cf. §14ter.5). Zéro icône "œil" (`Eye`) dans la colonne Actions. Pattern appliqué sur 27 pages 2026-09-25.
+- Colonne Actions ne contient que : `Edit` (crayon), `Trash` (poubelle), optionnel `⋮` menu kebab pour actions rares.
+- Chaque bouton d'action doit avoir `e.stopPropagation()` pour ne pas déclencher le row-click.
+- Icônes actions **visibles au hover seulement** (classe `opacity-0 group-hover:opacity-100 transition-opacity`).
+
+### 14ter.5 Détails = drawer volant (nouvel item), édition = page dédiée
+
+- **Row-click** sur une liste CRM/produit/commande/… ouvre un **drawer glissant depuis la droite** (largeur ~65vw, max 900 px, backdrop semi-transparent cliquable, Escape pour fermer, focus trap). Portal React vers `<body>`.
+- Le drawer contient : résumé entête + sections compactes + footer sticky avec :
+  - `Voir en pleine page` → `/entité/:id` (ClientDetails complet)
+  - `Modifier` → `/entité/:id/edit` (page dédiée wizard)
+  - Actions contextuelles (`Nouveau devis pour ce client`, etc.)
+- **Bouton `+ Nouveau X`** → **page dédiée plein écran** (jamais un modal superposé). Routes `/entité/nouveau` et `/entité/:id/edit` systématiques.
+- URL pendant drawer ouvert : conservée (optionnel `?preview=<id>`) pour partage.
+
+### 14ter.6 Formulaires longs → wizard à onglets icônes
+
+- Tout formulaire métier qui dépasse 1 écran utilise un **wizard à onglets icônes** avec header sticky et footer sticky.
+- Référence : `ClientForm.tsx` à 4 onglets : 🏢 **Société** · 👥 **Contacts** · 📍 **Adresses** · 💳 **Conditions commerciales**.
+- Footer sticky obligatoire : `Annuler` (gauche) + `Enregistrer` (droite, terracotta).
+- Validation globale avec badge rouge sur onglets en erreur.
+- Backend transactionnel : un seul POST/PUT cascade (créer compte + contacts + adresses + conditions dans une transaction).
+
+### 14ter.7 KPI cards cliquables = filtres
+
+- Les KPI du haut de chaque liste sont **cliquables** et agissent comme filtres mutuellement exclusifs.
+  - Exemple Clients : `Total Fiches` (reset) · `Clients Actifs` (statut_crm='client' + actif=true) · `Inactifs` (actif=false) · `Prospects` (statut_crm='prospect').
+- État visuel actif : border-color accent + background `color-mix(in srgb, <accent> 20%, transparent)`.
+- Re-clic sur KPI actif = désactive (reset).
+- Compteurs lus depuis un endpoint `/stats` (jamais calculés frontend).
+
+### 14ter.8 Modes d'affichage Ligne / Catalogue
+
+- Toggle `Ligne` ↔ `Catalogue` sur les listes où une vue cartes a du sens (Clients, Articles, Modèles, Fournisseurs).
+- Choix persistant en `localStorage` (`<entité>_view_mode`) pour retrouver la même vue au refresh.
+- Catalogue : card-click ouvre le drawer (comme row-click). Cover photo si pertinent (Articles, Modèles).
+
+### 14ter.9 Panneau Filtres avancés
+
+- Bouton `Filtres` dans la barre d'outils ouvre un **panneau latéral (side sheet)** qui slide depuis la droite.
+- Contenu propre à chaque entité, exhaustif. Pour Clients : type_compte, statut_crm multi, catégorie, ville, pays, source_lead, commercial, canal préféré, consents, dates création/modif.
+- Footer panneau : `Réinitialiser` + `Appliquer` + X fermer sans appliquer.
+- Badge sur le bouton `Filtres` indiquant le nombre de filtres actifs.
+- Escape ferme sans appliquer.
+
+### 14ter.10 Recherche globale + Ctrl+K
+
+- Barre de recherche sur chaque liste avec icône loupe, debounce 250 ms, croix de clear.
+- Raccourci `Ctrl+K` / `Cmd+K` focus l'input depuis n'importe où dans la page.
+
+### 14ter.11 Fil d'Ariane dynamique
+
+- Les pages de détails utilisent `useDynamicCrumb(label)` pour afficher le nom métier au lieu de `#ID`.
+  - Exemple : `Accueil › Clients › Hotel Marina Djerba` (pas `Accueil › Clients › #2`).
+- Mapping statique dans `Breadcrumbs.tsx` pour toutes les routes principales (y compris sous-items CRM, Paramètres).
+
+### 14ter.12 Numérotation automatique configurable (générique)
+
+- Table `config_numerotation` dans `backend/modules-v2/_shared/numerotation/` — module shared réutilisable Ventes/Achats/Fabrication/RH.
+- Colonnes : `entite` (unique) · `format` · `sequence_courante` · `reset_period` (jamais/annuel/mensuel) · `derniere_periode` · `verrouille`.
+- Placeholders format : `{YYYY}` `{YY}` `{MM}` `{SEQ:N}` (padding N chiffres) `{SOCIETE}` `{TYPE}`.
+- Service atomique `nextNumerotation(entite)` : `SELECT FOR UPDATE` + UPDATE + log + retour code.
+- Appel automatique à la création (POST) si le champ code est vide ; conservé si fourni.
+- UI `/parametres/crm` section **Codes automatiques** : par entité → preset + custom + aperçu live + réinit séquence + badge verrouillé.
+- 10 entités seedées : client, contact, lead, opportunite, interaction, devis, commande, bl, facture, avoir, br, colisage, of, fournisseur, bc.
+
+### 14ter.13 Devise client héritée sur documents de vente
+
+- Table `crm_config_devises` (code ISO 4217 · libellé · symbole · arrondi · `taux_change_vs_tnd` · date_taux · actif · ordre).
+- Seed par défaut : TND (défaut) · EUR · USD · GBP · CHF.
+- Compte client a un champ `devise` (dropdown depuis `crm_config_devises`).
+- À la création d'un devis/commande/BL/facture/avoir, la devise est **pré-remplie automatiquement** depuis le compte sélectionné.
+- Reste modifiable manuellement (cas exceptionnel) ; prompt de confirmation si lignes déjà saisies ("recalculer les prix ?").
+- Composant `DeviseSelector.tsx` réutilisable.
+- Utilitaire `fmtMoney(montant, devise)` : respecte décimales par ISO 4217 et symbole. Partout où un montant est affiché.
+- PDF documents de vente : symbole + code à côté de chaque montant et total.
+
+### 14ter.14 Icônes et éléments visuels tous fonctionnels
+
+- **Aucun élément visuel ne doit être un décor mort**. Chaque bouton, icône, badge affiché doit déclencher une action utile.
+- Si une action n'est pas encore implémentée, tooltip "Bientôt disponible" + opacity 0.5 ; ne jamais afficher silencieusement.
+- Icônes importées de `lucide-react` uniquement (pas d'emoji en UI métier).
+
+### 14ter.15 Données de démonstration = backend only
+
+- **Zéro mock dans le frontend** (`const MOCK_*` interdit).
+- Toutes les données de démo vivent dans `backend/seeds/<domaine>/` au format SQL idempotent (`ON CONFLICT DO NOTHING` ou `DELETE + INSERT`).
+- Script `npm run seed:demo` applique l'ensemble.
+- Chaque table métier doit avoir un seed démo Tunisie réaliste (noms tunisiens/français, villes TN, HotelMarina/BoutiqueElMenzah/CottonPlus, dates récentes).
+
+### 14ter.16 Migration DB legacy → schema-v2 CRM
+
+- Migration irréversible exécutée le 2026-10-24 : renommages `clients` → `comptes`, `contacts_client` → `contacts`, `opportunites_crm` → `opportunites`, `utilisateurs` → `users`.
+- Legacy préservé comme `_legacy_*` (rollback via `backend/scripts/migrate-crm-to-schema-v2.js` documenté).
+- Backup JSON préalable obligatoire : `backend/backup-pre-migration-crm.json`.
+- Tous nouveaux modules backend v2 : `comptes`, `contacts`, `adresses`, `leads`, `interactions`, `opportunites`, `parametres`.
+- Permissions middleware v2 accepte `role` legacy ET `role_principal` schema-v2.
+
+### 14ter.17 Permissions & ADMIN bypass
+
+- Admin accède à TOUT, sans restrictions de permission par ressource.
+- Middleware `requirePermission(code)` bypass ADMIN (case-insensitive sur `role` ou `role_principal` ou tableau `roles`).
+- Dashboard admin ≠ dashboards opérateurs : admin a accès à toutes les fonctionnalités et au paramétrage, pas à des dashboards opérationnels dédiés.
+
+---
+
 ## 15. Menu
 
 ```
