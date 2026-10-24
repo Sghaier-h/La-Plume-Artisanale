@@ -1020,7 +1020,7 @@ export const getCommandeWithOFs = async (req, res) => {
   try {
     const { id } = req.params;
     const cmdRes = await pool.query(
-      `SELECT c.*, cl.raison_sociale, cl.email, cl.telephone, cl.code_client
+      `SELECT c.*, cl.raison_sociale, cl.email_principal AS email, cl.telephone_principal AS telephone, cl.code_client
          FROM commandes c
          LEFT JOIN comptes cl ON c.id_client = cl.id_client
         WHERE c.id_commande = $1`,

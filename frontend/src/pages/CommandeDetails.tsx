@@ -484,9 +484,9 @@ const CommandeDetails: React.FC = () => {
   }
 
   const totalHT = commande.lignes?.reduce((sum, ligne) => {
-    const prixUnitaire = ligne.prix_unitaire || 0;
-    const quantite = ligne.quantite_commandee || 0;
-    const remise = ligne.remise || 0;
+    const prixUnitaire = Number(ligne.prix_unitaire) || 0;
+    const quantite = Number(ligne.quantite_commandee) || 0;
+    const remise = Number(ligne.remise) || 0;
     return sum + (prixUnitaire * quantite * (1 - remise / 100));
   }, 0) || 0;
 
@@ -817,9 +817,9 @@ const CommandeDetails: React.FC = () => {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {commande.lignes.map((ligne, index) => {
-                      const prixUnitaire = ligne.prix_unitaire || 0;
-                      const quantite = ligne.quantite_commandee || 0;
-                      const remise = ligne.remise || 0;
+                      const prixUnitaire = Number(ligne.prix_unitaire) || 0;
+                      const quantite = Number(ligne.quantite_commandee) || 0;
+                      const remise = Number(ligne.remise) || 0;
                       const totalLigne = prixUnitaire * quantite * (1 - remise / 100);
                       
                       return (
