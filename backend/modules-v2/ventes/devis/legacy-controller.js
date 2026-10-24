@@ -92,7 +92,7 @@ export const createDevis = async (req, res) => {
       }
     }
 
-    const clientCheck = await validateReferentialIntegrity('clients', 'id_client', id_client, true);
+    const clientCheck = await validateReferentialIntegrity('comptes', 'id_client', id_client, true);
     if (!clientCheck.valid) {
       await client.query('ROLLBACK');
       return sendError(res, HTTP_STATUS.NOT_FOUND, clientCheck.error);

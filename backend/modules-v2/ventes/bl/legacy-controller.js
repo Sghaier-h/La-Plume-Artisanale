@@ -182,25 +182,24 @@ export const createBonsLivraison = async (req, res) => {
     );
     const bl = ins.rows[0];
 
-    // Insert lignes into lignes_facture linked via id_ligne_bl
+    // Phase T1 — fix: on insère les lignes du BL dans `bl_lignes` (la table
+    // dédiée), via SAVEPOINT pour isoler toute erreur schéma et préserver
+    // le COMMIT du BL lui-même même si l'insert ligne rate.
     for (let i = 0; i < lignes.length; i++) {
       const l = lignes[i];
       const q = Number(l.quantite) || 0;
-      const pu = Number(l.prix_unitaire_ht) || 0;
-      const tv = Number(l.taux_tva) || 0;
-      const mht = q * pu;
-      const mtva = mht * (tv / 100);
+      const spName = `sp_bl_ligne_${i}`;
       try {
+        await client.query(`SAVEPOINT ${spName}`);
         await client.query(
-          `INSERT INTO lignes_facture
-             (id_article, designation, quantite, prix_unitaire_ht, taux_tva,
-              montant_ht, montant_tva, montant_ttc, ordre, id_ligne_bl, created_by)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
-          [l.id_article || null, l.designation || '', q, pu, tv,
-           mht, mtva, mht + mtva, i + 1, bl.id_bl, userId]
+          `INSERT INTO bl_lignes
+             (id_bl, id_article, designation, quantite, unite, created_at)
+           VALUES ($1, $2, $3, $4, $5, NOW())`,
+          [bl.id_bl, l.id_article || null, l.designation || `Article ${l.id_article || ''}`.trim(), q, l.unite || 'pcs']
         );
+        await client.query(`RELEASE SAVEPOINT ${spName}`);
       } catch (e) {
-        // If lignes_facture insert fails (schema mismatch), continue — non-fatal
+        try { await client.query(`ROLLBACK TO SAVEPOINT ${spName}`); } catch {}
       }
     }
 

@@ -4455,6 +4455,26 @@ Même pattern : icônes-hub + alertes séparées. Le menu §15 reste accessible 
 - Middleware `requirePermission(code)` bypass ADMIN (case-insensitive sur `role` ou `role_principal` ou tableau `roles`).
 - Dashboard admin ≠ dashboards opérateurs : admin a accès à toutes les fonctionnalités et au paramétrage, pas à des dashboards opérationnels dédiés.
 
+### 14ter.18 Efficacité opérationnelle (RÈGLE PO 2026-10-24)
+
+**Le système doit être facile à utiliser, pratique, et ne pas prendre beaucoup de temps à l'opérateur.** Chaque action du quotidien se fait en le MOINS de clics / saisies possible.
+
+Règles concrètes :
+- **Numérotation 100 % automatique** : jamais à l'utilisateur de saisir CLI-xxx, DEV-xxx, CMD-xxx, FAC-xxx. Formats configurés dans `config_numerotation`.
+- **Transformation en 1 clic** : devis → commande, commande → OF, BL → facture via un seul bouton qui reprend TOUTES les données en amont (client, lignes, montants, TVA).
+- **Pas de double saisie** : les lignes d'un devis doivent se retrouver dans la commande puis le BL puis la facture sans ressaisie.
+- **Scan QR / code-barres** sur tablettes atelier chaque fois que c'est possible (OF, article, lot, machine) pour éviter la frappe clavier.
+- **Autofocus + Enter = suivant** sur les formulaires (navigation clavier type caisse).
+- **Formulaire wizard court** : max 3-4 écrans courts plutôt qu'un seul form long qui scroll.
+- **Boutons action primaire visibles sans scroll** (sticky bottom bar sur tablette, header droite sur PC).
+- **Raccourcis globaux** : `Ctrl+K` recherche globale, `Ctrl+N` nouveau selon contexte, `Ctrl+S` enregistrer.
+- **Pré-sélection intelligente** : si un seul choix possible (ex. 1 seule société active, 1 seule caisse ouverte, 1 seul entrepôt), auto-sélectionner.
+- **Auto-save brouillons** sur formulaires longs (devis multi-lignes, candidature tablette) via localStorage avec reprise.
+- **Message d'erreur actionnable** : jamais "Erreur serveur" seul — toujours quoi corriger et comment.
+- **Dashboards opérateur = hub icônes + alertes** (§14ter.17c), pas de tableaux longs qui obligent à chercher.
+
+Chaque feature ajoutée doit être validée contre cette règle : "combien de clics pour faire X ?" doit rester le minimum vital.
+
 ---
 
 ## 14quater. Fonctionnalités reprises de Power Apps « La Plume Comptabilité »

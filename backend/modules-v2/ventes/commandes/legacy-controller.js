@@ -481,7 +481,10 @@ export const generateOFs = async (req, res) => {
       );
     }
 
-    const preview = await computePreviewOfs(idCommande, dbClient);
+    // Phase T1 — fix: computePreviewOfs émet des requêtes best-effort
+    // (bom_master, planning_machines) qui peuvent échouer selon le schéma
+    // réel ; les exécuter dans le `pool` évite d'avorter la transaction OF.
+    const preview = await computePreviewOfs(idCommande, pool);
     if (preview.notFound) {
       await dbClient.query('ROLLBACK');
       return sendError(res, 'Commande non trouvée', HTTP_STATUS.NOT_FOUND);

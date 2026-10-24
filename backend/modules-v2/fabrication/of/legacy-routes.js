@@ -37,9 +37,40 @@ router.post('/:id(\\d+)/demarrer', authenticate, lancerProduction);
 router.post('/:id(\\d+)/terminer', authenticate, terminerProduction);
 router.post('/:id(\\d+)/assigner-machine', authenticate, async (req, res) => {
   try {
-    const { id_machine } = req.body || {};
-    await pool.query(`UPDATE ordres_fabrication SET id_machine = $1, date_modification = NOW() WHERE id = $2`, [id_machine, req.params.id]);
-    return sendSuccess(res, { id: Number(req.params.id), id_machine }, 'Machine assignée');
+    const { id_machine, date_debut_prevue, date_fin_prevue } = req.body || {};
+    const idOf = parseInt(req.params.id, 10);
+    const userId = req.user?.id || req.user?.userId || null;
+
+    // Phase T1 — fix: la table `ordres_fabrication` utilise `id_machine_prevue`
+    // (pas `id_machine`) et sa PK est `id_of` (pas `id`).
+    const r = await pool.query(
+      `UPDATE ordres_fabrication
+          SET id_machine_prevue = $1,
+              date_debut_prevue = COALESCE($2, date_debut_prevue),
+              date_fin_prevue   = COALESCE($3, date_fin_prevue),
+              date_modification = NOW(),
+              updated_by        = COALESCE($4, updated_by)
+        WHERE id_of = $5
+        RETURNING *`,
+      [id_machine, date_debut_prevue || null, date_fin_prevue || null, userId, idOf]
+    );
+    if (r.rows.length === 0) {
+      return sendError(res, 'OF introuvable', 404);
+    }
+
+    // Enregistre la planification côté planning_machines (best-effort)
+    try {
+      await pool.query(
+        `INSERT INTO planning_machines
+           (id_machine, id_of, date_debut_prevue, date_fin_prevue, statut,
+            observations, date_creation, created_by)
+         VALUES ($1, $2, $3, $4, 'planifie', $5, NOW(), $6)`,
+        [id_machine, idOf, date_debut_prevue || null, date_fin_prevue || null,
+         `Assignation machine OF ${r.rows[0].numero_of}`, userId]
+      );
+    } catch (e) { /* non bloquant si planning_machines rejette */ }
+
+    return sendSuccess(res, r.rows[0], 'Machine assignée');
   } catch (error) {
     return handleError(res, error, 'assignerMachineOf');
   }
