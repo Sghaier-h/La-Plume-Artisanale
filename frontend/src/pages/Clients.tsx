@@ -407,10 +407,10 @@ const Clients: React.FC = () => {
 
         {/* KPI row — cliquables (filtres actifs) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <KpiCard label="Total fiches"   value={kpis.total}     tone="terracotta" icon={<Users size={18} />}    onClick={() => toggleKpi('all')} />
-          <KpiCard label="Clients actifs" value={kpis.actifs}    tone="sage"       icon={<UserCheck size={18} />} onClick={() => toggleKpi('actifs')} />
-          <KpiCard label="Inactifs"       value={kpis.inactifs}  tone="gold"       icon={<UserX size={18} />}     onClick={() => toggleKpi('inactifs')} />
-          <KpiCard label="Prospects"      value={kpis.prospects} tone="indigo"     icon={<Award size={18} />}     onClick={() => toggleKpi('prospects')} />
+          <KpiCard label="Total fiches"   value={kpis.total}     tone="terracotta" icon={<Users size={18} />}    active={kpiActive === 'all'}        onClick={() => toggleKpi('all')} />
+          <KpiCard label="Clients actifs" value={kpis.actifs}    tone="sage"       icon={<UserCheck size={18} />} active={kpiActive === 'actifs'}     onClick={() => toggleKpi('actifs')} />
+          <KpiCard label="Inactifs"       value={kpis.inactifs}  tone="gold"       icon={<UserX size={18} />}     active={kpiActive === 'inactifs'}   onClick={() => toggleKpi('inactifs')} />
+          <KpiCard label="Prospects"      value={kpis.prospects} tone="indigo"     icon={<Award size={18} />}     active={kpiActive === 'prospects'}  onClick={() => toggleKpi('prospects')} />
         </div>
 
         {/* Toggle Affichage et Recherche */}

@@ -141,6 +141,7 @@ const StatsPerformance: React.FC = () => {
   const [stats, setStats] = useState<StatsCanal[]>([]);
   const [top, setTop] = useState<CampagneTop[]>([]);
   const [loading, setLoading] = useState(true);
+  const [canalFilter, setCanalFilter] = useState<CanalCampagne | ''>('');
 
   useEffect(() => {
     let cancelled = false;
@@ -220,6 +221,8 @@ const StatsPerformance: React.FC = () => {
             suffix="%"
             icon={<Eye className="w-5 h-5" />}
             color="terracotta"
+            active={canalFilter === ''}
+            onClick={() => setCanalFilter('')}
           />
           <KpiCard
             label="Taux de clic"
@@ -227,12 +230,16 @@ const StatsPerformance: React.FC = () => {
             suffix="%"
             icon={<MousePointerClick className="w-5 h-5" />}
             color="indigo"
+            active={canalFilter === 'email'}
+            onClick={() => setCanalFilter((p) => p === 'email' ? '' : 'email')}
           />
           <KpiCard
             label="Conversions"
             value={kpisGlobaux.conversions.toLocaleString('fr-FR')}
             icon={<ShoppingBag className="w-5 h-5" />}
             color="sage"
+            active={canalFilter === 'whatsapp'}
+            onClick={() => setCanalFilter((p) => p === 'whatsapp' ? '' : 'whatsapp')}
           />
           <KpiCard
             label="CA généré"
@@ -409,7 +416,7 @@ const StatsPerformance: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {top.map((t) => (
+                {top.filter((t) => !canalFilter || t.canal === canalFilter).map((t) => (
                   <tr
                     key={t.id}
                     className="border-t hover:bg-[var(--bg-hover)] group"

@@ -227,24 +227,32 @@ const StockSynchronise: React.FC = () => {
             value={kpis.total}
             icon={<Package className="w-5 h-5" />}
             color="indigo"
+            active={filtreEtat === 'tous'}
+            onClick={() => setFiltreEtat('tous')}
           />
           <KpiCard
             label="Écarts en cours"
             value={kpis.ecarts}
             icon={<AlertTriangle className="w-5 h-5" />}
             color="warning"
+            active={filtreEtat === 'ecart'}
+            onClick={() => setFiltreEtat((p) => p === 'ecart' ? 'tous' : 'ecart')}
           />
           <KpiCard
             label="Jamais synchronisés"
             value={kpis.jamais}
             icon={<Store className="w-5 h-5" />}
             color="terracotta"
+            active={filtreEtat === 'jamais_syncrhonise'}
+            onClick={() => setFiltreEtat((p) => p === 'jamais_syncrhonise' ? 'tous' : 'jamais_syncrhonise')}
           />
           <KpiCard
             label="Stock local total"
             value={kpis.stockLocal.toLocaleString('fr-FR')}
             icon={<CheckCircle2 className="w-5 h-5" />}
             color="sage"
+            active={filtreEtat === 'ok'}
+            onClick={() => setFiltreEtat((p) => p === 'ok' ? 'tous' : 'ok')}
           />
         </div>
 

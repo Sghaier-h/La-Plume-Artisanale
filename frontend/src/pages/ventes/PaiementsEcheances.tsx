@@ -272,10 +272,18 @@ const PaiementsEcheances: React.FC = () => {
             value={kpis.totalDu.toLocaleString('fr-FR', { maximumFractionDigits: 0 })}
             icon={<Landmark className="w-5 h-5" />}
             color="terracotta"
+            active={filtreStatut === 'tous'}
+            onClick={() => setFiltreStatut('tous')}
           />
-          <KpiCard label="Factures en retard" value={kpis.enRetard} icon={<AlertTriangle className="w-5 h-5" />} color="warning" />
-          <KpiCard label="Encours (nb factures)" value={kpis.nbEncours} icon={<Clock className="w-5 h-5" />} color="indigo" />
-          <KpiCard label="DSO moyen" value={`${Math.round(kpis.dso)}`} suffix="j" color="sage" subtitle="Délai moyen paiement" />
+          <KpiCard label="Factures en retard" value={kpis.enRetard} icon={<AlertTriangle className="w-5 h-5" />} color="warning"
+            active={filtreStatut === 'en_retard'}
+            onClick={() => setFiltreStatut((p) => p === 'en_retard' ? 'tous' : 'en_retard')} />
+          <KpiCard label="Encours (nb factures)" value={kpis.nbEncours} icon={<Clock className="w-5 h-5" />} color="indigo"
+            active={filtreStatut === 'du'}
+            onClick={() => setFiltreStatut((p) => p === 'du' ? 'tous' : 'du')} />
+          <KpiCard label="DSO moyen" value={`${Math.round(kpis.dso)}`} suffix="j" color="sage" subtitle="Délai moyen paiement"
+            active={filtreStatut === 'a_echoir'}
+            onClick={() => setFiltreStatut((p) => p === 'a_echoir' ? 'tous' : 'a_echoir')} />
         </div>
 
         {/* Balance âgée */}

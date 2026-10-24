@@ -83,10 +83,28 @@ export const getMaintenanceById = async (req, res) => {
 export const createMaintenance = async (req, res) => {
   try {
     const userId = authorId(req);
-    const { id_machine, type_intervention, priorite, description, assigne_a } = req.body || {};
+    const { id_machine, type_intervention, priorite, description, assigne_a, demande_par } = req.body || {};
     if (!id_machine || !type_intervention) {
       return sendError(res, 'id_machine et type_intervention requis', 400);
     }
+    // T6 — demande_par doit référencer equipe_fabrication(id_operateur). En mock
+    // dev, les ids utilisateurs (10, 14, …) ne mappent pas 1:1 vers un opérateur.
+    // On accepte un `demande_par` explicite dans le payload (prioritaire), puis
+    // on retombe sur userId. Si cette valeur n'existe pas comme id_operateur,
+    // on bascule sur le 1er opérateur disponible (fallback best-effort).
+    let demandePar = demande_par ?? userId;
+    try {
+      const check = await pool.query(
+        `SELECT id_operateur FROM equipe_fabrication WHERE id_operateur = $1 LIMIT 1`,
+        [demandePar]
+      );
+      if (check.rows.length === 0) {
+        const fallback = await pool.query(
+          `SELECT id_operateur FROM equipe_fabrication ORDER BY id_operateur LIMIT 1`
+        );
+        if (fallback.rows.length > 0) demandePar = fallback.rows[0].id_operateur;
+      }
+    } catch { /* best-effort */ }
     const numero = await nextNumero();
     const r = await pool.query(
       `INSERT INTO demandes_intervention (
@@ -95,7 +113,7 @@ export const createMaintenance = async (req, res) => {
        ) VALUES ($1, NOW(), $2, $3, $4, $5, $6, $7, 'en_attente', $6)
        RETURNING *, id_demande AS id`,
       [numero, id_machine, type_intervention, priorite || 'normale',
-       description || null, userId, assigne_a || null]
+       description || null, demandePar, assigne_a || null]
     );
     const row = r.rows[0];
     try {

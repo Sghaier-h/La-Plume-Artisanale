@@ -196,15 +196,21 @@ const ListeColisage: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <KpiCard label="Colis totaux" value={kpis.total} icon={<Boxes className="w-5 h-5" />} color="terracotta" />
+          <KpiCard label="Colis totaux" value={kpis.total} icon={<Boxes className="w-5 h-5" />} color="terracotta"
+            active={filtreStatut === 'tous'}
+            onClick={() => setFiltreStatut('tous')} />
           <KpiCard
             label="Poids total (kg)"
             value={kpis.poidsTotal.toLocaleString('fr-FR', { maximumFractionDigits: 1 })}
             icon={<Weight className="w-5 h-5" />}
             color="indigo"
           />
-          <KpiCard label="Expédiés / Livrés" value={kpis.expedies} icon={<CheckCircle2 className="w-5 h-5" />} color="sage" />
-          <KpiCard label="En attente" value={kpis.enAttente} color="warning" />
+          <KpiCard label="Expédiés / Livrés" value={kpis.expedies} icon={<CheckCircle2 className="w-5 h-5" />} color="sage"
+            active={filtreStatut === 'expedie'}
+            onClick={() => setFiltreStatut((p) => p === 'expedie' ? 'tous' : 'expedie')} />
+          <KpiCard label="En attente" value={kpis.enAttente} color="warning"
+            active={filtreStatut === 'brouillon'}
+            onClick={() => setFiltreStatut((p) => p === 'brouillon' ? 'tous' : 'brouillon')} />
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-[#EDE3CE] p-4 mb-4">

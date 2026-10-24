@@ -278,18 +278,24 @@ const JournalEcritures: React.FC = () => {
               value={kpis.total}
               color="indigo"
               subtitle={`${kpis.validees} validées · ${kpis.brouillons} brouillons`}
+              active={filterStatut === 'all'}
+              onClick={() => setFilterStatut('all')}
             />
             <KpiCard
               label="Total débit"
               value={kpis.totalDebit.toLocaleString('fr-FR', { maximumFractionDigits: 0 })}
               suffix="DT"
               color="sage"
+              active={filterStatut === 'validee'}
+              onClick={() => setFilterStatut((p) => p === 'validee' ? 'all' : 'validee')}
             />
             <KpiCard
               label="Total crédit"
               value={kpis.totalCredit.toLocaleString('fr-FR', { maximumFractionDigits: 0 })}
               suffix="DT"
               color="terracotta"
+              active={filterStatut === 'brouillon'}
+              onClick={() => setFilterStatut((p) => p === 'brouillon' ? 'all' : 'brouillon')}
             />
             <KpiCard
               label="Équilibre"

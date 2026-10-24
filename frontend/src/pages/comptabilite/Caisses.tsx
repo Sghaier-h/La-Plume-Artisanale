@@ -38,6 +38,7 @@ const Caisses: React.FC = () => {
   const [caisses, setCaisses] = useState<CaisseEtendue[]>([]);
   const [routage, setRoutage] = useState<RoutageCaisse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [typeFilter, setTypeFilter] = useState<string>('');
   const [showTransfert, setShowTransfert] = useState(false);
   const [transfertForm, setTransfertForm] = useState({
     id_caisse_source: 0, id_caisse_dest: 0, montant: '', libelle: '',
@@ -105,6 +106,8 @@ const Caisses: React.FC = () => {
           icon={<Wallet size={18} />}
           tone="terracotta"
           loading={loading}
+          active={typeFilter === ''}
+          onClick={() => setTypeFilter('')}
         />
         <KpiCard
           label="Chèques en attente"
@@ -114,6 +117,8 @@ const Caisses: React.FC = () => {
           icon={<PiggyBank size={18} />}
           tone="indigo"
           loading={loading}
+          active={typeFilter === 'cheques_clients'}
+          onClick={() => setTypeFilter((p) => p === 'cheques_clients' ? '' : 'cheques_clients')}
         />
         <KpiCard
           label="Compensations"
@@ -123,6 +128,8 @@ const Caisses: React.FC = () => {
           icon={<Scale size={18} />}
           tone="sage"
           loading={loading}
+          active={typeFilter === 'compensation'}
+          onClick={() => setTypeFilter((p) => p === 'compensation' ? '' : 'compensation')}
         />
         <KpiCard
           label="Routages actifs"
@@ -140,7 +147,7 @@ const Caisses: React.FC = () => {
         subtitle="Clic sur une caisse pour voir son journal de mouvements."
       >
         <div style={cardGrid}>
-          {caisses.map((c) => (
+          {caisses.filter((c) => !typeFilter || c.type_caisse === typeFilter).map((c) => (
             <button
               key={c.id_caisse}
               type="button"
@@ -172,7 +179,7 @@ const Caisses: React.FC = () => {
               </div>
             </button>
           ))}
-          {!loading && caisses.length === 0 && (
+          {!loading && caisses.filter((c) => !typeFilter || c.type_caisse === typeFilter).length === 0 && (
             <div style={{ color: 'var(--fg-muted)', padding: 'var(--s-4)' }}>Aucune caisse configurée.</div>
           )}
         </div>

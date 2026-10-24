@@ -105,10 +105,10 @@ const Opportunities: React.FC = () => {
       }
     >
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 'var(--s-4)' }}>
-        <KpiCard label="Total"           value={kpis.total}   tone="terracotta" icon={<Briefcase size={18} />}    onClick={() => setFilter('all')} />
-        <KpiCard label="Actives"         value={kpis.actives} tone="indigo"     icon={<Target size={18} />}        onClick={() => toggle('ACTIVE')} />
-        <KpiCard label="Gagnées"         value={kpis.gagnees} tone="sage"       icon={<CheckCircle2 size={18} />}   onClick={() => toggle('GAGNEE')} />
-        <KpiCard label="CA prévisionnel" value={fmtMoney(kpis.ca_previsionnel, 'TND')} tone="gold" icon={<TrendingUp size={18} />} />
+        <KpiCard label="Total"           value={kpis.total}   tone="terracotta" icon={<Briefcase size={18} />}    active={filter === 'all'}    onClick={() => setFilter('all')} />
+        <KpiCard label="Actives"         value={kpis.actives} tone="indigo"     icon={<Target size={18} />}        active={filter === 'ACTIVE'} onClick={() => toggle('ACTIVE')} />
+        <KpiCard label="Gagnées"         value={kpis.gagnees} tone="sage"       icon={<CheckCircle2 size={18} />}   active={filter === 'GAGNEE'} onClick={() => toggle('GAGNEE')} />
+        <KpiCard label="CA prévisionnel" value={fmtMoney(kpis.ca_previsionnel, 'TND')} tone="gold" icon={<TrendingUp size={18} />} active={filter === 'ACTIVE'} onClick={() => toggle('ACTIVE')} />
       </div>
 
       <SectionCard

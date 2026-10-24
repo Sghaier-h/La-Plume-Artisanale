@@ -255,6 +255,8 @@ const FacturesFournisseur: React.FC = () => {
               icon={<Clock className="w-5 h-5" />}
               color="warning"
               subtitle={`${kpis.echues} échue(s)`}
+              active={statutFilter === 'en_attente_paiement'}
+              onClick={() => setStatutFilter((prev) => prev === 'en_attente_paiement' ? 'all' : 'en_attente_paiement')}
             />
             <KpiCard
               label="Montant TTC dû"
@@ -264,18 +266,24 @@ const FacturesFournisseur: React.FC = () => {
               suffix="DT"
               icon={<CreditCard className="w-5 h-5" />}
               color="terracotta"
+              active={statutFilter === 'payee_partiel'}
+              onClick={() => setStatutFilter((prev) => prev === 'payee_partiel' ? 'all' : 'payee_partiel')}
             />
             <KpiCard
               label="En litige"
               value={kpis.litiges}
               icon={<AlertTriangle className="w-5 h-5" />}
               color={kpis.litiges > 0 ? 'terracotta' : 'sage'}
+              active={statutFilter === 'en_litige'}
+              onClick={() => setStatutFilter((prev) => prev === 'en_litige' ? 'all' : 'en_litige')}
             />
             <KpiCard
               label="Factures total"
               value={kpis.total}
               icon={<Receipt className="w-5 h-5" />}
               color="indigo"
+              active={statutFilter === 'all'}
+              onClick={() => setStatutFilter('all')}
             />
           </div>
 

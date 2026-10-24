@@ -85,6 +85,7 @@ const ListePalettes: React.FC = () => {
   const [search, setSearch] = useState('');
   const [editing, setEditing] = useState<Palette | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [statutFilter, setStatutFilter] = useState<string>('');
 
   useEffect(() => {
     let cancelled = false;
@@ -103,12 +104,13 @@ const ListePalettes: React.FC = () => {
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
     return palettes.filter((p) => {
+      if (statutFilter && p.statut !== statutFilter) return false;
       if (!s) return true;
       return `${p.numero_palette} ${p.numero_commande || ''} ${p.destination || ''} ${p.transporteur_nom || ''}`
         .toLowerCase()
         .includes(s);
     });
-  }, [palettes, search]);
+  }, [palettes, search, statutFilter]);
 
   const kpis = useMemo(() => {
     const total = palettes.length;
@@ -182,15 +184,23 @@ const ListePalettes: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <KpiCard label="Palettes totales" value={kpis.total} icon={<Layers className="w-5 h-5" />} color="terracotta" />
-          <KpiCard label="Colis groupés" value={kpis.colisTotal} icon={<Boxes className="w-5 h-5" />} color="indigo" />
+          <KpiCard label="Palettes totales" value={kpis.total} icon={<Layers className="w-5 h-5" />} color="terracotta"
+            active={statutFilter === ''}
+            onClick={() => setStatutFilter('')} />
+          <KpiCard label="Colis groupés" value={kpis.colisTotal} icon={<Boxes className="w-5 h-5" />} color="indigo"
+            active={statutFilter === 'expediee'}
+            onClick={() => setStatutFilter((p) => p === 'expediee' ? '' : 'expediee')} />
           <KpiCard
             label="Poids total (kg)"
             value={kpis.poidsTotal.toLocaleString('fr-FR', { maximumFractionDigits: 1 })}
             icon={<Ruler className="w-5 h-5" />}
             color="sage"
+            active={statutFilter === 'livree'}
+            onClick={() => setStatutFilter((p) => p === 'livree' ? '' : 'livree')}
           />
-          <KpiCard label="En préparation" value={kpis.enPrep} color="warning" />
+          <KpiCard label="En préparation" value={kpis.enPrep} color="warning"
+            active={statutFilter === 'preparee'}
+            onClick={() => setStatutFilter((p) => p === 'preparee' ? '' : 'preparee')} />
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-[#EDE3CE] p-4 mb-4">

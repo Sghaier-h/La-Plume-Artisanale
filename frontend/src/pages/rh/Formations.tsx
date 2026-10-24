@@ -110,6 +110,7 @@ const Formations: React.FC = () => {
   const [search, setSearch] = useState('');
   const [editing, setEditing] = useState<Formation | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [statutFilter, setStatutFilter] = useState<string>('');
 
   useEffect(() => {
     let cancelled = false;
@@ -128,10 +129,11 @@ const Formations: React.FC = () => {
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
     return formations.filter((f) => {
+      if (statutFilter && f.statut !== statutFilter) return false;
       if (!s) return true;
       return `${f.intitule} ${f.organisme_nom} ${f.domaine || ''}`.toLowerCase().includes(s);
     });
-  }, [formations, search]);
+  }, [formations, search, statutFilter]);
 
   const kpis = useMemo(() => {
     const annee = new Date().getFullYear();
@@ -220,10 +222,18 @@ const Formations: React.FC = () => {
             label="Coût annuel (DT)"
             value={kpis.totalCout.toLocaleString('fr-FR', { maximumFractionDigits: 0 })}
             color="terracotta"
+            active={statutFilter === ''}
+            onClick={() => setStatutFilter('')}
           />
-          <KpiCard label="Participants (année)" value={kpis.totalParticipants} color="indigo" />
-          <KpiCard label="En cours" value={kpis.enCours} icon={<Clock className="w-5 h-5" />} color="warning" />
-          <KpiCard label="Planifiées" value={kpis.planifiees} icon={<CalendarIcon className="w-5 h-5" />} color="sage" />
+          <KpiCard label="Participants (année)" value={kpis.totalParticipants} color="indigo"
+            active={statutFilter === 'terminee'}
+            onClick={() => setStatutFilter((p) => p === 'terminee' ? '' : 'terminee')} />
+          <KpiCard label="En cours" value={kpis.enCours} icon={<Clock className="w-5 h-5" />} color="warning"
+            active={statutFilter === 'en_cours'}
+            onClick={() => setStatutFilter((p) => p === 'en_cours' ? '' : 'en_cours')} />
+          <KpiCard label="Planifiées" value={kpis.planifiees} icon={<CalendarIcon className="w-5 h-5" />} color="sage"
+            active={statutFilter === 'planifiee'}
+            onClick={() => setStatutFilter((p) => p === 'planifiee' ? '' : 'planifiee')} />
         </div>
 
         {/* Budget TFP */}

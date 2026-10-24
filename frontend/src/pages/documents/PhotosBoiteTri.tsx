@@ -110,10 +110,18 @@ const PhotosBoiteTri: React.FC = () => {
       }
     >
       <div style={kpiGrid}>
-        <KpiCard label="Non traité" value={String(counts.total)} tone="terracotta" loading={loading} />
-        <KpiCard label="Teams" value={String(counts.bySource['teams'] || 0)} tone="indigo" loading={loading} />
-        <KpiCard label="WhatsApp" value={String(counts.bySource['whatsapp'] || 0)} tone="sage" loading={loading} />
-        <KpiCard label="Email" value={String(counts.bySource['email'] || 0)} tone="gold" loading={loading} />
+        <KpiCard label="Non traité" value={String(counts.total)} tone="terracotta" loading={loading}
+          active={filterSource === ''}
+          onClick={() => setFilterSource('')} />
+        <KpiCard label="Teams" value={String(counts.bySource['teams'] || 0)} tone="indigo" loading={loading}
+          active={filterSource === 'teams'}
+          onClick={() => setFilterSource((p) => p === 'teams' ? '' : 'teams')} />
+        <KpiCard label="WhatsApp" value={String(counts.bySource['whatsapp'] || 0)} tone="sage" loading={loading}
+          active={filterSource === 'whatsapp'}
+          onClick={() => setFilterSource((p) => p === 'whatsapp' ? '' : 'whatsapp')} />
+        <KpiCard label="Email" value={String(counts.bySource['email'] || 0)} tone="gold" loading={loading}
+          active={filterSource === 'email'}
+          onClick={() => setFilterSource((p) => p === 'email' ? '' : 'email')} />
       </div>
 
       <SectionCard title="Filtres" subtitle="Source + date de réception">

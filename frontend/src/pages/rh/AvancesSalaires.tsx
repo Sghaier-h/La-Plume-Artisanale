@@ -36,6 +36,7 @@ const AvancesSalaires: React.FC = () => {
   const navigate = useNavigate();
   const [rows, setRows] = useState<any[]>([]);
   const [showNew, setShowNew] = useState(false);
+  const [statutFilter, setStatutFilter] = useState<string>('');
   const [form, setForm] = useState({
     id_employe: '',
     montant_demande: '',
@@ -115,10 +116,14 @@ const AvancesSalaires: React.FC = () => {
           gap: 'var(--s-4)',
         }}
       >
-        <KpiCard label="En attente" value={String(stats.attente)} unit="demandes" tone="gold" icon={<Coins size={18} />} />
-        <KpiCard label="Approuvées" value={String(stats.approuvees)} unit="à payer" tone="indigo" icon={<Check size={18} />} />
-        <KpiCard label="Payées en cours" value={String(stats.payees)} unit="dossiers" tone="terracotta" icon={<Wallet size={18} />} />
-        <KpiCard label="Restant à récupérer" value={fmtMoney(stats.cumul)} tone="rose" icon={<Undo2 size={18} />} />
+        <KpiCard label="En attente" value={String(stats.attente)} unit="demandes" tone="gold" icon={<Coins size={18} />}
+          active={statutFilter === 'demande'} onClick={() => setStatutFilter((p) => p === 'demande' ? '' : 'demande')} />
+        <KpiCard label="Approuvées" value={String(stats.approuvees)} unit="à payer" tone="indigo" icon={<Check size={18} />}
+          active={statutFilter === 'approuvee'} onClick={() => setStatutFilter((p) => p === 'approuvee' ? '' : 'approuvee')} />
+        <KpiCard label="Payées en cours" value={String(stats.payees)} unit="dossiers" tone="terracotta" icon={<Wallet size={18} />}
+          active={statutFilter === 'payee'} onClick={() => setStatutFilter((p) => p === 'payee' ? '' : 'payee')} />
+        <KpiCard label="Restant à récupérer" value={fmtMoney(stats.cumul)} tone="rose" icon={<Undo2 size={18} />}
+          active={statutFilter === 'remboursee_partiel'} onClick={() => setStatutFilter((p) => p === 'remboursee_partiel' ? '' : 'remboursee_partiel')} />
       </div>
 
       <SectionCard title="Liste des avances" subtitle={`${rows.length} dossiers`}>
@@ -132,7 +137,7 @@ const AvancesSalaires: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {rows.map((r: any) => (
+              {rows.filter((r: any) => !statutFilter || r.statut === statutFilter).map((r: any) => (
                 <tr key={r.id_avance} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                   <td style={tdMono}>
                     <strong>{r.nom}</strong> {r.prenom}
@@ -172,7 +177,7 @@ const AvancesSalaires: React.FC = () => {
                   </td>
                 </tr>
               ))}
-              {rows.length === 0 && (
+              {rows.filter((r: any) => !statutFilter || r.statut === statutFilter).length === 0 && (
                 <tr>
                   <td colSpan={8} style={{ padding: 'var(--s-5)', textAlign: 'center', color: 'var(--fg-muted)', fontStyle: 'italic' }}>
                     Aucune avance.

@@ -20,6 +20,7 @@ const CompensationsCroisees: React.FC = () => {
   const [compensations, setCompensations] = useState<Compensation[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
+  const [statutFilter, setStatutFilter] = useState<string>('');
   const [form, setForm] = useState({ libelle: '', date_compensation: '', notes: '' });
   const [lignes, setLignes] = useState<CompensationLigne[]>([emptyLigne('debit'), emptyLigne('credit')]);
 
@@ -79,9 +80,15 @@ const CompensationsCroisees: React.FC = () => {
       }
     >
       <div style={kpiGrid}>
-        <KpiCard label="Total compensations" value={String(compensations.length)} tone="terracotta" loading={loading}/>
-        <KpiCard label="En brouillon" value={String(compensations.filter(c => c.statut === 'brouillon').length)} tone="gold" loading={loading}/>
-        <KpiCard label="Validées" value={String(compensations.filter(c => c.statut === 'validee').length)} tone="sage" loading={loading}/>
+        <KpiCard label="Total compensations" value={String(compensations.length)} tone="terracotta" loading={loading}
+          active={statutFilter === ''}
+          onClick={() => setStatutFilter('')}/>
+        <KpiCard label="En brouillon" value={String(compensations.filter(c => c.statut === 'brouillon').length)} tone="gold" loading={loading}
+          active={statutFilter === 'brouillon'}
+          onClick={() => setStatutFilter((p) => p === 'brouillon' ? '' : 'brouillon')}/>
+        <KpiCard label="Validées" value={String(compensations.filter(c => c.statut === 'validee').length)} tone="sage" loading={loading}
+          active={statutFilter === 'validee'}
+          onClick={() => setStatutFilter((p) => p === 'validee' ? '' : 'validee')}/>
       </div>
 
       <SectionCard title="Liste des compensations" subtitle={`${compensations.length} opérations`}>
@@ -99,7 +106,7 @@ const CompensationsCroisees: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {compensations.map((c) => (
+              {compensations.filter((c) => !statutFilter || c.statut === statutFilter).map((c) => (
                 <tr key={c.id_compensation}>
                   <td style={{ ...td, fontFamily: 'var(--font-mono)' }}>{c.numero_compensation}</td>
                   <td style={td}>{fmtDate(c.date_compensation)}</td>
@@ -125,7 +132,7 @@ const CompensationsCroisees: React.FC = () => {
                   </td>
                 </tr>
               ))}
-              {!loading && compensations.length === 0 && (
+              {!loading && compensations.filter((c) => !statutFilter || c.statut === statutFilter).length === 0 && (
                 <tr><td colSpan={7} style={{ ...td, textAlign: 'center', color: 'var(--fg-muted)' }}>Aucune compensation.</td></tr>
               )}
             </tbody>

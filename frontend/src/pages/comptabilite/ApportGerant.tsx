@@ -63,6 +63,7 @@ const ApportGerant: React.FC = () => {
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [typeFilter, setTypeFilter] = useState<TypeApportGerant | ''>('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -166,6 +167,8 @@ const ApportGerant: React.FC = () => {
           tone="gold"
           icon={<PiggyBank size={18} />}
           loading={loading}
+          active={typeFilter === ''}
+          onClick={() => setTypeFilter('')}
         />
         <KpiCard
           label="Mouvements"
@@ -174,6 +177,8 @@ const ApportGerant: React.FC = () => {
           tone="indigo"
           icon={<Scale size={18} />}
           loading={loading}
+          active={typeFilter === 'apport'}
+          onClick={() => setTypeFilter((p) => p === 'apport' ? '' : 'apport')}
         />
         <KpiCard
           label="Dernier mouvement"
@@ -181,6 +186,8 @@ const ApportGerant: React.FC = () => {
           tone="sage"
           icon={<HandCoins size={18} />}
           loading={loading}
+          active={typeFilter === 'retrait'}
+          onClick={() => setTypeFilter((p) => p === 'retrait' ? '' : 'retrait')}
         />
       </div>
 
@@ -321,10 +328,10 @@ const ApportGerant: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {historique.length === 0 && (
+                {historique.filter(m => !typeFilter || m.type_mvt === typeFilter).length === 0 && (
                   <tr><td colSpan={7} style={{ ...tdStyle, textAlign: 'center', color: 'var(--fg-muted)' }}>Aucun mouvement</td></tr>
                 )}
-                {historique.map(m => (
+                {historique.filter(m => !typeFilter || m.type_mvt === typeFilter).map(m => (
                   <tr key={m.id_mvt_apport}>
                     <td style={tdStyle}>{fmtDate(m.date_mouvement)}</td>
                     <td style={tdStyle}>

@@ -137,10 +137,18 @@ const Maintenance: React.FC = () => {
       >
         {/* KPIs */}
         <div className="lp-metric-grid">
-          <KpiCard label="En attente" value={kpiEnAttente} icon={<Clock size={18} />} tone="gold" loading={loading} />
-          <KpiCard label="En cours" value={kpiEnCours} icon={<Activity size={18} />} tone="terracotta" loading={loading} />
-          <KpiCard label="Terminées" value={kpiTerminees} icon={<CheckCircle size={18} />} tone="sage" loading={loading} />
-          <KpiCard label="Coût mois" value={kpiCoutMois} unit="DT" icon={<Wrench size={18} />} tone="indigo" loading={loading} />
+          <KpiCard label="En attente" value={kpiEnAttente} icon={<Clock size={18} />} tone="gold" loading={loading}
+            active={filters.statut === 'EN_ATTENTE'}
+            onClick={() => setFilters({ ...filters, statut: filters.statut === 'EN_ATTENTE' ? '' : 'EN_ATTENTE' })} />
+          <KpiCard label="En cours" value={kpiEnCours} icon={<Activity size={18} />} tone="terracotta" loading={loading}
+            active={filters.statut === 'EN_COURS'}
+            onClick={() => setFilters({ ...filters, statut: filters.statut === 'EN_COURS' ? '' : 'EN_COURS' })} />
+          <KpiCard label="Terminées" value={kpiTerminees} icon={<CheckCircle size={18} />} tone="sage" loading={loading}
+            active={filters.statut === 'TERMINEE'}
+            onClick={() => setFilters({ ...filters, statut: filters.statut === 'TERMINEE' ? '' : 'TERMINEE' })} />
+          <KpiCard label="Coût mois" value={kpiCoutMois} unit="DT" icon={<Wrench size={18} />} tone="indigo" loading={loading}
+            active={filters.statut === ''}
+            onClick={() => setFilters({ ...filters, statut: '' })} />
         </div>
 
         {/* Filter bar */}

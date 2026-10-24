@@ -222,10 +222,18 @@ const RelancesFactures: React.FC = () => {
             label="Encours relancé (DT)"
             value={kpis.totalDu.toLocaleString('fr-FR', { maximumFractionDigits: 0 })}
             color="terracotta"
+            active={filtreNiveau === 'tous'}
+            onClick={() => setFiltreNiveau('tous')}
           />
-          <KpiCard label="Rappel amiable" value={kpis.parNiveau[1]} icon={<Mail className="w-5 h-5" />} color="indigo" />
-          <KpiCard label="Mises en demeure" value={kpis.parNiveau[3]} icon={<AlertTriangle className="w-5 h-5" />} color="warning" />
-          <KpiCard label="Précontentieux" value={kpis.parNiveau[4]} icon={<Scale className="w-5 h-5" />} color={kpis.parNiveau[4] > 0 ? 'warning' : 'neutral'} />
+          <KpiCard label="Rappel amiable" value={kpis.parNiveau[1]} icon={<Mail className="w-5 h-5" />} color="indigo"
+            active={filtreNiveau === 1}
+            onClick={() => setFiltreNiveau((p) => p === 1 ? 'tous' : (1 as NiveauRelance))} />
+          <KpiCard label="Mises en demeure" value={kpis.parNiveau[3]} icon={<AlertTriangle className="w-5 h-5" />} color="warning"
+            active={filtreNiveau === 3}
+            onClick={() => setFiltreNiveau((p) => p === 3 ? 'tous' : (3 as NiveauRelance))} />
+          <KpiCard label="Précontentieux" value={kpis.parNiveau[4]} icon={<Scale className="w-5 h-5" />} color={kpis.parNiveau[4] > 0 ? 'warning' : 'neutral'}
+            active={filtreNiveau === 4}
+            onClick={() => setFiltreNiveau((p) => p === 4 ? 'tous' : (4 as NiveauRelance))} />
         </div>
 
         {/* Filtres */}

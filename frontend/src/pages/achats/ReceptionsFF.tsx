@@ -253,24 +253,32 @@ const ReceptionsFF: React.FC = () => {
               value={kpis.total}
               icon={<PackageCheck className="w-5 h-5" />}
               color="indigo"
+              active={statutFilter === 'all'}
+              onClick={() => setStatutFilter('all')}
             />
             <KpiCard
               label="En cours"
               value={kpis.enCours}
               icon={<Truck className="w-5 h-5" />}
               color="warning"
+              active={statutFilter === 'en_cours'}
+              onClick={() => setStatutFilter((p) => p === 'en_cours' ? 'all' : 'en_cours')}
             />
             <KpiCard
               label="Litiges"
               value={kpis.litiges}
               icon={<AlertTriangle className="w-5 h-5" />}
               color={kpis.litiges > 0 ? 'terracotta' : 'sage'}
+              active={statutFilter === 'litige'}
+              onClick={() => setStatutFilter((p) => p === 'litige' ? 'all' : 'litige')}
             />
             <KpiCard
               label="Validées"
               value={kpis.validees}
               icon={<CheckCircle2 className="w-5 h-5" />}
               color="sage"
+              active={statutFilter === 'valide'}
+              onClick={() => setStatutFilter((p) => p === 'valide' ? 'all' : 'valide')}
             />
           </div>
 

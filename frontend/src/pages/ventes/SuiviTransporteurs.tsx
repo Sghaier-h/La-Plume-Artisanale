@@ -105,6 +105,7 @@ const SuiviTransporteurs: React.FC = () => {
   const [transporteurs, setTransporteurs] = useState<Transporteur[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [actifFilter, setActifFilter] = useState<'tous' | 'actifs' | 'inactifs'>('tous');
   const [editing, setEditing] = useState<Transporteur | null>(null);
   const [showForm, setShowForm] = useState(false);
 
@@ -125,12 +126,14 @@ const SuiviTransporteurs: React.FC = () => {
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
     return transporteurs.filter((t) => {
+      if (actifFilter === 'actifs' && !t.actif) return false;
+      if (actifFilter === 'inactifs' && t.actif) return false;
       if (!s) return true;
       return `${t.nom} ${t.code || ''} ${t.contact_nom || ''} ${(t.zones_desservies || []).join(' ')}`
         .toLowerCase()
         .includes(s);
     });
-  }, [transporteurs, search]);
+  }, [transporteurs, search, actifFilter]);
 
   const kpis = useMemo(() => {
     const actifs = transporteurs.filter((t) => t.actif).length;
@@ -222,8 +225,12 @@ const SuiviTransporteurs: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <KpiCard label="Transporteurs actifs" value={kpis.actifs} icon={<Truck className="w-5 h-5" />} color="terracotta" />
-          <KpiCard label="Expéditions en cours" value={kpis.totalExpeditions} icon={<Package className="w-5 h-5" />} color="indigo" />
+          <KpiCard label="Transporteurs actifs" value={kpis.actifs} icon={<Truck className="w-5 h-5" />} color="terracotta"
+            active={actifFilter === 'actifs'}
+            onClick={() => setActifFilter((p) => p === 'actifs' ? 'tous' : 'actifs')} />
+          <KpiCard label="Expéditions en cours" value={kpis.totalExpeditions} icon={<Package className="w-5 h-5" />} color="indigo"
+            active={actifFilter === 'tous'}
+            onClick={() => setActifFilter('tous')} />
           <KpiCard label="Livraisons 30 j" value={kpis.totalLivraisons} color="sage" />
           <KpiCard
             label="Ponctualité moyenne"

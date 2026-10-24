@@ -244,10 +244,18 @@ const ConstatsATraiter: React.FC = () => {
 
           {/* KPIs */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <KpiCard label="Total findings" value={kpis.total} color="indigo" icon={<Info className="w-5 h-5" />} />
-            <KpiCard label="Critiques ouverts" value={kpis.critiques} color={kpis.critiques > 0 ? 'warning' : 'sage'} icon={<AlertOctagon className="w-5 h-5" />} />
-            <KpiCard label="Nouveaux" value={kpis.nouveaux} color="terracotta" icon={<AlertTriangle className="w-5 h-5" />} />
-            <KpiCard label="Validés" value={kpis.valides} color="sage" icon={<CheckCircle2 className="w-5 h-5" />} />
+            <KpiCard label="Total findings" value={kpis.total} color="indigo" icon={<Info className="w-5 h-5" />}
+              active={filterStatut === 'all'}
+              onClick={() => setFilterStatut('all')} />
+            <KpiCard label="Critiques ouverts" value={kpis.critiques} color={kpis.critiques > 0 ? 'warning' : 'sage'} icon={<AlertOctagon className="w-5 h-5" />}
+              active={filterSev === 'danger'}
+              onClick={() => setFilterSev((p) => p === 'danger' ? 'all' : 'danger')} />
+            <KpiCard label="Nouveaux" value={kpis.nouveaux} color="terracotta" icon={<AlertTriangle className="w-5 h-5" />}
+              active={filterStatut === 'nouveau'}
+              onClick={() => setFilterStatut((p) => p === 'nouveau' ? 'all' : 'nouveau')} />
+            <KpiCard label="Validés" value={kpis.valides} color="sage" icon={<CheckCircle2 className="w-5 h-5" />}
+              active={filterStatut === 'valide'}
+              onClick={() => setFilterStatut((p) => p === 'valide' ? 'all' : 'valide')} />
           </div>
 
           {/* Filtres */}

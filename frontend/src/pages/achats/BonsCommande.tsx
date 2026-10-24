@@ -283,12 +283,16 @@ const BonsCommande: React.FC = () => {
               value={kpis.total}
               icon={<FileText className="w-5 h-5" />}
               color="indigo"
+              active={statutFilter === 'all'}
+              onClick={() => setStatutFilter('all')}
             />
             <KpiCard
               label="En cours (envoyé/partiel)"
               value={kpis.encours}
               icon={<Package className="w-5 h-5" />}
               color="warning"
+              active={statutFilter === 'envoye'}
+              onClick={() => setStatutFilter((prev) => prev === 'envoye' ? 'all' : 'envoye')}
             />
             <KpiCard
               label="Montant HT engagé"
@@ -298,12 +302,16 @@ const BonsCommande: React.FC = () => {
               suffix="DT"
               icon={<TrendingUp className="w-5 h-5" />}
               color="terracotta"
+              active={statutFilter === 'confirme'}
+              onClick={() => setStatutFilter((prev) => prev === 'confirme' ? 'all' : 'confirme')}
             />
             <KpiCard
               label="BC livrés"
               value={kpis.nbLivres}
               icon={<CheckCircle2 className="w-5 h-5" />}
               color="sage"
+              active={statutFilter === 'livre'}
+              onClick={() => setStatutFilter((prev) => prev === 'livre' ? 'all' : 'livre')}
             />
           </div>
 

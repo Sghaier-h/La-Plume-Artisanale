@@ -24,6 +24,7 @@ const DepensesEspeces: React.FC = () => {
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ date_depense: '', categorie: 'cafe_ouvriers', libelle: '', montant: '', beneficiaire: '' });
   const [signaturePath, setSignaturePath] = useState<string>('');
+  const [cloturableFilter, setCloturableFilter] = useState<'all' | 'cloturee' | 'en_attente'>('all');
 
   const load = async () => {
     try {
@@ -91,9 +92,15 @@ const DepensesEspeces: React.FC = () => {
       }
     >
       <div style={kpiGrid}>
-        <KpiCard label="Total période" value={fmtMoney(totaux.total).replace(' DT','')} unit="DT" loading={loading} tone="terracotta" />
-        <KpiCard label="Nb dépenses" value={String(totaux.nb || 0)} loading={loading} tone="indigo" />
-        <KpiCard label="À clôturer" value={String(totaux.nb_non_cloturees || 0)} loading={loading} tone="gold" />
+        <KpiCard label="Total période" value={fmtMoney(totaux.total).replace(' DT','')} unit="DT" loading={loading} tone="terracotta"
+          active={cloturableFilter === 'all'}
+          onClick={() => setCloturableFilter('all')} />
+        <KpiCard label="Nb dépenses" value={String(totaux.nb || 0)} loading={loading} tone="indigo"
+          active={cloturableFilter === 'cloturee'}
+          onClick={() => setCloturableFilter((p) => p === 'cloturee' ? 'all' : 'cloturee')} />
+        <KpiCard label="À clôturer" value={String(totaux.nb_non_cloturees || 0)} loading={loading} tone="gold"
+          active={cloturableFilter === 'en_attente'}
+          onClick={() => setCloturableFilter((p) => p === 'en_attente' ? 'all' : 'en_attente')} />
       </div>
 
       <SectionCard title={`Journal ${periode}`} subtitle={`${depenses.length} dépenses`}>
@@ -111,7 +118,11 @@ const DepensesEspeces: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {depenses.map((d) => (
+              {depenses.filter((d) =>
+                cloturableFilter === 'all' ||
+                (cloturableFilter === 'cloturee' && d.comptabilisee) ||
+                (cloturableFilter === 'en_attente' && !d.comptabilisee)
+              ).map((d) => (
                 <tr key={d.id_depense}>
                   <td style={td}>{fmtDate(d.date_depense)}</td>
                   <td style={td}>{d.categorie}</td>
@@ -128,7 +139,11 @@ const DepensesEspeces: React.FC = () => {
                   </td>
                 </tr>
               ))}
-              {!loading && depenses.length === 0 && (
+              {!loading && depenses.filter((d) =>
+                cloturableFilter === 'all' ||
+                (cloturableFilter === 'cloturee' && d.comptabilisee) ||
+                (cloturableFilter === 'en_attente' && !d.comptabilisee)
+              ).length === 0 && (
                 <tr><td colSpan={7} style={{ ...td, textAlign: 'center', color: 'var(--fg-muted)' }}>Aucune dépense pour {periode}.</td></tr>
               )}
             </tbody>

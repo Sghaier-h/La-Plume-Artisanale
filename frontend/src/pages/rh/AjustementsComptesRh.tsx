@@ -24,6 +24,7 @@ const fmtMoney = (n: number) =>
 const AjustementsComptesRh: React.FC = () => {
   const [rows, setRows] = useState<any[]>([]);
   const [showNew, setShowNew] = useState(false);
+  const [statutFilter, setStatutFilter] = useState<string>('');
   const [form, setForm] = useState({
     id_employe: '',
     date_ajustement: new Date().toISOString().slice(0, 10),
@@ -85,9 +86,12 @@ const AjustementsComptesRh: React.FC = () => {
       }
     >
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 'var(--s-4)' }}>
-        <KpiCard label="En attente" value={String(stats.attente)} unit="à valider" tone="gold" icon={<Scale size={18} />} />
-        <KpiCard label="Validées" value={String(stats.validees)} unit="totales" tone="sage" icon={<Check size={18} />} />
-        <KpiCard label="Rejetées" value={String(stats.rejetees)} unit="totales" tone="rose" icon={<X size={18} />} />
+        <KpiCard label="En attente" value={String(stats.attente)} unit="à valider" tone="gold" icon={<Scale size={18} />}
+          active={statutFilter === 'en_attente'} onClick={() => setStatutFilter((p) => p === 'en_attente' ? '' : 'en_attente')} />
+        <KpiCard label="Validées" value={String(stats.validees)} unit="totales" tone="sage" icon={<Check size={18} />}
+          active={statutFilter === 'validee'} onClick={() => setStatutFilter((p) => p === 'validee' ? '' : 'validee')} />
+        <KpiCard label="Rejetées" value={String(stats.rejetees)} unit="totales" tone="rose" icon={<X size={18} />}
+          active={statutFilter === 'rejetee'} onClick={() => setStatutFilter((p) => p === 'rejetee' ? '' : 'rejetee')} />
       </div>
 
       <SectionCard title="Historique des ajustements" subtitle={`${rows.length} opérations`}>
@@ -101,7 +105,7 @@ const AjustementsComptesRh: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {rows.map((r: any) => (
+              {rows.filter((r: any) => !statutFilter || r.statut_validation === statutFilter).map((r: any) => (
                 <tr key={r.id_ajustement} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                   <td style={tdMono}><strong>{r.code_ajustement}</strong></td>
                   <td style={tdMono}>{new Date(r.date_ajustement).toLocaleDateString('fr-FR')}</td>
@@ -130,7 +134,7 @@ const AjustementsComptesRh: React.FC = () => {
                   </td>
                 </tr>
               ))}
-              {rows.length === 0 && (
+              {rows.filter((r: any) => !statutFilter || r.statut_validation === statutFilter).length === 0 && (
                 <tr>
                   <td colSpan={9} style={{ padding: 'var(--s-5)', textAlign: 'center', color: 'var(--fg-muted)', fontStyle: 'italic' }}>
                     Aucun ajustement.

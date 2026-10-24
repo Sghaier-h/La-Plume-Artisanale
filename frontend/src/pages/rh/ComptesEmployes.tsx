@@ -96,6 +96,8 @@ const ComptesEmployes: React.FC = () => {
           unit="salariés"
           icon={<Users size={18} />}
           tone="terracotta"
+          active={solde === ''}
+          onClick={() => setSolde('')}
         />
         <KpiCard
           label="Soldes négatifs"
@@ -104,7 +106,8 @@ const ComptesEmployes: React.FC = () => {
           hint="Avances non remboursées"
           icon={<TrendingDown size={18} />}
           tone="rose"
-          onClick={() => setSolde('negatif')}
+          active={solde === 'negatif'}
+          onClick={() => setSolde((p) => p === 'negatif' ? '' : 'negatif')}
         />
         <KpiCard
           label="Soldes créditeurs"
@@ -113,7 +116,8 @@ const ComptesEmployes: React.FC = () => {
           hint="À verser"
           icon={<TrendingUp size={18} />}
           tone="sage"
-          onClick={() => setSolde('positif')}
+          active={solde === 'positif'}
+          onClick={() => setSolde((p) => p === 'positif' ? '' : 'positif')}
         />
         <KpiCard
           label="Dû aux employés"
@@ -121,6 +125,8 @@ const ComptesEmployes: React.FC = () => {
           icon={<Wallet size={18} />}
           tone="gold"
           hint="Somme des soldes > 0"
+          active={solde === 'positif'}
+          onClick={() => setSolde((p) => p === 'positif' ? '' : 'positif')}
         />
         <KpiCard
           label="Débit employés"
@@ -128,6 +134,8 @@ const ComptesEmployes: React.FC = () => {
           icon={<Scale size={18} />}
           tone="indigo"
           hint="Somme des soldes < 0"
+          active={solde === 'negatif'}
+          onClick={() => setSolde((p) => p === 'negatif' ? '' : 'negatif')}
         />
       </div>
 

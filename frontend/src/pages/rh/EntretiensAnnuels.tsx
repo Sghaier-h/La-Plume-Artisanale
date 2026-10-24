@@ -84,6 +84,7 @@ const EntretiensAnnuels: React.FC = () => {
   const [upcoming, setUpcoming] = React.useState<Entretien[]>([]);
   const [enRetard, setEnRetard] = React.useState<Entretien[]>([]);
   const [loading, setLoading]   = React.useState(true);
+  const [statutFilter, setStatutFilter] = React.useState<StatutEntretien | ''>('');
 
   const fetchAll = React.useCallback(async () => {
     setLoading(true);
@@ -148,6 +149,8 @@ const EntretiensAnnuels: React.FC = () => {
           icon={<CalendarClock size={18} />}
           tone="gold"
           loading={loading}
+          active={statutFilter === 'planifie'}
+          onClick={() => setStatutFilter((p) => p === 'planifie' ? '' : 'planifie')}
         />
         <KpiCard
           label="Réalisés"
@@ -156,6 +159,8 @@ const EntretiensAnnuels: React.FC = () => {
           icon={<FileCheck2 size={18} />}
           tone="indigo"
           loading={loading}
+          active={statutFilter === 'realise'}
+          onClick={() => setStatutFilter((p) => p === 'realise' ? '' : 'realise')}
         />
         <KpiCard
           label="Validés"
@@ -164,6 +169,8 @@ const EntretiensAnnuels: React.FC = () => {
           icon={<ClipboardCheck size={18} />}
           tone="sage"
           loading={loading}
+          active={statutFilter === 'valide'}
+          onClick={() => setStatutFilter((p) => p === 'valide' ? '' : 'valide')}
         />
         <KpiCard
           label="En retard"
@@ -172,6 +179,8 @@ const EntretiensAnnuels: React.FC = () => {
           icon={<AlertTriangle size={18} />}
           tone="terracotta"
           loading={loading}
+          active={statutFilter === ''}
+          onClick={() => setStatutFilter('')}
         />
       </div>
 
@@ -309,7 +318,7 @@ const EntretiensAnnuels: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {list.map((e) => (
+                {list.filter((e) => !statutFilter || e.statut === statutFilter).map((e) => (
                   <tr key={e.id_entretien} style={trStyle}>
                     <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)' }}>
                       {fmtDate(e.date_entretien)}

@@ -60,6 +60,7 @@ const RhRecrutement: React.FC = () => {
   const [timeline, setTimeline] = useState<any[]>([]);
   const [noteText, setNoteText] = useState('');
   const [interview, setInterview] = useState({ date: '', type: 'phone', interviewer: '', notes: '' });
+  const [statutFilter, setStatutFilter] = useState<'tous' | 'encours' | 'embauche' | 'refuse'>('tous');
 
   const [form, setForm] = useState<any>({
     nom: '', prenom: '', email: '', telephone: '', poste_vise: '',
@@ -270,10 +271,18 @@ const RhRecrutement: React.FC = () => {
         }
       >
         <div className="lp-metric-grid">
-          <KpiCard label="Total candidatures" value={String(localStats.total)} icon={<Users size={18} />} tone="terracotta" loading={loading} />
-          <KpiCard label="En cours" value={String(localStats.encours)} icon={<UserPlus size={18} />} tone="gold" loading={loading} />
-          <KpiCard label="Embauchés" value={String(localStats.embauches)} icon={<CheckCircle2 size={18} />} tone="sage" loading={loading} />
-          <KpiCard label="Taux conversion" value={`${localStats.taux}%`} icon={<TrendingUp size={18} />} tone="indigo" loading={loading} />
+          <KpiCard label="Total candidatures" value={String(localStats.total)} icon={<Users size={18} />} tone="terracotta" loading={loading}
+            active={statutFilter === 'tous'}
+            onClick={() => setStatutFilter('tous')} />
+          <KpiCard label="En cours" value={String(localStats.encours)} icon={<UserPlus size={18} />} tone="gold" loading={loading}
+            active={statutFilter === 'encours'}
+            onClick={() => setStatutFilter((p) => p === 'encours' ? 'tous' : 'encours')} />
+          <KpiCard label="Embauchés" value={String(localStats.embauches)} icon={<CheckCircle2 size={18} />} tone="sage" loading={loading}
+            active={statutFilter === 'embauche'}
+            onClick={() => setStatutFilter((p) => p === 'embauche' ? 'tous' : 'embauche')} />
+          <KpiCard label="Taux conversion" value={`${localStats.taux}%`} icon={<TrendingUp size={18} />} tone="indigo" loading={loading}
+            active={statutFilter === 'refuse'}
+            onClick={() => setStatutFilter((p) => p === 'refuse' ? 'tous' : 'refuse')} />
           <KpiCard label="Temps moyen (j)" value={String(localStats.temps)} icon={<Clock size={18} />} tone="rose" loading={loading} />
         </div>
 
@@ -335,7 +344,14 @@ const RhRecrutement: React.FC = () => {
             <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.max(stages.length, 1)}, minmax(220px, 1fr))`, gap: 12, overflowX: 'auto' }}>
               {stages.map((stage) => {
                 const stageId = stageIdOf(stage);
-                const inStage = applicants.filter(a => (a.id_stage ?? a.stage_id) === stageId);
+                const inStage = applicants.filter(a => (a.id_stage ?? a.stage_id) === stageId).filter(a => {
+                  if (statutFilter === 'tous') return true;
+                  const s = (a.statut || '').toLowerCase();
+                  if (statutFilter === 'embauche') return ['embauche', 'accepte'].includes(s);
+                  if (statutFilter === 'refuse') return s.includes('refus');
+                  if (statutFilter === 'encours') return !['accepte', 'refuse', 'embauche'].includes(s);
+                  return true;
+                });
                 const color = stage.couleur || '#4A5D75';
                 return (
                   <div

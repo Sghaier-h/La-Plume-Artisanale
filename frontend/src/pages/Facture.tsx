@@ -287,10 +287,18 @@ const Facture: React.FC = () => {
 
         {/* KPI row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <KpiCard label="Total factures" value={kpis.total} icon={<Receipt className="w-5 h-5" />} color="terracotta" />
-          <KpiCard label="CA facturé" value={kpis.totalTtc.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} suffix="TND" icon={<TrendingUp className="w-5 h-5" />} color="sage" />
-          <KpiCard label="En attente / impayées" value={kpis.impayees} icon={<Clock className="w-5 h-5" />} color={kpis.impayees > 0 ? 'warning' : 'neutral'} />
-          <KpiCard label="Reste à encaisser" value={kpis.restant.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} suffix="TND" icon={<Wallet className="w-5 h-5" />} color="indigo" />
+          <KpiCard label="Total factures" value={kpis.total} icon={<Receipt className="w-5 h-5" />} color="terracotta"
+            active={filters.statut === ''}
+            onClick={() => setFilters({ ...filters, statut: '' })} />
+          <KpiCard label="CA facturé" value={kpis.totalTtc.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} suffix="TND" icon={<TrendingUp className="w-5 h-5" />} color="sage"
+            active={filters.statut.toUpperCase() === 'REGLEE'}
+            onClick={() => setFilters({ ...filters, statut: filters.statut.toUpperCase() === 'REGLEE' ? '' : 'REGLEE' })} />
+          <KpiCard label="En attente / impayées" value={kpis.impayees} icon={<Clock className="w-5 h-5" />} color={kpis.impayees > 0 ? 'warning' : 'neutral'}
+            active={filters.statut.toUpperCase() === 'IMPAYEE'}
+            onClick={() => setFilters({ ...filters, statut: filters.statut.toUpperCase() === 'IMPAYEE' ? '' : 'IMPAYEE' })} />
+          <KpiCard label="Reste à encaisser" value={kpis.restant.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} suffix="TND" icon={<Wallet className="w-5 h-5" />} color="indigo"
+            active={filters.statut.toUpperCase() === 'PARTIELLEMENT_REGLEE'}
+            onClick={() => setFilters({ ...filters, statut: filters.statut.toUpperCase() === 'PARTIELLEMENT_REGLEE' ? '' : 'PARTIELLEMENT_REGLEE' })} />
         </div>
 
         {/* Filtres */}

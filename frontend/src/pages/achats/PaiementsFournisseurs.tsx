@@ -221,6 +221,8 @@ const PaiementsFournisseurs: React.FC = () => {
               value={kpis.total}
               icon={<Banknote className="w-5 h-5" />}
               color="indigo"
+              active={modeFilter === 'all'}
+              onClick={() => setModeFilter('all')}
             />
             <KpiCard
               label="Décaissé ce mois"
@@ -236,12 +238,16 @@ const PaiementsFournisseurs: React.FC = () => {
               value={kpis.virements}
               icon={<Building2 className="w-5 h-5" />}
               color="sage"
+              active={modeFilter === 'virement'}
+              onClick={() => setModeFilter((p) => p === 'virement' ? 'all' : 'virement')}
             />
             <KpiCard
               label="Chèques"
               value={kpis.cheques}
               icon={<CreditCard className="w-5 h-5" />}
               color="warning"
+              active={modeFilter === 'cheque'}
+              onClick={() => setModeFilter((p) => p === 'cheque' ? 'all' : 'cheque')}
             />
           </div>
 

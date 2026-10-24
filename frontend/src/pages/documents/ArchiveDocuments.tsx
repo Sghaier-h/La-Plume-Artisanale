@@ -67,7 +67,9 @@ const ArchiveDocuments: React.FC = () => {
       </SectionCard>
 
       <div style={kpiGrid}>
-        <KpiCard label="Documents trouvés" value={String(docs.length)} icon={<FileText size={18} />} tone="terracotta" loading={loading}/>
+        <KpiCard label="Documents trouvés" value={String(docs.length)} icon={<FileText size={18} />} tone="terracotta" loading={loading}
+          active={type === ''}
+          onClick={() => { setType(''); search(); }}/>
       </div>
 
       <SectionCard title="Résultats" subtitle={`${docs.length} document(s)`}>

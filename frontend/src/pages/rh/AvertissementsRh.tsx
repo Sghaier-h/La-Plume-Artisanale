@@ -129,6 +129,8 @@ const AvertissementsRh: React.FC = () => {
               hint={`${k?.non_lus ?? 0} non lu(s) · ${k?.contestes ?? 0} contesté(s)`}
               tone={NIVEAU_TONE[niv]}
               icon={<AlertTriangle />}
+              active={filters.niveau === niv}
+              onClick={() => setFilters((f) => ({ ...f, niveau: f.niveau === niv ? '' : niv }))}
             />
           );
         })}

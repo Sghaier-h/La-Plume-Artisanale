@@ -25,6 +25,7 @@ const fmtMoney = (n: number) =>
 const CompensationsRh: React.FC = () => {
   const [rows, setRows] = useState<any[]>([]);
   const [showNew, setShowNew] = useState(false);
+  const [statutFilter, setStatutFilter] = useState<string>('');
   const [form, setForm] = useState({
     id_employe: '',
     date_compensation: new Date().toISOString().slice(0, 10),
@@ -83,9 +84,12 @@ const CompensationsRh: React.FC = () => {
       }
     >
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 'var(--s-4)' }}>
-        <KpiCard label="En attente" value={String(stats.attente)} unit="à appliquer" tone="gold" icon={<Scale size={18} />} />
-        <KpiCard label="Appliquées" value={String(stats.appliquees)} unit="totales" tone="sage" icon={<Check size={18} />} />
-        <KpiCard label="Annulées" value={String(stats.annulees)} unit="totales" tone="rose" icon={<X size={18} />} />
+        <KpiCard label="En attente" value={String(stats.attente)} unit="à appliquer" tone="gold" icon={<Scale size={18} />}
+          active={statutFilter === 'en_attente'} onClick={() => setStatutFilter((p) => p === 'en_attente' ? '' : 'en_attente')} />
+        <KpiCard label="Appliquées" value={String(stats.appliquees)} unit="totales" tone="sage" icon={<Check size={18} />}
+          active={statutFilter === 'appliquee'} onClick={() => setStatutFilter((p) => p === 'appliquee' ? '' : 'appliquee')} />
+        <KpiCard label="Annulées" value={String(stats.annulees)} unit="totales" tone="rose" icon={<X size={18} />}
+          active={statutFilter === 'annulee'} onClick={() => setStatutFilter((p) => p === 'annulee' ? '' : 'annulee')} />
       </div>
 
       <SectionCard title="Compensations" subtitle={`${rows.length} opérations`}>
@@ -99,7 +103,7 @@ const CompensationsRh: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {rows.map((r: any) => (
+              {rows.filter((r: any) => !statutFilter || r.statut === statutFilter).map((r: any) => (
                 <tr key={r.id_comp_rh} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                   <td style={tdMono}>{new Date(r.date_compensation).toLocaleDateString('fr-FR')}</td>
                   <td style={td}>
@@ -125,7 +129,7 @@ const CompensationsRh: React.FC = () => {
                   </td>
                 </tr>
               ))}
-              {rows.length === 0 && (
+              {rows.filter((r: any) => !statutFilter || r.statut === statutFilter).length === 0 && (
                 <tr>
                   <td colSpan={8} style={{ padding: 'var(--s-5)', textAlign: 'center', color: 'var(--fg-muted)', fontStyle: 'italic' }}>
                     Aucune compensation.

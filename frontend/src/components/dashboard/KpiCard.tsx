@@ -12,6 +12,7 @@ export interface KpiCardProps {
   tone?: KpiTone;
   loading?: boolean;
   onClick?: () => void;
+  active?: boolean;
 }
 
 const toneVar: Record<KpiTone, string> = {
@@ -24,37 +25,57 @@ const toneVar: Record<KpiTone, string> = {
 };
 
 export const KpiCard: React.FC<KpiCardProps> = ({
-  label, value, unit, hint, delta, icon, tone = 'terracotta', loading, onClick,
+  label, value, unit, hint, delta, icon, tone = 'terracotta', loading, onClick, active,
 }) => {
   const accent = toneVar[tone];
   const positive = (delta?.value ?? 0) >= 0;
   const clickable = !!onClick;
+  const borderWidth = active ? '2px' : '1px';
+  const borderColorBase = active ? accent : 'var(--border-subtle)';
+  const boxShadowBase = active
+    ? `var(--shadow-md), 0 0 0 3px ${accent}33`
+    : 'var(--shadow-sm)';
+  const commonProps: any = clickable
+    ? { role: 'button', tabIndex: 0, 'aria-pressed': !!active }
+    : {};
 
   return (
     <div
+      {...commonProps}
       onClick={onClick}
+      onKeyDown={clickable ? (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick && onClick();
+        }
+      } : undefined}
       style={{
         position: 'relative',
         background: 'var(--bg-elevated)',
-        border: '1px solid var(--border-subtle)',
+        border: `${borderWidth} solid ${borderColorBase}`,
         borderRadius: 'var(--radius-md)',
         padding: 'var(--s-5)',
-        boxShadow: 'var(--shadow-sm)',
+        boxShadow: boxShadowBase,
         transition: 'transform var(--duration) var(--ease), box-shadow var(--duration) var(--ease), border-color var(--duration) var(--ease)',
         cursor: clickable ? 'pointer' : 'default',
         overflow: 'hidden',
+        outline: 'none',
       }}
       onMouseEnter={(e) => {
         if (!clickable) return;
         (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
-        (e.currentTarget as HTMLDivElement).style.boxShadow = 'var(--shadow-md)';
-        (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--border-default)';
+        (e.currentTarget as HTMLDivElement).style.boxShadow = active
+          ? `var(--shadow-lg), 0 0 0 3px ${accent}55`
+          : 'var(--shadow-md)';
+        if (!active) {
+          (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--border-default)';
+        }
       }}
       onMouseLeave={(e) => {
         if (!clickable) return;
         (e.currentTarget as HTMLDivElement).style.transform = '';
-        (e.currentTarget as HTMLDivElement).style.boxShadow = 'var(--shadow-sm)';
-        (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--border-subtle)';
+        (e.currentTarget as HTMLDivElement).style.boxShadow = boxShadowBase;
+        (e.currentTarget as HTMLDivElement).style.borderColor = borderColorBase;
       }}
     >
       {/* Accent bar */}
@@ -153,6 +174,20 @@ export const KpiCard: React.FC<KpiCardProps> = ({
             </span>
           )}
           {hint && <span style={{ color: 'var(--fg-muted)' }}>{hint}</span>}
+        </div>
+      )}
+
+      {clickable && active && (
+        <div
+          style={{
+            marginTop: 'var(--s-2)',
+            fontSize: 'var(--text-xs)',
+            fontWeight: 600,
+            color: accent,
+            opacity: 0.9,
+          }}
+        >
+          ● Filtre actif
         </div>
       )}
 

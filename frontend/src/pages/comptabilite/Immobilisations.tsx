@@ -343,10 +343,18 @@ const Immobilisations: React.FC = () => {
 
           {/* KPIs */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <KpiCard label="Valeur brute (VB)" value={kpis.valeurBrute.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} suffix="DT" color="indigo" subtitle={`${kpis.nb} biens`} />
-            <KpiCard label="Amortissements cumulés" value={kpis.amort.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} suffix="DT" color="warning" />
-            <KpiCard label="Valeur nette comptable" value={kpis.vnc.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} suffix="DT" color="sage" subtitle="VB − amortissements" />
-            <KpiCard label="Taux amortissement moyen" value={`${((kpis.amort / Math.max(1, kpis.valeurBrute)) * 100).toFixed(1)}%`} color="terracotta" />
+            <KpiCard label="Valeur brute (VB)" value={kpis.valeurBrute.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} suffix="DT" color="indigo" subtitle={`${kpis.nb} biens`}
+              active={filterCat === 'all'}
+              onClick={() => setFilterCat('all')} />
+            <KpiCard label="Amortissements cumulés" value={kpis.amort.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} suffix="DT" color="warning"
+              active={filterCat === 'materiel_industriel'}
+              onClick={() => setFilterCat((p) => p === 'materiel_industriel' ? 'all' : 'materiel_industriel')} />
+            <KpiCard label="Valeur nette comptable" value={kpis.vnc.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} suffix="DT" color="sage" subtitle="VB − amortissements"
+              active={filterCat === 'informatique'}
+              onClick={() => setFilterCat((p) => p === 'informatique' ? 'all' : 'informatique')} />
+            <KpiCard label="Taux amortissement moyen" value={`${((kpis.amort / Math.max(1, kpis.valeurBrute)) * 100).toFixed(1)}%`} color="terracotta"
+              active={filterCat === 'batiment'}
+              onClick={() => setFilterCat((p) => p === 'batiment' ? 'all' : 'batiment')} />
           </div>
 
           {/* Filtres */}

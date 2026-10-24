@@ -253,6 +253,8 @@ const PanierAbandonne: React.FC = () => {
             value={kpis.nb}
             icon={<ShoppingCart className="w-5 h-5" />}
             color="terracotta"
+            active={filtreStatut === 'tous'}
+            onClick={() => setFiltreStatut('tous')}
           />
           <KpiCard
             label="Montant à récupérer"
@@ -260,12 +262,16 @@ const PanierAbandonne: React.FC = () => {
             suffix="DT"
             icon={<Package className="w-5 h-5" />}
             color="warning"
+            active={filtreStatut === 'relance'}
+            onClick={() => setFiltreStatut((p) => p === 'relance' ? 'tous' : 'relance')}
           />
           <KpiCard
             label="Récupérés"
             value={kpis.recuperes}
             icon={<CheckCircle2 className="w-5 h-5" />}
             color="sage"
+            active={filtreStatut === 'recupere'}
+            onClick={() => setFiltreStatut((p) => p === 'recupere' ? 'tous' : 'recupere')}
           />
           <KpiCard
             label="Taux récupération"
@@ -274,6 +280,8 @@ const PanierAbandonne: React.FC = () => {
             icon={<Send className="w-5 h-5" />}
             color="indigo"
             subtitle={`${kpis.perdus} perdu(s)`}
+            active={filtreStatut === 'perdu'}
+            onClick={() => setFiltreStatut((p) => p === 'perdu' ? 'tous' : 'perdu')}
           />
         </div>
 

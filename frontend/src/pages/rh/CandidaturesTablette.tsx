@@ -24,6 +24,7 @@ const CandidaturesTablette: React.FC = () => {
   const [selected, setSelected] = useState<CandidatureTabletteSummary | null>(null);
   const [detail, setDetail] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [statutFilter, setStatutFilter] = useState<string>('');
 
   const load = async () => {
     setLoading(true); setError(null);
@@ -102,10 +103,14 @@ const CandidaturesTablette: React.FC = () => {
         gap: 'var(--s-4)',
         marginBottom: 'var(--s-6)',
       }}>
-        <KpiCard label="TOTAL" value={stats.total} tone="terracotta" icon={<UserPlus />} />
+        <KpiCard label="TOTAL" value={stats.total} tone="terracotta" icon={<UserPlus />}
+          active={statutFilter === ''}
+          onClick={() => setStatutFilter('')} />
         <KpiCard label="SCORE MOYEN" value={stats.score} tone="gold" />
         <KpiCard label="7 DERNIERS JOURS" value={stats.last7} tone="indigo" />
-        <KpiCard label="EN ATTENTE" value={stats.enAttente} tone="sage" />
+        <KpiCard label="EN ATTENTE" value={stats.enAttente} tone="sage"
+          active={statutFilter === 'reçue'}
+          onClick={() => setStatutFilter((p) => p === 'reçue' ? '' : 'reçue')} />
       </div>
 
       {error && (
@@ -141,7 +146,7 @@ const CandidaturesTablette: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r) => (
+                {rows.filter((r) => !statutFilter || r.statut === statutFilter).map((r) => (
                   <tr key={r.id_candidature} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                     <td style={td}>{new Date(r.created_at).toLocaleDateString('fr-FR')}</td>
                     <td style={td}><strong>{r.prenom} {r.nom}</strong><br/>

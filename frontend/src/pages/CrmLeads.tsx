@@ -120,10 +120,10 @@ const CrmLeads: React.FC = () => {
       }
     >
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 'var(--s-4)' }}>
-        <KpiCard label="Total leads"    value={kpis.total}      tone="terracotta" icon={<Users size={18} />}       onClick={() => setStatut('all')} />
-        <KpiCard label="Nouveaux"       value={kpis.nouveaux}   tone="indigo"     icon={<Zap size={18} />}          onClick={() => toggle('nouveau')} />
-        <KpiCard label="En traitement"  value={kpis.enTrait}    tone="gold"       icon={<Clock size={18} />}        onClick={() => toggle('en_traitement')} />
-        <KpiCard label="Convertis"      value={kpis.convertis}  tone="sage"       icon={<CheckCircle2 size={18} />}  onClick={() => toggle('converti')} />
+        <KpiCard label="Total leads"    value={kpis.total}      tone="terracotta" icon={<Users size={18} />}       active={statut === 'all'}            onClick={() => setStatut('all')} />
+        <KpiCard label="Nouveaux"       value={kpis.nouveaux}   tone="indigo"     icon={<Zap size={18} />}          active={statut === 'nouveau'}        onClick={() => toggle('nouveau')} />
+        <KpiCard label="En traitement"  value={kpis.enTrait}    tone="gold"       icon={<Clock size={18} />}        active={statut === 'en_traitement'}  onClick={() => toggle('en_traitement')} />
+        <KpiCard label="Convertis"      value={kpis.convertis}  tone="sage"       icon={<CheckCircle2 size={18} />}  active={statut === 'converti'}       onClick={() => toggle('converti')} />
       </div>
 
       <SectionCard title="Liste leads" subtitle={`${rows.length} ligne(s)`}>

@@ -734,10 +734,18 @@ const Articles: React.FC = () => {
 
         {/* KPI row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <KpiCard label="Articles actifs" value={kpis.actifs} icon={<Package className="w-5 h-5" />} color="terracotta" />
-          <KpiCard label="En stock" value={kpis.totalArticles - kpis.enRupture} icon={<Warehouse className="w-5 h-5" />} color="sage" />
-          <KpiCard label="En rupture" value={kpis.enRupture} icon={<AlertTriangle className="w-5 h-5" />} color={kpis.enRupture > 0 ? 'warning' : 'neutral'} />
-          <KpiCard label="Dans le catalogue" value={kpis.catalogue} icon={<Star className="w-5 h-5" />} color="indigo" />
+          <KpiCard label="Articles actifs" value={kpis.actifs} icon={<Package className="w-5 h-5" />} color="terracotta"
+            active={filters.actif === 'true'}
+            onClick={() => setFilters({ ...filters, actif: filters.actif === 'true' ? '' : 'true' })} />
+          <KpiCard label="En stock" value={kpis.totalArticles - kpis.enRupture} icon={<Warehouse className="w-5 h-5" />} color="sage"
+            active={filters.actif === '' && filters.catalogue === ''}
+            onClick={() => setFilters({ modele: '', actif: '', catalogue: '' })} />
+          <KpiCard label="En rupture" value={kpis.enRupture} icon={<AlertTriangle className="w-5 h-5" />} color={kpis.enRupture > 0 ? 'warning' : 'neutral'}
+            active={filters.actif === 'false'}
+            onClick={() => setFilters({ ...filters, actif: filters.actif === 'false' ? '' : 'false' })} />
+          <KpiCard label="Dans le catalogue" value={kpis.catalogue} icon={<Star className="w-5 h-5" />} color="indigo"
+            active={filters.catalogue === 'true'}
+            onClick={() => setFilters({ ...filters, catalogue: filters.catalogue === 'true' ? '' : 'true' })} />
         </div>
 
         {/* Toggle Affichage et Filtres */}

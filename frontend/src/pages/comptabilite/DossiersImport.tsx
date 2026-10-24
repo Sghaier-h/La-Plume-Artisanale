@@ -22,6 +22,7 @@ const DossiersImport: React.FC = () => {
   const [kpi, setKpi] = useState<any>({ ouverts: 0, en_douane: 0, poids_total_kg: 0, cout_cumule_dt: 0 });
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
+  const [statutFilter, setStatutFilter] = useState<string>('');
   const [form, setForm] = useState({
     pays_origine: '', fournisseur_etranger: '', nb_colis: '', poids_total_kg: '',
     incoterm: 'CIF', devise_etrangere: 'EUR', taux_change: '3.42',
@@ -66,10 +67,18 @@ const DossiersImport: React.FC = () => {
       }
     >
       <div style={kpiGrid}>
-        <KpiCard label="Dossiers ouverts"   value={fmtInt(kpi.ouverts)}      icon={<Ship size={18} />}         tone="terracotta" loading={loading} />
-        <KpiCard label="En douane"          value={fmtInt(kpi.en_douane)}    icon={<PackageCheck size={18} />} tone="gold"       loading={loading} />
-        <KpiCard label="Poids total"        value={fmtInt(kpi.poids_total_kg)} unit="kg" icon={<Weight size={18} />} tone="sage" loading={loading} />
-        <KpiCard label="Coût cumulé"        value={fmtMoney(kpi.cout_cumule_dt).replace(' DT','')} unit="DT" icon={<DollarSign size={18} />} tone="indigo" loading={loading} />
+        <KpiCard label="Dossiers ouverts"   value={fmtInt(kpi.ouverts)}      icon={<Ship size={18} />}         tone="terracotta" loading={loading}
+          active={statutFilter === 'ouvert'}
+          onClick={() => setStatutFilter((p) => p === 'ouvert' ? '' : 'ouvert')} />
+        <KpiCard label="En douane"          value={fmtInt(kpi.en_douane)}    icon={<PackageCheck size={18} />} tone="gold"       loading={loading}
+          active={statutFilter === 'en_douane'}
+          onClick={() => setStatutFilter((p) => p === 'en_douane' ? '' : 'en_douane')} />
+        <KpiCard label="Poids total"        value={fmtInt(kpi.poids_total_kg)} unit="kg" icon={<Weight size={18} />} tone="sage" loading={loading}
+          active={statutFilter === ''}
+          onClick={() => setStatutFilter('')} />
+        <KpiCard label="Coût cumulé"        value={fmtMoney(kpi.cout_cumule_dt).replace(' DT','')} unit="DT" icon={<DollarSign size={18} />} tone="indigo" loading={loading}
+          active={statutFilter === 'liquide'}
+          onClick={() => setStatutFilter((p) => p === 'liquide' ? '' : 'liquide')} />
       </div>
 
       <SectionCard title="Liste des dossiers" subtitle={`${dossiers.length} dossiers`}>
@@ -88,7 +97,7 @@ const DossiersImport: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {dossiers.map((d) => (
+              {dossiers.filter((d) => !statutFilter || d.statut === statutFilter).map((d) => (
                 <tr key={d.id_dossier} onClick={() => navigate(`/comptabilite/dossiers-import/${d.id_dossier}`)} style={{ cursor: 'pointer' }}>
                   <td style={{ ...td, fontFamily: 'var(--font-mono)' }}>{d.numero_dossier}</td>
                   <td style={td}>{new Date(d.date_ouverture).toLocaleDateString('fr-FR')}</td>
@@ -104,7 +113,7 @@ const DossiersImport: React.FC = () => {
                   <td style={{ ...td, color: 'var(--fg-muted)' }}><ChevronRight size={14} /></td>
                 </tr>
               ))}
-              {!loading && dossiers.length === 0 && (
+              {!loading && dossiers.filter((d) => !statutFilter || d.statut === statutFilter).length === 0 && (
                 <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--fg-muted)' }}>Aucun dossier</td></tr>
               )}
             </tbody>

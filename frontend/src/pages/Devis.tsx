@@ -284,10 +284,18 @@ const Devis: React.FC = () => {
 
         {/* KPI row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <KpiCard label="Total devis" value={kpis.total} icon={<FileText className="w-5 h-5" />} color="terracotta" />
-          <KpiCard label="En brouillon" value={kpis.brouillon} icon={<Clock className="w-5 h-5" />} color={kpis.brouillon > 0 ? 'warning' : 'neutral'} />
-          <KpiCard label="Acceptés" value={kpis.acceptes} icon={<Award className="w-5 h-5" />} color="sage" />
-          <KpiCard label="CA potentiel" value={kpis.caPotentiel.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} suffix="TND" icon={<TrendingUp className="w-5 h-5" />} color="indigo" />
+          <KpiCard label="Total devis" value={kpis.total} icon={<FileText className="w-5 h-5" />} color="terracotta"
+            active={filters.statut === ''}
+            onClick={() => setFilters({ ...filters, statut: '' })} />
+          <KpiCard label="En brouillon" value={kpis.brouillon} icon={<Clock className="w-5 h-5" />} color={kpis.brouillon > 0 ? 'warning' : 'neutral'}
+            active={filters.statut.toUpperCase() === 'BROUILLON'}
+            onClick={() => setFilters({ ...filters, statut: filters.statut.toUpperCase() === 'BROUILLON' ? '' : 'BROUILLON' })} />
+          <KpiCard label="Acceptés" value={kpis.acceptes} icon={<Award className="w-5 h-5" />} color="sage"
+            active={filters.statut.toUpperCase() === 'ACCEPTE'}
+            onClick={() => setFilters({ ...filters, statut: filters.statut.toUpperCase() === 'ACCEPTE' ? '' : 'ACCEPTE' })} />
+          <KpiCard label="CA potentiel" value={kpis.caPotentiel.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} suffix="TND" icon={<TrendingUp className="w-5 h-5" />} color="indigo"
+            active={filters.statut.toUpperCase() === 'ENVOYE'}
+            onClick={() => setFilters({ ...filters, statut: filters.statut.toUpperCase() === 'ENVOYE' ? '' : 'ENVOYE' })} />
         </div>
 
         {/* Filtres et recherche */}

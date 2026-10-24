@@ -232,6 +232,7 @@ const STATUT_CFG: Record<StatutAgent, { label: string; color: string; bg: string
 const AgentsActifs: React.FC = () => {
   const [agents, setAgents] = useState<AgentIA[]>([]);
   const [loading, setLoading] = useState(true);
+  const [statutFilter, setStatutFilter] = useState<StatutAgent | ''>('');
 
   useEffect(() => {
     let cancelled = false;
@@ -323,12 +324,16 @@ const AgentsActifs: React.FC = () => {
               suffix={`/ ${agents.length}`}
               color="sage"
               icon={<Bot className="w-5 h-5" />}
+              active={statutFilter === 'actif'}
+              onClick={() => setStatutFilter((p) => p === 'actif' ? '' : 'actif')}
             />
             <KpiCard
               label="Constats ouverts"
               value={kpis.totalFindings}
               color={kpis.totalFindings > 20 ? 'warning' : 'indigo'}
               icon={<AlertCircle className="w-5 h-5" />}
+              active={statutFilter === 'pause'}
+              onClick={() => setStatutFilter((p) => p === 'pause' ? '' : 'pause')}
             />
             <KpiCard
               label="Tokens ce mois"
@@ -336,6 +341,8 @@ const AgentsActifs: React.FC = () => {
               suffix="M"
               color="indigo"
               icon={<Zap className="w-5 h-5" />}
+              active={statutFilter === ''}
+              onClick={() => setStatutFilter('')}
             />
             <KpiCard
               label="Coût LLM mois"
@@ -361,7 +368,7 @@ const AgentsActifs: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#F0E7D4]">
-                {agents.map((a) => {
+                {agents.filter((a) => !statutFilter || a.statut === statutFilter).map((a) => {
                   const st = STATUT_CFG[a.statut];
                   const budgetPct = (a.cout_mois_usd / a.budget_mensuel_usd) * 100;
                   return (

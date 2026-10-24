@@ -151,9 +151,12 @@ const TracabiliteLots: React.FC = () => {
         }
       >
         <div className="lp-metric-grid">
-          <KpiCard label="Total lots" value={String(kpi.total)} icon={<Package size={18} />} tone="terracotta" loading={loading} />
-          <KpiCard label="Disponibles" value={String(kpi.dispo)} icon={<CheckCircle2 size={18} />} tone="sage" loading={loading} />
-          <KpiCard label="Réservés" value={String(kpi.reserves)} icon={<Layers size={18} />} tone="gold" loading={loading} />
+          <KpiCard label="Total lots" value={String(kpi.total)} icon={<Package size={18} />} tone="terracotta" loading={loading}
+            active={statutFilter === ''} onClick={() => setStatutFilter('')} />
+          <KpiCard label="Disponibles" value={String(kpi.dispo)} icon={<CheckCircle2 size={18} />} tone="sage" loading={loading}
+            active={statutFilter === 'disponible'} onClick={() => setStatutFilter((p) => p === 'disponible' ? '' : 'disponible')} />
+          <KpiCard label="Réservés" value={String(kpi.reserves)} icon={<Layers size={18} />} tone="gold" loading={loading}
+            active={statutFilter === 'reserve'} onClick={() => setStatutFilter((p) => p === 'reserve' ? '' : 'reserve')} />
           <KpiCard label="2ème choix" value={String(kpi.second)} icon={<X size={18} />} tone="rose" loading={loading} />
         </div>
 

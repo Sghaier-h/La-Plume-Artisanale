@@ -245,10 +245,18 @@ const TvaDeclarations: React.FC = () => {
 
           {/* KPIs */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <KpiCard label="TVA collectée YTD" value={kpis.collecteeYTD.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} suffix="DT" color="terracotta" subtitle="Compte 44551" />
-            <KpiCard label="TVA déductible YTD" value={kpis.deductibleYTD.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} suffix="DT" color="sage" subtitle="Compte 44561" />
-            <KpiCard label="TVA due à payer" value={kpis.dueTotal.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} suffix="DT" color={kpis.dueTotal > 0 ? 'warning' : 'sage'} subtitle="Non payé" />
-            <KpiCard label="Déclarations en cours" value={kpis.enCours} color="indigo" subtitle="À finaliser" />
+            <KpiCard label="TVA collectée YTD" value={kpis.collecteeYTD.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} suffix="DT" color="terracotta" subtitle="Compte 44551"
+              active={filterStatut === 'all'}
+              onClick={() => setFilterStatut('all')} />
+            <KpiCard label="TVA déductible YTD" value={kpis.deductibleYTD.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} suffix="DT" color="sage" subtitle="Compte 44561"
+              active={filterStatut === 'payee'}
+              onClick={() => setFilterStatut((p) => p === 'payee' ? 'all' : 'payee')} />
+            <KpiCard label="TVA due à payer" value={kpis.dueTotal.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} suffix="DT" color={kpis.dueTotal > 0 ? 'warning' : 'sage'} subtitle="Non payé"
+              active={filterStatut === 'soumise'}
+              onClick={() => setFilterStatut((p) => p === 'soumise' ? 'all' : 'soumise')} />
+            <KpiCard label="Déclarations en cours" value={kpis.enCours} color="indigo" subtitle="À finaliser"
+              active={filterStatut === 'en_preparation'}
+              onClick={() => setFilterStatut((p) => p === 'en_preparation' ? 'all' : 'en_preparation')} />
           </div>
 
           {/* Filtre */}

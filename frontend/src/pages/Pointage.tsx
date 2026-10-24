@@ -35,6 +35,7 @@ const Pointage: React.FC = () => {
   const [teamToday, setTeamToday] = useState<any[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().slice(0, 10));
   const [loading, setLoading] = useState(true);
+  const [statutFilter, setStatutFilter] = useState<'tous' | 'present' | 'absent' | 'retard'>('tous');
 
   const loadToday = useCallback(async () => {
     if (!userId) return;
@@ -115,10 +116,18 @@ const Pointage: React.FC = () => {
         headerRight={<ThemeToggle />}
       >
         <div className="lp-metric-grid">
-          <KpiCard label="Présents aujourd'hui" value={fmtInt(stats?.presents_aujourd_hui ?? stats?.presents)} icon={<Users size={18} />} tone="sage" loading={loading} />
-          <KpiCard label="Absents" value={fmtInt(stats?.absents)} icon={<Users size={18} />} tone="terracotta" loading={loading} />
-          <KpiCard label="Retards" value={fmtInt(stats?.retards)} icon={<Clock size={18} />} tone="gold" loading={loading} />
-          <KpiCard label="Heures moyennes" value={fmtInt(stats?.heures_moyennes ?? stats?.heures_travaillees_moy)} unit="h" icon={<Activity size={18} />} tone="indigo" loading={loading} />
+          <KpiCard label="Présents aujourd'hui" value={fmtInt(stats?.presents_aujourd_hui ?? stats?.presents)} icon={<Users size={18} />} tone="sage" loading={loading}
+            active={statutFilter === 'present'}
+            onClick={() => setStatutFilter((p) => p === 'present' ? 'tous' : 'present')} />
+          <KpiCard label="Absents" value={fmtInt(stats?.absents)} icon={<Users size={18} />} tone="terracotta" loading={loading}
+            active={statutFilter === 'absent'}
+            onClick={() => setStatutFilter((p) => p === 'absent' ? 'tous' : 'absent')} />
+          <KpiCard label="Retards" value={fmtInt(stats?.retards)} icon={<Clock size={18} />} tone="gold" loading={loading}
+            active={statutFilter === 'retard'}
+            onClick={() => setStatutFilter((p) => p === 'retard' ? 'tous' : 'retard')} />
+          <KpiCard label="Heures moyennes" value={fmtInt(stats?.heures_moyennes ?? stats?.heures_travaillees_moy)} unit="h" icon={<Activity size={18} />} tone="indigo" loading={loading}
+            active={statutFilter === 'tous'}
+            onClick={() => setStatutFilter('tous')} />
         </div>
 
         <SectionCard title="Mon pointage" icon={<Clock size={16} />} subtitle={isCheckedIn ? `Pointé à ${fmtTime(today?.check_in)} — écoulé ${elapsed}` : 'Non pointé'}>
@@ -167,8 +176,20 @@ const Pointage: React.FC = () => {
               <table style={tableStyle}>
                 <thead><tr>{['Utilisateur', 'Entrée', 'Sortie', 'Heures'].map(h => <th key={h} style={thStyle}>{h}</th>)}</tr></thead>
                 <tbody>
-                  {teamToday.length === 0 && <tr><td colSpan={4} style={{ padding: 'var(--s-4)', textAlign: 'center', color: 'var(--fg-muted)' }}>Aucun pointage</td></tr>}
-                  {teamToday.map((p: any, i: number) => (
+                  {teamToday.filter((p: any) => {
+                    if (statutFilter === 'tous') return true;
+                    if (statutFilter === 'present') return !!p.check_in;
+                    if (statutFilter === 'absent') return !p.check_in;
+                    if (statutFilter === 'retard') return !!p.retard;
+                    return true;
+                  }).length === 0 && <tr><td colSpan={4} style={{ padding: 'var(--s-4)', textAlign: 'center', color: 'var(--fg-muted)' }}>Aucun pointage</td></tr>}
+                  {teamToday.filter((p: any) => {
+                    if (statutFilter === 'tous') return true;
+                    if (statutFilter === 'present') return !!p.check_in;
+                    if (statutFilter === 'absent') return !p.check_in;
+                    if (statutFilter === 'retard') return !!p.retard;
+                    return true;
+                  }).map((p: any, i: number) => (
                     <tr key={i} style={{ borderTop: '1px solid var(--border-subtle)' }}>
                       <td style={tdStyle}>{p.nom_complet || `${p.prenom || ''} ${p.nom || ''}` || p.id_utilisateur}</td>
                       <td style={tdStyle}>{fmtTime(p.check_in)}</td>
