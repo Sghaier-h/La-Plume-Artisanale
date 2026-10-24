@@ -154,19 +154,20 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const roleUpper = user.role?.toUpperCase() || '';
   const isTabletteRole = TABLETTE_ROLES.has(roleUpper);
 
-  if (showNav && isTabletteRole) {
-    // Kiosque strict : AUCUNE barre système transversale.
-    // Seul le header TabletteLayout (poste + horloge + notifs métier +
-    // profil + déconnexion) est rendu.
+  // ─── §14quater.14 — KIOSQUE STRICT pour TISSEUR / COUPEUR / OURDISSEUR
+  // AUCUNE barre système transversale (UserBar), AUCUN menu §15, quel que
+  // soit showNav. Un opérateur ne voit JAMAIS Recherche / IA / Messages /
+  // Notifs / Dashboards / Thème / Sociétés. Seul le header TabletteLayout
+  // minimal (poste + horloge + notifs métier + profil + déconnexion).
+  if (isTabletteRole) {
     return <TabletteLayout>{children}</TabletteLayout>;
   }
 
-  // NavigationTopBar occupe le haut (48px). UserBar juste dessous (topOffset=48).
-  // showNav=false → UserBar seule tout en haut (dashboards §14 dédiés)
+  // Rôles PC : NavigationTopBar (48px dynamique) + UserBar en dessous.
+  // showNav=false → UserBar seule (dashboards §14 dédiés sans menu).
   return (
     <>
       {showNav && <Navigation />}
-      {/* topOffset=0 → suit --nav-height dynamique. showNav=false → CSS var reste à 0 (pas de NavigationTopBar rendu) */}
       <UserBar />
       {children}
     </>
