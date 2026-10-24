@@ -146,19 +146,19 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   // désactivent le menu tout en gardant la barre système.
   //
   // Layout gauche :
-  // - Rôles tablette (Tisseur/Coupeur/Ourdisseur) → TabletteLayout kiosque
-  // - Autres rôles (bureau) → NavigationEnhanced sidebar §15 filtrée
-  // - showNav=false → aucun menu à gauche (UserBar seule)
+  // - Rôles tablette (Tisseur/Coupeur/Ourdisseur) → TabletteLayout kiosque STRICT
+  //   (§14quater.14 du contrat : zéro UserBar transversale, zéro menu §15,
+  //   seul le header TabletteLayout avec icônes utiles au métier est affiché).
+  // - Autres rôles (bureau) → NavigationTopBar §15 filtrée + UserBar.
+  // - showNav=false → UserBar seule tout en haut (dashboards §14 dédiés).
   const roleUpper = user.role?.toUpperCase() || '';
   const isTabletteRole = TABLETTE_ROLES.has(roleUpper);
 
   if (showNav && isTabletteRole) {
-    return (
-      <>
-        <UserBar />
-        <TabletteLayout>{children}</TabletteLayout>
-      </>
-    );
+    // Kiosque strict : AUCUNE barre système transversale.
+    // Seul le header TabletteLayout (poste + horloge + notifs métier +
+    // profil + déconnexion) est rendu.
+    return <TabletteLayout>{children}</TabletteLayout>;
   }
 
   // NavigationTopBar occupe le haut (48px). UserBar juste dessous (topOffset=48).

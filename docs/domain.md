@@ -4349,6 +4349,147 @@ Décisions prises en session avec le PO. Priorité contractuelle : ces règles s
 
 ---
 
+## 14quater. Fonctionnalités reprises de Power Apps « La Plume Comptabilité »
+
+Lecture du document PASSATION_LaPlumeComptabilite_v164.md (2026-10-24) : fonctionnalités de l'app Power Apps interne à intégrer dans l'ERP v2.
+
+### 14quater.1 Multi-sociétés étendues (5 entités du groupe)
+
+Le groupe compte 5 sociétés (pas 3 comme actuellement en seed) :
+
+| Code | Nom | Rôle |
+|---|---|---|
+| LP | La Plume Artisanale | Fabrication, société principale |
+| CAP | CAPSCOR | Import-export (avec associé) |
+| AT | Artisanat Tunisien | Commercial / dropshipping |
+| PMG | PMG TEX TUNISIE | Tissage spécialisé |
+| HS | Hamdi Sghaier | Perso (gérant) |
+
+- Table `societes` doit lister les 5 avec champ `type_societe` (fabrication / import_export / commerce / perso).
+- Sélecteur UserBar étendu de LP/AF/FT à LP/CAP/AT/PMG/HS. Pas de « Flying Tex » dans ce domaine, c'était une erreur de nommage initiale — à corriger.
+
+### 14quater.2 Caisses multiples + routage automatique selon mode de paiement
+
+- Table `caisses` : minimum 4 caisses standards + N caisses custom paramétrables.
+  - **Caisse Principale** — toutes espèces et virements classiques.
+  - **Caisse Chèques clients** — pour tous les chèques ET traites/effets.
+  - **Caisse Compensation** — pour les compensations croisées (CNSS, impôts, employés).
+  - **Caisse Apport gérant** — mouvements d'apport du gérant personnels.
+- **Routage automatique** : à l'enregistrement d'un paiement, selon le mode choisi, la caisse par défaut est pré-remplie :
+  - `mode_paiement = 'cheque_client' | 'traite'` → Caisse Chèques clients
+  - `mode_paiement = 'compensation'` → Caisse Compensation
+  - `mode_paiement = 'apport_gerant'` → Caisse Apport gérant
+  - Autres → Caisse Principale
+- La caisse reste modifiable manuellement (cas exceptionnel).
+
+### 14quater.3 Dossiers d'importation + cessions intragroupe
+
+- Entité **Dossiers d'import** avec coût de revient réel au prorata des kg (base kg marchandise).
+- **Cessions automatiques entre sociétés du groupe** (bloc CESS) :
+  - Déclenchées à l'ouverture de l'écran Import (recalcul idempotent).
+  - Clé unique : `CESSION|<dossier>|<acheteur>` (permet mise à jour sans doublon).
+  - Prix de cession = coût de revient (sans marge). Non comptabilisé en marge.
+  - **La Plume → CAPSCOR** : côté LP ventes (BL cession, créance) + côté CAPSCOR lignes achat (BL fournisseur LP) + dettes.
+  - **La Plume → Ste Mose de Commerce** : ventes côté LP seulement (externe au groupe).
+  - **CAPSCOR → La Plume** : côté CAPSCOR ventes + côté LP dettes (BL d'achat existe déjà).
+  - **Paiement intragroupe** : un paiement d'un côté solde automatiquement l'autre côté (lien `id_cession`).
+  - **Annulation** : part qui disparaît = annulée si impayée. Si déjà payée → avertissement, pas d'effacement.
+- Status Artisanat Tunisien = en attente confirmation PO.
+
+### 14quater.4 Flux pièces reçues Teams / WhatsApp (photos justificatives)
+
+- Flux Power Automate interne « Pièce reçue Teams - La Plume » génère une pièce comptable depuis une photo collée dans un canal Teams.
+- **Équivalent ERP** : endpoint `POST /api/comptabilite/pieces/upload-photo` qui :
+  1. Reçoit l'image (JPG/PNG/HEIC)
+  2. OCR auto (via IA module) pour extraire date, montant, fournisseur
+  3. Crée une pré-saisie en statut `a_valider` (le comptable valide avant d'écrire au journal)
+  4. Pièce source attachée dans module `documents`
+- Sources acceptées : canal Teams, WhatsApp Business, email imap, upload direct portail.
+
+### 14quater.5 Compensation CNSS / impôts / tiers
+
+- Dans le journal comptable, type d'opération **compensation** permet de compenser une dette fournisseur avec une créance d'un tiers lié (ex: compenser CNSS employé avec une avance au même employé).
+- Exemple fourni : Najwa Amdouni, compensation 4 764,133 DT au 30/08/2025, caisse `Compensation` (ADEL-NAJWA-E / ADEL-NAJWA).
+- UI : écran dédié « Compensations croisées » dans Comptabilité, saisie à 2 lignes (débit / crédit), balance obligatoire = 0.
+
+### 14quater.6 Apport gérant comme mode de paiement
+
+- Nouveau mode de paiement **« Apport gérant »** disponible dans tous les écrans de paiement (ventes, achats, RH, dépenses).
+- Caisse associée = « Apport gérant » (séparée de la Caisse Principale).
+- Comptabilisation : contrepartie dans un compte 108xxx (apport exploitant) ou similaire selon PCGE Tunisien.
+
+### 14quater.7 Ajustements de compte (RH + tiers)
+
+- Possibilité d'ajuster manuellement le solde d'un compte employé ou tiers à une date donnée, avec motif obligatoire et traçabilité (code pattern `AJ-{NOM}-{YYYY}-{NN}`).
+- Exemple : « compte nouage de Salem arrêté à 0 au 15/07/2026 ».
+- Opération générée en journal avec libellé explicite, auditée.
+
+### 14quater.8 Édition admin de documents validés
+
+- Pour certains documents critiques (nouage, ensouples, paiements signés), l'ADMIN peut éditer **même après validation** (statut, date, montant), avec audit log complet (`modifie_par`, `date_modification`, raison obligatoire).
+- UI : badge « ⚠ Édition admin autorisée » visible, confirmation en 2 étapes.
+
+### 14quater.9 Reconnaissance pattern dans libellés (ancien compte / mois)
+
+- Dans les paiements importés depuis Excel/relevés bancaires, reconnaître automatiquement :
+  - « frange ancien compte » → compte sous-traitant avant date pivot (01/10/2025).
+  - « janvier/février/… 2025 » dans le libellé → affecter au mois correspondant.
+- Permet reclassement rétroactif propre.
+
+### 14quater.10 Session timeout 15 minutes
+
+- Chaque écran applicatif enveloppé par un garde de session : inactivité > 15 min → auto-logout + redirect `/login` avec message.
+- Trigger `Set(gLastAct, Now())` sur chaque bouton (équivalent : updater timestamp sur chaque interaction UI/API).
+- Message avertissement 1 min avant expiration + bouton « Rester connecté ».
+
+### 14quater.11 Vérifications pré-livraison obligatoires
+
+Avant toute livraison / commit significatif :
+1. **Audit indépendant** (sous-agent) sur le périmètre modifié.
+2. **Vérifier affichage PC / tablette / téléphone** (3 breakpoints).
+3. **Pas de tables en double** — réutiliser les existantes.
+4. **Vérificateurs** équivalent kit : `tsc --noEmit`, ESLint, `npm run seed:demo:dry` (idempotence seeds), curl endpoints sur rôle admin + rôle testeur.
+
+### 14quater.12 Workflow « accumuler puis livrer »
+
+- Accumuler les remarques et modifications sans livrer tant que l'utilisateur n'a pas dit « livre » ou « commit ».
+- Chaque demande utilisateur = accumulée dans TaskList (TaskCreate) avec contexte.
+- Livraison = commit + push + rapport récap.
+- Interface de questionnement : utiliser `AskUserQuestion` avec options prédéfinies plutôt que questions ouvertes.
+
+### 14quater.13 Rapprochement bancaire assisté
+
+- Import relevés bancaires (OFX / CSV / XLSX).
+- Matching automatique sur montant + date + libellé fuzzy.
+- Rapprochements persistés avec `id_rapprochement` sur chaque ligne journal (lien avec code bancaire BQ-XXXX-YYYYMMDD).
+- UI 3 colonnes : opérations non-rapprochées / suggestions / rapprochées.
+
+### 14quater.14 Mode kiosque strict pour opérateurs atelier (RÈGLE PO)
+
+**Un opérateur TISSEUR / COUPEUR / OURDISSEUR ne doit voir QUE les tâches et icônes destinées à ses propres fonctions.**
+
+- **TabletteLayout** (`frontend/src/components/TabletteLayout.tsx`) applique ces règles :
+  - Pas de sidebar de navigation complète (zéro menu §15 standard).
+  - Pas de UserBar transversale avec Recherche / Assistant IA / Messages / Notifs / Dashboards / Sociétés — seulement les icônes utiles au métier.
+  - Pas de dropdown « changer de société » (l'opérateur est rattaché à UNE société).
+  - Pas de recherche globale Ctrl+K.
+- **Icônes autorisées dans le header tablette** :
+  - 🏠 Retour à son propre dashboard métier.
+  - 💬 Messagerie inter-postes (toujours visible, filtré sur ses contacts opérationnels).
+  - 🔔 Notifications (filtrées sur ses OF/machines seulement).
+  - 👤 Son photo + prénom + bouton Déconnexion.
+  - ⏰ Horloge.
+- **Dashboard tablette = unique vue** avec ses OF/tâches assignées, boutons XL tactiles (démarrer / pause / finir / signaler défaut).
+- **Navigation entre écrans métier** : via boutons dans son dashboard uniquement (pas de retour au menu général).
+- **Interdictions explicites** :
+  - Un TISSEUR n'a pas accès à Clients, Devis, Factures, Compta, RH, Paramètres.
+  - Un COUPEUR idem. Un OURDISSEUR idem.
+- **Rôles PC concernés** : les Magasiniers, Mécanicien, Chefs voient le menu §15 complet mais filtré par leurs permissions. Ils ne sont PAS en mode kiosque — ils peuvent naviguer, consulter stock, parler aux clients, etc.
+
+Cette règle est **non négociable** : un opérateur distrait par 50 icônes qu'il ne comprend pas = ralentissement production + risque erreur. Le kiosque force la concentration sur sa tâche.
+
+---
+
 ## 15. Menu
 
 ```
