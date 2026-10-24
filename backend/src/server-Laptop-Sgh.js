@@ -200,11 +200,11 @@ app.use('/api/machines', machinesRoutes);
     app.use('/api/mrp/boms', mrpBOMRoutes.default);
     console.log('✅ Route /api/mrp/boms chargée');
     
-    // Module Comptabilité
-    const accountMoveRoutes = await import('../modules/account/routes/account_move.routes.js');
-    app.use('/api/account/moves', accountMoveRoutes.default);
-    console.log('✅ Route /api/account/moves chargée');
-    
+    // Module Comptabilité — ancien `modules/account` supprimé.
+    // Les écritures sont désormais exposées par `/api/v2/comptabilite/ecritures/*`
+    // (modules-v2/comptabilite/ecritures), monté via buildV2Router().
+
+
     // Module Achats
     const purchaseOrderRoutes = await import('../modules/purchase/routes/purchase_order.routes.js');
     app.use('/api/purchase/orders', purchaseOrderRoutes.default);

@@ -73,7 +73,7 @@ router.put('/:id(\\d+)', authenticate, async (req, res) => {
   try {
     const { nom, montant_prevue, probabilite, date_fermeture_prevue, statut } = req.body || {};
     const r = await pool.query(
-      `UPDATE opportunites_crm
+      `UPDATE opportunites
          SET nom = COALESCE($2, nom),
              montant_prevue = COALESCE($3, montant_prevue),
              probabilite = COALESCE($4, probabilite),
@@ -92,21 +92,21 @@ router.put('/:id(\\d+)', authenticate, async (req, res) => {
 
 router.put('/:id(\\d+)/qualify', authenticate, async (req, res) => {
   try {
-    const r = await pool.query(`UPDATE opportunites_crm SET statut = 'qualifie' WHERE id_opportunite = $1 RETURNING *`, [req.params.id]);
+    const r = await pool.query(`UPDATE opportunites SET statut = 'qualifie' WHERE id_opportunite = $1 RETURNING *`, [req.params.id]);
     return sendSuccess(res, r.rows[0], 'Qualifiée');
   } catch (error) { return handleError(res, error, 'qualifyOpp'); }
 });
 
 router.put('/:id(\\d+)/win', authenticate, async (req, res) => {
   try {
-    const r = await pool.query(`UPDATE opportunites_crm SET statut = 'gagne', probabilite = 100 WHERE id_opportunite = $1 RETURNING *`, [req.params.id]);
+    const r = await pool.query(`UPDATE opportunites SET statut = 'gagne', probabilite = 100 WHERE id_opportunite = $1 RETURNING *`, [req.params.id]);
     return sendSuccess(res, r.rows[0], 'Gagnée');
   } catch (error) { return handleError(res, error, 'winOpp'); }
 });
 
 router.put('/:id(\\d+)/lose', authenticate, async (req, res) => {
   try {
-    const r = await pool.query(`UPDATE opportunites_crm SET statut = 'perdu', probabilite = 0 WHERE id_opportunite = $1 RETURNING *`, [req.params.id]);
+    const r = await pool.query(`UPDATE opportunites SET statut = 'perdu', probabilite = 0 WHERE id_opportunite = $1 RETURNING *`, [req.params.id]);
     return sendSuccess(res, r.rows[0], 'Perdue');
   } catch (error) { return handleError(res, error, 'loseOpp'); }
 });

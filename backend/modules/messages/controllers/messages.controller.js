@@ -74,8 +74,8 @@ export const getMessages = async (req, res) => {
         exp.nom AS expediteur_nom, exp.prenom AS expediteur_prenom, exp.email AS expediteur_email,
         dest.nom AS destinataire_nom, dest.prenom AS destinataire_prenom, dest.email AS destinataire_email
       FROM messages m
-      LEFT JOIN users exp  ON m.id_expediteur   = exp.id_utilisateur
-      LEFT JOIN users dest ON m.id_destinataire = dest.id_utilisateur
+      LEFT JOIN users exp  ON m.id_expediteur   = exp.id_user
+      LEFT JOIN users dest ON m.id_destinataire = dest.id_user
       WHERE ${where.join(' AND ')}
       ORDER BY m.date_envoi DESC
       LIMIT $${params.length - 1} OFFSET $${params.length}
@@ -118,8 +118,8 @@ export const getConversation = async (req, res) => {
         exp.nom AS expediteur_nom, exp.prenom AS expediteur_prenom,
         dest.nom AS destinataire_nom, dest.prenom AS destinataire_prenom
       FROM messages m
-      LEFT JOIN users exp  ON m.id_expediteur   = exp.id_utilisateur
-      LEFT JOIN users dest ON m.id_destinataire = dest.id_utilisateur
+      LEFT JOIN users exp  ON m.id_expediteur   = exp.id_user
+      LEFT JOIN users dest ON m.id_destinataire = dest.id_user
       WHERE m.contenu IS NOT NULL
         AND ((m.id_expediteur = $1 AND m.id_destinataire = $2)
           OR (m.id_expediteur = $2 AND m.id_destinataire = $1))
@@ -140,8 +140,8 @@ export const getMessagesById = async (req, res) => {
               exp.nom AS expediteur_nom, exp.prenom AS expediteur_prenom,
               dest.nom AS destinataire_nom, dest.prenom AS destinataire_prenom
        FROM messages m
-       LEFT JOIN users exp  ON m.id_expediteur   = exp.id_utilisateur
-       LEFT JOIN users dest ON m.id_destinataire = dest.id_utilisateur
+       LEFT JOIN users exp  ON m.id_expediteur   = exp.id_user
+       LEFT JOIN users dest ON m.id_destinataire = dest.id_user
        WHERE m.id_messages = $1 LIMIT 1`,
       [req.params.id]
     );

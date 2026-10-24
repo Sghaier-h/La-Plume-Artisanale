@@ -1,5 +1,6 @@
 import * as S from './service.js';
 import { ok, okList, created, fail, asyncHandler } from '../../_shared/response.js';
+import { getPool } from '../../_shared/db.js';
 
 export const list = asyncHandler(async (req, res) => {
   const page  = Math.max(1, parseInt(req.query.page  || '1', 10));
@@ -57,3 +58,25 @@ export const deleteAdresse  = asyncHandler(async (req, res) => { await S.deleteA
 export const listHistorique = asyncHandler(async (req, res) => ok(res, await S.listHistorique(Number(req.params.id), 100)));
 export const addHistorique  = asyncHandler(async (req, res) =>
   ok(res, { id_historique: await S.addHistorique(Number(req.params.id), { ...req.body, id_user: req.user?.id_user }) }));
+
+// --- Compat référentiels (shims pour l'ex-clientsService legacy) ---
+// Expose les référentiels CRM via le module comptes pour permettre à l'UI
+// legacy (page Clients.tsx) de peupler ses dropdowns sans dépendre du
+// module /api/clients supprimé. Lecture seule, tolérant si table absente.
+export const listCategories = asyncHandler(async (_req, res) => {
+  try {
+    const { rows } = await getPool().query(
+      `SELECT id_categorie, code, libelle, couleur, actif, ordre
+         FROM crm_categories_clients
+        WHERE actif = TRUE
+        ORDER BY ordre, libelle`);
+    return ok(res, rows);
+  } catch (_e) {
+    return ok(res, []);
+  }
+});
+
+export const listTypesCommerciaux = asyncHandler(async (_req, res) => {
+  // Pas de table v2 dédiée — on retourne un tableau vide pour compat UI.
+  return ok(res, []);
+});

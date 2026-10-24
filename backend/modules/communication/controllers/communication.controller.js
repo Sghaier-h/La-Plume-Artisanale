@@ -115,8 +115,8 @@ export const getMessages = async (req, res) => {
              exp.nom AS expediteur_nom, exp.prenom AS expediteur_prenom,
              dest.nom AS destinataire_nom, dest.prenom AS destinataire_prenom
       FROM communication c
-      LEFT JOIN users exp  ON c.id_expediteur   = exp.id_utilisateur
-      LEFT JOIN users dest ON c.id_destinataire = dest.id_utilisateur
+      LEFT JOIN users exp  ON c.id_expediteur   = exp.id_user
+      LEFT JOIN users dest ON c.id_destinataire = dest.id_user
       WHERE ${where.join(' AND ')}
       ORDER BY COALESCE(c.sent_at, c.created_at) DESC
       LIMIT $${params.length - 1} OFFSET $${params.length}
@@ -225,7 +225,7 @@ export const getConversations = async (req, res) => {
               WHERE c2.canal = c.canal AND c2.id_destinataire = c.id_destinataire
                 AND c2.statut IN ('pending','queued','sent')) AS message_count
       FROM communication c
-      LEFT JOIN users dest ON c.id_destinataire = dest.id_utilisateur
+      LEFT JOIN users dest ON c.id_destinataire = dest.id_user
       WHERE ${where.join(' AND ')}
       ORDER BY c.canal, c.id_destinataire, COALESCE(c.sent_at, c.created_at) DESC
     `;

@@ -13,8 +13,8 @@ export const getKpisAdmin = async (req, res) => {
     const [clients, commandes, devis, factures, of, machines] = await Promise.all([
       pool.query(`SELECT
         COUNT(*) FILTER (WHERE actif = true) as total_actifs,
-        COUNT(*) FILTER (WHERE type_client = 'CLIENT' AND actif = true) as clients,
-        COUNT(*) FILTER (WHERE type_client = 'PROSPECT' AND actif = true) as prospects
+        COUNT(*) FILTER (WHERE statut_crm = 'client' AND actif = true) as clients,
+        COUNT(*) FILTER (WHERE statut_crm = 'prospect' AND actif = true) as prospects
         FROM comptes`),
       pool.query(`SELECT
         COUNT(*) as total,
@@ -140,7 +140,7 @@ export const getTopClients = async (req, res) => {
         COALESCE(SUM(f.montant_ttc), 0) as ca_total
       FROM comptes c
       LEFT JOIN factures f ON c.id_client = f.id_client
-      WHERE c.actif = true AND c.type_client = 'CLIENT'
+      WHERE c.actif = true AND c.statut_crm = 'client'
       GROUP BY c.id_client, c.code_client, c.raison_sociale
       ORDER BY ca_total DESC
       LIMIT $1

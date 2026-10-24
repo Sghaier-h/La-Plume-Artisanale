@@ -72,7 +72,7 @@ router.post('/equipe/:id_operateur(\\d+)/creer-utilisateur', async (req, res) =>
     const hash = await bcrypt.hash(mot_de_passe, 10);
     const insert = await pool.query(
       `INSERT INTO users (email, mot_de_passe, nom, prenom, id_operateur, actif, date_creation)
-       VALUES ($1, $2, $3, $4, $5, true, NOW()) RETURNING id_utilisateur, email, nom, prenom, id_operateur`,
+       VALUES ($1, $2, $3, $4, $5, true, NOW()) RETURNING id_user, email, nom, prenom, id_operateur`,
       [email, hash, op.nom || null, op.prenom || null, op.id_operateur]
     );
     return sendSuccess(res, insert.rows[0], 'Utilisateur créé', 201);

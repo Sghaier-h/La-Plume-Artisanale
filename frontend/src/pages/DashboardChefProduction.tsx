@@ -14,8 +14,8 @@ import {
   machinesService,
   matieresPremieresService,
   dashboardService,
-  soustraitantsService,
 } from '../services/api';
+import { soustraitantsApi } from '../services/soustraitanceApi';
 
 // ─────────── Types (loose — backend envelopes vary) ───────────
 type OF = {
@@ -135,7 +135,7 @@ const DashboardChefProduction: React.FC = () => {
       matieresPremieresService.getMatieresPremieres({ limit: 200 }).catch(() => null),
       dashboardService.getKpisProduction().catch(() => null),
       dashboardService.getKPIs().catch(() => null),
-      soustraitantsService.getSoustraitants({ limit: 50 }).catch(() => null),
+      soustraitantsApi.list({ limit: 50 }).then((r) => ({ data: r.data })).catch(() => null),
       dashboardService.getAlertes().catch(() => null),
     ]);
 

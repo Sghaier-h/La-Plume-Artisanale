@@ -288,7 +288,7 @@ export const resetMotDePasse = async (req, res) => {
              tentatives_connexion = 0, compte_verrouille = false,
              date_modification = NOW(), updated_by = $2
        WHERE id_user = $3
-       RETURNING id_utilisateur AS id, email`,
+       RETURNING id_user AS id, email`,
       [hash, author, req.params.id]
     );
     if (!r.rows[0]) return sendError(res, 'Utilisateur introuvable', 404);
@@ -306,7 +306,7 @@ export const desactiver = async (req, res) => {
   try {
     const r = await pool.query(
       `UPDATE users SET actif = false, date_modification = NOW(), updated_by = $1
-       WHERE id_user = $2 RETURNING id_utilisateur AS id, actif`,
+       WHERE id_user = $2 RETURNING id_user AS id, actif`,
       [currentUserId(req), req.params.id]
     );
     if (!r.rows[0]) return sendError(res, 'Utilisateur introuvable', 404);
@@ -321,7 +321,7 @@ export const activer = async (req, res) => {
   try {
     const r = await pool.query(
       `UPDATE users SET actif = true, date_modification = NOW(), updated_by = $1
-       WHERE id_user = $2 RETURNING id_utilisateur AS id, actif`,
+       WHERE id_user = $2 RETURNING id_user AS id, actif`,
       [currentUserId(req), req.params.id]
     );
     if (!r.rows[0]) return sendError(res, 'Utilisateur introuvable', 404);
@@ -339,7 +339,7 @@ export const verrouiller = async (req, res) => {
          SET compte_verrouille = true, date_verrouillage = NOW(),
              date_modification = NOW(), updated_by = $1
        WHERE id_user = $2
-       RETURNING id_utilisateur AS id, compte_verrouille, date_verrouillage`,
+       RETURNING id_user AS id, compte_verrouille, date_verrouillage`,
       [currentUserId(req), req.params.id]
     );
     if (!r.rows[0]) return sendError(res, 'Utilisateur introuvable', 404);
@@ -357,7 +357,7 @@ export const deverrouiller = async (req, res) => {
          SET compte_verrouille = false, date_verrouillage = NULL,
              tentatives_connexion = 0, date_modification = NOW(), updated_by = $1
        WHERE id_user = $2
-       RETURNING id_utilisateur AS id, compte_verrouille`,
+       RETURNING id_user AS id, compte_verrouille`,
       [currentUserId(req), req.params.id]
     );
     if (!r.rows[0]) return sendError(res, 'Utilisateur introuvable', 404);
@@ -373,7 +373,7 @@ export const deleteUtilisateurs = async (req, res) => {
     if (!isAdmin(req)) return sendError(res, 'Réservé aux administrateurs', 403);
     const r = await pool.query(
       `UPDATE users SET actif = false, date_modification = NOW(), updated_by = $1
-       WHERE id_user = $2 RETURNING id_utilisateur AS id`,
+       WHERE id_user = $2 RETURNING id_user AS id`,
       [currentUserId(req), req.params.id]
     );
     if (!r.rows[0]) return sendError(res, 'Utilisateur introuvable', 404);
@@ -421,7 +421,7 @@ export const removeRole = async (req, res) => {
   try {
     if (!isAdmin(req)) return sendError(res, 'Réservé aux administrateurs', 403);
     const r = await pool.query(
-      `DELETE FROM utilisateurs_roles WHERE id_user = $1 AND id_role = $2 RETURNING id_role`,
+      `DELETE FROM utilisateurs_roles WHERE id_utilisateur = $1 AND id_role = $2 RETURNING id_role`,
       [req.params.id, req.params.id_role]
     );
     if (!r.rows[0]) return sendError(res, 'Rôle non attribué', 404);

@@ -1,11 +1,106 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Package, Truck, AlertTriangle, CheckCircle, Clock, Search, Scan,
   ArrowRight, Plus, Building2, MessageSquare, Eye, Bell,
   X, Mail as MailIcon, Phone as PhoneIcon, MapPin, AlertCircle, Zap, Activity,
 } from 'lucide-react';
 import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
-import { soustraitantsService, ofService, messagesService } from '../services/api';
+import { ofService, messagesService } from '../services/api';
+import { soustraitantsApi, bonsSTApi } from '../services/soustraitanceApi';
+
+/**
+ * Compat shim : expose la même surface que `soustraitantsService` legacy,
+ * mais appuyée sur `/api/v2/sous-traitance/*` (Phase B §14quater.3).
+ * Normalise `id_soustraitant` → `id_sous_traitant`, bons → mouvements, etc.
+ */
+const soustraitantsCompat: {
+  getSoustraitants: (p?: any) => Promise<any>;
+  getSoustraitant: (id: number) => Promise<any>;
+  getMouvements: (id: number, p?: any) => Promise<any>;
+  getAlertesRetard: () => Promise<any>;
+} = {
+  getSoustraitants: async (p?: any) => {
+    const actif =
+      p?.actif === 'true' || p?.actif === true
+        ? true
+        : p?.actif === 'false' || p?.actif === false
+        ? false
+        : undefined;
+    const r = await soustraitantsApi.list({ actif, limit: p?.limit });
+    const normalized = (r.data || []).map((s: any) => ({
+      ...s,
+      id_sous_traitant: s.id_soustraitant,
+      code_sous_traitant: s.code,
+      taux_qualite: s.qualite_moyenne_pct,
+    }));
+    return { data: { data: normalized } };
+  },
+  getSoustraitant: async (id: number) => {
+    const d: any = await soustraitantsApi.detail(id);
+    return {
+      data: {
+        data: {
+          ...d,
+          id_sous_traitant: d?.id_soustraitant,
+          code_sous_traitant: d?.code,
+          taux_qualite: d?.qualite_moyenne_pct,
+          statistiques: {
+            total_mouvements: 0,
+            en_cours: Number(d?.travaux_en_cours ?? 0),
+            en_retard: 0,
+            retournes: 0,
+          },
+        },
+      },
+    };
+  },
+  getMouvements: async (id: number, _p?: any) => {
+    const bons: any[] = (await soustraitantsApi.bons(id)) || [];
+    const normalized = bons.map((b: any) => ({
+      id_mouvement_st: b.id_of_st,
+      numero_mouvement: b.numero_bon,
+      id_sous_traitant: b.id_soustraitant,
+      raison_sociale: b.sous_traitant_nom || '',
+      numero_of: b.numero_of || '',
+      type_mouvement: b.type_activite || '',
+      date_mouvement: b.date_envoi_reel || b.date_envoi_prevue || '',
+      date_retour_prevue: b.date_retour_prevue,
+      date_retour_reelle: b.date_retour_reel,
+      qr_code_sortie: '',
+      qr_code_retour: '',
+      numero_suivi_transporteur: '',
+      statut:
+        b.statut === 'retour_complet'
+          ? 'retourne'
+          : b.statut === 'expedie' || b.statut === 'chez_st' || b.statut === 'en_retour_partiel'
+          ? 'en_cours'
+          : b.statut,
+      quantite: b.quantite_envoyee,
+      article_designation: '',
+    }));
+    return { data: { data: normalized } };
+  },
+  getAlertesRetard: async () => {
+    const bons: any[] = (await bonsSTApi.list()) || [];
+    const today = new Date();
+    const retards = bons
+      .filter(
+        (b: any) =>
+          (b.statut === 'expedie' || b.statut === 'chez_st' || b.statut === 'en_retour_partiel') &&
+          b.date_retour_prevue &&
+          new Date(b.date_retour_prevue) < today,
+      )
+      .map((b: any) => ({
+        id_mouvement_st: b.id_of_st,
+        id_sous_traitant: b.id_soustraitant,
+        raison_sociale: b.sous_traitant_nom || '',
+        numero_of: b.numero_of || '',
+        date_retour_prevue: b.date_retour_prevue,
+      }));
+    return { data: { data: retards } };
+  },
+};
 
 interface Mouvement {
   id_mouvement_st: number;
@@ -62,6 +157,7 @@ interface MessageUrgent {
 type TabKey = 'vue-ensemble' | 'soustraitants' | 'sorties' | 'retours' | 'messages';
 
 const DashboardMagasinierSoustraitants: React.FC = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabKey>('vue-ensemble');
   const [mouvements, setMouvements] = useState<Mouvement[]>([]);
   const [soustraitants, setSoustraitants] = useState<SoustraitantDetails[]>([]);
@@ -112,9 +208,9 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
     setLoading(true);
     try {
       const [soustraitantsRes, ofsRes, alertesRes] = await Promise.all([
-        soustraitantsService.getSoustraitants({ actif: 'true' }),
+        soustraitantsCompat.getSoustraitants({ actif: 'true' }),
         ofService.getOFs({}),
-        soustraitantsService.getAlertesRetard()
+        soustraitantsCompat.getAlertesRetard()
       ]);
 
       setSoustraitantsList((() => { const _r = soustraitantsRes.data?.data; return Array.isArray(_r) ? _r : (_r?.data || _r?.soustraitantsList || []); })());
@@ -135,8 +231,8 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
       for (const st of soustraitantsRes.data.data) {
         try {
           const [detailRes, mouvRes] = await Promise.all([
-            soustraitantsService.getSoustraitant(st.id_sous_traitant),
-            soustraitantsService.getMouvements(st.id_sous_traitant, {})
+            soustraitantsCompat.getSoustraitant(st.id_sous_traitant),
+            soustraitantsCompat.getMouvements(st.id_sous_traitant, {})
           ]);
 
           if (detailRes.data.data) {
@@ -220,60 +316,30 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
   };
 
   const handleEnregistrerSortie = async () => {
-    try {
-      if (!formSortie.id_sous_traitant || !formSortie.id_of) {
-        alert('Veuillez sélectionner un sous-traitant et un OF');
-        return;
-      }
-
-      await soustraitantsService.enregistrerSortie(
-        parseInt(formSortie.id_sous_traitant),
-        {
-          id_of: parseInt(formSortie.id_of),
-          quantite: parseFloat(formSortie.quantite) || 0,
-          date_sortie_prevue: formSortie.date_sortie,
-          qr_code_sortie: formSortie.qr_code_sortie,
-          numero_suivi_transporteur: formSortie.numero_suivi_transporteur,
-          observations: formSortie.observations || `QR Sortie: ${formSortie.qr_code_sortie}, Suivi: ${formSortie.numero_suivi_transporteur}`
-        }
-      );
-
-      alert('Sortie enregistrée avec succès !');
-      setShowModalSortie(false);
-      resetFormSortie();
-      loadData();
-    } catch (error: any) {
-      alert(error.response?.data?.error?.message || 'Erreur lors de l\'enregistrement');
+    // §14quater.3 Phase B — le workflow Sortie Sous-traitant est désormais porté par
+    // les pages v2 (`/sous-traitants/:id` → bon de sortie signé). Redirection.
+    if (!formSortie.id_sous_traitant) {
+      alert('Veuillez sélectionner un sous-traitant.');
+      return;
     }
+    alert('Le workflow « Nouvelle sortie » a été migré vers la fiche Sous-traitant (Phase B §14quater.3). Vous allez y être redirigé.');
+    setShowModalSortie(false);
+    resetFormSortie();
+    navigate(`/sous-traitants/${formSortie.id_sous_traitant}`);
   };
 
   const handleEnregistrerRetour = async () => {
-    try {
-      const mouvement = mouvements.find(m => m.id_mouvement_st.toString() === formRetour.id_mouvement);
-      if (!mouvement) {
-        alert('Mouvement non trouvé');
-        return;
-      }
-
-      await soustraitantsService.enregistrerRetour(
-        mouvement.id_sous_traitant,
-        {
-          id_mouvement: parseInt(formRetour.id_mouvement),
-          quantite_retournee: parseFloat(formRetour.quantite_retournee) || 0,
-          date_retour: formRetour.date_retour,
-          qr_code_retour: formRetour.qr_code_retour,
-          conforme: parseFloat(formRetour.quantite_conforme) > 0,
-          observations: formRetour.observations || `QR Retour: ${formRetour.qr_code_retour}`
-        }
-      );
-
-      alert('Retour enregistré avec succès !');
-      setShowModalRetour(false);
-      resetFormRetour();
-      loadData();
-    } catch (error: any) {
-      alert(error.response?.data?.error?.message || 'Erreur lors de l\'enregistrement');
+    // §14quater.3 Phase B — le workflow Retour Sous-traitant passe maintenant par
+    // le contrôle qualité du Bon Retour (`/bons-retour-st/:id`).
+    const mouvement = mouvements.find(m => m.id_mouvement_st.toString() === formRetour.id_mouvement);
+    if (!mouvement) {
+      alert('Mouvement non trouvé.');
+      return;
     }
+    alert('Le workflow « Enregistrer retour » a été migré vers le Bon Retour v2 (Phase B §14quater.3). Vous allez y être redirigé.');
+    setShowModalRetour(false);
+    resetFormRetour();
+    navigate(`/bons-retour-st/${mouvement.id_mouvement_st}`);
   };
 
   const resetFormSortie = () => {

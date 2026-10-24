@@ -7,6 +7,9 @@ router.use(authenticate);
 
 // Comptes CRUD + stats
 router.get   ('/stats',           requirePermission('client:consulter'), C.stats);
+// Compat référentiels (ex-clientsService legacy) — avant la route ':id'
+router.get   ('/categories',          requirePermission('client:consulter'), C.listCategories);
+router.get   ('/types-commerciaux',   requirePermission('client:consulter'), C.listTypesCommerciaux);
 router.get   ('/',                requirePermission('client:consulter'), C.list);
 router.post  ('/',                requirePermission('client:creer'),      C.create);
 router.get   ('/:id(\\d+)',       requirePermission('client:consulter'), C.get);

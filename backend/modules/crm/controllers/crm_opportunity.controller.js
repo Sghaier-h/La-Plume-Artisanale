@@ -85,7 +85,7 @@ export const updateCrmOpportunity = async (req, res) => {
     const setClause = fields.map((field, i) => `${field} = $${i + 1}`).join(', ');
     
     const query = `
-      UPDATE opportunites_crm
+      UPDATE opportunites
       SET ${setClause}, updated_at = NOW(), updated_by = $${values.length + 1}
       WHERE id = $${values.length + 2}
       RETURNING *
@@ -111,9 +111,9 @@ export const deleteCrmOpportunity = async (req, res) => {
     
     // Essayer d'abord la suppression logique (champ active)
     const checkActiveQuery = `
-      SELECT column_name 
-      FROM information_schema.columns 
-      WHERE table_name = 'opportunites_crm' AND column_name = 'active'
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_name = 'opportunites' AND column_name = 'active'
     `;
     
     let query;
@@ -125,7 +125,7 @@ export const deleteCrmOpportunity = async (req, res) => {
       
       if (hasActiveField) {
         query = `
-          UPDATE opportunites_crm
+          UPDATE opportunites
           SET active = false, updated_at = NOW(), updated_by = $1
           WHERE id = $2
           RETURNING *

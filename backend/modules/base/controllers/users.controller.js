@@ -134,7 +134,7 @@ export const deleteUser = async (req, res) => {
     const checkActiveQuery = `
       SELECT column_name 
       FROM information_schema.columns 
-      WHERE table_name = 'utilisateurs' AND (column_name = 'active' OR column_name = 'actif')
+      WHERE table_name = 'users' AND (column_name = 'active' OR column_name = 'actif')
     `;
     
     let query;

@@ -1,13 +1,10 @@
-// routes.js — bl
-import { Router } from 'express';
-import * as ctrl from './controller.js';
-
-const router = Router();
-
-router.get('/',        ctrl.list);
-router.get('/:id',     ctrl.getOne);
-router.post('/',       ctrl.create);
-router.put('/:id',     ctrl.update);
-router.delete('/:id',  ctrl.remove);
-
-export default router;
+// routes.js — ventes/bl (bons de livraison)
+//
+// Consolidation: le module legacy `backend/modules/bons-livraison/` a été
+// supprimé. Ses handlers (CRUD, from-commande, valider/livrer/annuler, PDF,
+// stats/global) ont été portés tels quels ici dans `./legacy-controller.js`
+// + `./legacy-routes.js`.
+//
+// Les anciens scaffolds v2 (./controller.js, ./service.js, ./model.js) ne sont
+// plus montés mais conservés comme référence pour un futur refactor.
+export { default } from './legacy-routes.js';

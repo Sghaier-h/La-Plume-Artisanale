@@ -1,14 +1,9 @@
-// routes.js — factures
-import { Router } from 'express';
-import * as ctrl from './controller.js';
-
-const router = Router();
-
-router.get('/',                ctrl.list);
-router.get('/:id',             ctrl.getOne);
-router.post('/',               ctrl.create);
-router.post('/preview-totaux', ctrl.previewTotaux);   // calcul TVA + timbre sans persister
-router.put('/:id',             ctrl.update);
-router.delete('/:id',          ctrl.remove);
-
-export default router;
+// routes.js — ventes/factures
+//
+// Consolidation: le module legacy `backend/modules/factures/` a été supprimé.
+// Ses handlers (CRUD complet, from-commande, from-bl, PDF) ont été portés
+// tels quels ici dans `./legacy-controller.js` + `./legacy-routes.js`.
+//
+// Les anciens scaffolds v2 (./controller.js, ./service.js, ./model.js) ne sont
+// plus montés mais conservés comme référence pour un futur refactor.
+export { default } from './legacy-routes.js';

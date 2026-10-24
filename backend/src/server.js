@@ -209,6 +209,34 @@ import { securityManager } from './core/SecurityManager.js';
       });
     }
 
+    // ═══════════════════════════════════════════════════════════════
+    // Alias de compatibilité RH legacy → routeurs v2 rh.
+    //
+    // Les modules legacy `backend/modules/{hr,pointage,payroll-tunisia}` ont
+    // été supprimés au profit des sous-modules v2 `backend/modules-v2/rh/*`
+    // (consolidation Phase C). On ré-expose cependant les chemins v1 utilisés
+    // par :
+    //  - Pointage.tsx / PointageTimeMoto.tsx / Equipe.tsx (`api.get('/pointage/...')`)
+    //  - services legacy `hr*` dans `frontend/src/services/api.ts`
+    //  - services legacy `payrollTunisia*` dans `frontend/src/services/api.ts`
+    //
+    // afin d'éviter la casse en attendant la migration complète des pages
+    // vers des services v2 (`rhApi.ts`, `tabletteApi.*`).
+    // ═══════════════════════════════════════════════════════════════
+    try {
+      const [{ default: v2PointageRouter }, { default: v2RecrutementRouter }] = await Promise.all([
+        import('../modules-v2/rh/pointage/routes.js'),
+        import('../modules-v2/rh/recrutement/routes.js'),
+      ]);
+      app.use('/api/pointage', v2PointageRouter);
+      app.use('/api/hr/recruitments', v2RecrutementRouter);
+      logger.info('[compat-rh] Alias /api/pointage → v2 rh/pointages + /api/hr/recruitments → v2 rh/candidatures');
+    } catch (err) {
+      logger.warn('[compat-rh] Échec montage alias RH legacy', {
+        error: err.message,
+      });
+    }
+
   } catch (error) {
     logger.error('Erreur chargement des modules', { error: error.message, stack: error.stack });
   }
@@ -339,13 +367,10 @@ httpServer.listen(PORT, async () => {
     logger.info(`Documentation API: http://localhost:${PORT}/api-docs`);
   }
 
-  // ── Relances factures — cron quotidien ─────────────────────────
-  try {
-    const { startRelancesScheduler } = await import('./services/relances-scheduler.service.js');
-    await startRelancesScheduler();
-  } catch (e) {
-    logger.warn('Scheduler relances non démarré', { message: e.message });
-  }
+  // ── Relances factures ──────────────────────────────────────────
+  // Scheduler legacy retiré : le module `modules/relances` a été supprimé au
+  // profit de `modules-v2/ventes/relances-factures` (§14quater). Un nouveau
+  // scheduler sera câblé lorsque le module v2 l'exposera.
 });
 
 export { io };

@@ -31,7 +31,6 @@ const Commandes = React.lazy(() => import('./pages/Commandes'));
 const CommandeDetails = React.lazy(() => import('./pages/CommandeDetails'));
 const Machines = React.lazy(() => import('./pages/Machines'));
 const OF = React.lazy(() => import('./pages/OF'));
-const Soustraitants = React.lazy(() => import('./pages/Soustraitants'));
 const Parametrage = React.lazy(() => import('./pages/Parametrage'));
 const MatieresPremieres = React.lazy(() => import('./pages/MatieresPremieres'));
 const ArticlesCatalogue = React.lazy(() => import('./pages/ArticlesCatalogue'));
@@ -79,7 +78,8 @@ const CatalogueArticles = React.lazy(() => import('./pages/CatalogueArticles'));
 const Devis = React.lazy(() => import('./pages/Devis'));
 const BonLivraison = React.lazy(() => import('./pages/BonLivraison'));
 const Facture = React.lazy(() => import('./pages/Facture'));
-const RelancesFactures = React.lazy(() => import('./pages/RelancesFactures'));
+// Legacy `pages/RelancesFactures` supprimée (duplication avec
+// `pages/ventes/RelancesFactures`) ; la route `/relances` redirige désormais.
 const Avoir = React.lazy(() => import('./pages/Avoir'));
 const BonRetour = React.lazy(() => import('./pages/BonRetour'));
 const GestionAttributs = React.lazy(() => import('./pages/GestionAttributs'));
@@ -111,6 +111,19 @@ const RhBulletinsPaie = React.lazy(() => import('./pages/rh/BulletinsPaie'));
 const RhPaieTunisie = React.lazy(() => import('./pages/rh/PaieTunisie'));
 const RhFormations = React.lazy(() => import('./pages/rh/Formations'));
 
+// ── RH étendu Phase C (§11bis + §14quater.5-7)
+const RhComptesEmployes       = React.lazy(() => import('./pages/rh/ComptesEmployes'));
+const RhCompteEmployeDetails  = React.lazy(() => import('./pages/rh/CompteEmployeDetails'));
+const RhAvancesSalaires       = React.lazy(() => import('./pages/rh/AvancesSalaires'));
+const RhAjustementsComptes    = React.lazy(() => import('./pages/rh/AjustementsComptesRh'));
+const RhCompensationsRh       = React.lazy(() => import('./pages/rh/CompensationsRh'));
+
+// ── Tablettes RH (§14quater.5-7 · routes PUBLIQUES, kiosque strict)
+const TablettePointeuseRH             = React.lazy(() => import('./pages/TablettePointeuseRH'));
+const TabletteDemandeAvance           = React.lazy(() => import('./pages/TabletteDemandeAvance'));
+const TabletteConsultationSoldeEmp    = React.lazy(() => import('./pages/TabletteConsultationSoldeEmploye'));
+const TabletteMesDemandes             = React.lazy(() => import('./pages/TabletteMesDemandes'));
+
 // ── Ventes §8 (colisage / palettes / transporteurs / paiements / relances)
 const VentesListeColisage = React.lazy(() => import('./pages/ventes/ListeColisage'));
 const VentesListePalettes = React.lazy(() => import('./pages/ventes/ListePalettes'));
@@ -127,6 +140,17 @@ const Immobilisations = React.lazy(() => import('./pages/comptabilite/Immobilisa
 const TvaDeclarations = React.lazy(() => import('./pages/comptabilite/TvaDeclarations'));
 const RapportsCompta = React.lazy(() => import('./pages/comptabilite/RapportsCompta'));
 const ClotureExercice = React.lazy(() => import('./pages/comptabilite/ClotureExercice'));
+
+// ── Comptabilité étendue (Phase A · §14quater) ───────────────────────
+const CaissesPage               = React.lazy(() => import('./pages/comptabilite/Caisses'));
+const CaisseDetailsPage         = React.lazy(() => import('./pages/comptabilite/CaisseDetails'));
+const DossiersImportPage        = React.lazy(() => import('./pages/comptabilite/DossiersImport'));
+const DossierImportDetailsPage  = React.lazy(() => import('./pages/comptabilite/DossierImportDetails'));
+const CessionsIntragroupePage   = React.lazy(() => import('./pages/comptabilite/CessionsIntragroupe'));
+const DepensesEspecesPage       = React.lazy(() => import('./pages/comptabilite/DepensesEspeces'));
+const CompensationsCroiseesPage = React.lazy(() => import('./pages/comptabilite/CompensationsCroisees'));
+const ArchiveDocumentsPage      = React.lazy(() => import('./pages/documents/ArchiveDocuments'));
+const TabletteCaissierPage      = React.lazy(() => import('./pages/TabletteCaissier'));
 
 // ── Achats & Fournisseurs (§9 domain.md) ─────────────────────────────
 const DemandesAchat = React.lazy(() => import('./pages/achats/DemandesAchat'));
@@ -167,6 +191,16 @@ const EcomVitrine = React.lazy(() => import('./pages/ecommerce-app/VitrinePubliq
 const MonProfil = React.lazy(() => import('./pages/mon-compte/Profil'));
 const MonEmailPerso = React.lazy(() => import('./pages/mon-compte/EmailPerso'));
 const MonWhatsAppPerso = React.lazy(() => import('./pages/mon-compte/WhatsAppPerso'));
+
+// ── Sous-traitants étendus Phase B §14quater.3 ──────────────────────────
+const SoustraitantsListe = React.lazy(() => import('./pages/sous-traitants/SoustraitantsListe'));
+const SoustraitantDetails = React.lazy(() => import('./pages/sous-traitants/SoustraitantDetails'));
+const SoustraitantForm = React.lazy(() => import('./pages/sous-traitants/SoustraitantForm'));
+const TravauxSoustraitantsListe = React.lazy(() => import('./pages/sous-traitants/TravauxSoustraitantsListe'));
+const BonSortieST = React.lazy(() => import('./pages/sous-traitants/BonSortieST'));
+const BonRetourST = React.lazy(() => import('./pages/sous-traitants/BonRetourST'));
+const DashboardSousTraitants = React.lazy(() => import('./pages/sous-traitants/DashboardSousTraitants'));
+const TabletteSousTraitant = React.lazy(() => import('./pages/TabletteSousTraitant'));
 
 // ── IA agents (§11ter + §14bis.6bis) ──────────────────────────────────
 const IaAgentsActifs = React.lazy(() => import('./pages/ia/AgentsActifs'));
@@ -285,7 +319,7 @@ const DashboardWrapper: React.FC<{ children: React.ReactNode }> = ({ children })
 };
 
 // Rôles tablette atelier (§15 « (tablette) » → Tisseur / Coupeur / Ourdisseur)
-const PRIVATE_TABLETTE_ROLES = new Set(['TISSEUR', 'COUPEUR', 'OURDISSEUR']);
+const PRIVATE_TABLETTE_ROLES = new Set(['TISSEUR', 'COUPEUR', 'OURDISSEUR', 'CAISSIER']);
 
 const PrivateRoute: React.FC<{ children: React.ReactNode; showNav?: boolean }> = ({ children, showNav = true }) => {
   const { user, loading } = useAuth();
@@ -386,6 +420,15 @@ const AppContent: React.FC = () => {
           {/* Variantes sans token — utile en démo / preview */}
           <Route path="/tv/tissage" element={<TvAtelierTissage />} />
           <Route path="/tv/finition" element={<TvAtelierFinition />} />
+
+          {/* ─── Tablettes RH kiosque strict §14quater.5-7 — routes PUBLIQUES
+              L'authentification est portée par le PIN tablette (POST
+              /api/v2/rh/pin-tablette/authenticate), pas par un JWT applicatif.
+              §14quater.14 : zéro UserBar transversale, zéro menu §15. */}
+          <Route path="/tablette/pointeuse"      element={<TablettePointeuseRH />} />
+          <Route path="/tablette/demande-avance" element={<TabletteDemandeAvance />} />
+          <Route path="/tablette/mon-compte"     element={<TabletteConsultationSoldeEmp />} />
+          <Route path="/tablette/mes-demandes"   element={<TabletteMesDemandes />} />
 
           {/* Portail Client — auth séparée, hors PrivateRoute admin */}
           <Route path="/portail/login" element={<PortailLogin />} />
@@ -572,13 +615,10 @@ const AppContent: React.FC = () => {
               </PrivateRoute>
             }
           />
+          {/* /relances (legacy) → redirige vers la version v2 ventes */}
           <Route
             path="/relances"
-            element={
-              <PrivateRoute>
-                <RelancesFactures />
-              </PrivateRoute>
-            }
+            element={<Navigate to="/ventes/relances-factures" replace />}
           />
           <Route
             path="/avoir"
@@ -620,14 +660,8 @@ const AppContent: React.FC = () => {
               </PrivateRoute>
             }
           />
-          <Route
-            path="/soustraitants"
-            element={
-              <PrivateRoute>
-                <Soustraitants />
-              </PrivateRoute>
-            }
-          />
+          {/* Legacy /soustraitants → redirect vers v2 /sous-traitants (Phase B §14quater.3) */}
+          <Route path="/soustraitants" element={<Navigate to="/sous-traitants" replace />} />
           <Route
             path="/equipe"
             element={
@@ -841,6 +875,14 @@ const AppContent: React.FC = () => {
             element={
               <PrivateRoute showNav={false}>
                 <TabletteTisseur />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/tablette/caissier"
+            element={
+              <PrivateRoute showNav={false}>
+                <TabletteCaissierPage />
               </PrivateRoute>
             }
           />
@@ -1164,6 +1206,14 @@ const AppContent: React.FC = () => {
             }
           />
 
+          {/* ─── RH étendu Phase C §11bis + §14quater.5-7
+              Accès : ADMIN | RH_MANAGER */}
+          <Route path="/rh/comptes-employes"       element={<ProtectedRoute requiredRole={['ADMIN','RH_MANAGER']}><RhComptesEmployes /></ProtectedRoute>} />
+          <Route path="/rh/comptes-employes/:id"   element={<ProtectedRoute requiredRole={['ADMIN','RH_MANAGER']}><RhCompteEmployeDetails /></ProtectedRoute>} />
+          <Route path="/rh/avances"                element={<ProtectedRoute requiredRole={['ADMIN','RH_MANAGER']}><RhAvancesSalaires /></ProtectedRoute>} />
+          <Route path="/rh/ajustements"            element={<ProtectedRoute requiredRole={['ADMIN','RH_MANAGER']}><RhAjustementsComptes /></ProtectedRoute>} />
+          <Route path="/rh/compensations"          element={<ProtectedRoute requiredRole={['ADMIN','RH_MANAGER']}><RhCompensationsRh /></ProtectedRoute>} />
+
           {/* ─── Ventes §8 — Colisage · Palettes · Transporteurs · Paiements · Relances
               Accès : ADMIN | COMMERCIAL | COMPTABLE */}
           <Route
@@ -1359,6 +1409,16 @@ const AppContent: React.FC = () => {
             }
           />
 
+          {/* ─── Comptabilité étendue Phase A (§14quater) ─────────────── */}
+          <Route path="/comptabilite/caisses" element={<ProtectedRoute requiredRole={['ADMIN', 'COMPTABLE']}><CaissesPage /></ProtectedRoute>} />
+          <Route path="/comptabilite/caisses/:id" element={<ProtectedRoute requiredRole={['ADMIN', 'COMPTABLE']}><CaisseDetailsPage /></ProtectedRoute>} />
+          <Route path="/comptabilite/dossiers-import" element={<ProtectedRoute requiredRole={['ADMIN', 'COMPTABLE']}><DossiersImportPage /></ProtectedRoute>} />
+          <Route path="/comptabilite/dossiers-import/:id" element={<ProtectedRoute requiredRole={['ADMIN', 'COMPTABLE']}><DossierImportDetailsPage /></ProtectedRoute>} />
+          <Route path="/comptabilite/cessions" element={<ProtectedRoute requiredRole={['ADMIN', 'COMPTABLE']}><CessionsIntragroupePage /></ProtectedRoute>} />
+          <Route path="/comptabilite/depenses-especes" element={<ProtectedRoute requiredRole={['ADMIN', 'COMPTABLE']}><DepensesEspecesPage /></ProtectedRoute>} />
+          <Route path="/comptabilite/compensations" element={<ProtectedRoute requiredRole={['ADMIN', 'COMPTABLE']}><CompensationsCroiseesPage /></ProtectedRoute>} />
+          <Route path="/documents/archive" element={<ProtectedRoute><ArchiveDocumentsPage /></ProtectedRoute>} />
+
           {/* ── CRM (§3) ────────────────────────────────────────────── */}
           <Route path="/crm/contacts" element={<ProtectedRoute requiredRole={['ADMIN', 'COMMERCIAL']}><CrmContacts /></ProtectedRoute>} />
           <Route path="/crm/interactions" element={<ProtectedRoute requiredRole={['ADMIN', 'COMMERCIAL']}><CrmInteractions /></ProtectedRoute>} />
@@ -1421,6 +1481,17 @@ const AppContent: React.FC = () => {
           <Route path="/parametres/communication" element={<ProtectedRoute requiredRole="ADMIN"><ParamCommunication /></ProtectedRoute>} />
           <Route path="/parametres/pays-tva" element={<ProtectedRoute requiredRole="ADMIN"><ParamPaysTva /></ProtectedRoute>} />
           <Route path="/parametres/utilisateurs-roles" element={<ProtectedRoute requiredRole="ADMIN"><ParamUtilisateursRoles /></ProtectedRoute>} />
+
+          {/* ── Sous-traitants étendus Phase B §14quater.3 ─────────────────── */}
+          <Route path="/sous-traitants" element={<PrivateRoute><SoustraitantsListe /></PrivateRoute>} />
+          <Route path="/sous-traitants/nouveau" element={<PrivateRoute><SoustraitantForm /></PrivateRoute>} />
+          <Route path="/sous-traitants/:id" element={<PrivateRoute><SoustraitantDetails /></PrivateRoute>} />
+          <Route path="/sous-traitants/:id/edit" element={<PrivateRoute><SoustraitantForm /></PrivateRoute>} />
+          <Route path="/travaux-sous-traitants" element={<PrivateRoute><TravauxSoustraitantsListe /></PrivateRoute>} />
+          <Route path="/bons-sortie-st/:id" element={<PrivateRoute><BonSortieST /></PrivateRoute>} />
+          <Route path="/bons-retour-st/:id" element={<PrivateRoute><BonRetourST /></PrivateRoute>} />
+          <Route path="/dashboard-sous-traitants" element={<PrivateRoute showNav={true}><DashboardSousTraitants /></PrivateRoute>} />
+          <Route path="/tablette/sous-traitant" element={<PrivateRoute showNav={false}><TabletteSousTraitant /></PrivateRoute>} />
         </Routes>
         </Suspense>
         </ErrorBoundary>

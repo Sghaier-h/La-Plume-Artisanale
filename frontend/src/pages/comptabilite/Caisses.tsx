@@ -7,7 +7,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Wallet, ArrowLeftRight, PiggyBank, Store, Scale, HandCoins,
+  Wallet, ArrowLeftRight, PiggyBank, Store, Scale, Coins as HandCoins,
   AlertTriangle, ChevronRight,
 } from 'lucide-react';
 import { DashboardShell, KpiCard, SectionCard } from '../../components/dashboard';
