@@ -112,6 +112,16 @@ router.get('/user/:user_id(\\d+)/month/:mois', authenticate, getPointageUserMont
 
 router.post('/check-in', authenticate, quickCheckIn);
 router.post('/check-out', authenticate, quickCheckOut);
+// T3c — alias explicites pour les tablettes de poste (coupeur/tisseur/...).
+// Les handlers quickCheckIn/Out acceptent déjà le payload { id_utilisateur, poste? }.
+router.post('/coupeur/entree', authenticate, (req, res, next) => {
+  req.body = { ...(req.body || {}), poste: req.body?.poste || 'coupe' };
+  return quickCheckIn(req, res, next);
+});
+router.post('/coupeur/sortie', authenticate, (req, res, next) => {
+  req.body = { ...(req.body || {}), poste: req.body?.poste || 'coupe' };
+  return quickCheckOut(req, res, next);
+});
 router.put('/:id(\\d+)/check-in', authenticate, setCheckIn);
 router.put('/:id(\\d+)/check-out', authenticate, setCheckOut);
 

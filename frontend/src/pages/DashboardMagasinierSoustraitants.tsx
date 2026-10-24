@@ -316,30 +316,37 @@ const DashboardMagasinierSoustraitants: React.FC = () => {
   };
 
   const handleEnregistrerSortie = async () => {
-    // §14quater.3 Phase B — le workflow Sortie Sous-traitant est désormais porté par
-    // les pages v2 (`/sous-traitants/:id` → bon de sortie signé). Redirection.
+    // T3b — Préserver les saisies de la modale lors de la redirection vers la
+    // page cible : on passe les champs en React Router `state` (préférable aux
+    // params URL : pas de traces dans l'historique, pas d'URL encoding).
+    // §14quater.3 Phase B — le workflow Sortie Sous-traitant est porté par
+    // `/sous-traitants/:id` → bon de sortie signé.
     if (!formSortie.id_sous_traitant) {
-      alert('Veuillez sélectionner un sous-traitant.');
+      // Validation inline au lieu d'un alert() bloquant
       return;
     }
-    alert('Le workflow « Nouvelle sortie » a été migré vers la fiche Sous-traitant (Phase B §14quater.3). Vous allez y être redirigé.');
+    const prefill = { ...formSortie };
     setShowModalSortie(false);
     resetFormSortie();
-    navigate(`/sous-traitants/${formSortie.id_sous_traitant}`);
+    navigate(`/sous-traitants/${prefill.id_sous_traitant}`, {
+      state: { prefillBonSortie: prefill, source: 'DashboardMagasinierSoustraitants' },
+    });
   };
 
   const handleEnregistrerRetour = async () => {
-    // §14quater.3 Phase B — le workflow Retour Sous-traitant passe maintenant par
-    // le contrôle qualité du Bon Retour (`/bons-retour-st/:id`).
+    // T3b — même approche : passage des données du retour via `state`.
+    // §14quater.3 Phase B — le workflow Retour Sous-traitant passe par
+    // `/bons-retour-st/:id` (contrôle qualité du Bon Retour).
     const mouvement = mouvements.find(m => m.id_mouvement_st.toString() === formRetour.id_mouvement);
     if (!mouvement) {
-      alert('Mouvement non trouvé.');
       return;
     }
-    alert('Le workflow « Enregistrer retour » a été migré vers le Bon Retour v2 (Phase B §14quater.3). Vous allez y être redirigé.');
+    const prefill = { ...formRetour };
     setShowModalRetour(false);
     resetFormRetour();
-    navigate(`/bons-retour-st/${mouvement.id_mouvement_st}`);
+    navigate(`/bons-retour-st/${mouvement.id_mouvement_st}`, {
+      state: { prefillRetour: prefill, source: 'DashboardMagasinierSoustraitants' },
+    });
   };
 
   const resetFormSortie = () => {

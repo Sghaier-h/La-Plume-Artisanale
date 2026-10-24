@@ -12,6 +12,11 @@ const groups = [
   ['auth',         ['.']],
   ['users',        ['.']],
 
+  // T3c — Référentiels globaux + dashboards + exports
+  ['base',         ['.']],
+  ['dashboard',    ['.']],
+  ['export',       ['.']],
+
   // Multi-sociétés étendues (§14quater.1 · 5 entités du groupe)
   ['multi-societes', ['.']],
 
@@ -26,17 +31,20 @@ const groups = [
                     'catalogue', 'attributs', 'articles-generes']],
   ['bom',          ['master', 'composants']],
 
-  // Stock (Phase E4 : + tracabilite-lots, fournitures)
+  // Stock (Phase E4 : + tracabilite-lots, fournitures ; T3c : + reservations, receptions)
   ['stock',        ['entrepots', 'inventaires', 'matieres-premieres',
                     'mouvements', 'pieces-rechange', 'produits-finis',
-                    'tracabilite-lots', 'fournitures']],
+                    'tracabilite-lots', 'fournitures',
+                    'reservations', 'receptions']],
 
   // Fabrication (Phase E4 : + of, machines, suivi)
   // Phase G3 : + mrp, taches, maintenance, planning-gantt
+  // T3c : + interventions, preventif, transferts
   ['fabrication',  ['ordres', 'ourdissage', 'tissage', 'coupe',
                     'finition', 'planning', 'snapshots',
                     'of', 'machines', 'suivi',
-                    'mrp', 'taches', 'maintenance', 'planning-gantt']],
+                    'mrp', 'taches', 'maintenance', 'planning-gantt',
+                    'interventions', 'preventif', 'transferts']],
   // Qualité (Phase G3 : + avance — fusion qualite-avance + qualite-avancee + quality)
   ['qualite',      ['controles', 'defauts', 'rapports', 'avance']],
   ['sous-traitance', ['envois', 'retours', 'sous-traitants', 'travaux', 'bons', 'comptes']],
@@ -46,12 +54,16 @@ const groups = [
                     'paiements', 'colisage', 'palettes',
                     // Phase G2 — courbe CA 12 mois (DashboardCommercial)
                     'stats']],
-  ['achats',       ['fournisseurs', 'bc', 'receptions', 'factures-ff']],
+  ['achats',       ['fournisseurs', 'bc', 'receptions', 'factures-ff',
+                    // T3c — Bons de livraison fournisseurs
+                    'bl']],
   ['comptabilite', ['ecritures', 'tva', 'caisse', 'cloture',
                     'caisses', 'dossiers-import', 'cessions',
                     'depenses-especes', 'compensations', 'rapprochement',
                     // §14quater.6 — Apport gérant (ADMIN seul)
-                    'apport-gerant']],
+                    'apport-gerant',
+                    // T3c — Référentiels PCG + journaux
+                    'journaux', 'pcg']],
 
   // Archive centrale de documents (§14quater · Phase A)
   // + Boîte à trier des photos justificatives (§14quater.4 · Phase E3)

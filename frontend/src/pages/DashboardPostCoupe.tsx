@@ -194,10 +194,10 @@ const badgeBase: React.CSSProperties = { padding: '2px 8px', borderRadius: 'var(
 const thStyle: React.CSSProperties = { textAlign: 'left', padding: 'var(--s-3) var(--s-4)', fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--fg-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' };
 const tdStyle: React.CSSProperties = { padding: 'var(--s-3) var(--s-4)', color: 'var(--fg-primary)' };
 
+// T3b — `btnPrimary` conservé pour alignement avec les autres dashboards
+// (même s'il n'est pas utilisé par le JSX de ce fichier aujourd'hui).
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const btnPrimary: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: 'var(--accent-gold)', color: '#fff', border: '1px solid var(--accent-gold)', borderRadius: 'var(--radius-full)', fontSize: 'var(--text-xs)', fontWeight: 600, cursor: 'pointer' };
 const btnGhost: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: 'var(--bg-hover)', color: 'var(--fg-secondary)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-full)', fontSize: 'var(--text-xs)', fontWeight: 600, cursor: 'pointer' };
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const _btnPrimary = btnPrimary;
 
 export default DashboardPostCoupe;

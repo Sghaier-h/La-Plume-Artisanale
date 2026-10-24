@@ -4475,6 +4475,26 @@ Règles concrètes :
 
 Chaque feature ajoutée doit être validée contre cette règle : "combien de clics pour faire X ?" doit rester le minimum vital.
 
+### 14ter.19 Mode offline obligatoire tablettes atelier (RÈGLE PO 2026-10-24)
+
+**Les interfaces opérateur de terrain doivent fonctionner même sans connexion internet / Wi-Fi.** L'atelier a des coupures réseau fréquentes et un opérateur ne doit JAMAIS être bloqué.
+
+Portée : toutes les routes `/tablette/*` (Tisseur, Coupeur, Ourdisseur, Magasinier MP, Magasinier Sous-Traitants, Magasinier Préparation, Caissier, Pointeuse RH, Consultation Solde, Demande Avance, Mes Demandes, Avertissements, Demande Congé, Demande Attestation, Consultation Bulletins), ainsi que `/dashboard-tisseur`, `/dashboard-post-coupe`, `/chef-atelier-dashboard`, `/mecanicien`, `/dashboard-controle-central` quand consultés depuis une tablette atelier.
+
+Mécanisme technique :
+- **Service Worker PWA** (Workbox) : cache statique de l'app shell + stratégie "stale-while-revalidate" sur les assets.
+- **IndexedDB** pour cache local :
+  - OF/tâches assignées à l'opérateur (TTL 24h, rafraîchi en arrière-plan si connexion)
+  - Dernière photo pointage, dernière signature
+  - Catalogue articles / sous-traitants / machines (TTL 7j)
+- **Outbox IndexedDB** : toute action POST/PUT faite offline (démarrer OF, pointage, bon sortie ST, défaut qualité…) est écrite dans la queue avec timestamp + payload + endpoint. Un worker tente le flush dès que `navigator.onLine === true` ou événement `online` ; au succès, l'entrée est supprimée.
+- **Bannière UI permanente** en haut de l'écran tablette : "✓ En ligne" (vert) / "⚠ Hors ligne — N actions en attente" (orange). Un clic sur la bannière ouvre la liste des actions en attente avec option "Réessayer manuellement".
+- **Dégradation gracieuse** : si un GET échoue par réseau → afficher le dernier état connu en lecture seule + badge "⏱ dernière synchro il y a Xmin". Les actions critiques (POST démarrer/terminer OF, pointage, défaut) restent fonctionnelles.
+- **Conflits** : si une action offline arrive au serveur alors que l'entité a été modifiée entre-temps, l'erreur 409 est signalée dans la bannière avec option "Voir la version serveur" / "Forcer ma version".
+- **Login offline** : le PIN tablette (§14quater.5) validé la dernière fois reste valide offline pendant la durée de la session (défaut 8h). Un logout nécessite la connexion.
+
+Chaque feature tablette ajoutée doit déclarer : (a) les GET à cacher, (b) les POST/PUT à mettre en outbox, (c) le comportement UI quand offline.
+
 ---
 
 ## 14quater. Fonctionnalités reprises de Power Apps « La Plume Comptabilité »

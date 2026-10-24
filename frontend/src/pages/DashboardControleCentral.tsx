@@ -8,15 +8,20 @@ import {
   CheckCircle, ShieldCheck, AlertTriangle, ClipboardCheck, TrendingUp, Activity, FileText, X,
 } from 'lucide-react';
 import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
-import { qualiteService, dashboardService } from '../services/api';
+import api, { qualiteService, dashboardService } from '../services/api';
+import { useToast } from '../hooks/useToast';
 
 type ControleRow = { date: string; poste: string; qr: string; type: string; statut: string; controleur: string };
 
 const DashboardControleCentral: React.FC = () => {
   const navigate = useNavigate();
+  const toast = useToast();
   const [showEvaluationModal, setShowEvaluationModal] = useState(false);
   const [showSecurityModal, setShowSecurityModal] = useState(false);
   const [selectedRating, setSelectedRating] = useState<{ [key: string]: number }>({});
+  const [savingControle, setSavingControle] = useState(false);
+  const [evaluationPoste, setEvaluationPoste] = useState('Tissage — M-01');
+  const [securityZone, setSecurityZone] = useState('Zone Tissage');
 
   // Phase F2 — données chargées depuis /api/v2/qualite/controles/*
   // Les séries de charts (secteur / radar / incidents) n'ont pas encore
@@ -147,6 +152,88 @@ const DashboardControleCentral: React.FC = () => {
   };
 
   const refresh = () => window.location.reload();
+
+  // T3b — refresh léger de la liste des contrôles (évite reload page).
+  const refreshControles = async () => {
+    try {
+      const r = await qualiteService.getControlesRecents(20);
+      const unwrap = (res: any) => res?.data?.data ?? res?.data ?? [];
+      const rows: any[] = Array.isArray(unwrap(r)) ? unwrap(r) : [];
+      setControlesRecents(rows.map((c: any) => {
+        const d = c.date_controle ? new Date(c.date_controle) : null;
+        return {
+          date: d ? d.toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) : '',
+          poste: c.numero_of || `OF ${c.id_of ?? ''}`,
+          qr: c.qr_code || c.reference || '',
+          type: c.type_controle || '—',
+          statut: c.est_bloquant ? 'Non conforme' : 'Conforme',
+          controleur: c.id_controleur ? `CTR-${c.id_controleur}` : 'Contrôle central',
+        };
+      }));
+    } catch { /* silencieux */ }
+  };
+
+  // T3b — Enregistrement d'un contrôle qualité (modal Évaluation) via l'API.
+  // Avant : alert() pur. Désormais POST /api/v2/qualite/controles (table
+  // `controles_qualite` : colonnes dynamiques, est_bloquant déduit du score).
+  const handleSaveControleQualite = async () => {
+    const criteresQualite = ['Conformité matière', 'Densité', 'Dimensions', 'Finition visuelle', 'Traçabilité'];
+    const notes = criteresQualite
+      .map((k) => selectedRating[k])
+      .filter((v): v is number => typeof v === 'number' && v > 0);
+    if (notes.length === 0) {
+      toast.warning('Veuillez noter au moins un critère');
+      return;
+    }
+    const moyenne = Math.round((notes.reduce((a, b) => a + b, 0) / notes.length) * 10) / 10;
+    setSavingControle(true);
+    try {
+      await api.post('/v2/qualite/controles', {
+        type_controle: 'qualite_poste',
+        est_bloquant: moyenne < 7,
+        observations: `Poste: ${evaluationPoste} — Moyenne: ${moyenne}/10 — ` +
+          criteresQualite.map((k) => `${k}=${selectedRating[k] ?? '—'}`).join(', '),
+      });
+      toast.success('Contrôle qualité enregistré');
+      setSelectedRating({});
+      setShowEvaluationModal(false);
+      refreshControles();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.error?.message || 'Erreur enregistrement contrôle');
+    } finally {
+      setSavingControle(false);
+    }
+  };
+
+  // T3b — Idem pour les contrôles sécurité (clé préfixée `sec_`).
+  const handleSaveControleSecurite = async () => {
+    const criteresSec = ['Propreté de la zone', 'Équipements de sécurité', 'Organisation du poste', 'Gestion des risques', "Voies d'évacuation"];
+    const notes = criteresSec
+      .map((k) => selectedRating[`sec_${k}`])
+      .filter((v): v is number => typeof v === 'number' && v > 0);
+    if (notes.length === 0) {
+      toast.warning('Veuillez noter au moins un critère');
+      return;
+    }
+    const moyenne = Math.round((notes.reduce((a, b) => a + b, 0) / notes.length) * 10) / 10;
+    setSavingControle(true);
+    try {
+      await api.post('/v2/qualite/controles', {
+        type_controle: 'securite_zone',
+        est_bloquant: moyenne < 7,
+        observations: `Zone: ${securityZone} — Moyenne: ${moyenne}/10 — ` +
+          criteresSec.map((k) => `${k}=${selectedRating[`sec_${k}`] ?? '—'}`).join(', '),
+      });
+      toast.success('Contrôle sécurité enregistré');
+      setSelectedRating({});
+      setShowSecurityModal(false);
+      refreshControles();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.error?.message || 'Erreur enregistrement contrôle sécurité');
+    } finally {
+      setSavingControle(false);
+    }
+  };
 
   const statutBadge = (statut: string) => {
     const isOk = statut === 'Conforme';
@@ -403,7 +490,7 @@ const DashboardControleCentral: React.FC = () => {
             <div style={{ padding: 'var(--s-4)', display: 'flex', flexDirection: 'column', gap: 'var(--s-3)' }}>
               <div>
                 <label style={labelStyle}>Poste contrôlé</label>
-                <select style={inputStyle}>
+                <select style={inputStyle} value={evaluationPoste} onChange={(e) => setEvaluationPoste(e.target.value)}>
                   <option>Tissage — M-01</option>
                   <option>Tissage — M-05</option>
                   <option>Coupe — Poste 3</option>
@@ -442,13 +529,11 @@ const DashboardControleCentral: React.FC = () => {
                   Annuler
                 </button>
                 <button
-                  onClick={() => {
-                    alert('Contrôle enregistré avec succès');
-                    setShowEvaluationModal(false);
-                  }}
-                  style={{ ...btnPrimary, flex: 1, justifyContent: 'center' }}
+                  onClick={handleSaveControleQualite}
+                  disabled={savingControle}
+                  style={{ ...btnPrimary, flex: 1, justifyContent: 'center', opacity: savingControle ? 0.6 : 1 }}
                 >
-                  Enregistrer
+                  {savingControle ? 'Enregistrement…' : 'Enregistrer'}
                 </button>
               </div>
             </div>
@@ -471,7 +556,7 @@ const DashboardControleCentral: React.FC = () => {
             <div style={{ padding: 'var(--s-4)', display: 'flex', flexDirection: 'column', gap: 'var(--s-3)' }}>
               <div>
                 <label style={labelStyle}>Zone contrôlée</label>
-                <select style={inputStyle}>
+                <select style={inputStyle} value={securityZone} onChange={(e) => setSecurityZone(e.target.value)}>
                   <option>Zone Tissage</option>
                   <option>Zone Coupe</option>
                   <option>Atelier Finition</option>
@@ -510,13 +595,11 @@ const DashboardControleCentral: React.FC = () => {
                   Annuler
                 </button>
                 <button
-                  onClick={() => {
-                    alert('Contrôle sécurité enregistré');
-                    setShowSecurityModal(false);
-                  }}
-                  style={{ ...btnPrimary, flex: 1, justifyContent: 'center' }}
+                  onClick={handleSaveControleSecurite}
+                  disabled={savingControle}
+                  style={{ ...btnPrimary, flex: 1, justifyContent: 'center', opacity: savingControle ? 0.6 : 1 }}
                 >
-                  Enregistrer
+                  {savingControle ? 'Enregistrement…' : 'Enregistrer'}
                 </button>
               </div>
             </div>

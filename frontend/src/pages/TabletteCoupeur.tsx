@@ -5,6 +5,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
 import api from '../services/api';
 import { useAuth } from '../hooks/useAuth';
+import { useToast } from '../hooks/useToast';
 
 const SOCKET_URL =
   process.env.REACT_APP_SOCKET_URL ||
@@ -15,6 +16,7 @@ const toArr = (x: any): any[] =>
 
 const TabletteCoupeur: React.FC = () => {
   const { user } = useAuth();
+  const toast = useToast();
   const operateurId = user?.id;
 
   const [loading, setLoading] = useState(true);
@@ -27,7 +29,8 @@ const TabletteCoupeur: React.FC = () => {
   const loadTaches = useCallback(async () => {
     if (!operateurId) return;
     try {
-      const res = await api.get(`/taches/operateur/${operateurId}/day`);
+      // T3b — Endpoint v2 : /api/v2/fabrication/taches/operateur/:id/day (ex /api/taches/*)
+      const res = await api.get(`/v2/fabrication/taches/operateur/${operateurId}/day`);
       const arr = toArr(res.data?.data ?? res.data).filter(
         (t: any) => !t.poste || String(t.poste).toLowerCase().includes('coupe') || String(t.type_tache || '').toLowerCase().includes('coupe')
       );
@@ -58,12 +61,12 @@ const TabletteCoupeur: React.FC = () => {
       const res = await api.get(`/v2/stock/tracabilite-lots/qr/${encodeURIComponent(qrCode.trim())}`);
       setLotInfo(res.data?.data ?? res.data);
     } catch {
-      alert('Lot introuvable pour ce QR');
+      toast.error('Lot introuvable pour ce QR');
     } finally { setScanning(false); }
   };
 
   const handleCreerLotCoupe = async () => {
-    if (!lotInfo) { alert('Scannez un lot d\'abord'); return; }
+    if (!lotInfo) { toast.warning('Scannez un lot d\'abord'); return; }
     try {
       await api.post('/v2/stock/tracabilite-lots/coupe', {
         id_lot_source: lotInfo.id_lot,
@@ -71,19 +74,26 @@ const TabletteCoupeur: React.FC = () => {
         id_operateur: operateurId,
         quantite_coupe: parseInt(quantite, 10) || 0,
       });
-      alert('Lot de coupe créé');
+      toast.success('Lot de coupe créé');
       setLotInfo(null); setQrCode(''); setQuantite('');
       loadTaches();
-    } catch { alert('Erreur création lot de coupe'); }
+    } catch { toast.error('Erreur création lot de coupe'); }
   };
 
+  // T3b — endpoints v2 unifiés (/api/v2/fabrication/taches/*)
   const handleDemarrer = async (id: number) => {
-    try { await api.put(`/taches/${id}/demarrer`); loadTaches(); }
-    catch { alert('Erreur démarrage'); }
+    try {
+      await api.put(`/v2/fabrication/taches/${id}/demarrer`);
+      toast.success('Tâche démarrée');
+      loadTaches();
+    } catch { toast.error('Erreur démarrage'); }
   };
   const handleTerminer = async (id: number) => {
-    try { await api.put(`/taches/${id}/terminer`); loadTaches(); }
-    catch { alert('Erreur finalisation'); }
+    try {
+      await api.put(`/v2/fabrication/taches/${id}/terminer`);
+      toast.success('Tâche terminée');
+      loadTaches();
+    } catch { toast.error('Erreur finalisation'); }
   };
 
   const enCours = taches.filter((t: any) => t.statut === 'EN_COURS');
@@ -186,9 +196,10 @@ const bigInputStyle: React.CSSProperties = {
   borderRadius: 'var(--radius-sm)', background: 'var(--bg-elevated)', color: 'var(--fg-primary)', minHeight: 56,
 };
 const btnRow: React.CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: 'var(--s-3)' };
+// T3b — Boutons tablette : touch target >= 72px (§14ter.17 ergonomie atelier)
 const btnBase: React.CSSProperties = {
-  display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 20px', minHeight: 48,
-  borderRadius: 'var(--radius-sm)', fontSize: 'var(--text-md)', fontWeight: 600, cursor: 'pointer', border: '1px solid transparent',
+  display: 'inline-flex', alignItems: 'center', gap: 10, padding: '20px 32px', minHeight: 72,
+  borderRadius: 'var(--radius-sm)', fontSize: 20, fontWeight: 700, cursor: 'pointer', border: '1px solid transparent',
 };
 const btnPrimary: React.CSSProperties = { ...btnBase, background: 'var(--accent-terracotta)', color: '#fff', borderColor: 'var(--accent-terracotta)' };
 const rowCard: React.CSSProperties = {

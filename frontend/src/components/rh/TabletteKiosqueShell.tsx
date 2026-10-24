@@ -9,6 +9,7 @@
  */
 import React, { useEffect, useState } from 'react';
 import { LogOut, Clock } from 'lucide-react';
+import OfflineBanner from '../OfflineBanner';
 
 export interface TabletteKiosqueShellProps {
   title: string;
@@ -38,6 +39,8 @@ const TabletteKiosqueShell: React.FC<TabletteKiosqueShellProps> = ({
         flexDirection: 'column',
       }}
     >
+      {/* §14ter.19 — bannière connexion offline (sticky top) */}
+      <OfflineBanner />
       {/* En-tête kiosque */}
       <header
         style={{

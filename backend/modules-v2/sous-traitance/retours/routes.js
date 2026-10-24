@@ -4,6 +4,30 @@ import { getPool } from '../../_shared/db.js';
 import { ok, fail, asyncHandler } from '../../_shared/api-envelope.js';
 
 const r = Router();
+
+// T3c — GET /api/v2/sous-traitance/retours (liste filtrable)
+// Filtre : ?statut= &id_sous_traitant= &limit=
+r.get('/', asyncHandler(async (req, res) => {
+  const pool = getPool();
+  const { statut, id_sous_traitant, limit = 100 } = req.query;
+  const p = []; const w = ["type_mouvement = 'retour'"];
+  if (statut)            { p.push(statut);            w.push(`statut = $${p.length}`); }
+  if (id_sous_traitant)  { p.push(id_sous_traitant);  w.push(`id_sous_traitant = $${p.length}`); }
+  p.push(Math.min(500, Number(limit) || 100));
+  try {
+    const r2 = await pool.query(
+      `SELECT * FROM mouvements_sous_traitance
+       WHERE ${w.join(' AND ')}
+       ORDER BY date_mouvement DESC NULLS LAST
+       LIMIT $${p.length}`,
+      p
+    );
+    return res.json(ok(r2.rows, { count: r2.rows.length }));
+  } catch (e) {
+    return res.json(ok([], { count: 0, message: 'En attente d\'implémentation DB (mouvements_sous_traitance)' }));
+  }
+}));
+
 r.post('/:id/receptionner', c.receptionner);
 r.post('/:id/litige',       c.litige);
 r.get('/:id/historique',    c.historique);

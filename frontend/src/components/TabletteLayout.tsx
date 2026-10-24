@@ -19,6 +19,9 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import PlumeLogo from './PlumeLogo';
 import { Bell, LogOut, Home, User } from 'lucide-react';
+import OfflineBanner from './OfflineBanner';
+import { purgeAll } from '../offline/db';
+import { clearPinCache } from '../offline/pinCache';
 
 interface TabletteLayoutProps {
   children: React.ReactNode;
@@ -27,9 +30,11 @@ interface TabletteLayoutProps {
 const CREAM = '#FBF8F3';
 
 // Mapping rôle → dashboard principal du poste
+// T3b — COUPEUR : écran de travail = /tablette/coupeur (le dashboard
+// /dashboard-post-coupe reste accessible depuis la barre de navigation PC).
 const HOME_ROUTE_BY_ROLE: Record<string, string> = {
   TISSEUR: '/tablette/tisseur',
-  COUPEUR: '/dashboard-post-coupe',
+  COUPEUR: '/tablette/coupeur',
   OURDISSEUR: '/dashboard-ourdisseur',
   CONTROLEUR_QUALITE: '/dashboard-controle-central',
   MECANICIEN: '/mecanicien',
@@ -67,8 +72,14 @@ const TabletteLayout: React.FC<TabletteLayoutProps> = ({ children }) => {
   const posteLabel = ROLE_LABEL[role] || role;
 
   const handleLogout = () => {
-    logout();
-    navigate('/login');
+    // §14ter.19 — purger le cache offline + PIN tablette au logout explicite
+    void Promise.all([
+      purgeAll().catch(() => undefined),
+      clearPinCache().catch(() => undefined),
+    ]).finally(() => {
+      logout();
+      navigate('/login');
+    });
   };
 
   const handleHome = () => navigate(homeRoute);
@@ -92,6 +103,8 @@ const TabletteLayout: React.FC<TabletteLayoutProps> = ({ children }) => {
         flexDirection: 'column',
       }}
     >
+      {/* §14ter.19 — bannière connexion offline (sticky top) */}
+      <OfflineBanner />
       {/* Header sticky tablette 64px */}
       <header
         style={{

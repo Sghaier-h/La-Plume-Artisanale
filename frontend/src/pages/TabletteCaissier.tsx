@@ -17,6 +17,7 @@ import {
   depensesEspecesService, compensationsService,
 } from '../services/comptabiliteApi';
 import { SignaturePad } from './comptabilite/DepensesEspeces';
+import { useToast } from '../hooks/useToast';
 
 type Action = 'encaissement' | 'depense' | 'cheque' | 'compensation' | null;
 
@@ -148,6 +149,7 @@ const HubButton: React.FC<{ icon: React.ReactNode; label: string; tone: 'sage'|'
 };
 
 const ActionModal: React.FC<{ action: Exclude<Action, null>; caisseActive: number; onClose: () => void }> = ({ action, caisseActive, onClose }) => {
+  const toast = useToast();
   const [montant, setMontant] = useState('');
   const [libelle, setLibelle] = useState('');
   const [beneficiaire, setBeneficiaire] = useState('');
@@ -169,10 +171,10 @@ const ActionModal: React.FC<{ action: Exclude<Action, null>; caisseActive: numbe
           libelle, montant: Number(montant), beneficiaire,
           signature_svg: needsSignature ? signature : undefined,
         } as any);
+        toast.success(`${titre} enregistrée (${fmtMoney(montant)})`);
       } else if (action === 'encaissement' || action === 'cheque') {
-        // On persiste comme dépense inversée (mouvement caisse manuel non géré directement en Phase A :
-        // on utilise l'API caisses/transfert vers soi-même pour tester, placeholder réel plus tard).
-        alert(`${titre} enregistré (${chequeNo ? 'chèque n° ' + chequeNo + ', ' : ''}${fmtMoney(montant)}). Intégration avec module ventes/paiements à faire en Phase A2.`);
+        // TODO Phase A2 — Intégration ventes/paiements (ticket caisse + lignes).
+        toast.info(`${titre} enregistré (${chequeNo ? 'chèque n° ' + chequeNo + ', ' : ''}${fmtMoney(montant)}) — à finaliser côté ventes/paiements.`);
       } else if (action === 'compensation') {
         await compensationsService.create({
           libelle: libelle || 'Compensation tablette caissier',
@@ -181,10 +183,11 @@ const ActionModal: React.FC<{ action: Exclude<Action, null>; caisseActive: numbe
             { sens: 'credit', type_tiers: 'autre', nom_tiers: 'Tiers B',                  libelle: libelle, montant: Number(montant) },
           ],
         });
+        toast.success(`${titre} enregistrée (${fmtMoney(montant)})`);
       }
       onClose();
     } catch (e: any) {
-      alert(e?.response?.data?.error?.message || e?.message || 'Erreur');
+      toast.error(e?.response?.data?.error?.message || e?.message || 'Erreur');
     }
   };
 
@@ -241,5 +244,6 @@ const h2Style: React.CSSProperties = { fontFamily: 'var(--font-serif)', fontStyl
 const hubGrid: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 'var(--s-4)' };
 const lbl: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 4, fontSize: 'var(--text-sm)', color: 'var(--fg-secondary)' };
 const inputKiosk: React.CSSProperties = { padding: '12px 16px', minHeight: 56, background: 'var(--bg-canvas)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-sm)', color: 'var(--fg-primary)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-lg)' };
-const btnPrimary: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', padding: '14px 24px', minHeight: 56, background: 'var(--accent-terracotta)', color: 'var(--bg-elevated)', border: '1px solid transparent', borderRadius: 'var(--radius-sm)', fontWeight: 700, fontSize: 'var(--text-base)', cursor: 'pointer' };
-const btnGhost: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', padding: '14px 24px', minHeight: 56, background: 'transparent', color: 'var(--fg-primary)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-sm)', fontWeight: 600, cursor: 'pointer' };
+// T3b — Boutons tablette : touch target >= 72px (§14ter.17 ergonomie atelier)
+const btnPrimary: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', padding: '20px 32px', minHeight: 72, background: 'var(--accent-terracotta)', color: 'var(--bg-elevated)', border: '1px solid transparent', borderRadius: 'var(--radius-sm)', fontWeight: 700, fontSize: 20, cursor: 'pointer' };
+const btnGhost: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', padding: '20px 32px', minHeight: 72, background: 'transparent', color: 'var(--fg-primary)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-sm)', fontWeight: 600, fontSize: 20, cursor: 'pointer' };

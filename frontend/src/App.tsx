@@ -283,13 +283,14 @@ const NavigateToUserDashboard: React.FC = () => {
   };
 
   // Mapping rôle -> dashboard par défaut (si pas de dashboard attribué)
+  // T3b — TISSEUR/COUPEUR par défaut sur l'écran tablette simplifié
   const roleToDashboard: { [key: string]: string } = {
     'ADMIN': '/dashboard-admin',
-    'TISSEUR': '/dashboard-tisseur',
+    'TISSEUR': '/tablette/tisseur',
     'CHEF_PRODUCTION': '/dashboard-chef-production',
     'CHEF_PRODUCT': '/dashboard-chef-production',
     'MAGASINIER': '/dashboard-magasinier-mp',
-    'COUPEUR': '/dashboard-post-coupe',
+    'COUPEUR': '/tablette/coupeur',
     'CONTROLEUR': '/dashboard-controle-central',
     'CONTROLEUR_QUALITE': '/dashboard-controle-central',
     'QUALITE': '/dashboard-controle-central',

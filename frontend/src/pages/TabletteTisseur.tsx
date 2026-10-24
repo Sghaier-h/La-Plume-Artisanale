@@ -5,6 +5,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
 import api from '../services/api';
 import { useAuth } from '../hooks/useAuth';
+import { useToast } from '../hooks/useToast';
 
 const SOCKET_URL =
   process.env.REACT_APP_SOCKET_URL ||
@@ -15,6 +16,7 @@ const toArr = (x: any): any[] =>
 
 const TabletteTisseur: React.FC = () => {
   const { user } = useAuth();
+  const toast = useToast();
   const operateurId = user?.id;
 
   const [loading, setLoading] = useState(true);
@@ -28,8 +30,9 @@ const TabletteTisseur: React.FC = () => {
   const loadData = useCallback(async () => {
     if (!operateurId) return;
     try {
+      // T3b — Endpoints v2 unifiés (chemin legacy /api/taches/* supprimé)
       const [tachesRes, suiviRes] = await Promise.all([
-        api.get(`/taches/operateur/${operateurId}/day`),
+        api.get(`/v2/fabrication/taches/operateur/${operateurId}/day`),
         api.get(`/v2/fabrication/suivi/operateur/${operateurId}/day`),
       ]);
       const tachesData = toArr(tachesRes.data?.data ?? tachesRes.data);
@@ -68,8 +71,11 @@ const TabletteTisseur: React.FC = () => {
   }, [operateurId, loadData]);
 
   const handleDemarrer = async (id: number) => {
-    try { await api.put(`/taches/${id}/demarrer`); loadData(); }
-    catch { alert('Erreur démarrage'); }
+    try {
+      await api.put(`/v2/fabrication/taches/${id}/demarrer`);
+      toast.success('Tâche démarrée');
+      loadData();
+    } catch { toast.error('Erreur démarrage'); }
   };
 
   const handleDeclarerProduction = async () => {
@@ -82,9 +88,10 @@ const TabletteTisseur: React.FC = () => {
         id_machine: machineId,
         quantite_produite: parseInt(quantite, 10) || 0,
       });
+      toast.success('Production déclarée');
       setQuantite('');
       loadData();
-    } catch { alert('Erreur déclaration production'); }
+    } catch { toast.error('Erreur déclaration production'); }
     finally { setSaving(false); }
   };
 
@@ -92,20 +99,22 @@ const TabletteTisseur: React.FC = () => {
     if (!ofCourant) return;
     if (!window.confirm(`Terminer la tâche ${ofCourant.numero_of || ofCourant.id_tache} ?`)) return;
     try {
-      await api.put(`/taches/${ofCourant.id_tache}/terminer`, {
+      await api.put(`/v2/fabrication/taches/${ofCourant.id_tache}/terminer`, {
         quantite_realisee: parseInt(quantite, 10) || ofCourant.quantite_realisee || 0,
       });
+      toast.success('Tâche terminée');
       setQuantite('');
       loadData();
-    } catch { alert('Erreur finalisation'); }
+    } catch { toast.error('Erreur finalisation'); }
   };
 
   const handleIncident = async (statut: 'PANNE' | 'OPERATIONNELLE') => {
-    if (!machineId) { alert('Aucune machine associée'); return; }
+    if (!machineId) { toast.warning('Aucune machine associée'); return; }
     try {
       await api.put(`/v2/fabrication/machines/${machineId}/statut`, { statut });
+      toast.success(statut === 'PANNE' ? 'Panne signalée' : 'Machine opérationnelle');
       loadData();
-    } catch { alert('Erreur changement statut machine'); }
+    } catch { toast.error('Erreur changement statut machine'); }
   };
 
   const tachesSuivantes = taches.filter((t: any) => t.statut !== 'EN_COURS' && t.statut !== 'TERMINEE').slice(0, 5);
@@ -215,9 +224,10 @@ const bigInputStyle: React.CSSProperties = {
   borderRadius: 'var(--radius-sm)', background: 'var(--bg-elevated)', color: 'var(--fg-primary)', minHeight: 56,
 };
 const btnRow: React.CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: 'var(--s-3)' };
+// T3b — Boutons tablette : touch target >= 72px (§14ter.17 ergonomie atelier)
 const btnBase: React.CSSProperties = {
-  display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 20px', minHeight: 48,
-  borderRadius: 'var(--radius-sm)', fontSize: 'var(--text-md)', fontWeight: 600, cursor: 'pointer', border: '1px solid transparent',
+  display: 'inline-flex', alignItems: 'center', gap: 10, padding: '20px 32px', minHeight: 72,
+  borderRadius: 'var(--radius-sm)', fontSize: 20, fontWeight: 700, cursor: 'pointer', border: '1px solid transparent',
 };
 const btnPrimary: React.CSSProperties = { ...btnBase, background: 'var(--accent-terracotta)', color: '#fff', borderColor: 'var(--accent-terracotta)' };
 const btnDanger: React.CSSProperties = { ...btnBase, background: 'var(--color-danger, #b91c1c)', color: '#fff' };

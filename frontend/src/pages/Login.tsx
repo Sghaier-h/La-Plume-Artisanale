@@ -132,12 +132,14 @@ const Login: React.FC = () => {
           }
         }
 
+        // T3b — TISSEUR/COUPEUR : écran tablette simplifié par défaut (le
+        // dashboard PC reste accessible via la barre d'utilisateur si attribué).
         const roleToDashboard: { [key: string]: string } = {
-          'TISSEUR': '/dashboard-tisseur',
+          'TISSEUR': '/tablette/tisseur',
           'CHEF_PRODUCTION': '/dashboard-chef-production',
           'CHEF_PRODUCT': '/dashboard-chef-production',
           'MAGASINIER': '/dashboard-magasinier-mp',
-          'COUPEUR': '/dashboard-post-coupe',
+          'COUPEUR': '/tablette/coupeur',
           'CONTROLEUR': '/dashboard-controle-central',
           'CONTROLEUR_QUALITE': '/dashboard-controle-central',
           'QUALITE': '/dashboard-controle-central',

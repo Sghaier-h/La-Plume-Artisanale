@@ -3,6 +3,10 @@ import { planificationGanttService } from '../services/api';
 import { Calendar, PlusCircle, Settings, BarChart3, Eye, X } from 'lucide-react';
 
 const PlanificationGantt: React.FC = () => {
+  // T3b — Convention backend : "projet" = commande ayant au moins un OF.
+  // Le contrôleur retourne `data.items[]` (champ `id_commande`) côté `/projets`
+  // et `/taches`, et un objet `data.projets[]` côté `/gantt-data`.
+  // On aligne le front sur cette convention (items + id_commande).
   const [projets, setProjets] = useState<any[]>([]);
   const [taches, setTaches] = useState<any[]>([]);
   const [selectedProjet, setSelectedProjet] = useState<number | null>(null);
@@ -25,9 +29,11 @@ const PlanificationGantt: React.FC = () => {
   const loadProjets = async () => {
     try {
       const res = await planificationGanttService.getProjets();
-      setProjets(res.data.data.projets || []);
-      if (res.data.data.projets && res.data.data.projets.length > 0) {
-        setSelectedProjet(res.data.data.projets[0].id_projet);
+      const items: any[] = res.data?.data?.items || res.data?.data?.projets || [];
+      setProjets(items);
+      if (items.length > 0) {
+        // id_commande (schéma v2) remplace l'ancien id_projet
+        setSelectedProjet(items[0].id_commande ?? items[0].id_projet);
       }
     } catch (error) {
       console.error('Erreur chargement projets:', error);
@@ -39,8 +45,9 @@ const PlanificationGantt: React.FC = () => {
   const loadTaches = async () => {
     if (!selectedProjet) return;
     try {
-      const res = await planificationGanttService.getTaches({ id_projet: selectedProjet });
-      setTaches(res.data.data.taches || []);
+      const res = await planificationGanttService.getTaches({ id_commande: selectedProjet });
+      const items: any[] = res.data?.data?.items || res.data?.data?.taches || [];
+      setTaches(items);
     } catch (error) {
       console.error('Erreur chargement tâches:', error);
     }
@@ -49,7 +56,7 @@ const PlanificationGantt: React.FC = () => {
   const loadGanttData = async () => {
     if (!selectedProjet) return;
     try {
-      const res = await planificationGanttService.getGanttData({ id_projet: selectedProjet });
+      const res = await planificationGanttService.getGanttData({ id_commande: selectedProjet });
       setGanttData(res.data?.data || {});
     } catch (error) {
       console.error('Erreur chargement Gantt:', error);
@@ -102,15 +109,20 @@ const PlanificationGantt: React.FC = () => {
             className="w-full md:w-64 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
           >
             <option value="">Sélectionner un projet</option>
-            {projets.map((projet) => (
-              <option key={projet.id_projet} value={projet.id_projet}>
-                {projet.libelle} ({projet.code_projet})
-              </option>
-            ))}
+            {projets.map((projet) => {
+              const pid = projet.id_commande ?? projet.id_projet;
+              const libelle = projet.libelle || projet.numero_commande || `#${pid}`;
+              const code = projet.code_projet || projet.raison_sociale || '—';
+              return (
+                <option key={pid} value={pid}>
+                  {libelle} ({code})
+                </option>
+              );
+            })}
           </select>
           <button
             onClick={() => {
-              const projet = projets.find(p => p.id_projet === selectedProjet);
+              const projet = projets.find(p => (p.id_commande ?? p.id_projet) === selectedProjet);
               if (projet) setSelectedProjetDetail(projet);
             }}
             className="ml-2 px-3 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
@@ -345,7 +357,7 @@ const PlanificationGantt: React.FC = () => {
             <div className="sticky top-0 bg-white border-b p-6 flex justify-between items-center">
               <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
                 <BarChart3 className="w-6 h-6 text-blue-600" />
-                Projet - {selectedProjetDetail.libelle}
+                Projet - {selectedProjetDetail.libelle || selectedProjetDetail.numero_commande || `#${selectedProjetDetail.id_commande ?? selectedProjetDetail.id_projet}`}
               </h2>
               <button
                 onClick={() => setSelectedProjetDetail(null)}
@@ -359,11 +371,11 @@ const PlanificationGantt: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium text-gray-500">Code Projet</label>
-                  <p className="text-gray-900 font-mono font-semibold">{selectedProjetDetail.code_projet}</p>
+                  <p className="text-gray-900 font-mono font-semibold">{selectedProjetDetail.code_projet || selectedProjetDetail.numero_commande || '—'}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Libellé</label>
-                  <p className="text-gray-900 font-semibold text-lg">{selectedProjetDetail.libelle}</p>
+                  <p className="text-gray-900 font-semibold text-lg">{selectedProjetDetail.libelle || selectedProjetDetail.raison_sociale || '—'}</p>
                 </div>
                 {selectedProjetDetail.date_debut && (
                   <div>
@@ -396,7 +408,7 @@ const PlanificationGantt: React.FC = () => {
               <div className="border-t pt-4 flex gap-2 justify-end">
                 <button
                   onClick={() => {
-                    setSelectedProjet(selectedProjetDetail.id_projet);
+                    setSelectedProjet(selectedProjetDetail.id_commande ?? selectedProjetDetail.id_projet);
                     setSelectedProjetDetail(null);
                   }}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"

@@ -333,10 +333,34 @@ export const bufferPDF = (drawFn, data) => new Promise((resolve, reject) => {
 });
 
 // ─── Helpers de récupération DB pour les 4 documents ──────────────────
+// Phase T3a — comptes n'a pas de colonnes adresse/ville/code_postal/telephone/email.
+// On JOIN adresses_client (adr) sur l'adresse par defaut de facturation (fallback: 1ere adresse).
+const CLIENT_JOIN_FIELDS = `
+  c.raison_sociale,
+  c.email         AS compte_email,
+  adr.rue         AS adresse,
+  adr.ville       AS ville,
+  adr.code_postal AS code_postal,
+  COALESCE(adr.contact_livraison_telephone, '') AS telephone,
+  c.email         AS email`;
+
+const ADRESSE_JOIN = `
+  LEFT JOIN LATERAL (
+    SELECT rue, ville, code_postal, contact_livraison_telephone
+      FROM adresses_client ac
+     WHERE ac.id_client = c.id_client
+     ORDER BY ac.est_defaut_facturation DESC NULLS LAST,
+              ac.est_defaut_livraison   DESC NULLS LAST,
+              ac.id_adresse ASC
+     LIMIT 1
+  ) adr ON TRUE`;
+
 export const fetchFactureFull = async (id) => {
   const f = await pool.query(
-    `SELECT f.*, c.raison_sociale, c.adresse, c.ville, c.code_postal, c.telephone, c.email
-     FROM factures f LEFT JOIN comptes c ON f.id_client = c.id_client
+    `SELECT f.*, ${CLIENT_JOIN_FIELDS}
+     FROM factures f
+     LEFT JOIN comptes c ON f.id_client = c.id_client
+     ${ADRESSE_JOIN}
      WHERE f.id_facture = $1`,
     [id]
   );
@@ -358,8 +382,10 @@ export const fetchFactureFull = async (id) => {
 
 export const fetchDevisFull = async (id) => {
   const d = await pool.query(
-    `SELECT d.*, c.raison_sociale, c.adresse, c.ville, c.code_postal, c.telephone, c.email
-     FROM devis d LEFT JOIN comptes c ON d.id_client = c.id_client
+    `SELECT d.*, ${CLIENT_JOIN_FIELDS}
+     FROM devis d
+     LEFT JOIN comptes c ON d.id_client = c.id_client
+     ${ADRESSE_JOIN}
      WHERE d.id_devis = $1`,
     [id]
   );
@@ -381,8 +407,10 @@ export const fetchDevisFull = async (id) => {
 
 export const fetchBLFull = async (id) => {
   const b = await pool.query(
-    `SELECT bl.*, c.raison_sociale, c.adresse, c.ville, c.code_postal, c.telephone, c.email
-     FROM bons_livraison bl LEFT JOIN comptes c ON bl.id_client = c.id_client
+    `SELECT bl.*, ${CLIENT_JOIN_FIELDS}
+     FROM bons_livraison bl
+     LEFT JOIN comptes c ON bl.id_client = c.id_client
+     ${ADRESSE_JOIN}
      WHERE bl.id_bl = $1`,
     [id]
   );
@@ -404,10 +432,11 @@ export const fetchBLFull = async (id) => {
 
 export const fetchAvoirFull = async (id) => {
   const a = await pool.query(
-    `SELECT a.*, c.raison_sociale, c.adresse, c.ville, c.code_postal, c.telephone, c.email,
+    `SELECT a.*, ${CLIENT_JOIN_FIELDS},
             f.numero_facture
      FROM avoirs a
      LEFT JOIN comptes c  ON a.id_client  = c.id_client
+     ${ADRESSE_JOIN}
      LEFT JOIN factures f ON a.id_facture = f.id_facture
      WHERE a.id_avoir = $1`,
     [id]

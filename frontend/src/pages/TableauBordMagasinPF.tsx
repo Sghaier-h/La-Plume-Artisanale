@@ -4,7 +4,8 @@ import {
   PlusCircle, Send, Scissors, RefreshCw,
 } from 'lucide-react';
 import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
-import { ofService } from '../services/api';
+import api, { ofService } from '../services/api';
+import { useToast } from '../hooks/useToast';
 
 // ─── Types ────────────────────────────────────────────────────────
 interface Commande {
@@ -220,6 +221,7 @@ const TABS: { id: string; label: string; icon: React.ComponentType<{ size?: numb
 ];
 
 const TableauBordMagasinPF: React.FC = () => {
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState('commandes');
   const [filterStatut, setFilterStatut] = useState('tous');
   const [showNewColis, setShowNewColis] = useState(false);
@@ -227,6 +229,11 @@ const TableauBordMagasinPF: React.FC = () => {
   const [showDemandeIntervention, setShowDemandeIntervention] = useState(false);
   const [showDemandePliage, setShowDemandePliage] = useState(false);
   const [showDemandeRetourFrange, setShowDemandeRetourFrange] = useState(false);
+  // T3b — champs du formulaire "Nouveau colis" (câblage API /v2/ventes/colis)
+  const [newColisPoids, setNewColisPoids] = useState('');
+  const [newColisDimensions, setNewColisDimensions] = useState('');
+  const [newColisPalette, setNewColisPalette] = useState('');
+  const [savingColis, setSavingColis] = useState(false);
 
   // ── Données (mock initial, hydratées depuis /api/v2/fabrication/of) ──
   const [commandes, setCommandes] = useState<Commande[]>([
@@ -660,21 +667,58 @@ const TableauBordMagasinPF: React.FC = () => {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 'var(--s-4)', marginBottom: 'var(--s-4)' }}>
                 <div>
                   <label style={labelStyle}>Poids (kg)</label>
-                  <input type="number" step="0.1" style={{ ...inputStyle, fontFamily: 'var(--font-mono)' }} />
+                  <input
+                    type="number" step="0.1"
+                    value={newColisPoids}
+                    onChange={(e) => setNewColisPoids(e.target.value)}
+                    style={{ ...inputStyle, fontFamily: 'var(--font-mono)' }}
+                  />
                 </div>
                 <div>
                   <label style={labelStyle}>Dimensions</label>
-                  <input type="text" placeholder="LxlxH" style={inputStyle} />
+                  <input
+                    type="text" placeholder="LxlxH"
+                    value={newColisDimensions}
+                    onChange={(e) => setNewColisDimensions(e.target.value)}
+                    style={inputStyle}
+                  />
                 </div>
                 <div>
                   <label style={labelStyle}>Palette</label>
-                  <input type="text" placeholder="PAL-XXX" style={inputStyle} />
+                  <input
+                    type="text" placeholder="PAL-XXX"
+                    value={newColisPalette}
+                    onChange={(e) => setNewColisPalette(e.target.value)}
+                    style={inputStyle}
+                  />
                 </div>
               </div>
 
               <div style={{ display: 'flex', gap: 'var(--s-2)', flexWrap: 'wrap' }}>
-                <button style={btnPrimary}>
-                  <CheckCircle size={14} /> Créer colis
+                <button
+                  style={{ ...btnPrimary, opacity: savingColis ? 0.6 : 1 }}
+                  disabled={savingColis}
+                  onClick={async () => {
+                    // T3b — POST /api/v2/ventes/colis (payload : poids_kg)
+                    setSavingColis(true);
+                    try {
+                      await api.post('/v2/ventes/colis', {
+                        poids_kg: parseFloat(newColisPoids) || null,
+                        dimensions: newColisDimensions || null,
+                        // id_palette résolu backend si saisi (reference string → id_palette non géré ici)
+                        notes: newColisPalette ? `Palette: ${newColisPalette}` : null,
+                      });
+                      toast.success('Colis créé');
+                      setShowNewColis(false);
+                      setNewColisPoids(''); setNewColisDimensions(''); setNewColisPalette('');
+                    } catch (e: any) {
+                      toast.error(e?.response?.data?.error?.message || 'Erreur création colis');
+                    } finally {
+                      setSavingColis(false);
+                    }
+                  }}
+                >
+                  <CheckCircle size={14} /> {savingColis ? 'Création…' : 'Créer colis'}
                 </button>
                 <button style={btnGhost}>
                   <Camera size={14} /> Photo

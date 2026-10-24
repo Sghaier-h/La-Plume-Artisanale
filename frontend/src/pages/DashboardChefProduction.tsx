@@ -416,6 +416,29 @@ const DashboardChefProduction: React.FC = () => {
           </>
         }
       >
+        {/* ALERTES — T3b : §14ter.17c exige l'affichage en haut (avant les KPIs). */}
+        <SectionCard title="Alertes urgentes" subtitle="Situations nécessitant intervention" icon={<AlertCircle size={16} />}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--s-2)' }}>
+            {alertes.length === 0 && (
+              <div style={emptyStyle}>Aucune alerte active</div>
+            )}
+            {alertes.map((a, i) => (
+              <div key={i} style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: 'var(--s-3) var(--s-4)',
+                background: a.severity === 'danger' ? 'var(--color-danger-bg)' : 'var(--color-warning-bg)',
+                border: `1px solid ${a.severity === 'danger' ? 'var(--color-danger)' : 'var(--color-warning)'}`,
+                borderRadius: 'var(--radius-sm)',
+                fontSize: 'var(--text-sm)',
+                color: a.severity === 'danger' ? 'var(--color-danger)' : 'var(--color-warning)',
+              }}>
+                <AlertCircle size={16} style={{ flexShrink: 0 }} />
+                <span>{a.msg}</span>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+
         {/* PRIMARY KPIs */}
         <div className="lp-metric-grid">
           <KpiCard
@@ -766,28 +789,7 @@ const DashboardChefProduction: React.FC = () => {
           </SectionCard>
         </div>
 
-        {/* ALERTES */}
-        <SectionCard title="Alertes urgentes" subtitle="Situations nécessitant intervention" icon={<AlertCircle size={16} />}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--s-2)' }}>
-            {alertes.length === 0 && (
-              <div style={emptyStyle}>Aucune alerte active</div>
-            )}
-            {alertes.map((a, i) => (
-              <div key={i} style={{
-                display: 'flex', alignItems: 'center', gap: 10,
-                padding: 'var(--s-3) var(--s-4)',
-                background: a.severity === 'danger' ? 'var(--color-danger-bg)' : 'var(--color-warning-bg)',
-                border: `1px solid ${a.severity === 'danger' ? 'var(--color-danger)' : 'var(--color-warning)'}`,
-                borderRadius: 'var(--radius-sm)',
-                fontSize: 'var(--text-sm)',
-                color: a.severity === 'danger' ? 'var(--color-danger)' : 'var(--color-warning)',
-              }}>
-                <AlertCircle size={16} style={{ flexShrink: 0 }} />
-                <span>{a.msg}</span>
-              </div>
-            ))}
-          </div>
-        </SectionCard>
+        {/* T3b — Alertes déplacées en haut (§14ter.17c). */}
       </DashboardShell>
 
       {/* Modal Attribution (préservé — MP sélectionnable) */}

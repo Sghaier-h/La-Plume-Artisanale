@@ -1,8 +1,11 @@
 ﻿import axios from 'axios';
+// §14ter.19 — offline tablettes atelier
+import { enqueue, isOfflineSafe } from '../offline/outbox';
+import { cacheGet, cacheSet } from '../offline/db';
 
 // Utiliser localhost en dÃ©veloppement, VPS en production
-const API_URL = process.env.REACT_APP_API_URL || 
-  (process.env.NODE_ENV === 'production' 
+const API_URL = process.env.REACT_APP_API_URL ||
+  (process.env.NODE_ENV === 'production'
     ? 'https://fabrication.laplume-artisanale.tn/api'
     : 'http://localhost:5000/api');
 
@@ -13,14 +16,40 @@ const api = axios.create({
   },
 });
 
+/**
+ * §14ter.19 — URL GET éligibles au cache IndexedDB (lecture offline).
+ * Les autres GET passent par le Service Worker (NetworkFirst) ou
+ * échouent proprement en offline.
+ */
+const CACHEABLE_GET_PATTERNS: RegExp[] = [
+  /^\/v2\/fabrication\/of(\/.*)?$/,
+  /^\/v2\/fabrication\/taches(\/.*)?$/,
+  /^\/v2\/fabrication\/machines(\/.*)?$/,
+  /^\/v2\/sous-traitance\/.+$/,
+  /^\/v2\/rh\/pointages(\/.*)?$/,
+  /^\/v2\/stock\/matieres-premieres(\/.*)?$/,
+  /^\/v2\/stock\/tracabilite-lots(\/.*)?$/,
+];
+
+function cacheStoreForUrl(url: string): import('../offline/db').CacheStore {
+  if (/\/fabrication\/of/.test(url)) return 'of';
+  if (/\/fabrication\/taches/.test(url)) return 'taches';
+  if (/\/fabrication\/machines/.test(url)) return 'machines';
+  if (/\/sous-traitance/.test(url)) return 'sous_traitants';
+  if (/\/rh\/pointages/.test(url)) return 'pointages_recents';
+  if (/\/stock\/tracabilite-lots/.test(url)) return 'lots';
+  if (/\/stock\/matieres-premieres/.test(url)) return 'articles';
+  return 'generic';
+}
+
 // Intercepteur pour ajouter le token et la sociÃ©tÃ© active
 api.interceptors.request.use(
-  (config) => {
+  async (config) => {
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    
+
     // Ajouter l'ID de la sociÃ©tÃ© active dans les headers si disponible
     const activeCompanyStr = localStorage.getItem('app_active_company');
     if (activeCompanyStr) {
@@ -33,7 +62,36 @@ api.interceptors.request.use(
         console.warn('Erreur parsing sociÃ©tÃ© active:', e);
       }
     }
-    
+
+    // §14ter.19 — Si offline et méthode mutante whitelistée → outbox
+    const method = (config.method || 'get').toUpperCase();
+    const url = config.url || '';
+    const isMutation = method === 'POST' || method === 'PUT' || method === 'DELETE';
+    if (
+      typeof navigator !== 'undefined' &&
+      !navigator.onLine &&
+      isMutation &&
+      isOfflineSafe(method, url)
+    ) {
+      try {
+        await enqueue({
+          method: method as 'POST' | 'PUT' | 'DELETE',
+          url,
+          body: config.data,
+          headers: {},
+          metadata: { label: buildLabel(method, url) },
+        });
+      } catch (e) {
+        console.warn('[offline] enqueue failed:', e);
+      }
+      // On abort la requête réseau avec un marqueur offline reconnu par le
+      // response interceptor pour renvoyer une réponse « queued ».
+      const err: any = new Error('OFFLINE_QUEUED');
+      err.__offlineQueued = true;
+      err.config = config;
+      return Promise.reject(err);
+    }
+
     return config;
   },
   (error) => {
@@ -41,10 +99,73 @@ api.interceptors.request.use(
   }
 );
 
+function buildLabel(method: string, url: string): string {
+  if (/\/taches\/\d+\/demarrer/.test(url)) return 'Démarrer une tâche';
+  if (/\/taches\/\d+\/terminer/.test(url)) return 'Terminer une tâche';
+  if (/\/taches\/\d+\/pause/.test(url))    return 'Pause tâche';
+  if (/\/of\/\d+\/demarrer/.test(url))     return 'Démarrer OF';
+  if (/\/of\/\d+\/terminer/.test(url))     return 'Terminer OF';
+  if (/\/rh\/pointages/.test(url))         return 'Pointage entrée/sortie';
+  if (/\/qualite\/defauts/.test(url))      return 'Signalement défaut qualité';
+  if (/\/sous-traitance\/bons/.test(url))  return 'Bon sortie sous-traitant';
+  if (/\/sous-traitance\/retours/.test(url)) return 'Retour sous-traitant';
+  if (/\/stock\/mouvements/.test(url))     return 'Mouvement stock';
+  if (/\/caisses\/\d+\/mouvements/.test(url)) return 'Mouvement caisse';
+  return `${method} ${url}`;
+}
+
 // Intercepteur pour gÃ©rer les erreurs
 api.interceptors.response.use(
-  (response) => response,
-  (error) => {
+  async (response) => {
+    // §14ter.19 — Mettre à jour le cache IDB pour les GET éligibles
+    const method = (response.config.method || 'get').toUpperCase();
+    const url = response.config.url || '';
+    if (method === 'GET' && CACHEABLE_GET_PATTERNS.some((rx) => rx.test(url))) {
+      try {
+        await cacheSet(cacheStoreForUrl(url), url, response.data);
+      } catch { /* cache KO = pas bloquant */ }
+    }
+    return response;
+  },
+  async (error) => {
+    // §14ter.19 — Requête mutante enqueued : on renvoie une « success offline »
+    if (error && error.__offlineQueued) {
+      return {
+        data: { success: true, offline: true, queued: true, message: 'Enregistré hors ligne' },
+        status: 202,
+        statusText: 'Accepted (offline)',
+        headers: {},
+        config: error.config,
+      };
+    }
+
+    // §14ter.19 — GET en erreur réseau : tenter le cache IDB
+    const config = error?.config;
+    const method = (config?.method || 'get').toUpperCase();
+    const url = config?.url || '';
+    const isNetwork = error?.code === 'ECONNREFUSED'
+      || error?.code === 'ERR_NETWORK'
+      || error?.message === 'Network Error'
+      || !navigator.onLine;
+    if (
+      method === 'GET' &&
+      isNetwork &&
+      CACHEABLE_GET_PATTERNS.some((rx) => rx.test(url))
+    ) {
+      try {
+        const cached = await cacheGet<any>(cacheStoreForUrl(url), url);
+        if (cached) {
+          return {
+            data: cached.value,
+            status: 200,
+            statusText: 'OK (cache offline)',
+            headers: { 'x-offline-cache': '1', 'x-cached-at': String(cached.cachedAt) },
+            config,
+          };
+        }
+      } catch { /* cache KO → on laisse remonter l'erreur */ }
+    }
+
     // GÃ©rer les erreurs de connexion
     if (error.code === 'ECONNREFUSED' || error.code === 'ERR_NETWORK') {
       console.error('Erreur de connexion au serveur:', error.message);
@@ -53,7 +174,7 @@ api.interceptors.response.use(
         console.warn('Le backend n\'est pas accessible. VÃ©rifiez qu\'il est dÃ©marrÃ© sur http://localhost:5000');
       }
     }
-    
+
     if (error.response?.status === 401) {
       // Ne rediriger que si on n'est pas dÃ©jÃ  sur la page de login
       // et seulement si le token existe (pour Ã©viter les redirections en boucle)

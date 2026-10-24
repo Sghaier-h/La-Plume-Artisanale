@@ -5,9 +5,12 @@ import {
 } from 'lucide-react';
 import WhatsAppWidget from '../components/WhatsAppWidget';
 import { DashboardShell, KpiCard, SectionCard, ThemeToggle } from '../components/dashboard';
-import { ofService } from '../services/api';
+import api, { ofService } from '../services/api';
+import { useToast } from '../hooks/useToast';
+// T3b — endpoints réels OF démarrer / taches
 
 const DashboardTisseur = () => {
+  const toast = useToast();
   const [activeSection, setActiveSection] = useState<'machines' | 'incidents' | 'rendement'>('machines');
   const [selectedMachine, setSelectedMachine] = useState<string | null>(null);
   const [expandedOF, setExpandedOF] = useState<string | null>(null);
@@ -183,12 +186,32 @@ const DashboardTisseur = () => {
     setShowDebutPosteModal(true);
   };
 
-  const handleConfirmerDemarrage = () => {
+  // T3b — handleConfirmerDemarrage : POST /api/v2/fabrication/of/:id/demarrer
+  // Avant : alert() + setState local uniquement. Désormais appel réel au backend
+  // + toast + refresh. L'OF doit avoir un `id_of` (hydraté par Phase F2).
+  const handleConfirmerDemarrage = async () => {
     if (!selectedOF || !quantiteRestante) return;
     const qteRestante = parseFloat(quantiteRestante);
-    alert(`⚠️ PROGRAMMATION MACHINE\n\nCompteur à programmer sur la machine:\n${qteRestante} ${(selectedOF as any).typeCompteur === 'pieces' ? 'pièces' : 'mètres'}\n\nLe compteur est dégressif (diminue à chaque pièce/mètre produit)`);
+    const ofSel: any = selectedOF;
+    const idOf = ofSel?.id_of || ofSel?.idOf;
+    try {
+      if (idOf) {
+        // Backend : POST /api/v2/fabrication/of/:id/demarrer (voir legacy-routes.js)
+        await api.post(`/v2/fabrication/of/${idOf}/demarrer`, {
+          quantite_restante: qteRestante,
+          compteur_initial: qteRestante,
+        });
+        toast.success(`OF ${ofSel.numSousOF} démarré — compteur ${qteRestante}`);
+      } else {
+        // Pas d'id_of (OF mock) → démarrage local uniquement
+        toast.info(`Démarrage local (OF mock) — compteur ${qteRestante}`);
+      }
+    } catch (e: any) {
+      toast.error(e?.response?.data?.error?.message || 'Erreur démarrage OF (backend)');
+      // On continue néanmoins le set local pour ne pas perdre la saisie
+    }
     setMesOF((prev: any) => prev.map((o: any) => {
-      if (o.numSousOF === (selectedOF as any).numSousOF) {
+      if (o.numSousOF === ofSel.numSousOF) {
         return { ...o, etat: 'En cours', statut: o.complementTissage ? 'COMPLÉMENT EN COURS' : 'Fabrication en cours',
           dateHeureDebut: new Date().toISOString(), compteurInitial: qteRestante, compteurActuel: qteRestante, qtePieces: qteRestante };
       }
@@ -253,7 +276,8 @@ const DashboardTisseur = () => {
 
   const handleConfirmerRefus = () => {
     if (!causeRefus) return;
-    alert(`Refus envoyé pour l'OF ${(selectedOF as any)?.numSousOF}\nCause: ${causeRefus}`);
+    // T3b — toast au lieu de alert() bloquant
+    toast.info(`Refus envoyé pour l'OF ${(selectedOF as any)?.numSousOF} — Cause: ${causeRefus}`);
     setShowRefuserComplementModal(false);
     setCauseRefus('');
   };
@@ -352,7 +376,10 @@ const DashboardTisseur = () => {
                 {m.ofs.map((of: any, idx: number) => {
                   const isExpanded = expandedOF === of.numSousOF;
                   const progression = of.qtePieces > 0 ? (of.piecesProduites / of.qtePieces) * 100 : 0;
-                  const peutDemarrer = of.etat === 'Machine alimentée';
+                  // T3b — l'état "Machine alimentée" (mock) n'existait pas côté backend.
+                  // Autoriser Démarrer pour tout OF au statut planifié / en attente
+                  // (statut backend `planifie` → etat 'En attente' côté UI).
+                  const peutDemarrer = of.etat === 'Machine alimentée' || of.etat === 'En attente';
                   const enCours = of.etat === 'En cours';
                   const hasNotes = of.noteSpeciale || of.instructionSpeciale || of.noteTisseur;
 

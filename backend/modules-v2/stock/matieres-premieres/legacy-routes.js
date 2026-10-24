@@ -34,6 +34,8 @@ router.get('/types', async (req, res) => {
 });
 router.get('/stats/global', getMatieresPremieresStats);
 router.get('/alertes/stock', getAlertesStock);
+// T3c — alias court filtrable (GET /api/v2/stock/matieres-premieres/alertes)
+router.get('/alertes', getAlertesStock);
 // Phase G1 — Projection stock MP par entrepôt (DashboardMagasinierMP)
 router.get('/par-entrepot', getStockParEntrepot);
 router.get('/code/:code', getMatiereByCode);
