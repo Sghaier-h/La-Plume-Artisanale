@@ -11,6 +11,7 @@ import UserBar from './components/UserBar';
 import TabletteLayout from './components/TabletteLayout';
 import { AppProvider } from './store/AppContext';
 import { NotificationProvider } from './components/erp';
+import { ToastProvider } from './components/ui/ToastProvider';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { SocieteProvider } from './contexts/SocieteContext';
 import { NavigationProvider } from './components/NavigationContext';
@@ -1548,9 +1549,11 @@ function App() {
       <Router>
         <SocieteProvider>
           <AppProvider>
-            <NotificationProvider>
-              <AppContent />
-            </NotificationProvider>
+            <ToastProvider>
+              <NotificationProvider>
+                <AppContent />
+              </NotificationProvider>
+            </ToastProvider>
           </AppProvider>
         </SocieteProvider>
       </Router>

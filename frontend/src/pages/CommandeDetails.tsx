@@ -296,7 +296,7 @@ const CommandeDetails: React.FC = () => {
       setPreviewData(r.data?.data || r.data);
       setOfOverrides({});
     } catch (e: any) {
-      alert('Erreur chargement preview OF: ' + (e?.response?.data?.message || e.message));
+      window.showToast?.('error', 'Erreur', String('Erreur chargement preview OF: ' + (e?.response?.data?.message || e.message)));
       setShowOFModal(false);
     } finally {
       setOfLoading(false);
@@ -314,11 +314,11 @@ const CommandeDetails: React.FC = () => {
       const overrides = Object.values(ofOverrides);
       const r = await commandesService.generateOFs(commande.id_commande, { overrides });
       const payload = r.data?.data || r.data;
-      alert(`${payload.count} OF créés avec succès`);
+      window.showToast?.('success', 'Enregistré', String(`${payload.count} OF créés avec succès`));
       setShowOFModal(false);
       await loadCommande();
     } catch (e: any) {
-      alert('Erreur génération OF: ' + (e?.response?.data?.message || e.message));
+      window.showToast?.('error', 'Erreur', String('Erreur génération OF: ' + (e?.response?.data?.message || e.message)));
     } finally {
       setOfSubmitting(false);
     }
@@ -390,11 +390,11 @@ const CommandeDetails: React.FC = () => {
     }
     try {
       // Note: deleteCommande n'est peut-être pas disponible
-      alert('La suppression directe des commandes n\'est pas disponible. Utilisez la fonction Annuler dans la liste.');
+      window.showToast?.('info', 'Information', String('La suppression directe des commandes n\'est pas disponible. Utilisez la fonction Annuler dans la liste.'));
       navigate('/commandes');
     } catch (err: any) {
       console.error('Erreur suppression:', err);
-      alert('Erreur lors de la suppression');
+      window.showToast?.('error', 'Erreur', String('Erreur lors de la suppression'));
     }
   };
 

@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import KpiCard from '../../components/ecommerce/KpiCard';
 import MontantMoisTotal from '../../components/achats/MontantMoisTotal';
+import { PageSkeleton, EmptyState } from '../../components/ui';
 import {
   depensesEspecesService,
   DepenseEspeces,
@@ -218,7 +219,7 @@ const DepensesEspeces: React.FC = () => {
   const handleComptabiliserBloc = async () => {
     const ids = Array.from(selection);
     if (ids.length === 0) {
-      alert('Sélectionne au moins une ligne à comptabiliser en bloc.');
+      window.showToast?.('info', "Sélectionne au moins une ligne à comptabiliser en bloc.");
       return;
     }
     try {
@@ -237,11 +238,7 @@ const DepensesEspeces: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <div className="p-6 flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]" />
-      </div>
-    );
+    return <PageSkeleton kpiCount={4} rows={8} cols={7} />;
   }
 
   return (
@@ -352,6 +349,16 @@ const DepensesEspeces: React.FC = () => {
               </button>
             </div>
 
+            {filtered.length === 0 ? (
+              <EmptyState
+                variant={search || catFilter !== 'all' || statutFilter !== 'all' ? 'search-no-result' : 'default'}
+                title={search || catFilter !== 'all' || statutFilter !== 'all' ? 'Aucune dépense ne correspond' : 'Aucune dépense espèces'}
+                description={search || catFilter !== 'all' || statutFilter !== 'all' ? 'Réinitialisez vos filtres ou votre recherche.' : 'Les dépenses espèces apparaîtront ici.'}
+                cta={search || catFilter !== 'all' || statutFilter !== 'all'
+                  ? { label: 'Réinitialiser', onClick: () => { setSearch(''); setCatFilter('all'); setStatutFilter('all'); } }
+                  : undefined}
+              />
+            ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 text-gray-600 border-b border-gray-200">
@@ -435,16 +442,10 @@ const DepensesEspeces: React.FC = () => {
                       </tr>
                     );
                   })}
-                  {filtered.length === 0 && (
-                    <tr>
-                      <td colSpan={8} className="px-4 py-12 text-center text-gray-500">
-                        Aucune dépense pour ces filtres.
-                      </td>
-                    </tr>
-                  )}
                 </tbody>
               </table>
             </div>
+            )}
           </div>
         </div>
       </div>

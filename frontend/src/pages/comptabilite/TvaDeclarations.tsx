@@ -184,7 +184,7 @@ const TvaDeclarations: React.FC = () => {
         ...prev,
       ];
     });
-    alert('Déclaration générée. Vérifiez les montants avant soumission.');
+    window.showToast?.('success', "Déclaration générée. Vérifiez les montants avant soumission.");
   };
 
   const handleMarquerPayee = async (d: DeclarationTva) => {

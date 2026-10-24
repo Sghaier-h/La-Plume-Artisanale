@@ -104,6 +104,7 @@ const DashboardAdministrateur: React.FC = () => {
         eyebrow="Vue d'ensemble"
         title="Tableau de bord — Administrateur"
         subtitle="Suivi opérationnel de La Plume Artisanale — ventes, production, atelier et qualité."
+        titleBrush
         headerRight={
           <>
             <button
@@ -123,9 +124,10 @@ const DashboardAdministrateur: React.FC = () => {
           </>
         }
       >
-        {/* PRIMARY KPIs */}
-        <div className="lp-metric-grid">
+        {/* PRIMARY KPIs — Phase F4 : texture papier + apparition encre */}
+        <div className="lp-metric-grid la-plume-ink-in">
           <KpiCard
+            className="la-plume-card"
             label="Clients actifs"
             value={clientsActifs}
             hint={`${nbClients} clients · ${nbProspects} prospects`}
@@ -135,6 +137,7 @@ const DashboardAdministrateur: React.FC = () => {
             onClick={() => navigate('/clients')}
           />
           <KpiCard
+            className="la-plume-card"
             label="Commandes"
             value={commandesTotal}
             hint={`${commandesAttente} en attente`}
@@ -144,6 +147,7 @@ const DashboardAdministrateur: React.FC = () => {
             onClick={() => navigate('/commandes')}
           />
           <KpiCard
+            className="la-plume-card"
             label="CA total"
             value={caTotal}
             unit="DT"
@@ -153,6 +157,7 @@ const DashboardAdministrateur: React.FC = () => {
             loading={loading}
           />
           <KpiCard
+            className="la-plume-card"
             label="OF en cours"
             value={ofTotal}
             hint={`${ofEnCours} en fabrication`}

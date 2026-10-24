@@ -276,7 +276,7 @@ const GestionPermissions: React.FC = () => {
       setToast('Permissions enregistrées');
     } catch (e) {
       console.error(e);
-      alert('Erreur lors de l\'enregistrement');
+      window.showToast?.('error', 'Erreur', String('Erreur lors de l\'enregistrement'));
     } finally {
       setSavingRole(false);
     }

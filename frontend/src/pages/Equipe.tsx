@@ -980,22 +980,22 @@ const Equipe: React.FC = () => {
                 onClick={async () => {
                   // Validation
                   if (!dashboardFormData.email) {
-                    alert('Veuillez saisir un email');
+                    window.showToast?.('info', "Veuillez saisir un email");
                     return;
                   }
                   
                   if (!selectedMembre.utiliseSysteme && !dashboardFormData.password) {
-                    alert('Veuillez saisir un mot de passe');
+                    window.showToast?.('info', "Veuillez saisir un mot de passe");
                     return;
                   }
                   
                   if (!selectedMembre.utiliseSysteme && dashboardFormData.password !== dashboardFormData.confirmPassword) {
-                    alert('Les mots de passe ne correspondent pas');
+                    window.showToast?.('info', "Les mots de passe ne correspondent pas");
                     return;
                   }
                   
                   if (dashboardFormData.dashboards.length === 0) {
-                    alert('Veuillez sélectionner au moins un dashboard');
+                    window.showToast?.('info', "Veuillez sélectionner au moins un dashboard");
                     return;
                   }
                   
@@ -1015,7 +1015,7 @@ const Equipe: React.FC = () => {
                     setDashboardFormData({ email: '', password: '', confirmPassword: '', dashboards: [] });
                   } catch (error: any) {
                     console.error('Erreur sauvegarde:', error);
-                    alert(error.response?.data?.error?.message || 'Erreur lors de la sauvegarde');
+                    window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de la sauvegarde'));
                   } finally {
                     setSavingDashboard(false);
                   }
@@ -1224,7 +1224,7 @@ const Equipe: React.FC = () => {
               <button
                 onClick={() => {
                   // TODO: Appel API pour créer la demande
-                  alert(`Demande ${demandeData.type} créée pour la période ${demandeData.dateDebut} - ${demandeData.dateFin}`);
+                  window.showToast?.('success', 'Enregistré', String(`Demande ${demandeData.type} créée pour la période ${demandeData.dateDebut} - ${demandeData.dateFin}`));
                   setShowDemandeModal(false);
                   setDemandeData({ type: 'absence', dateDebut: '', dateFin: '', raison: '', remarque: '' });
                 }}

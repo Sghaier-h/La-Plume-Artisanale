@@ -66,7 +66,7 @@ const PipelineVente: React.FC = () => {
       await opportunitesApi.update(id, patch);
       await reload();
     } catch (e: any) {
-      alert(e?.response?.data?.error?.message || e.message);
+      window.showToast?.('info', 'Information', String(e?.response?.data?.error?.message || e.message));
     }
   };
 

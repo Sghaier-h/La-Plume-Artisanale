@@ -107,10 +107,10 @@ const Inventaire: React.FC = () => {
     try {
       if (editingInventaire && editingInventaire.id_inventaire) {
         await inventaireService.updateInventaire(editingInventaire.id_inventaire, formData);
-        alert('Inventaire modifié avec succès');
+        window.showToast?.('success', "Inventaire modifié");
       } else {
         await inventaireService.createInventaire(formData);
-        alert('Inventaire créé avec succès');
+        window.showToast?.('success', "Inventaire créé");
       }
       setShowForm(false);
       setEditingInventaire(null);
@@ -118,7 +118,7 @@ const Inventaire: React.FC = () => {
       loadData();
     } catch (error: any) {
       console.error('Erreur sauvegarde:', error);
-      alert(error.response?.data?.error?.message || 'Erreur lors de la sauvegarde');
+      window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de la sauvegarde'));
     }
   };
 
@@ -132,10 +132,10 @@ const Inventaire: React.FC = () => {
     if (window.confirm('Supprimer cet inventaire ?')) {
       try {
         await inventaireService.deleteInventaire(id);
-        alert('Inventaire supprimé avec succès');
+        window.showToast?.('success', "Inventaire supprimé");
         loadData();
       } catch (error: any) {
-        alert(error.response?.data?.error?.message || 'Erreur lors de la suppression');
+        window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de la suppression'));
       }
     }
   };

@@ -6,6 +6,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Lock, Trash2, Plus } from 'lucide-react';
 import { DashboardShell, KpiCard, SectionCard } from '../../components/dashboard';
 import { depensesEspecesService, DepenseEspece } from '../../services/comptabiliteApi';
+import { SkeletonTable, EmptyState } from '../../components/ui';
 
 const fmtMoney = (n: any) => (Number(n) || 0).toLocaleString('fr-FR', { minimumFractionDigits: 3, maximumFractionDigits: 3 }) + ' DT';
 const fmtDate  = (iso: string) => new Date(iso).toLocaleDateString('fr-FR');
@@ -55,7 +56,7 @@ const DepensesEspeces: React.FC = () => {
       setSignaturePath('');
       await load();
     } catch (e: any) {
-      alert(e?.response?.data?.error?.message || e?.message || 'Erreur');
+      window.showToast?.('error', 'Erreur', String(e?.response?.data?.error?.message || e?.message || 'Erreur'));
     }
   };
 
@@ -65,13 +66,13 @@ const DepensesEspeces: React.FC = () => {
       await depensesEspecesService.cloturerMois(periode);
       await load();
     } catch (e: any) {
-      alert(e?.response?.data?.error?.message || e?.message || 'Erreur');
+      window.showToast?.('error', 'Erreur', String(e?.response?.data?.error?.message || e?.message || 'Erreur'));
     }
   };
 
   const remove = async (id: number) => {
     if (!window.confirm('Supprimer cette dépense ?')) return;
-    try { await depensesEspecesService.remove(id); await load(); } catch (e: any) { alert(e?.message); }
+    try { await depensesEspecesService.remove(id); await load(); } catch (e: any) { window.showToast?.('info', 'Information', String(e?.message)); }
   };
 
   return (
@@ -104,6 +105,22 @@ const DepensesEspeces: React.FC = () => {
       </div>
 
       <SectionCard title={`Journal ${periode}`} subtitle={`${depenses.length} dépenses`}>
+        {loading ? (
+          <SkeletonTable rows={8} cols={7} />
+        ) : depenses.filter((d) =>
+          cloturableFilter === 'all' ||
+          (cloturableFilter === 'cloturee' && d.comptabilisee) ||
+          (cloturableFilter === 'en_attente' && !d.comptabilisee)
+        ).length === 0 ? (
+          <EmptyState
+            variant={cloturableFilter !== 'all' ? 'search-no-result' : 'default'}
+            title={`Aucune dépense pour ${periode}`}
+            description={cloturableFilter !== 'all' ? 'Essayez un autre statut.' : 'Enregistrez votre première dépense espèces.'}
+            cta={cloturableFilter !== 'all'
+              ? { label: 'Réinitialiser', onClick: () => setCloturableFilter('all') }
+              : { label: 'Nouvelle dépense', onClick: () => setShowCreate(true) }}
+          />
+        ) : (
         <div style={{ overflowX: 'auto' }}>
           <table style={table}>
             <thead>
@@ -139,16 +156,10 @@ const DepensesEspeces: React.FC = () => {
                   </td>
                 </tr>
               ))}
-              {!loading && depenses.filter((d) =>
-                cloturableFilter === 'all' ||
-                (cloturableFilter === 'cloturee' && d.comptabilisee) ||
-                (cloturableFilter === 'en_attente' && !d.comptabilisee)
-              ).length === 0 && (
-                <tr><td colSpan={7} style={{ ...td, textAlign: 'center', color: 'var(--fg-muted)' }}>Aucune dépense pour {periode}.</td></tr>
-              )}
             </tbody>
           </table>
         </div>
+        )}
       </SectionCard>
 
       {showCreate && (

@@ -15,6 +15,8 @@ import {
   SectionCard,
 } from '../../components/dashboard';
 import api from '../../services/api';
+import { SkeletonTable, EmptyState } from '../../components/ui';
+import { DataTable, Column } from '../../components/ui/DataTable';
 
 const fmtMoney = (n: number) =>
   Number(n ?? 0).toLocaleString('fr-FR', {
@@ -74,7 +76,7 @@ const AvancesSalaires: React.FC = () => {
       setForm({ id_employe: '', montant_demande: '', motif: '', modalite_remboursement: 'prochain_salaire' });
       load();
     } catch (e: any) {
-      alert(e?.response?.data?.error?.message || 'Erreur création avance');
+      window.showToast?.('error', 'Erreur', String(e?.response?.data?.error?.message || 'Erreur création avance'));
     }
   };
 
@@ -93,7 +95,7 @@ const AvancesSalaires: React.FC = () => {
       }
       load();
     } catch (e: any) {
-      alert(e?.response?.data?.error?.message || 'Erreur');
+      window.showToast?.('error', 'Erreur', String(e?.response?.data?.error?.message || 'Erreur'));
     }
   };
 
@@ -127,66 +129,61 @@ const AvancesSalaires: React.FC = () => {
       </div>
 
       <SectionCard title="Liste des avances" subtitle={`${rows.length} dossiers`}>
-        <div style={{ overflowX: 'auto', margin: '0 calc(var(--s-5) * -1)' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'clamp(0.75rem, 1.1vw, 0.875rem)' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid var(--border-strong)' }}>
-                {['Employé', 'Date', 'Montant', 'Motif', 'Modalité', 'Statut', 'Restant', 'Actions'].map((h) => (
-                  <th key={h} style={thStyle}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.filter((r: any) => !statutFilter || r.statut === statutFilter).map((r: any) => (
-                <tr key={r.id_avance} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                  <td style={tdMono}>
-                    <strong>{r.nom}</strong> {r.prenom}
-                    <div style={{ color: 'var(--fg-muted)', fontSize: '0.75rem' }}>{r.matricule}</div>
-                  </td>
-                  <td style={tdMono}>{new Date(r.date_demande).toLocaleDateString('fr-FR')}</td>
-                  <td style={{ ...tdMono, fontWeight: 700, color: 'var(--accent-gold)' }}>{fmtMoney(r.montant_demande)}</td>
-                  <td style={td}>{r.motif || '—'}</td>
-                  <td style={tdMono}>{r.modalite_remboursement || '—'}</td>
-                  <td style={td}>
-                    <StatutPill statut={r.statut} />
-                  </td>
-                  <td style={tdMono}>{fmtMoney(r.solde_restant_avance)}</td>
-                  <td style={td}>
-                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                      {r.statut === 'demande' && (
-                        <>
-                          <button type="button" style={btnXs('sage')} onClick={() => workflow(r.id_avance, 'approuver')}>
-                            <Check size={12} /> Approuver
-                          </button>
-                          <button type="button" style={btnXs('rose')} onClick={() => workflow(r.id_avance, 'refuser')}>
-                            <X size={12} /> Refuser
-                          </button>
-                        </>
-                      )}
-                      {r.statut === 'approuvee' && (
-                        <button type="button" style={btnXs('terracotta')} onClick={() => workflow(r.id_avance, 'payer')}>
-                          <Wallet size={12} /> Payer
-                        </button>
-                      )}
-                      {(r.statut === 'payee' || r.statut === 'remboursee_partiel') && (
-                        <button type="button" style={btnXs('indigo')} onClick={() => workflow(r.id_avance, 'rembourser')}>
-                          <Undo2 size={12} /> Rembourser
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {rows.filter((r: any) => !statutFilter || r.statut === statutFilter).length === 0 && (
-                <tr>
-                  <td colSpan={8} style={{ padding: 'var(--s-5)', textAlign: 'center', color: 'var(--fg-muted)', fontStyle: 'italic' }}>
-                    Aucune avance.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        <DataTable<any>
+          columns={[
+            { key: 'nom', label: 'Employé', sortable: true, render: (r: any) => (
+              <div>
+                <strong>{r.nom}</strong> {r.prenom}
+                <div style={{ color: 'var(--fg-muted)', fontSize: '0.75rem' }}>{r.matricule}</div>
+              </div>
+            ) },
+            { key: 'date_demande', label: 'Date', sortable: true, value: (r: any) => r.date_demande, render: (r: any) => <span style={{ fontFamily: 'var(--font-mono)' }}>{new Date(r.date_demande).toLocaleDateString('fr-FR')}</span> },
+            { key: 'montant_demande', label: 'Montant', sortable: true, align: 'right', value: (r: any) => Number(r.montant_demande) || 0, render: (r: any) => <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--accent-gold)' }}>{fmtMoney(r.montant_demande)}</span> },
+            { key: 'motif', label: 'Motif', sortable: true, render: (r: any) => r.motif || '—' },
+            { key: 'modalite_remboursement', label: 'Modalité', sortable: true, render: (r: any) => <span style={{ fontFamily: 'var(--font-mono)' }}>{r.modalite_remboursement || '—'}</span> },
+            { key: 'statut', label: 'Statut', sortable: true, render: (r: any) => <StatutPill statut={r.statut} /> },
+            { key: 'solde_restant_avance', label: 'Restant', sortable: true, align: 'right', value: (r: any) => Number(r.solde_restant_avance) || 0, render: (r: any) => <span style={{ fontFamily: 'var(--font-mono)' }}>{fmtMoney(r.solde_restant_avance)}</span> },
+            { key: '_actions', label: 'Actions', sortable: false, exportable: false, render: (r: any) => (
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }} onClick={(e) => e.stopPropagation()}>
+                {r.statut === 'demande' && (
+                  <>
+                    <button type="button" style={btnXs('sage')} onClick={(e) => { e.stopPropagation(); workflow(r.id_avance, 'approuver'); }}>
+                      <Check size={12} /> Approuver
+                    </button>
+                    <button type="button" style={btnXs('rose')} onClick={(e) => { e.stopPropagation(); workflow(r.id_avance, 'refuser'); }}>
+                      <X size={12} /> Refuser
+                    </button>
+                  </>
+                )}
+                {r.statut === 'approuvee' && (
+                  <button type="button" style={btnXs('terracotta')} onClick={(e) => { e.stopPropagation(); workflow(r.id_avance, 'payer'); }}>
+                    <Wallet size={12} /> Payer
+                  </button>
+                )}
+                {(r.statut === 'payee' || r.statut === 'remboursee_partiel') && (
+                  <button type="button" style={btnXs('indigo')} onClick={(e) => { e.stopPropagation(); workflow(r.id_avance, 'rembourser'); }}>
+                    <Undo2 size={12} /> Rembourser
+                  </button>
+                )}
+              </div>
+            ) },
+          ] as Column<any>[]}
+          data={rows.filter((r: any) => !statutFilter || r.statut === statutFilter)}
+          rowKey={(r: any) => r.id_avance}
+          pageSize={25}
+          exportable
+          exportFilename="avances_salaires"
+          emptyState={
+            <EmptyState
+              variant={statutFilter ? 'search-no-result' : 'default'}
+              title={statutFilter ? 'Aucune avance ne correspond' : 'Aucune avance pour l’instant'}
+              description={statutFilter ? 'Essayez un autre statut.' : 'Les demandes d’avance apparaîtront ici.'}
+              cta={statutFilter
+                ? { label: 'Réinitialiser', onClick: () => setStatutFilter('') }
+                : { label: 'Nouvelle avance', onClick: () => setShowNew(true) }}
+            />
+          }
+        />
       </SectionCard>
 
       {showNew && (

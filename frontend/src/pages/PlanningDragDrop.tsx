@@ -89,7 +89,7 @@ const PlanningDragDrop: React.FC = () => {
       await loadPlanning();
     } catch (err: any) {
       console.error('Erreur assignation:', err);
-      alert(err.response?.data?.error?.message || 'Erreur lors de l\'assignation');
+      window.showToast?.('error', 'Erreur', String(err.response?.data?.error?.message || 'Erreur lors de l\'assignation'));
       setDraggedOF(null);
     }
   };

@@ -2,6 +2,8 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { Receipt, Plus, Edit, Trash2, Search, Download, Send, X, CheckCircle, FileText, ArrowLeft, TrendingUp, AlertCircle, Clock, Wallet } from 'lucide-react';
 import { facturesService, clientsService, commandesService, bonsLivraisonService, avoirsService } from '../services/api';
 import KpiCard from '../components/ecommerce/KpiCard';
+import { PageSkeleton, EmptyState } from '../components/ui';
+import { DataTable, Column } from '../components/ui/DataTable';
 
 interface LigneFacture {
   id_article?: number;
@@ -91,11 +93,11 @@ const Facture: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.lignes.length === 0) {
-      alert('Ajoutez au moins une ligne de facture');
+      window.showToast?.('success', "Ajoutez au moins une ligne de facture");
       return;
     }
     if (!formData.id_client || !formData.date_facture) {
-      alert('Client et date de facture requis');
+      window.showToast?.('info', "Client et date de facture requis");
       return;
     }
     try {
@@ -108,10 +110,10 @@ const Facture: React.FC = () => {
       setEditingFacture(null);
       resetForm();
       loadData();
-      alert(editingFacture ? 'Facture modifiée avec succès' : 'Facture créée avec succès');
+      window.showToast?.('success', 'Enregistré', String(editingFacture ? 'Facture modifiée avec succès' : 'Facture créée avec succès'));
     } catch (error: any) {
       console.error('Erreur sauvegarde facture:', error);
-      alert(error.response?.data?.error?.message || 'Erreur lors de la sauvegarde');
+      window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de la sauvegarde'));
     }
   };
 
@@ -122,12 +124,12 @@ const Facture: React.FC = () => {
         statut: 'BROUILLON'
       });
       if (result.data?.success) {
-        alert('Facture générée avec succès depuis la commande');
+        window.showToast?.('success', "Facture générée avec succès depuis la commande");
         loadData();
       }
     } catch (error: any) {
       console.error('Erreur génération facture:', error);
-      alert(error.response?.data?.error?.message || 'Erreur lors de la génération');
+      window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de la génération'));
     }
   };
 
@@ -138,12 +140,12 @@ const Facture: React.FC = () => {
         statut: 'BROUILLON'
       });
       if (result.data?.success) {
-        alert('Facture générée avec succès depuis le bon de livraison');
+        window.showToast?.('success', "Facture générée avec succès depuis le bon de livraison");
         loadData();
       }
     } catch (error: any) {
       console.error('Erreur génération facture:', error);
-      alert(error.response?.data?.error?.message || 'Erreur lors de la génération');
+      window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de la génération'));
     }
   };
 
@@ -239,11 +241,7 @@ const Facture: React.FC = () => {
   }, [factures]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-app)' }}>
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: 'var(--accent-terracotta)' }}></div>
-      </div>
-    );
+    return <PageSkeleton kpiCount={4} rows={8} cols={7} />;
   }
 
   return (
@@ -653,142 +651,124 @@ const Facture: React.FC = () => {
         )}
 
         {/* Liste */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Numéro</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Échéance</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Montant TTC</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Restant</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredFactures.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
-                    Aucune facture trouvée
-                  </td>
-                </tr>
-              ) : (
-                filteredFactures.map((facture) => {
-                  const openFactureView = async () => {
+        <DataTable<any>
+          columns={[
+            { key: 'numero_facture', label: 'Numéro', sortable: true, render: (f: any) => <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 500 }}>{f.numero_facture}</span> },
+            { key: 'client_nom', label: 'Client', sortable: true, render: (f: any) => f.client_nom || '-' },
+            { key: 'date_facture', label: 'Date', sortable: true, value: (f: any) => f.date_facture, render: (f: any) => f.date_facture || '-' },
+            { key: 'date_echeance', label: 'Échéance', sortable: true, value: (f: any) => f.date_echeance, render: (f: any) => f.date_echeance || '-' },
+            { key: 'montant_ttc', label: 'Montant TTC', sortable: true, align: 'right', value: (f: any) => Number(f.montant_ttc) || 0, render: (f: any) => <span className="font-semibold">{Number(f.montant_ttc || 0).toFixed(2)} TND</span> },
+            { key: 'montant_restant', label: 'Restant', sortable: true, align: 'right', value: (f: any) => Number(f.montant_restant) || 0, render: (f: any) => <span className="text-red-600 font-semibold">{Number(f.montant_restant || 0).toFixed(2)} TND</span> },
+            { key: 'statut', label: 'Statut', sortable: true, render: (f: any) => (
+              <span className={`px-2 py-1 rounded text-xs font-medium ${getStatutColor(f.statut)}`}>{f.statut}</span>
+            ) },
+            { key: '_actions', label: 'Actions', sortable: false, exportable: false, render: (facture: any) => (
+              <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                <button
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    try {
+                      await facturesService.downloadPDF(facture.id_facture, facture.numero_facture);
+                    } catch (err) {
+                      window.showToast?.('error', 'Erreur', String('Erreur lors du téléchargement du PDF'));
+                    }
+                  }}
+                  className="text-[#C8663D] hover:text-[#a94f2b]"
+                  title="Télécharger PDF"
+                >
+                  <Download className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={async (e) => {
+                    e.stopPropagation();
                     try {
                       const result = await facturesService.getFactureById(facture.id_facture);
                       if (result.data?.success) {
-                        setSelectedFacture(result.data?.data);
+                        const facData = result.data.data;
+                        setFormData({
+                          id_commande: facData.id_commande?.toString() || '',
+                          id_bl: facData.id_bl?.toString() || '',
+                          id_client: facData.id_client?.toString() || '',
+                          date_facture: facData.date_facture || new Date().toISOString().split('T')[0],
+                          date_echeance: facData.date_echeance || '',
+                          statut: facData.statut || 'BROUILLON',
+                          taux_tva: facData.taux_tva || 20,
+                          remise_globale: facData.remise_globale || 0,
+                          reference_client: facData.reference_client || '',
+                          conditions_paiement: facData.conditions_paiement || '',
+                          notes: facData.notes || '',
+                          lignes: (facData.lignes || []).map((l: any) => ({
+                            id_article: l.id_article,
+                            id_ligne_commande: l.id_ligne_commande,
+                            id_ligne_bl: l.id_ligne_bl,
+                            designation: l.designation,
+                            quantite: l.quantite,
+                            prix_unitaire_ht: l.prix_unitaire_ht,
+                            taux_tva: l.taux_tva || 20,
+                            remise: l.remise || 0
+                          }))
+                        });
+                        setEditingFacture(facture);
+                        setShowForm(true);
                       }
                     } catch (error: any) {
                       console.error('Erreur chargement facture:', error);
-                      alert(error.response?.data?.error?.message || 'Erreur lors du chargement');
+                      window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors du chargement'));
                     }
-                  };
-                  return (
-                  <tr key={facture.id_facture} onClick={openFactureView} className="hover:bg-gray-50 cursor-pointer group">
-                    <td className="px-6 py-4 whitespace-nowrap font-medium">{facture.numero_facture}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{facture.client_nom}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{facture.date_facture}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{facture.date_echeance || '-'}</td>
-                    <td className="px-6 py-4 whitespace-nowrap font-semibold">{Number(facture.montant_ttc || 0).toFixed(2)} TND</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-red-600 font-semibold">
-                      {Number(facture.montant_restant || 0).toFixed(2)} TND
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${getStatutColor(facture.statut)}`}>
-                        {facture.statut}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            try {
-                              await facturesService.downloadPDF(facture.id_facture, facture.numero_facture);
-                            } catch (err) {
-                              alert('Erreur lors du téléchargement du PDF');
-                            }
-                          }}
-                          className="text-[#C8663D] hover:text-[#a94f2b]"
-                          title="Télécharger PDF"
-                        >
-                          <Download className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            try {
-                              const result = await facturesService.getFactureById(facture.id_facture);
-                              if (result.data?.success) {
-                                const facData = result.data.data;
-                                setFormData({
-                                  id_commande: facData.id_commande?.toString() || '',
-                                  id_bl: facData.id_bl?.toString() || '',
-                                  id_client: facData.id_client?.toString() || '',
-                                  date_facture: facData.date_facture || new Date().toISOString().split('T')[0],
-                                  date_echeance: facData.date_echeance || '',
-                                  statut: facData.statut || 'BROUILLON',
-                                  taux_tva: facData.taux_tva || 20,
-                                  remise_globale: facData.remise_globale || 0,
-                                  reference_client: facData.reference_client || '',
-                                  conditions_paiement: facData.conditions_paiement || '',
-                                  notes: facData.notes || '',
-                                  lignes: (facData.lignes || []).map((l: any) => ({
-                                    id_article: l.id_article,
-                                    id_ligne_commande: l.id_ligne_commande,
-                                    id_ligne_bl: l.id_ligne_bl,
-                                    designation: l.designation,
-                                    quantite: l.quantite,
-                                    prix_unitaire_ht: l.prix_unitaire_ht,
-                                    taux_tva: l.taux_tva || 20,
-                                    remise: l.remise || 0
-                                  }))
-                                });
-                                setEditingFacture(facture);
-                                setShowForm(true);
-                              }
-                            } catch (error: any) {
-                              console.error('Erreur chargement facture:', error);
-                              alert(error.response?.data?.error?.message || 'Erreur lors du chargement');
-                            }
-                          }}
-                          className="text-gray-600 hover:text-gray-700"
-                          title="Modifier"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            if (window.confirm(`Supprimer la facture ${facture.numero_facture} ?`)) {
-                              try {
-                                await facturesService.deleteFacture(facture.id_facture);
-                                loadData();
-                                alert('Facture supprimée avec succès');
-                              } catch (error: any) {
-                                console.error('Erreur suppression facture:', error);
-                                alert(error.response?.data?.error?.message || 'Erreur lors de la suppression');
-                              }
-                            }
-                          }}
-                          className="text-red-600 hover:text-red-700"
-                          title="Supprimer"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                  }}
+                  className="text-gray-600 hover:text-gray-700"
+                  title="Modifier"
+                >
+                  <Edit className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    if (window.confirm(`Supprimer la facture ${facture.numero_facture} ?`)) {
+                      try {
+                        await facturesService.deleteFacture(facture.id_facture);
+                        loadData();
+                        window.showToast?.('success', "Facture supprimée");
+                      } catch (error: any) {
+                        console.error('Erreur suppression facture:', error);
+                        window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de la suppression'));
+                      }
+                    }
+                  }}
+                  className="text-red-600 hover:text-red-700"
+                  title="Supprimer"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ) },
+          ] as Column<any>[]}
+          data={filteredFactures}
+          rowKey={(f: any) => f.id_facture}
+          onRowClick={async (facture: any) => {
+            try {
+              const result = await facturesService.getFactureById(facture.id_facture);
+              if (result.data?.success) setSelectedFacture(result.data?.data);
+            } catch (error: any) {
+              console.error('Erreur chargement facture:', error);
+              window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors du chargement'));
+            }
+          }}
+          pageSize={25}
+          exportable
+          exportFilename="factures"
+          emptyState={
+            <EmptyState
+              variant={search || filters.statut || filters.client_id ? 'search-no-result' : 'default'}
+              title={search || filters.statut || filters.client_id ? 'Aucune facture ne correspond' : 'Aucune facture'}
+              description={search || filters.statut || filters.client_id ? 'Réinitialisez vos filtres ou votre recherche.' : 'Les factures émises apparaîtront ici.'}
+              cta={search || filters.statut || filters.client_id
+                ? { label: 'Réinitialiser', onClick: () => { setSearch(''); setFilters({ statut: '', client_id: '' }); } }
+                : undefined}
+            />
+          }
+          loading={loading}
+        />
 
         {/* Modal de consultation */}
         {selectedFacture && (
@@ -953,7 +933,7 @@ const Facture: React.FC = () => {
                         }
                       } catch (error: any) {
                         console.error('Erreur chargement facture:', error);
-                        alert(error.response?.data?.error?.message || 'Erreur lors du chargement');
+                        window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors du chargement'));
                       }
                     }}
                     className="px-4 py-2 rounded-lg hover:opacity-90 transition"
@@ -972,13 +952,13 @@ const Facture: React.FC = () => {
                               statut: 'BROUILLON'
                             });
                             if (result.data?.success) {
-                              alert('Avoir créé avec succès !');
+                              window.showToast?.('success', "Avoir créé avec succès !");
                               setSelectedFacture(null);
                               loadData();
                             }
                           } catch (error: any) {
                             console.error('Erreur création avoir:', error);
-                            alert(error.response?.data?.error?.message || 'Erreur lors de la création de l\'avoir');
+                            window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de la création de l\'avoir'));
                           }
                         }
                       }}

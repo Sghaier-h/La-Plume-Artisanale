@@ -4,6 +4,8 @@ import { clientsService, utilisateursService } from '../services/api';
 import { comptesApi, pickData } from '../services/crmApi';
 import { List, Grid, X, User, Mail, Phone, MapPin, Building, CreditCard, Percent, Edit, Trash2, Filter, Tag, Briefcase, Globe, FileText, Users, UserCheck, UserX, Award } from 'lucide-react';
 import { KpiCard } from '../components/dashboard';
+import { SkeletonKpiRow, SkeletonTable, EmptyState } from '../components/ui';
+import { DataTable, Column } from '../components/ui/DataTable';
 
 const Clients: React.FC = () => {
   const navigate = useNavigate();
@@ -199,7 +201,7 @@ const Clients: React.FC = () => {
       loadData();
     } catch (error: any) {
       console.error('Erreur:', error);
-      alert(error.response?.data?.error?.message || 'Erreur lors de la sauvegarde');
+      window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de la sauvegarde'));
     }
   };
 
@@ -299,7 +301,7 @@ const Clients: React.FC = () => {
         await clientsService.deleteClient(id);
         loadData();
       } catch (error) {
-        alert('Erreur lors de la suppression');
+        window.showToast?.('error', 'Erreur', String('Erreur lors de la suppression'));
       }
     }
   };
@@ -364,8 +366,13 @@ const Clients: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-app)' }}>
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: 'var(--accent-terracotta)' }}></div>
+      <div className="min-h-screen" style={{ background: 'var(--bg-app)' }}>
+        <div className="p-6">
+          <div className="max-w-7xl mx-auto">
+            <SkeletonKpiRow count={4} />
+            <SkeletonTable rows={8} cols={9} />
+          </div>
+        </div>
       </div>
     );
   }
@@ -948,73 +955,68 @@ const Clients: React.FC = () => {
         )}
 
         {/* Liste */}
-        {affichageMode === 'ligne' ? (
-          <div className="rounded-lg overflow-hidden" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)' }}>
-            <table className="min-w-full" style={{ borderCollapse: 'collapse' }}>
-            <thead style={{ background: 'var(--bg-canvas)' }}>
-              <tr>
-                {['Code', 'Raison Sociale', 'Type', 'Catégorie', 'Ville', 'Pays', 'Email', 'Statut', 'Actions'].map((h) => (
-                  <th key={h} className="px-6 py-3 text-left text-xs uppercase"
-                      style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 600, color: 'var(--fg-primary)', letterSpacing: '0.05em' }}>
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody style={{ background: 'var(--bg-elevated)' }}>
-              {clients.map((client) => (
-                <tr
-                  key={client.id_client}
-                  className="group cursor-pointer"
-                  style={{ borderTop: '1px solid var(--border-subtle)' }}
-                  onClick={() => { if (client.id_client) navigate(`/clients/${client.id_client}`); }}
-                >
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" style={{ fontFamily: 'var(--font-mono)' }}>{client.code_client}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" style={{ color: 'var(--fg-primary)' }}>{client.raison_sociale || `${client.prenom || ''} ${client.nom || ''}`.trim()}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {(client.type_client === 'CLIENT' || client.statut_crm === 'client') ? (
-                      <span className="px-2 py-1 text-xs rounded" style={{ background: 'color-mix(in srgb, var(--accent-indigo) 15%, transparent)', color: 'var(--accent-indigo)' }}>Client</span>
-                    ) : client.statut_crm === 'lead' ? (
-                      <span className="px-2 py-1 text-xs rounded" style={{ background: 'color-mix(in srgb, var(--accent-terracotta) 15%, transparent)', color: 'var(--accent-terracotta)' }}>Lead</span>
-                    ) : (
-                      <span className="px-2 py-1 text-xs rounded" style={{ background: 'color-mix(in srgb, var(--accent-gold) 15%, transparent)', color: 'var(--accent-gold)' }}>Prospect</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: 'var(--fg-secondary)' }}>{client.libelle_categorie || '-'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: 'var(--fg-primary)' }}>{client.ville_facturation || client.ville || '-'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: 'var(--fg-primary)' }}>{client.pays_facturation || client.pays || '-'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: 'var(--fg-primary)' }}>{client.email_contact_principal || '-'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 py-1 text-xs rounded" style={client.actif
-                      ? { background: 'color-mix(in srgb, var(--accent-sage) 15%, transparent)', color: 'var(--accent-sage)' }
-                      : { background: 'var(--color-danger-bg)', color: 'var(--color-danger)' }}>
-                      {client.actif ? 'Actif' : 'Inactif'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); navigate(`/clients/${client.id_client}/edit`); }}
-                        className="hover:opacity-70 transition"
-                        style={{ color: 'var(--accent-indigo)' }}
-                        title="Modifier"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleDelete(client.id_client); }}
-                        style={{ color: 'var(--color-danger)' }}
-                        title="Archiver"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {clients.length === 0 ? (
+          <EmptyState
+            variant={search || filters.type_client || filters.id_categorie || filters.actif ? 'search-no-result' : 'default'}
+            title={search || filters.type_client || filters.id_categorie || filters.actif ? 'Aucun client ne correspond' : 'Aucun client pour l’instant'}
+            description={search || filters.type_client || filters.id_categorie || filters.actif ? 'Essayez de réinitialiser les filtres ou votre recherche.' : 'Commencez par créer votre première fiche client.'}
+            cta={search || filters.type_client || filters.id_categorie || filters.actif
+              ? { label: 'Réinitialiser', onClick: () => { setSearch(''); setFilters({ type_client: '', id_categorie: '', actif: '' }); setKpiActive('all'); } }
+              : { label: 'Nouveau client', onClick: () => navigate('/clients/nouveau') }}
+          />
+        ) : affichageMode === 'ligne' ? (
+          <DataTable<any>
+            columns={[
+              { key: 'code_client', label: 'Code', sortable: true, render: (c: any) => <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 500 }}>{c.code_client}</span> },
+              { key: 'raison_sociale', label: 'Raison Sociale', sortable: true, render: (c: any) => c.raison_sociale || `${c.prenom || ''} ${c.nom || ''}`.trim() },
+              { key: 'type_client', label: 'Type', sortable: true, render: (c: any) => (
+                (c.type_client === 'CLIENT' || c.statut_crm === 'client') ? (
+                  <span className="px-2 py-1 text-xs rounded" style={{ background: 'color-mix(in srgb, var(--accent-indigo) 15%, transparent)', color: 'var(--accent-indigo)' }}>Client</span>
+                ) : c.statut_crm === 'lead' ? (
+                  <span className="px-2 py-1 text-xs rounded" style={{ background: 'color-mix(in srgb, var(--accent-terracotta) 15%, transparent)', color: 'var(--accent-terracotta)' }}>Lead</span>
+                ) : (
+                  <span className="px-2 py-1 text-xs rounded" style={{ background: 'color-mix(in srgb, var(--accent-gold) 15%, transparent)', color: 'var(--accent-gold)' }}>Prospect</span>
+                )
+              ) },
+              { key: 'libelle_categorie', label: 'Catégorie', sortable: true, render: (c: any) => c.libelle_categorie || '-' },
+              { key: 'ville_facturation', label: 'Ville', sortable: true, render: (c: any) => c.ville_facturation || c.ville || '-' },
+              { key: 'pays_facturation', label: 'Pays', sortable: true, render: (c: any) => c.pays_facturation || c.pays || '-' },
+              { key: 'email_contact_principal', label: 'Email', sortable: true, render: (c: any) => c.email_contact_principal || '-' },
+              { key: 'actif', label: 'Statut', sortable: true, value: (c: any) => c.actif ? 1 : 0, render: (c: any) => (
+                <span className="px-2 py-1 text-xs rounded" style={c.actif
+                  ? { background: 'color-mix(in srgb, var(--accent-sage) 15%, transparent)', color: 'var(--accent-sage)' }
+                  : { background: 'var(--color-danger-bg)', color: 'var(--color-danger)' }}>
+                  {c.actif ? 'Actif' : 'Inactif'}
+                </span>
+              ) },
+              { key: '_actions', label: 'Actions', sortable: false, exportable: false, render: (c: any) => (
+                <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); navigate(`/clients/${c.id_client}/edit`); }}
+                    className="hover:opacity-70 transition"
+                    style={{ color: 'var(--accent-indigo)' }}
+                    title="Modifier"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleDelete(c.id_client); }}
+                    style={{ color: 'var(--color-danger)' }}
+                    title="Archiver"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ) },
+            ] as Column<any>[]}
+            data={clients}
+            rowKey={(c: any) => c.id_client}
+            onRowClick={(c: any) => { if (c.id_client) navigate(`/clients/${c.id_client}`); }}
+            pageSize={25}
+            exportable
+            exportFilename="clients"
+            loading={loading}
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {clients.map((client) => (

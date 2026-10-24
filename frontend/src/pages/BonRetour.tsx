@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { RotateCcw, Plus, Edit, Trash2, Search, Download, X, Package } from 'lucide-react';
 import { bonsRetourService, bonsLivraisonService, clientsService } from '../services/api';
+import { PageSkeleton, EmptyState } from '../components/ui';
 
 interface LigneRetour {
   id_article?: number;
@@ -73,11 +74,11 @@ const BonRetour: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.lignes.length === 0) {
-      alert('Ajoutez au moins une ligne de retour');
+      window.showToast?.('success', "Ajoutez au moins une ligne de retour");
       return;
     }
     if (!formData.id_client || !formData.date_retour) {
-      alert('Client et date de retour requis');
+      window.showToast?.('info', "Client et date de retour requis");
       return;
     }
     try {
@@ -90,10 +91,10 @@ const BonRetour: React.FC = () => {
       setEditingBR(null);
       resetForm();
       loadData();
-      alert(editingBR ? 'Bon de retour modifié avec succès' : 'Bon de retour créé avec succès');
+      window.showToast?.('success', 'Enregistré', String(editingBR ? 'Bon de retour modifié avec succès' : 'Bon de retour créé avec succès'));
     } catch (error: any) {
       console.error('Erreur sauvegarde BR:', error);
-      alert(error.response?.data?.error?.message || 'Erreur lors de la sauvegarde');
+      window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de la sauvegarde'));
     }
   };
 
@@ -104,12 +105,12 @@ const BonRetour: React.FC = () => {
         statut: 'BROUILLON'
       });
       if (result.data?.success) {
-        alert('Bon de retour généré avec succès depuis le bon de livraison');
+        window.showToast?.('success', "Bon de retour généré avec succès depuis le bon de livraison");
         loadData();
       }
     } catch (error: any) {
       console.error('Erreur génération BR:', error);
-      alert(error.response?.data?.error?.message || 'Erreur lors de la génération');
+      window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de la génération'));
     }
   };
 
@@ -184,11 +185,7 @@ const BonRetour: React.FC = () => {
   });
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]"></div>
-      </div>
-    );
+    return <PageSkeleton kpiCount={0} rows={8} cols={7} />;
   }
 
   return (
@@ -482,6 +479,16 @@ const BonRetour: React.FC = () => {
         )}
 
         {/* Liste */}
+        {filteredBR.length === 0 ? (
+          <EmptyState
+            variant={search || filters.statut || filters.client_id ? 'search-no-result' : 'default'}
+            title={search || filters.statut || filters.client_id ? 'Aucun bon de retour ne correspond' : 'Aucun bon de retour'}
+            description={search || filters.statut || filters.client_id ? 'Réinitialisez vos filtres ou votre recherche.' : 'Les retours clients apparaîtront ici.'}
+            cta={search || filters.statut || filters.client_id
+              ? { label: 'Réinitialiser', onClick: () => { setSearch(''); setFilters({ statut: '', client_id: '' }); } }
+              : undefined}
+          />
+        ) : (
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <table className="w-full">
             <thead className="bg-gray-50">
@@ -496,14 +503,7 @@ const BonRetour: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {filteredBR.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
-                    Aucun bon de retour trouvé
-                  </td>
-                </tr>
-              ) : (
-                filteredBR.map((br) => (
+              {filteredBR.map((br) => (
                   <tr
                     key={br.id_retour}
                     onClick={async () => {
@@ -514,7 +514,7 @@ const BonRetour: React.FC = () => {
                         }
                       } catch (error: any) {
                         console.error('Erreur chargement BR:', error);
-                        alert(error.response?.data?.error?.message || 'Erreur lors du chargement');
+                        window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors du chargement'));
                       }
                     }}
                     className="hover:bg-gray-50 group cursor-pointer"
@@ -568,7 +568,7 @@ const BonRetour: React.FC = () => {
                               }
                             } catch (error: any) {
                               console.error('Erreur chargement BR:', error);
-                              alert(error.response?.data?.error?.message || 'Erreur lors du chargement');
+                              window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors du chargement'));
                             }
                           }}
                           className="text-gray-600 hover:text-gray-700"
@@ -583,10 +583,10 @@ const BonRetour: React.FC = () => {
                               try {
                                 await bonsRetourService.deleteBonRetour(br.id_retour);
                                 loadData();
-                                alert('Bon de retour supprimé avec succès');
+                                window.showToast?.('success', "Bon de retour supprimé");
                               } catch (error: any) {
                                 console.error('Erreur suppression BR:', error);
-                                alert(error.response?.data?.error?.message || 'Erreur lors de la suppression');
+                                window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de la suppression'));
                               }
                             }
                           }}
@@ -598,11 +598,11 @@ const BonRetour: React.FC = () => {
                       </div>
                     </td>
                   </tr>
-                ))
-              )}
+                ))}
             </tbody>
           </table>
         </div>
+        )}
 
         {/* Modal de consultation */}
         {selectedBR && (
@@ -738,7 +738,7 @@ const BonRetour: React.FC = () => {
                         }
                       } catch (error: any) {
                         console.error('Erreur chargement BR:', error);
-                        alert(error.response?.data?.error?.message || 'Erreur lors du chargement');
+                        window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors du chargement'));
                       }
                     }}
                     className="px-4 py-2 bg-[#C8663D] text-white rounded-lg hover:bg-[#a55231]"

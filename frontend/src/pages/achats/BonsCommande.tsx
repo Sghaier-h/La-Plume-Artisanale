@@ -12,6 +12,8 @@ import {
 } from 'lucide-react';
 import KpiCard from '../../components/ecommerce/KpiCard';
 import StatutBcBadge from '../../components/achats/StatutBcBadge';
+import { PageSkeleton, EmptyState } from '../../components/ui';
+import { DataTable, Column } from '../../components/ui/DataTable';
 import {
   bcService,
   BonCommande,
@@ -242,16 +244,12 @@ const BonsCommande: React.FC = () => {
       await bcService.downloadPdf(b.id_bc);
     } catch {
       /* fallback silencieux */
-      alert(`Génération PDF ${b.numero_bc} (mock — endpoint à brancher)`);
+      window.showToast?.('info', 'Information', String(`Génération PDF ${b.numero_bc} (mock — endpoint à brancher)`));
     }
   };
 
   if (loading) {
-    return (
-      <div className="p-6 flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]" />
-      </div>
-    );
+    return <PageSkeleton kpiCount={4} rows={8} cols={7} />;
   }
 
   return (
@@ -347,90 +345,46 @@ const BonsCommande: React.FC = () => {
               </div>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 text-gray-600 border-b border-gray-200">
-                  <tr>
-                    <th className="text-left px-4 py-3 font-semibold">N° BC</th>
-                    <th className="text-left px-4 py-3 font-semibold">Fournisseur</th>
-                    <th className="text-left px-4 py-3 font-semibold">Date</th>
-                    <th className="text-right px-4 py-3 font-semibold">HT (DT)</th>
-                    <th className="text-right px-4 py-3 font-semibold">TVA</th>
-                    <th className="text-right px-4 py-3 font-semibold">TTC (DT)</th>
-                    <th className="text-left px-4 py-3 font-semibold">Statut</th>
-                    <th className="text-right px-4 py-3 font-semibold">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((b) => (
-                    <tr
-                      key={b.id_bc}
-                      onClick={() => setSelected(b)}
-                      className="border-b border-gray-100 hover:bg-[#FBF8F3]/60 group cursor-pointer"
-                    >
-                      <td className="px-4 py-3 font-mono text-xs text-[#4A5D75] font-semibold">
-                        {b.numero_bc}
-                      </td>
-                      <td className="px-4 py-3 font-medium text-gray-800">
-                        {b.fournisseur_nom}
-                      </td>
-                      <td className="px-4 py-3 text-gray-700">
-                        {new Date(b.date_commande).toLocaleDateString('fr-FR')}
-                      </td>
-                      <td className="px-4 py-3 text-right font-semibold text-gray-800">
-                        {b.montant_ht.toLocaleString('fr-FR', {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
-                      </td>
-                      <td className="px-4 py-3 text-right text-gray-600">
-                        {b.montant_tva.toLocaleString('fr-FR', {
-                          maximumFractionDigits: 2,
-                        })}
-                      </td>
-                      <td className="px-4 py-3 text-right font-bold text-[#C8663D]">
-                        {b.montant_ttc.toLocaleString('fr-FR', {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
-                      </td>
-                      <td className="px-4 py-3">
-                        <StatutBcBadge statut={b.statut} />
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex justify-end gap-1">
-                          {b.statut === 'brouillon' && (
-                            <button
-                              type="button"
-                              onClick={(e) => { e.stopPropagation(); handleEnvoyer(b); }}
-                              title="Envoyer au fournisseur"
-                              className="p-1.5 rounded hover:bg-[#EEF4F0] text-[#4A6C5B]"
-                            >
-                              <Send className="w-4 h-4" />
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); handleDownload(b); }}
-                            title="Télécharger PDF"
-                            className="p-1.5 rounded hover:bg-[#FBF3E0] text-[#8A6412]"
-                          >
-                            <Download className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {filtered.length === 0 && (
-                    <tr>
-                      <td colSpan={8} className="px-4 py-12 text-center text-gray-500">
-                        Aucun BC ne correspond à ces filtres.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+            <DataTable<any>
+              columns={[
+                { key: 'numero_bc', label: 'N° BC', sortable: true, render: (b: any) => <span className="font-mono text-xs text-[#4A5D75] font-semibold">{b.numero_bc}</span> },
+                { key: 'fournisseur_nom', label: 'Fournisseur', sortable: true, render: (b: any) => <span className="font-medium text-gray-800">{b.fournisseur_nom}</span> },
+                { key: 'date_commande', label: 'Date', sortable: true, value: (b: any) => b.date_commande, render: (b: any) => new Date(b.date_commande).toLocaleDateString('fr-FR') },
+                { key: 'montant_ht', label: 'HT (DT)', sortable: true, align: 'right', value: (b: any) => Number(b.montant_ht) || 0, render: (b: any) => <span className="font-semibold text-gray-800">{b.montant_ht.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span> },
+                { key: 'montant_tva', label: 'TVA', sortable: true, align: 'right', value: (b: any) => Number(b.montant_tva) || 0, render: (b: any) => <span className="text-gray-600">{b.montant_tva.toLocaleString('fr-FR', { maximumFractionDigits: 2 })}</span> },
+                { key: 'montant_ttc', label: 'TTC (DT)', sortable: true, align: 'right', value: (b: any) => Number(b.montant_ttc) || 0, render: (b: any) => <span className="font-bold text-[#C8663D]">{b.montant_ttc.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span> },
+                { key: 'statut', label: 'Statut', sortable: true, render: (b: any) => <StatutBcBadge statut={b.statut} /> },
+                { key: '_actions', label: 'Actions', sortable: false, exportable: false, align: 'right', render: (b: any) => (
+                  <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                    {b.statut === 'brouillon' && (
+                      <button type="button" onClick={(e) => { e.stopPropagation(); handleEnvoyer(b); }} title="Envoyer au fournisseur" className="p-1.5 rounded hover:bg-[#EEF4F0] text-[#4A6C5B]">
+                        <Send className="w-4 h-4" />
+                      </button>
+                    )}
+                    <button type="button" onClick={(e) => { e.stopPropagation(); handleDownload(b); }} title="Télécharger PDF" className="p-1.5 rounded hover:bg-[#FBF3E0] text-[#8A6412]">
+                      <Download className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) },
+              ] as Column<any>[]}
+              data={filtered}
+              rowKey={(b: any) => b.id_bc}
+              onRowClick={(b: any) => setSelected(b)}
+              pageSize={25}
+              exportable
+              exportFilename="bons_commande"
+              emptyState={
+                <EmptyState
+                  variant={search || statutFilter !== 'all' ? 'search-no-result' : 'default'}
+                  title={search || statutFilter !== 'all' ? 'Aucun bon de commande ne correspond' : 'Aucun bon de commande'}
+                  description={search || statutFilter !== 'all' ? 'Réinitialisez vos filtres ou votre recherche.' : 'Créez votre premier BC fournisseur.'}
+                  cta={search || statutFilter !== 'all'
+                    ? { label: 'Réinitialiser', onClick: () => { setSearch(''); setStatutFilter('all'); } }
+                    : undefined}
+                />
+              }
+              loading={loading}
+            />
           </div>
 
           {selected && (

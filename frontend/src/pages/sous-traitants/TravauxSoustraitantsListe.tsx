@@ -9,6 +9,7 @@ import {
   travauxApi, TravailST, StatutTravailST, TypeActiviteST,
   TYPE_ACTIVITE_LABEL, fmtDate, fmtInt, fmtMoney,
 } from '../../services/soustraitanceApi';
+import { SkeletonTable, EmptyState } from '../../components/ui';
 
 const STATUT_LABEL: Record<StatutTravailST | '', string> = {
   '': 'Tous statuts',
@@ -116,6 +117,18 @@ const TravauxSoustraitantsListe: React.FC = () => {
       </SectionCard>
 
       <SectionCard title="Liste" subtitle={`${items.length} travaux affichés`}>
+        {loading ? (
+          <SkeletonTable rows={8} cols={8} />
+        ) : !items.length ? (
+          <EmptyState
+            variant={statut || type || dateFrom || dateTo ? 'search-no-result' : 'default'}
+            title={statut || type || dateFrom || dateTo ? 'Aucun travail ne correspond' : 'Aucun travail enregistré'}
+            description={statut || type || dateFrom || dateTo ? 'Modifiez vos filtres pour élargir la sélection.' : 'Les travaux sous-traités validés apparaîtront ici.'}
+            cta={statut || type || dateFrom || dateTo
+              ? { label: 'Réinitialiser', onClick: () => { setStatut(''); setType(''); setDateFrom(''); setDateTo(''); } }
+              : undefined}
+          />
+        ) : (
         <div style={{ overflowX: 'auto' }}>
           <table style={table}>
             <thead>
@@ -168,14 +181,10 @@ const TravauxSoustraitantsListe: React.FC = () => {
                   </td>
                 </tr>
               ))}
-              {!items.length && !loading && (
-                <tr><td colSpan={8} style={{ padding: 'var(--s-6)', textAlign: 'center', color: 'var(--fg-muted)' }}>
-                  Aucun travail trouvé.
-                </td></tr>
-              )}
             </tbody>
           </table>
         </div>
+        )}
       </SectionCard>
 
       {refusModal && (

@@ -7,6 +7,7 @@ import {
 import { DashboardShell, KpiCard, SectionCard } from '../components/dashboard';
 import { leadsApi, pickData } from '../services/crmApi';
 import { fmtRelative, fmtDate } from '../utils/formatters';
+import { SkeletonTable, EmptyState } from '../components/ui';
 
 interface LeadRow {
   id_lead: number;
@@ -102,7 +103,7 @@ const CrmLeads: React.FC = () => {
       await leadsApi.convertir(id);
       reload();
     } catch (e: any) {
-      alert(e?.response?.data?.error?.message || e.message);
+      window.showToast?.('info', 'Information', String(e?.response?.data?.error?.message || e.message));
     } finally {
       setBusyConvert(null);
     }
@@ -114,7 +115,7 @@ const CrmLeads: React.FC = () => {
       title="Leads"
       subtitle="Prises de contact entrantes avant qualification en compte."
       headerRight={
-        <button type="button" style={btnPrimary} onClick={() => alert('Formulaire création à venir (route /crm/leads/nouveau)')}>
+        <button type="button" style={btnPrimary} onClick={() => window.showToast?.('info', 'Bientôt disponible')}>
           <PlusCircle size={14} style={{ marginRight: 6 }} /> Nouveau lead
         </button>
       }
@@ -149,11 +150,21 @@ const CrmLeads: React.FC = () => {
         </div>
 
         {loading ? (
-          <div style={{ padding: 'var(--s-8)', textAlign: 'center', color: 'var(--fg-muted)' }}>Chargement…</div>
+          <SkeletonTable rows={8} cols={6} />
         ) : error ? (
-          <div style={{ padding: 'var(--s-4)', color: 'var(--color-danger)', background: 'var(--color-danger-bg)', borderRadius: 'var(--radius-sm)' }}>{error}</div>
+          <EmptyState
+            variant="error"
+            title="Impossible de charger les leads"
+            description={error}
+            cta={{ label: 'Réessayer', onClick: () => setStatut((p) => p) }}
+          />
         ) : rows.length === 0 ? (
-          <div style={{ padding: 'var(--s-8)', textAlign: 'center', color: 'var(--fg-muted)' }}>Aucun lead.</div>
+          <EmptyState
+            variant={search || statut !== 'all' ? 'search-no-result' : 'default'}
+            title={search || statut !== 'all' ? `Aucun résultat${search ? ` pour « ${search} »` : ''}` : 'Aucun lead'}
+            description={search || statut !== 'all' ? 'Réinitialisez votre recherche ou vos filtres.' : 'Les leads capturés via vos canaux s’afficheront ici.'}
+            cta={search || statut !== 'all' ? { label: 'Réinitialiser', onClick: () => { setSearch(''); setStatut('all'); } } : undefined}
+          />
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', fontSize: 'var(--text-sm)', borderCollapse: 'collapse' }}>

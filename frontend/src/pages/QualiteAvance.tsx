@@ -344,11 +344,11 @@ const QualiteAvance: React.FC = () => {
                                 resultat_global: 'CONFORME',
                                 date_validation: new Date().toISOString().split('T')[0]
                               });
-                              alert('Contrôle validé avec succès');
+                              window.showToast?.('success', "Contrôle validé");
                               setSelectedControle(null);
                               loadData();
                             } catch (error: any) {
-                              alert(error.response?.data?.error?.message || 'Erreur lors de la validation');
+                              window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de la validation'));
                             }
                           }
                         }}
@@ -367,11 +367,11 @@ const QualiteAvance: React.FC = () => {
                                 raison_refus: raison,
                                 date_validation: new Date().toISOString().split('T')[0]
                               });
-                              alert('Contrôle refusé avec succès');
+                              window.showToast?.('error', 'Erreur', String('Contrôle refusé avec succès'));
                               setSelectedControle(null);
                               loadData();
                             } catch (error: any) {
-                              alert(error.response?.data?.error?.message || 'Erreur lors du refus');
+                              window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors du refus'));
                             }
                           }
                         }}

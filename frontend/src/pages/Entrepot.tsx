@@ -103,16 +103,16 @@ const Entrepot: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.code_entrepot || !formData.nom_entrepot) {
-      alert('Code et nom d\'entrepôt requis');
+      window.showToast?.('info', "Code et nom d'entrepôt requis");
       return;
     }
     try {
       if (editingEntrepot && editingEntrepot.id_entrepot) {
         await entrepotService.updateEntrepot(editingEntrepot.id_entrepot, formData);
-        alert('Entrepôt modifié avec succès');
+        window.showToast?.('success', "Entrepôt modifié");
       } else {
         await entrepotService.createEntrepot(formData);
-        alert('Entrepôt créé avec succès');
+        window.showToast?.('success', "Entrepôt créé");
       }
       setShowForm(false);
       setEditingEntrepot(null);
@@ -120,7 +120,7 @@ const Entrepot: React.FC = () => {
       loadData();
     } catch (error: any) {
       console.error('Erreur sauvegarde:', error);
-      alert(error.response?.data?.error?.message || 'Erreur lors de la sauvegarde');
+      window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de la sauvegarde'));
     }
   };
 
@@ -134,10 +134,10 @@ const Entrepot: React.FC = () => {
     if (window.confirm('Supprimer cet entrepôt ?')) {
       try {
         await entrepotService.deleteEntrepot(id);
-        alert('Entrepôt supprimé avec succès');
+        window.showToast?.('success', "Entrepôt supprimé");
         loadData();
       } catch (error: any) {
-        alert(error.response?.data?.error?.message || 'Erreur lors de la suppression');
+        window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de la suppression'));
       }
     }
   };

@@ -178,7 +178,7 @@ const ClientDetails: React.FC = () => {
       navigate('/clients');
     } catch (err: any) {
       console.error('Erreur suppression:', err);
-      alert('Erreur lors de la désactivation');
+      window.showToast?.('error', 'Erreur', String('Erreur lors de la désactivation'));
     }
   };
 
@@ -195,7 +195,7 @@ const ClientDetails: React.FC = () => {
       setEditingAdresse(null);
       loadClient();
     } catch (err: any) {
-      alert(err.response?.data?.error?.message || 'Erreur lors de la sauvegarde');
+      window.showToast?.('error', 'Erreur', String(err.response?.data?.error?.message || 'Erreur lors de la sauvegarde'));
     }
   };
 
@@ -212,7 +212,7 @@ const ClientDetails: React.FC = () => {
       setEditingContact(null);
       loadClient();
     } catch (err: any) {
-      alert(err.response?.data?.error?.message || 'Erreur lors de la sauvegarde');
+      window.showToast?.('error', 'Erreur', String(err.response?.data?.error?.message || 'Erreur lors de la sauvegarde'));
     }
   };
 
@@ -223,7 +223,7 @@ const ClientDetails: React.FC = () => {
       await clientsService.deleteAdresse(client.id_client, idAdresse);
       loadClient();
     } catch (err: any) {
-      alert('Erreur lors de la suppression');
+      window.showToast?.('error', 'Erreur', String('Erreur lors de la suppression'));
     }
   };
 
@@ -234,7 +234,7 @@ const ClientDetails: React.FC = () => {
       await clientsService.deleteContact(client.id_client, idContact);
       loadClient();
     } catch (err: any) {
-      alert('Erreur lors de la suppression');
+      window.showToast?.('error', 'Erreur', String('Erreur lors de la suppression'));
     }
   };
 
@@ -1367,7 +1367,7 @@ const ContactFormModal: React.FC<{
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.nom) {
-      alert('Le nom est obligatoire');
+      window.showToast?.('info', "Le nom est obligatoire");
       return;
     }
     onSubmit(formData);

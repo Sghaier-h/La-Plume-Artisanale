@@ -121,12 +121,12 @@ const OFDetails: React.FC = () => {
       if (of.statut === 'en_attente' || of.statut === 'planifie') {
         // Optionnel : mettre à jour le statut à 'annule' au lieu de supprimer
         // await ofService.updateOF(of.id_of, { statut: 'annule' });
-        alert('La suppression directe des OF n\'est pas disponible. Utilisez la fonction Annuler dans la liste.');
+        window.showToast?.('info', 'Information', String('La suppression directe des OF n\'est pas disponible. Utilisez la fonction Annuler dans la liste.'));
       }
       navigate('/of');
     } catch (err: any) {
       console.error('Erreur suppression:', err);
-      alert('Erreur lors de la suppression');
+      window.showToast?.('error', 'Erreur', String('Erreur lors de la suppression'));
     }
   };
 
@@ -137,9 +137,9 @@ const OFDetails: React.FC = () => {
     try {
       await ofService.demarrerOF(of.id_of);
       loadOF();
-      alert('OF démarré avec succès');
+      window.showToast?.('success', "OF démarré");
     } catch (err: any) {
-      alert(err.response?.data?.error?.message || 'Erreur lors du démarrage');
+      window.showToast?.('error', 'Erreur', String(err.response?.data?.error?.message || 'Erreur lors du démarrage'));
     }
   };
 

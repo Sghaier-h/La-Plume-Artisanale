@@ -69,12 +69,12 @@ const MessagesOperateurs: React.FC = () => {
   const handleEnvoyerMessage = async () => {
     try {
       if (!formData.sujet || !formData.message) {
-        alert('Veuillez remplir le sujet et le message');
+        window.showToast?.('info', "Veuillez remplir le sujet et le message");
         return;
       }
 
       await messagesService.envoyerMessage(formData);
-      alert('Message envoyé avec succès');
+      window.showToast?.('success', "Message envoyé");
       setShowFormMessage(false);
       setFormData({
         destinataire_id: '',
@@ -86,7 +86,7 @@ const MessagesOperateurs: React.FC = () => {
       });
       loadData();
     } catch (error: any) {
-      alert(error.response?.data?.error?.message || 'Erreur lors de l\'envoi');
+      window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de l\'envoi'));
     }
   };
 

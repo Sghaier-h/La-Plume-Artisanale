@@ -205,7 +205,7 @@ const ClotureExercice: React.FC = () => {
           }
         : prev
     );
-    alert(`Exercice ${annee} clôturé définitivement.`);
+    window.showToast?.('info', 'Information', String(`Exercice ${annee} clôturé définitivement.`));
   };
 
   if (loading || !etat) {

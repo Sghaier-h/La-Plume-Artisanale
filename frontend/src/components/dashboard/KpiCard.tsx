@@ -13,6 +13,8 @@ export interface KpiCardProps {
   loading?: boolean;
   onClick?: () => void;
   active?: boolean;
+  /** Phase F4 — classe additionnelle (ex. `la-plume-card` pour texture papier) */
+  className?: string;
 }
 
 const toneVar: Record<KpiTone, string> = {
@@ -25,7 +27,7 @@ const toneVar: Record<KpiTone, string> = {
 };
 
 export const KpiCard: React.FC<KpiCardProps> = ({
-  label, value, unit, hint, delta, icon, tone = 'terracotta', loading, onClick, active,
+  label, value, unit, hint, delta, icon, tone = 'terracotta', loading, onClick, active, className,
 }) => {
   const accent = toneVar[tone];
   const positive = (delta?.value ?? 0) >= 0;
@@ -42,6 +44,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
   return (
     <div
       {...commonProps}
+      className={className}
       onClick={onClick}
       onKeyDown={clickable ? (e) => {
         if (e.key === 'Enter' || e.key === ' ') {

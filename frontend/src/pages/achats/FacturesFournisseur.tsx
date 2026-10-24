@@ -11,6 +11,7 @@ import {
   Clock,
 } from 'lucide-react';
 import KpiCard from '../../components/ecommerce/KpiCard';
+import { PageSkeleton, EmptyState } from '../../components/ui';
 import {
   facturesFournisseurService,
   FactureFournisseur,
@@ -198,7 +199,7 @@ const FacturesFournisseur: React.FC = () => {
     } catch {
       /* noop */
     }
-    alert(`Facture ${f.numero_ff_interne} envoyée pour comptabilisation.`);
+    window.showToast?.('success', 'Enregistré', String(`Facture ${f.numero_ff_interne} envoyée pour comptabilisation.`));
   };
   const handlePayer = async (f: FactureFournisseur) => {
     try {
@@ -218,11 +219,7 @@ const FacturesFournisseur: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <div className="p-6 flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]" />
-      </div>
-    );
+    return <PageSkeleton kpiCount={4} rows={8} cols={7} />;
   }
 
   return (
@@ -319,6 +316,16 @@ const FacturesFournisseur: React.FC = () => {
               </div>
             </div>
 
+            {filtered.length === 0 ? (
+              <EmptyState
+                variant={search || statutFilter !== 'all' ? 'search-no-result' : 'default'}
+                title={search || statutFilter !== 'all' ? 'Aucune facture ne correspond' : 'Aucune facture fournisseur'}
+                description={search || statutFilter !== 'all' ? 'Réinitialisez vos filtres ou votre recherche.' : 'Les factures fournisseurs apparaîtront ici.'}
+                cta={search || statutFilter !== 'all'
+                  ? { label: 'Réinitialiser', onClick: () => { setSearch(''); setStatutFilter('all'); } }
+                  : undefined}
+              />
+            ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 text-gray-600 border-b border-gray-200">
@@ -423,16 +430,10 @@ const FacturesFournisseur: React.FC = () => {
                       </tr>
                     );
                   })}
-                  {filtered.length === 0 && (
-                    <tr>
-                      <td colSpan={10} className="px-4 py-12 text-center text-gray-500">
-                        Aucune facture fournisseur pour ces filtres.
-                      </td>
-                    </tr>
-                  )}
                 </tbody>
               </table>
             </div>
+            )}
           </div>
         </div>
       </div>

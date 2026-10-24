@@ -170,7 +170,7 @@ const ArticleDetails: React.FC = () => {
       navigate('/articles');
     } catch (err: any) {
       console.error('Erreur suppression:', err);
-      alert('Erreur lors de la suppression');
+      window.showToast?.('error', 'Erreur', String('Erreur lors de la suppression'));
     }
   };
 

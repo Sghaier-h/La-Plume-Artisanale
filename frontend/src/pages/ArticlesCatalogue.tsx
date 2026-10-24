@@ -131,7 +131,7 @@ const ArticlesCatalogue: React.FC = () => {
         await articlesCatalogueService.updateArticleCatalogue(id, { actif: false });
         loadData();
       } catch (err) {
-        alert('Erreur lors de la suppression');
+        window.showToast?.('error', 'Erreur', String('Erreur lors de la suppression'));
       }
     }
   };

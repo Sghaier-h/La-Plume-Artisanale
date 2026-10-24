@@ -1227,14 +1227,14 @@ export default function FoutaManagementApp() {
               <div className="flex gap-2">
                 <button 
                   className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2"
-                  onClick={() => alert('Vue calendrier en développement')}
+                  onClick={() => window.showToast?.('info', "Vue calendrier en développement")}
                 >
                   <Calendar className="w-5 h-5" />
                   Vue Calendrier
                 </button>
                 <button 
                   className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
-                  onClick={() => alert('Fonction export en développement')}
+                  onClick={() => window.showToast?.('info', "Fonction export en développement")}
                 >
                   <Download className="w-5 h-5" />
                   Export Planning
@@ -1391,9 +1391,9 @@ export default function FoutaManagementApp() {
                         
                         if (draggedOF) {
                           if (!(draggedOF as any)?.couleurAttributed) {
-                            alert(`⚠️ Vous devez d'abord attribuer les couleurs à ${(draggedOF as any)?.numOF} avant de l'assigner à une machine.`);
+                            window.showToast?.('info', 'Information', String(`⚠️ Vous devez d'abord attribuer les couleurs à ${(draggedOF as any)?.numOF} avant de l'assigner à une machine.`));
                           } else {
-                            alert(`✅ ${(draggedOF as any)?.numOF} attribué à la machine ${machine.machine}!\n\nSynchronisation automatique:\n• Magasinier MP notifié\n• Tisseur ${machine.operateur} informé\n• Planning mis à jour`);
+                            window.showToast?.('info', 'Information', String(`✅ ${(draggedOF as any)?.numOF} attribué à la machine ${machine.machine}!\n\nSynchronisation automatique:\n• Magasinier MP notifié\n• Tisseur ${machine.operateur} informé\n• Planning mis à jour`));
                           }
                           setDraggedOF(null);
                         }
@@ -1540,7 +1540,7 @@ export default function FoutaManagementApp() {
               <div className="flex items-center gap-2">
                 <button 
                   className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
-                  onClick={() => alert('Fonction export en développement')}
+                  onClick={() => window.showToast?.('info', "Fonction export en développement")}
                 >
                   <Download className="w-5 h-5" />
                   Export
@@ -1548,7 +1548,7 @@ export default function FoutaManagementApp() {
                 <button 
                   className="px-4 py-2 text-white rounded-lg hover:opacity-90 flex items-center gap-2"
                   style={{ backgroundColor: theme.primaryColor }}
-                  onClick={() => alert('Fonction création OF en développement')}
+                  onClick={() => window.showToast?.('info', "Fonction création OF en développement")}
                 >
                   <Plus className="w-5 h-5" />
                   Nouvel OF
@@ -2145,14 +2145,14 @@ export default function FoutaManagementApp() {
               <div className="flex gap-2">
                 <button 
                   className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2"
-                  onClick={() => alert('Fonction en développement')}
+                  onClick={() => window.showToast?.('info', "Fonction en développement")}
                 >
                   <Filter className="w-5 h-5" />
                   Filtres
                 </button>
                 <button 
                   className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
-                  onClick={() => alert('Fonction en développement')}
+                  onClick={() => window.showToast?.('info', "Fonction en développement")}
                 >
                   <Download className="w-5 h-5" />
                   Export
@@ -2160,7 +2160,7 @@ export default function FoutaManagementApp() {
                 <button 
                   className="px-4 py-2 text-white rounded-lg hover:opacity-90 flex items-center gap-2"
                   style={{ backgroundColor: theme.primaryColor }}
-                  onClick={() => alert('Fonction en développement')}
+                  onClick={() => window.showToast?.('info', "Fonction en développement")}
                 >
                   <Plus className="w-5 h-5" />
                   Nouveau BOM
@@ -3143,19 +3143,19 @@ export default function FoutaManagementApp() {
               <div className="mt-6 flex gap-3">
                 <button 
                   className="flex-1 px-4 py-2 bg-[#C8663D] text-white rounded-lg hover:bg-[#A2502E]"
-                  onClick={() => alert('Fonction en développement')}
+                  onClick={() => window.showToast?.('info', "Fonction en développement")}
                 >
                   Lancer Ordissage
                 </button>
                 <button 
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-                  onClick={() => alert('Fonction en développement')}
+                  onClick={() => window.showToast?.('info', "Fonction en développement")}
                 >
                   Historique
                 </button>
                 <button 
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-                  onClick={() => alert('Fonction en développement')}
+                  onClick={() => window.showToast?.('info', "Fonction en développement")}
                 >
                   Maintenance
                 </button>
@@ -3312,21 +3312,21 @@ export default function FoutaManagementApp() {
               <div className="mt-6 flex gap-3">
                 <button 
                   className="flex-1 px-4 py-2 bg-[#C8663D] text-white rounded-lg hover:bg-[#A2502E]"
-                  onClick={() => alert('Fonction en développement')}
+                  onClick={() => window.showToast?.('info', "Fonction en développement")}
                 >
                   <Edit className="w-4 h-4 inline mr-2" />
                   Modifier
                 </button>
                 <button 
                   className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                  onClick={() => alert('Fonction en développement')}
+                  onClick={() => window.showToast?.('info', "Fonction en développement")}
                 >
                   <Download className="w-4 h-4 inline mr-2" />
                   Export PDF
                 </button>
                 <button 
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-                  onClick={() => alert('Fonction en développement')}
+                  onClick={() => window.showToast?.('info', "Fonction en développement")}
                 >
                   <History className="w-4 h-4 inline mr-2" />
                   Historique

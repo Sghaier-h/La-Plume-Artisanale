@@ -30,7 +30,7 @@ const DossierImportDetails: React.FC = () => {
   const recalculer = async () => {
     setRecalculating(true);
     try { await dossiersImportService.recalculer(idNum, { marge_pct: 5 }); await load(); }
-    catch (e: any) { alert(e?.response?.data?.error?.message || 'Erreur recalcul'); }
+    catch (e: any) { window.showToast?.('error', 'Erreur', String(e?.response?.data?.error?.message || 'Erreur recalcul')); }
     finally { setRecalculating(false); }
   };
 

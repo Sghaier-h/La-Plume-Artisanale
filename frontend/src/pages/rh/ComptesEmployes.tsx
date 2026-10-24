@@ -19,6 +19,7 @@ import {
   SectionCard,
 } from '../../components/dashboard';
 import api from '../../services/api';
+import { SkeletonTable, EmptyState } from '../../components/ui';
 
 type Compte = {
   id_employe: number;
@@ -208,14 +209,17 @@ const ComptesEmployes: React.FC = () => {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={6} style={emptyCell}>
-                    Chargement…
+                  <td colSpan={6} style={{ padding: 0 }}>
+                    <SkeletonTable rows={6} cols={6} />
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={emptyCell}>
-                    Aucun compte à afficher.
+                  <td colSpan={6} style={{ padding: 'var(--s-6)' }}>
+                    <EmptyState
+                      title="Aucun compte &agrave; afficher"
+                      description="Les comptes employ&eacute;s avec solde appara&icirc;tront ici."
+                    />
                   </td>
                 </tr>
               ) : (

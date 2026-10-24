@@ -153,16 +153,16 @@ const Mouvement: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.quantite || formData.quantite <= 0) {
-      alert('La quantité doit être supérieure à 0');
+      window.showToast?.('info', "La quantité doit être supérieure à 0");
       return;
     }
     try {
       if (editingMouvement && editingMouvement.id_mouvement) {
         await stockService.updateMouvement(editingMouvement.id_mouvement, formData);
-        alert('Mouvement modifié avec succès');
+        window.showToast?.('success', "Mouvement modifié");
       } else {
         await stockService.createMouvement(formData);
-        alert('Mouvement créé avec succès');
+        window.showToast?.('success', "Mouvement créé");
       }
       setShowForm(false);
       setEditingMouvement(null);
@@ -170,7 +170,7 @@ const Mouvement: React.FC = () => {
       loadData();
     } catch (error: any) {
       console.error('Erreur sauvegarde:', error);
-      alert(error.response?.data?.error?.message || 'Erreur lors de la sauvegarde');
+      window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de la sauvegarde'));
     }
   };
 
@@ -178,10 +178,10 @@ const Mouvement: React.FC = () => {
     if (window.confirm('Supprimer ce mouvement ?')) {
       try {
         await stockService.deleteMouvement(id);
-        alert('Mouvement supprimé avec succès');
+        window.showToast?.('success', "Mouvement supprimé");
         loadData();
       } catch (error: any) {
-        alert(error.response?.data?.error?.message || 'Erreur lors de la suppression');
+        window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de la suppression'));
       }
     }
   };

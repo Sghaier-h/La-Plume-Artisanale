@@ -28,7 +28,7 @@ const CessionsIntragroupe: React.FC = () => {
     const motif = window.prompt('Motif d\'annulation :');
     if (motif === null) return;
     try { await cessionsService.annuler(c.id_cession, motif || undefined); await load(); }
-    catch (e: any) { alert(e?.response?.data?.error?.message || e?.message || 'Erreur'); }
+    catch (e: any) { window.showToast?.('error', 'Erreur', String(e?.response?.data?.error?.message || e?.message || 'Erreur')); }
   };
 
   return (

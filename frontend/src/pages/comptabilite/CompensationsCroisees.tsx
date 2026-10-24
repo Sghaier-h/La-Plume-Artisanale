@@ -40,7 +40,7 @@ const CompensationsCroisees: React.FC = () => {
     setLignes(l => l.map((x, i) => i === idx ? { ...x, ...patch } : x));
 
   const submit = async () => {
-    if (!equilibre) { alert('Balance invalide : débit ≠ crédit'); return; }
+    if (!equilibre) { window.showToast?.('error', 'Erreur', String('Balance invalide : débit ≠ crédit')); return; }
     try {
       await compensationsService.create({
         libelle: form.libelle,
@@ -53,19 +53,19 @@ const CompensationsCroisees: React.FC = () => {
       setLignes([emptyLigne('debit'), emptyLigne('credit')]);
       await load();
     } catch (e: any) {
-      alert(e?.response?.data?.error?.message || e?.message || 'Erreur');
+      window.showToast?.('error', 'Erreur', String(e?.response?.data?.error?.message || e?.message || 'Erreur'));
     }
   };
 
   const valider = async (c: Compensation) => {
     try { await compensationsService.valider(c.id_compensation); await load(); }
-    catch (e: any) { alert(e?.response?.data?.error?.message || 'Erreur validation'); }
+    catch (e: any) { window.showToast?.('error', 'Erreur', String(e?.response?.data?.error?.message || 'Erreur validation')); }
   };
   const annuler = async (c: Compensation) => {
     const motif = window.prompt('Motif d\'annulation :');
     if (motif === null) return;
     try { await compensationsService.annuler(c.id_compensation, motif || undefined); await load(); }
-    catch (e: any) { alert(e?.response?.data?.error?.message || 'Erreur'); }
+    catch (e: any) { window.showToast?.('error', 'Erreur', String(e?.response?.data?.error?.message || 'Erreur')); }
   };
 
   return (

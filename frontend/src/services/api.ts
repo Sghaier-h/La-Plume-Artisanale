@@ -114,6 +114,22 @@ function buildLabel(method: string, url: string): string {
   return `${method} ${url}`;
 }
 
+/**
+ * §14ter.F2 — Toast helpers (hors React, via window.showToast installé par
+ * ToastProvider). No-op si le provider n'est pas monté (SSR, tests unitaires).
+ */
+function toast(kind: 'success' | 'error' | 'info' | 'warning', title: string, description?: string): void {
+  try {
+    if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
+      window.showToast(kind, title, description);
+    }
+  } catch { /* no-op */ }
+}
+
+function isAuthUrl(url: string): boolean {
+  return url.startsWith('/auth/') || url.startsWith('auth/');
+}
+
 // Intercepteur pour gÃ©rer les erreurs
 api.interceptors.response.use(
   async (response) => {
@@ -125,13 +141,34 @@ api.interceptors.response.use(
         await cacheSet(cacheStoreForUrl(url), url, response.data);
       } catch { /* cache KO = pas bloquant */ }
     }
+
+    // §14ter.F2 — Toast auto-success sur mutation 2xx (POST/PUT/DELETE)
+    //   · Exclu : requêtes /auth/* (login, logout)
+    //   · Opt-out global : window.__toastOnSuccess = false
+    //   · Opt-out par requête : config.headers['X-No-Toast'] = '1'
+    const status = response.status;
+    const isMutation = method === 'POST' || method === 'PUT' || method === 'DELETE';
+    const toastOnSuccess = (typeof window !== 'undefined' ? window.__toastOnSuccess : undefined) ?? true;
+    const perReqOptOut = (response.config.headers as any)?.['X-No-Toast'] === '1';
+    if (
+      isMutation &&
+      (status === 200 || status === 201 || status === 204) &&
+      !isAuthUrl(url) &&
+      toastOnSuccess &&
+      !perReqOptOut
+    ) {
+      toast('success', 'Enregistré');
+    }
+
     return response;
   },
   async (error) => {
     // §14ter.19 — Requête mutante enqueued : on renvoie une « success offline »
     if (error && error.__offlineQueued) {
+      // §14ter.F2 — Toast info « offline queued »
+      toast('info', 'Enregistré hors ligne', 'Sera synchronisé à la reconnexion');
       return {
-        data: { success: true, offline: true, queued: true, message: 'Enregistré hors ligne' },
+        data: { success: true, offline: true, queued: true, offlineQueued: true, message: 'Enregistré hors ligne' },
         status: 202,
         statusText: 'Accepted (offline)',
         headers: {},
@@ -190,16 +227,47 @@ api.interceptors.response.use(
     if (error.response?.status === 429) {
       // GÃ©rer l'erreur de rate limiting
       const retryAfter = error.response.headers['retry-after'];
-      const message = error.response.data?.error?.message || 
-        (retryAfter 
+      const message = error.response.data?.error?.message ||
+        (retryAfter
           ? `Trop de requÃªtes. Veuillez patienter ${retryAfter} secondes.`
           : 'Trop de requÃªtes. Veuillez patienter quelques instants.');
-      
+
       console.warn('Rate limit atteint:', message);
-      
+
       // Afficher une notification si disponible (sera gÃ©rÃ© par le composant)
       error.rateLimitMessage = message;
     }
+
+    // §14ter.F2 — Toast auto-error sur réponse 4xx/5xx
+    //   · Exclu : requêtes /auth/* (gérées localement par Login/Logout)
+    //   · Exclu : 401 (gestion de redirection déjà en place)
+    //   · Opt-out par requête : config.headers['X-No-Toast'] = '1'
+    try {
+      const status = error.response?.status;
+      const errUrl = error.config?.url || '';
+      const perReqOptOut = (error.config?.headers as any)?.['X-No-Toast'] === '1';
+      if (
+        status &&
+        status >= 400 &&
+        status !== 401 &&
+        !isAuthUrl(errUrl) &&
+        !perReqOptOut
+      ) {
+        const msg = error.response?.data?.error?.message
+          || error.response?.data?.message
+          || error.rateLimitMessage
+          || 'Une erreur est survenue';
+        toast('error', 'Erreur', msg);
+      } else if (!status && !isAuthUrl(errUrl) && !perReqOptOut) {
+        // Erreur réseau sans statut (ECONNREFUSED, ERR_NETWORK, timeout)
+        const isNet = error.code === 'ECONNREFUSED'
+          || error.code === 'ERR_NETWORK'
+          || error.message === 'Network Error';
+        if (isNet) {
+          toast('warning', 'Connexion perdue', 'Vérifiez votre réseau');
+        }
+      }
+    } catch { /* no-op */ }
 
     return Promise.reject(error);
   }

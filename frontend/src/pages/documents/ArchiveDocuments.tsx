@@ -7,6 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { Search, FileText, Download, Link2 } from 'lucide-react';
 import { DashboardShell, KpiCard, SectionCard } from '../../components/dashboard';
 import { documentsArchiveService, DocumentArchive, TypeDocument } from '../../services/documentsArchiveApi';
+import { SkeletonTable, EmptyState } from '../../components/ui';
 
 const TYPES: TypeDocument[] = [
   'facture_recue','facture_emise','recu_caisse','rib','contrat',
@@ -73,6 +74,18 @@ const ArchiveDocuments: React.FC = () => {
       </div>
 
       <SectionCard title="Résultats" subtitle={`${docs.length} document(s)`}>
+        {loading ? (
+          <SkeletonTable rows={8} cols={8} />
+        ) : docs.length === 0 ? (
+          <EmptyState
+            variant={q || type || periode ? 'search-no-result' : 'default'}
+            title={q || type || periode ? `Aucun résultat${q ? ` pour « ${q} »` : ''}` : 'Aucun document'}
+            description={q || type || periode ? 'Réinitialisez votre recherche ou vos filtres.' : 'Les documents archivés apparaîtront ici.'}
+            cta={q || type || periode
+              ? { label: 'Réinitialiser', onClick: () => { setQ(''); setType(''); setPeriode(''); setTimeout(search, 0); } }
+              : undefined}
+          />
+        ) : (
         <div style={{ overflowX: 'auto' }}>
           <table style={table}>
             <thead>
@@ -104,12 +117,10 @@ const ArchiveDocuments: React.FC = () => {
                   </td>
                 </tr>
               ))}
-              {!loading && docs.length === 0 && (
-                <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--fg-muted)' }}>Aucun document.</td></tr>
-              )}
             </tbody>
           </table>
         </div>
+        )}
       </SectionCard>
     </DashboardShell>
   );

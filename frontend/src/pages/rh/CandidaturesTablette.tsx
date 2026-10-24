@@ -74,10 +74,10 @@ const CandidaturesTablette: React.FC = () => {
           throw e;
         }
       });
-      alert('Entretien créé.');
+      window.showToast?.('success', "Entretien créé.");
       load();
     } catch (e: any) {
-      alert(e?.response?.data?.error?.message || 'Erreur création entretien');
+      window.showToast?.('error', 'Erreur', String(e?.response?.data?.error?.message || 'Erreur création entretien'));
     }
   };
 

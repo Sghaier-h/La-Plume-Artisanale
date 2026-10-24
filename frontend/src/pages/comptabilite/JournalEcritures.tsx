@@ -22,6 +22,7 @@ import {
   CodeJournal,
   LigneEcriture,
 } from '../../services/comptabiliteApi';
+import { DataTable, Column } from '../../components/ui/DataTable';
 
 // ═══════════════════════════════════════════════════════════════════
 // MOCK — journal chronologique
@@ -217,7 +218,7 @@ const JournalEcritures: React.FC = () => {
     } catch {
       /* mock */
     }
-    alert(`Période ${periode} verrouillée. Les écritures ne sont plus modifiables.`);
+    window.showToast?.('success', 'Enregistré', String(`Période ${periode} verrouillée. Les écritures ne sont plus modifiables.`));
   };
 
   if (loading) {
@@ -347,71 +348,34 @@ const JournalEcritures: React.FC = () => {
           </div>
 
           {/* Table */}
-          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200 text-sm">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Date</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">N° pièce</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Journal</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Libellé / Tiers</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Débit</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Crédit</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Statut</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {filtered.map((e) => {
-                  const tiers = (e.lignes || []).find((l) => l.nom_tiers)?.nom_tiers;
-                  return (
-                    <tr
-                      key={e.id_ecriture}
-                      onClick={() => setDetail(e)}
-                      className="hover:bg-[#FDF2ED]/40 group cursor-pointer"
-                    >
-                      <td className="px-4 py-3 text-gray-700 text-xs whitespace-nowrap">
-                        {new Date(e.date_ecriture).toLocaleDateString('fr-FR')}
-                      </td>
-                      <td
-                        className="px-4 py-3 font-mono text-xs font-semibold text-[#3B4E68]"
-                        style={{ fontFamily: 'var(--font-mono, JetBrains Mono, monospace)' }}
-                      >
-                        {e.numero_ecriture}
-                      </td>
-                      <td className="px-4 py-3">
-                        <JournalBadge code={e.code_journal || 'OD'} />
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="text-gray-900">{e.libelle}</div>
-                        {tiers && (
-                          <div className="text-xs text-gray-500 italic">↳ {tiers}</div>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <MontantCell value={e.montant_total} devise="" />
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <MontantCell value={e.montant_total} devise="" />
-                      </td>
-                      <td className="px-4 py-3">
-                        <StatutEcritureBadge statut={e.statut} />
-                      </td>
-                      <td className="px-4 py-3 text-right whitespace-nowrap">
-                      </td>
-                    </tr>
-                  );
-                })}
-                {filtered.length === 0 && (
-                  <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-gray-400">
-                      Aucune écriture pour ces critères.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <DataTable<EcritureComptable>
+            columns={[
+              { key: 'date_ecriture', label: 'Date', sortable: true, value: (e) => e.date_ecriture, render: (e) => <span className="text-gray-700 text-xs whitespace-nowrap">{new Date(e.date_ecriture).toLocaleDateString('fr-FR')}</span> },
+              { key: 'numero_ecriture', label: 'N° pièce', sortable: true, render: (e) => <span className="font-mono text-xs font-semibold text-[#3B4E68]" style={{ fontFamily: 'var(--font-mono, JetBrains Mono, monospace)' }}>{e.numero_ecriture}</span> },
+              { key: 'code_journal', label: 'Journal', sortable: true, render: (e) => <JournalBadge code={e.code_journal || 'OD'} /> },
+              { key: 'libelle', label: 'Libellé / Tiers', sortable: true, render: (e) => {
+                const tiers = (e.lignes || []).find((l) => l.nom_tiers)?.nom_tiers;
+                return (
+                  <div>
+                    <div className="text-gray-900">{e.libelle}</div>
+                    {tiers && (<div className="text-xs text-gray-500 italic">↳ {tiers}</div>)}
+                  </div>
+                );
+              } },
+              { key: 'debit', label: 'Débit', sortable: true, align: 'right', value: (e) => Number(e.montant_total) || 0, render: (e) => <MontantCell value={e.montant_total} devise="" /> },
+              { key: 'credit', label: 'Crédit', sortable: true, align: 'right', value: (e) => Number(e.montant_total) || 0, render: (e) => <MontantCell value={e.montant_total} devise="" /> },
+              { key: 'statut', label: 'Statut', sortable: true, render: (e) => <StatutEcritureBadge statut={e.statut} /> },
+              { key: '_actions', label: 'Actions', sortable: false, exportable: false, align: 'right', render: () => <span /> },
+            ] as Column<EcritureComptable>[]}
+            data={filtered}
+            rowKey={(e) => e.id_ecriture}
+            onRowClick={(e) => setDetail(e)}
+            pageSize={25}
+            exportable
+            exportFilename="journal_ecritures"
+            emptyState={<span>Aucune écriture pour ces critères.</span>}
+            loading={loading}
+          />
         </div>
       </div>
 

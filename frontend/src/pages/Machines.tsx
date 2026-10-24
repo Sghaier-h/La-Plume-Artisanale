@@ -60,7 +60,7 @@ const Machines: React.FC = () => {
       resetForm();
       loadData();
     } catch (error: any) {
-      alert(error.response?.data?.error?.message || 'Erreur');
+      window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur'));
     }
   };
 

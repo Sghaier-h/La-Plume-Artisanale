@@ -3,6 +3,8 @@ import { FileText, Plus, Edit, Trash2, Search, Download, X, CheckCircle, Shoppin
 import { devisService, commandesService, clientsService, articlesService } from '../services/api';
 import ArticlePicker from '../components/ArticlePicker';
 import KpiCard from '../components/ecommerce/KpiCard';
+import { PageSkeleton, EmptyState } from '../components/ui';
+import { DataTable, Column } from '../components/ui/DataTable';
 
 interface LigneDevis {
   id_article?: number;
@@ -84,11 +86,11 @@ const Devis: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.lignes.length === 0) {
-      alert('Ajoutez au moins une ligne de devis');
+      window.showToast?.('success', "Ajoutez au moins une ligne de devis");
       return;
     }
     if (!formData.id_client) {
-      alert('Sélectionnez un client');
+      window.showToast?.('info', "Sélectionnez un client");
       return;
     }
     try {
@@ -143,7 +145,7 @@ const Devis: React.FC = () => {
       loadData();
     } catch (error: any) {
       console.error('Erreur sauvegarde devis:', error);
-      alert(error.response?.data?.error?.message || 'Erreur lors de la sauvegarde du devis');
+      window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de la sauvegarde du devis'));
     }
   };
 
@@ -224,11 +226,7 @@ const Devis: React.FC = () => {
   }, [devis]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-app)' }}>
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: 'var(--accent-terracotta)' }}></div>
-      </div>
-    );
+    return <PageSkeleton kpiCount={4} rows={8} cols={7} />;
   }
 
   return (
@@ -587,148 +585,144 @@ const Devis: React.FC = () => {
         )}
 
         {/* Liste des devis */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Numéro</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Montant HT</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredDevis.map((devis) => {
-                const openDevisView = async () => {
-                  try {
-                    const result = await devisService.getDevisById(devis.id_devis);
-                    if (result.data?.success) setSelectedDevis(result.data?.data);
-                    else alert('Erreur lors du chargement du devis');
-                  } catch (error: any) {
-                    console.error('Erreur chargement devis:', error);
-                    alert(error.response?.data?.error?.message || 'Erreur lors du chargement du devis');
-                  }
-                };
+        {filteredDevis.length === 0 ? (
+          <EmptyState
+            variant={search || filters.statut || filters.client_id ? 'search-no-result' : 'default'}
+            title={search || filters.statut || filters.client_id ? 'Aucun devis ne correspond' : 'Aucun devis pour l’instant'}
+            description={search || filters.statut || filters.client_id ? 'Essayez d’élargir vos filtres.' : 'Créez votre premier devis client.'}
+            cta={search || filters.statut || filters.client_id
+              ? { label: 'Réinitialiser', onClick: () => { setSearch(''); setFilters({ statut: '', client_id: '' }); } }
+              : undefined}
+          />
+        ) : (
+          <DataTable<any>
+            columns={[
+              { key: 'numero_devis', label: 'Numéro', sortable: true, render: (d: any) => <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 500 }}>{d.numero_devis}</span> },
+              { key: 'client_nom', label: 'Client', sortable: true, render: (d: any) => d.client_nom || '-' },
+              { key: 'date_devis', label: 'Date', sortable: true, value: (d: any) => d.date_devis, render: (d: any) => d.date_devis || '-' },
+              { key: 'montant_ht', label: 'Montant HT', sortable: true, align: 'right', value: (d: any) => Number(d.montant_ht) || 0, render: (d: any) => `${Number(d.montant_ht || 0).toFixed(2)} TND` },
+              { key: 'statut', label: 'Statut', sortable: true, render: (d: any) => (
+                <span className={`px-2 py-1 rounded text-xs font-medium ${getStatutColor(d.statut)}`}>{d.statut}</span>
+              ) },
+              { key: '_actions', label: 'Actions', sortable: false, exportable: false, render: (devis: any) => {
+                const dejaTransforme = devis.statut && ['transforme', 'transformé', 'TRANSFORME'].includes(devis.statut);
                 const transformerRow = async (e: React.MouseEvent) => {
                   e.stopPropagation();
                   if (!window.confirm(`Transformer le devis ${devis.numero_devis} en commande ?`)) return;
                   try {
                     const result = await devisService.transformerEnCommande(devis.id_devis);
                     if (result.data?.success) {
-                      alert('Devis transformé en commande avec succès');
+                      window.showToast?.('success', "Devis transformé en commande");
                       loadData();
                     } else {
-                      alert(result.data?.error?.message || 'Erreur lors de la transformation');
+                      window.showToast?.('error', 'Erreur', String(result.data?.error?.message || 'Erreur lors de la transformation'));
                     }
                   } catch (err: any) {
                     console.error('Erreur transformation devis:', err);
-                    alert(err.response?.data?.error?.message || 'Erreur lors de la transformation');
+                    window.showToast?.('error', 'Erreur', String(err.response?.data?.error?.message || 'Erreur lors de la transformation'));
                   }
                 };
-                const dejaTransforme = devis.statut && ['transforme', 'transformé', 'TRANSFORME'].includes(devis.statut);
                 return (
-                <tr key={devis.id_devis} onClick={openDevisView} className="hover:bg-gray-50 cursor-pointer group">
-                  <td className="px-6 py-4 whitespace-nowrap font-medium">{devis.numero_devis}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">{devis.client_nom}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">{devis.date_devis}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">{Number(devis.montant_ht || 0).toFixed(2)} TND</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${getStatutColor(devis.statut)}`}>
-                      {devis.statut}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                    <div className="flex gap-2">
-                      {!dejaTransforme && (
-                        <button
-                          onClick={transformerRow}
-                          className="text-green-600 hover:text-green-700"
-                          title="Transformer en commande"
-                        >
-                          <ShoppingCart className="w-4 h-4" />
-                        </button>
-                      )}
-                      <button
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          try { await devisService.downloadPDF(devis.id_devis, devis.numero_devis); }
-                          catch { alert('Erreur lors du téléchargement du PDF'); }
-                        }}
-                        className="text-[#C8663D] hover:text-[#a94f2b]"
-                        title="Télécharger PDF"
-                      >
-                        <Download className="w-4 h-4" />
+                  <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                    {!dejaTransforme && (
+                      <button onClick={transformerRow} className="text-green-600 hover:text-green-700" title="Transformer en commande">
+                        <ShoppingCart className="w-4 h-4" />
                       </button>
-                      <button
-                        onClick={async (e) => {
-                          e.stopPropagation();
+                    )}
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        try { await devisService.downloadPDF(devis.id_devis, devis.numero_devis); }
+                        catch { window.showToast?.('error', 'Erreur', String('Erreur lors du téléchargement du PDF')); }
+                      }}
+                      className="text-[#C8663D] hover:text-[#a94f2b]"
+                      title="Télécharger PDF"
+                    >
+                      <Download className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        try {
+                          const result = await devisService.getDevisById(devis.id_devis);
+                          if (result.data?.success) {
+                            const devisData = result.data.data;
+                            setFormData({
+                              id_client: devisData.id_client?.toString() || '',
+                              date_devis: devisData.date_devis || new Date().toISOString().split('T')[0],
+                              date_validite: devisData.date_validite || '',
+                              statut: devisData.statut || 'BROUILLON',
+                              taux_tva: devisData.taux_tva || 20,
+                              remise_globale: devisData.remise_globale || 0,
+                              reference_client: devisData.reference_client || '',
+                              conditions_paiement: devisData.conditions_paiement || '',
+                              conditions_livraison: devisData.conditions_livraison || '',
+                              notes: devisData.notes || '',
+                              lignes: (devisData.lignes || []).map((l: any) => ({
+                                id_article: l.id_article,
+                                designation: l.designation,
+                                quantite: l.quantite,
+                                prix_unitaire_ht: l.prix_unitaire_ht,
+                                remise: l.remise || 0,
+                                taux_tva: l.taux_tva || 20
+                              }))
+                            });
+                            setEditingDevis(devis);
+                            setShowForm(true);
+                          } else {
+                            window.showToast?.('error', 'Erreur', String('Erreur lors du chargement du devis'));
+                          }
+                        } catch (error: any) {
+                          console.error('Erreur chargement devis:', error);
+                          window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors du chargement du devis'));
+                        }
+                      }}
+                      className="text-gray-600 hover:text-gray-700"
+                      title="Modifier"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        if (window.confirm(`Êtes-vous sûr de vouloir supprimer le devis ${devis.numero_devis} ?`)) {
                           try {
-                            const result = await devisService.getDevisById(devis.id_devis);
-                            if (result.data?.success) {
-                              const devisData = result.data.data;
-                              setFormData({
-                                id_client: devisData.id_client?.toString() || '',
-                                date_devis: devisData.date_devis || new Date().toISOString().split('T')[0],
-                                date_validite: devisData.date_validite || '',
-                                statut: devisData.statut || 'BROUILLON',
-                                taux_tva: devisData.taux_tva || 20,
-                                remise_globale: devisData.remise_globale || 0,
-                                reference_client: devisData.reference_client || '',
-                                conditions_paiement: devisData.conditions_paiement || '',
-                                conditions_livraison: devisData.conditions_livraison || '',
-                                notes: devisData.notes || '',
-                                lignes: (devisData.lignes || []).map((l: any) => ({
-                                  id_article: l.id_article,
-                                  designation: l.designation,
-                                  quantite: l.quantite,
-                                  prix_unitaire_ht: l.prix_unitaire_ht,
-                                  remise: l.remise || 0,
-                                  taux_tva: l.taux_tva || 20
-                                }))
-                              });
-                              setEditingDevis(devis);
-                              setShowForm(true);
-                            } else {
-                              alert('Erreur lors du chargement du devis');
-                            }
+                            await devisService.deleteDevis(devis.id_devis);
+                            loadData();
+                            window.showToast?.('success', "Devis supprimé");
                           } catch (error: any) {
-                            console.error('Erreur chargement devis:', error);
-                            alert(error.response?.data?.error?.message || 'Erreur lors du chargement du devis');
+                            console.error('Erreur suppression devis:', error);
+                            window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de la suppression du devis'));
                           }
-                        }}
-                        className="text-gray-600 hover:text-gray-700"
-                        title="Modifier"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          if (window.confirm(`Êtes-vous sûr de vouloir supprimer le devis ${devis.numero_devis} ?`)) {
-                            try {
-                              await devisService.deleteDevis(devis.id_devis);
-                              loadData();
-                              alert('Devis supprimé avec succès');
-                            } catch (error: any) {
-                              console.error('Erreur suppression devis:', error);
-                              alert(error.response?.data?.error?.message || 'Erreur lors de la suppression du devis');
-                            }
-                          }
-                        }}
-                        className="text-red-600 hover:text-red-700"
-                        title="Supprimer"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              );})}
-            </tbody>
-          </table>
-        </div>
+                        }
+                      }}
+                      className="text-red-600 hover:text-red-700"
+                      title="Supprimer"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                );
+              } },
+            ] as Column<any>[]}
+            data={filteredDevis}
+            rowKey={(d: any) => d.id_devis}
+            onRowClick={async (devis: any) => {
+              try {
+                const result = await devisService.getDevisById(devis.id_devis);
+                if (result.data?.success) setSelectedDevis(result.data?.data);
+                else window.showToast?.('error', 'Erreur', String('Erreur lors du chargement du devis'));
+              } catch (error: any) {
+                console.error('Erreur chargement devis:', error);
+                window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors du chargement du devis'));
+              }
+            }}
+            pageSize={25}
+            exportable
+            exportFilename="devis"
+            loading={loading}
+          />
+        )}
 
         {/* Modal de consultation */}
         {selectedDevis && (
@@ -894,7 +888,7 @@ const Devis: React.FC = () => {
                         }
                       } catch (error: any) {
                         console.error('Erreur chargement devis:', error);
-                        alert(error.response?.data?.error?.message || 'Erreur lors du chargement du devis');
+                        window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors du chargement du devis'));
                       }
                     }}
                     className="px-4 py-2 rounded-lg hover:opacity-90 transition"
@@ -913,14 +907,14 @@ const Devis: React.FC = () => {
                             const message = commandeId 
                               ? `Devis transformé en commande avec succès !\nID Commande: ${commandeId}`
                               : 'Devis transformé en commande avec succès !';
-                            alert(message);
+                            window.showToast?.('info', 'Information', String(message));
                             setSelectedDevis(null);
                             loadData();
                             // Optionnel : rediriger vers la commande créée
                             // if (commandeId) navigate(`/commandes?highlight=${commandeId}`);
                           } catch (error: any) {
                             console.error('Erreur transformation:', error);
-                            alert(error.response?.data?.error?.message || 'Erreur lors de la transformation');
+                            window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de la transformation'));
                           }
                         }
                       }}

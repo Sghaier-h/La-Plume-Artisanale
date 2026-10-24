@@ -112,16 +112,16 @@ const SuiviFabrication: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.id_of || !formData.id_machine) {
-      alert('OF et Machine requis');
+      window.showToast?.('info', "OF et Machine requis");
       return;
     }
     try {
       if (editingSuivi) {
         await suiviFabricationService.updateSuiviFabrication(editingSuivi.id_suivi, formData);
-        alert('Suivi modifié avec succès');
+        window.showToast?.('success', "Suivi modifié");
       } else {
         await suiviFabricationService.createSuiviFabrication(formData);
-        alert('Suivi créé avec succès');
+        window.showToast?.('success', "Suivi créé");
       }
       setShowForm(false);
       setEditingSuivi(null);
@@ -129,7 +129,7 @@ const SuiviFabrication: React.FC = () => {
       loadData();
     } catch (error: any) {
       console.error('Erreur sauvegarde suivi:', error);
-      alert(error.response?.data?.error?.message || 'Erreur lors de la sauvegarde');
+      window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de la sauvegarde'));
     }
   };
 
@@ -155,7 +155,7 @@ const SuiviFabrication: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Erreur chargement suivi:', error);
-      alert(error.response?.data?.error?.message || 'Erreur lors du chargement');
+      window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors du chargement'));
     }
   };
 

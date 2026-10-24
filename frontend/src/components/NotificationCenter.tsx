@@ -132,7 +132,8 @@ const NotificationCenter: React.FC = () => {
         setItems((prev) => [payload, ...prev].slice(0, 20));
         const title = payload.titre || payload.title || 'Nouvelle notification';
         const msg = payload.message || payload.contenu || '';
-        toast.info(msg, title);
+        // Phase F2 : signature `(title, description)` (ex-`(msg, title)`).
+        toast.info(title, msg);
       });
     } catch {}
     return () => {

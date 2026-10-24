@@ -488,3 +488,190 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Google Fonts import */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap');
+
+/* ==============================================================
+ * PHASE F4 — DESIGN ARTISANAL TUNISIEN
+ * Textures discrètes, bordures manuscrites, animations élégantes.
+ * Fonctionnent sur light + dark theme — tissage, lin, papier, encre.
+ * ============================================================== */
+
+:root {
+  /* === TEXTURES SVG (data-URI, < 2 KB chacune) === */
+
+  /* Trame fine en diagonale 45° — pour cards hero et bandeaux */
+  --texture-lin:
+    url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Cg fill='none' stroke='%236B4E31' stroke-width='0.5' stroke-opacity='0.18'%3E%3Cpath d='M0 48L48 0M-12 12L12 -12M36 60L60 36'/%3E%3Cpath d='M0 24L24 0M24 48L48 24' stroke-opacity='0.10'/%3E%3C/g%3E%3C/svg%3E");
+
+  /* Grain papier recyclé — points irréguliers, pour fonds login/dashboard */
+  --texture-papier:
+    url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='%236B4E31' fill-opacity='0.14'%3E%3Ccircle cx='11' cy='23' r='0.6'/%3E%3Ccircle cx='37' cy='9' r='0.5'/%3E%3Ccircle cx='63' cy='41' r='0.7'/%3E%3Ccircle cx='89' cy='15' r='0.4'/%3E%3Ccircle cx='103' cy='57' r='0.6'/%3E%3Ccircle cx='21' cy='71' r='0.5'/%3E%3Ccircle cx='47' cy='83' r='0.6'/%3E%3Ccircle cx='75' cy='95' r='0.5'/%3E%3Ccircle cx='97' cy='109' r='0.7'/%3E%3Ccircle cx='9' cy='101' r='0.4'/%3E%3Ccircle cx='55' cy='65' r='0.3'/%3E%3Ccircle cx='83' cy='37' r='0.5'/%3E%3Ccircle cx='29' cy='53' r='0.4'/%3E%3Ccircle cx='113' cy='89' r='0.6'/%3E%3Ccircle cx='41' cy='113' r='0.5'/%3E%3C/g%3E%3C/svg%3E");
+
+  /* Trait pinceau pour séparateurs (border-image) — courbe organique */
+  --texture-brush:
+    url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='6' viewBox='0 0 120 6' preserveAspectRatio='none'%3E%3Cpath d='M0 3 Q10 1 20 3 T40 3 Q50 5 60 3 T80 3 Q90 1 100 3 T120 3' stroke='%23C8663D' stroke-width='1.8' stroke-linecap='round' fill='none' stroke-opacity='0.65'/%3E%3C/svg%3E");
+
+  /* === NOUVELLES VARS D'ACCENT === */
+  --accent-terracotta-dark: #A04A28;
+  --accent-sage-light: #C8D6BE;
+  --accent-gold-shimmer: linear-gradient(135deg, #C89B3C 0%, #E4C070 50%, #C89B3C 100%);
+}
+
+/* Variantes dark pour les accents artisanaux */
+:root[data-theme="dark"] {
+  --accent-terracotta-dark: #C45E3C;
+  --accent-sage-light: #6E8661;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --accent-terracotta-dark: #C45E3C;
+    --accent-sage-light: #6E8661;
+  }
+}
+
+/* === KEYFRAMES === */
+
+/* Soulignement « coup de pinceau » qui s'étend de gauche à droite */
+@keyframes lp-brush-draw {
+  0%   { clip-path: inset(0 100% 0 0); opacity: 0; }
+  30%  { opacity: 1; }
+  100% { clip-path: inset(0 0 0 0); opacity: 1; }
+}
+
+/* Motif tissage qui défile lentement — badges « en fabrication » */
+@keyframes lp-weave {
+  0%   { background-position: 0 0; }
+  100% { background-position: 16px 0; }
+}
+
+/* Apparition encre : légère tache sombre qui s'estompe */
+@keyframes lp-ink-fade-in {
+  0% {
+    opacity: 0;
+    transform: translateY(4px);
+    filter: blur(2px) saturate(1.4) brightness(0.9);
+  }
+  60% {
+    opacity: 0.9;
+    filter: blur(0.5px) saturate(1.1) brightness(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0) saturate(1) brightness(1);
+  }
+}
+
+/* === CLASSES UTILITAIRES ARTISANALES === */
+
+/* Card avec légère texture papier + ombre douce + border subtil.
+ * Note : utilise !important sur background-image + border-color pour
+ * surcharger les styles inline des composants partagés (KpiCard etc.)
+ * sans les refactorer — zéro régression sur les autres pages. */
+.la-plume-card {
+  position: relative;
+  background-image: var(--texture-papier) !important;
+  background-blend-mode: multiply;
+  background-repeat: repeat;
+  background-size: 180px 180px;
+  border-color: color-mix(in srgb, var(--fg-muted) 22%, var(--border-default)) !important;
+  box-shadow: var(--shadow-sm);
+  transition:
+    box-shadow var(--duration-slow) var(--ease),
+    border-color var(--duration-slow) var(--ease),
+    transform var(--duration-slow) var(--ease);
+}
+.la-plume-card:hover {
+  box-shadow: var(--shadow-md);
+}
+:root[data-theme="dark"] .la-plume-card,
+:root:not([data-theme="light"]) .la-plume-card {
+  background-blend-mode: screen;
+}
+
+/* Séparateur manuscrit (brush border-image) */
+.la-plume-separator {
+  border: 0;
+  height: 6px;
+  background: transparent;
+  border-image: var(--texture-brush) 2 round;
+  border-top: 1px solid transparent;
+  margin: var(--s-5) 0;
+  opacity: 0.9;
+}
+
+/* Titre H1/H2 avec soulignement « coup de pinceau » animé */
+.la-plume-title-brush {
+  position: relative;
+  display: inline-block;
+  padding-bottom: 10px;
+}
+.la-plume-title-brush::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 6px;
+  background: var(--texture-brush) left center / 100% 6px no-repeat;
+  animation: lp-brush-draw 900ms var(--ease) both;
+  animation-delay: 120ms;
+}
+
+/* Badge « en fabrication » avec trame animée */
+.la-plume-weave-badge {
+  background-image: repeating-linear-gradient(
+    45deg,
+    color-mix(in srgb, var(--accent-indigo) 18%, transparent) 0 2px,
+    transparent 2px 8px,
+    color-mix(in srgb, var(--accent-terracotta) 14%, transparent) 8px 10px,
+    transparent 10px 16px
+  );
+  background-size: 16px 16px;
+  animation: lp-weave 3.5s linear infinite;
+}
+
+/* Apparition « encre » pour cards (à appliquer au mount) */
+.la-plume-ink-in {
+  animation: lp-ink-fade-in 420ms var(--ease) both;
+}
+
+/* Fond papier recyclé subtil pour pages d'écran (opacity 0.03) */
+.la-plume-paper-bg {
+  position: relative;
+}
+.la-plume-paper-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: var(--texture-papier);
+  background-size: 240px 240px;
+  opacity: 0.5;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  z-index: 0;
+}
+:root[data-theme="dark"] .la-plume-paper-bg::before,
+:root:not([data-theme="light"]) .la-plume-paper-bg::before {
+  mix-blend-mode: screen;
+  opacity: 0.08;
+}
+.la-plume-paper-bg > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* === ACCESSIBILITÉ : désactivation des animations === */
+@media (prefers-reduced-motion: reduce) {
+  .la-plume-title-brush::after,
+  .la-plume-weave-badge,
+  .la-plume-ink-in {
+    animation: none !important;
+  }
+  .la-plume-title-brush::after {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+  }
+  .la-plume-card {
+    transition: none !important;
+  }
+}

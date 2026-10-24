@@ -201,7 +201,7 @@ const RhRecrutement: React.FC = () => {
   const submitCandidature = async (e: React.FormEvent) => {
     e.preventDefault();
     if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      alert('Email invalide'); return;
+      window.showToast?.('error', 'Erreur', String('Email invalide')); return;
     }
     try {
       const payload = { ...form,
@@ -215,7 +215,7 @@ const RhRecrutement: React.FC = () => {
         experience_annees: '', pretention_salariale: '', disponibilite: '' });
       load();
     } catch (err: any) {
-      alert('Erreur: ' + (err.response?.data?.message || err.message));
+      window.showToast?.('error', 'Erreur', String('Erreur: ' + (err.response?.data?.message || err.message)));
     }
   };
 

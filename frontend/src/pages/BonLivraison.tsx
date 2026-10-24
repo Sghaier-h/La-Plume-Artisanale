@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Truck, Plus, Edit, Trash2, Search, Download, CheckCircle, X, Package, Receipt } from 'lucide-react';
 import { bonsLivraisonService, commandesService, clientsService, articlesService, facturesService } from '../services/api';
 import ArticlePicker from '../components/ArticlePicker';
+import { PageSkeleton, EmptyState } from '../components/ui';
 
 interface LigneBL {
   id_article?: number;
@@ -95,11 +96,11 @@ const BonLivraison: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.lignes.length === 0) {
-      alert('Ajoutez au moins une ligne de livraison');
+      window.showToast?.('success', "Ajoutez au moins une ligne de livraison");
       return;
     }
     if (!formData.id_client || !formData.date_livraison) {
-      alert('Client et date de livraison requis');
+      window.showToast?.('info', "Client et date de livraison requis");
       return;
     }
     try {
@@ -112,10 +113,10 @@ const BonLivraison: React.FC = () => {
       setEditingBL(null);
       resetForm();
       loadData();
-      alert(editingBL ? 'Bon de livraison modifié avec succès' : 'Bon de livraison créé avec succès');
+      window.showToast?.('success', 'Enregistré', String(editingBL ? 'Bon de livraison modifié avec succès' : 'Bon de livraison créé avec succès'));
     } catch (error: any) {
       console.error('Erreur sauvegarde BL:', error);
-      alert(error.response?.data?.error?.message || 'Erreur lors de la sauvegarde');
+      window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de la sauvegarde'));
     }
   };
 
@@ -126,12 +127,12 @@ const BonLivraison: React.FC = () => {
         statut: 'BROUILLON'
       });
       if (result.data?.success) {
-        alert('Bon de livraison généré avec succès depuis la commande');
+        window.showToast?.('success', "Bon de livraison généré avec succès depuis la commande");
         loadData();
       }
     } catch (error: any) {
       console.error('Erreur génération BL:', error);
-      alert(error.response?.data?.error?.message || 'Erreur lors de la génération');
+      window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de la génération'));
     }
   };
 
@@ -143,13 +144,13 @@ const BonLivraison: React.FC = () => {
           statut: 'BROUILLON'
         });
         if (result.data?.success) {
-          alert('Facture générée avec succès depuis le bon de livraison !');
+          window.showToast?.('success', "Facture générée avec succès depuis le bon de livraison !");
           setSelectedBL(null);
           loadData();
         }
       } catch (error: any) {
         console.error('Erreur génération facture:', error);
-        alert(error.response?.data?.error?.message || 'Erreur lors de la génération de la facture');
+        window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de la génération de la facture'));
       }
     }
   };
@@ -225,11 +226,7 @@ const BonLivraison: React.FC = () => {
   });
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]"></div>
-      </div>
-    );
+    return <PageSkeleton kpiCount={0} rows={8} cols={7} />;
   }
 
   return (
@@ -530,6 +527,16 @@ const BonLivraison: React.FC = () => {
         )}
 
         {/* Liste */}
+        {filteredBL.length === 0 ? (
+          <EmptyState
+            variant={search || filters.statut || filters.client_id ? 'search-no-result' : 'default'}
+            title={search || filters.statut || filters.client_id ? 'Aucun bon de livraison ne correspond' : 'Aucun bon de livraison'}
+            description={search || filters.statut || filters.client_id ? 'Réinitialisez vos filtres ou votre recherche.' : 'Les bons de livraison apparaîtront ici une fois créés.'}
+            cta={search || filters.statut || filters.client_id
+              ? { label: 'Réinitialiser', onClick: () => { setSearch(''); setFilters({ statut: '', client_id: '' }); } }
+              : undefined}
+          />
+        ) : (
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <table className="w-full">
             <thead className="bg-gray-50">
@@ -544,14 +551,7 @@ const BonLivraison: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {filteredBL.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
-                    Aucun bon de livraison trouvé
-                  </td>
-                </tr>
-              ) : (
-                filteredBL.map((bl) => (
+              {filteredBL.map((bl) => (
                   <tr
                     key={bl.id_bl}
                     onClick={async () => {
@@ -562,7 +562,7 @@ const BonLivraison: React.FC = () => {
                         }
                       } catch (error: any) {
                         console.error('Erreur chargement BL:', error);
-                        alert(error.response?.data?.error?.message || 'Erreur lors du chargement');
+                        window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors du chargement'));
                       }
                     }}
                     className="hover:bg-gray-50 group cursor-pointer"
@@ -583,7 +583,7 @@ const BonLivraison: React.FC = () => {
                           onClick={async (e) => {
                             e.stopPropagation();
                             try { await bonsLivraisonService.downloadPDF(bl.id_bl, bl.numero_bl); }
-                            catch { alert('Erreur lors du téléchargement du PDF'); }
+                            catch { window.showToast?.('error', 'Erreur', String('Erreur lors du téléchargement du PDF')); }
                           }}
                           className="text-[#C8663D] hover:text-[#a94f2b]"
                           title="Télécharger PDF"
@@ -622,7 +622,7 @@ const BonLivraison: React.FC = () => {
                               }
                             } catch (error: any) {
                               console.error('Erreur chargement BL:', error);
-                              alert(error.response?.data?.error?.message || 'Erreur lors du chargement');
+                              window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors du chargement'));
                             }
                           }}
                           className="text-gray-600 hover:text-gray-700"
@@ -637,10 +637,10 @@ const BonLivraison: React.FC = () => {
                               try {
                                 await bonsLivraisonService.deleteBonLivraison(bl.id_bl);
                                 loadData();
-                                alert('Bon de livraison supprimé avec succès');
+                                window.showToast?.('success', "Bon de livraison supprimé");
                               } catch (error: any) {
                                 console.error('Erreur suppression BL:', error);
-                                alert(error.response?.data?.error?.message || 'Erreur lors de la suppression');
+                                window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de la suppression'));
                               }
                             }
                           }}
@@ -652,11 +652,11 @@ const BonLivraison: React.FC = () => {
                       </div>
                     </td>
                   </tr>
-                ))
-              )}
+                ))}
             </tbody>
           </table>
         </div>
+        )}
 
         {/* Modal de consultation */}
         {selectedBL && (
@@ -798,7 +798,7 @@ const BonLivraison: React.FC = () => {
                         }
                       } catch (error: any) {
                         console.error('Erreur chargement BL:', error);
-                        alert(error.response?.data?.error?.message || 'Erreur lors du chargement');
+                        window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors du chargement'));
                       }
                     }}
                     className="px-4 py-2 bg-[#C8663D] text-white rounded-lg hover:bg-[#a55231]"

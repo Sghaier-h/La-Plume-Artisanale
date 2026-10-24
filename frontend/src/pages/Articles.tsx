@@ -4,7 +4,10 @@ import { Package, Plus, Edit, Trash2, Search, RefreshCw, Upload, Image as ImageI
 import { produitsService, articlesService, parametresCatalogueService, modelesService } from '../services/api';
 import { genererRefCommerciale, genererRefFabrication } from '../utils/references';
 import api from '../services/api';
+import { PageSkeleton, EmptyState } from '../components/ui';
+import { DataTable, Column } from '../components/ui/DataTable';
 import KpiCard from '../components/ecommerce/KpiCard';
+import { IconFouta } from '../components/ui/IconsLaPlume';
 
 interface Modele {
   id_modele: number;
@@ -684,11 +687,7 @@ const Articles: React.FC = () => {
   }, [articles]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-app)' }}>
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: 'var(--accent-terracotta)' }}></div>
-      </div>
-    );
+    return <PageSkeleton kpiCount={4} rows={8} cols={7} />;
   }
 
   return (
@@ -700,7 +699,7 @@ const Articles: React.FC = () => {
           </div>
           <div className="flex items-center justify-between">
             <div>
-              <h1 style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 500, fontSize: 'var(--text-3xl)', color: 'var(--fg-primary)', marginBottom: 'var(--s-2)' }}>
+              <h1 className="la-plume-title-brush" style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 500, fontSize: 'var(--text-3xl)', color: 'var(--fg-primary)', marginBottom: 'var(--s-2)' }}>
                 Articles
               </h1>
               <p style={{ color: 'var(--fg-secondary)', fontSize: 'var(--text-md)' }}>
@@ -734,7 +733,7 @@ const Articles: React.FC = () => {
 
         {/* KPI row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <KpiCard label="Articles actifs" value={kpis.actifs} icon={<Package className="w-5 h-5" />} color="terracotta"
+          <KpiCard label="Articles actifs" value={kpis.actifs} icon={<IconFouta size={20} />} color="terracotta"
             active={filters.actif === 'true'}
             onClick={() => setFilters({ ...filters, actif: filters.actif === 'true' ? '' : 'true' })} />
           <KpiCard label="En stock" value={kpis.totalArticles - kpis.enRupture} icon={<Warehouse className="w-5 h-5" />} color="sage"
@@ -1522,143 +1521,117 @@ const Articles: React.FC = () => {
 
         {/* Liste des articles */}
         {affichageMode === 'ligne' ? (
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Photo</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ref Commerciale</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ref Fabrication</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Modèle</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Couleur</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Prix (Modèle)</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stock</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">2ème Choix</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">À Fabriquer</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Catalogue</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredArticles.map((article) => (
-                <tr
-                  key={article.id_article}
-                  onClick={() => { if (article.id_article) navigate(`/articles/${article.id_article}`); }}
-                  className="hover:bg-gray-50 group cursor-pointer"
+          <DataTable<any>
+            columns={[
+              { key: 'photo_article', label: 'Photo', sortable: false, exportable: false, render: (a: any) => (
+                a.photo_article ? (
+                  <img src={a.photo_article} alt={a.ref_commercial} className="w-12 h-12 object-cover rounded" />
+                ) : (
+                  <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
+                    <ImageIcon className="w-6 h-6 text-gray-400" />
+                  </div>
+                )
+              ) },
+              { key: 'ref_commercial', label: 'Ref Commerciale', sortable: true, render: (a: any) => (
+                <span className="font-mono text-sm font-medium" style={{ color: 'var(--accent-terracotta)' }}>{a.ref_commercial}</span>
+              ) },
+              { key: 'ref_fabrication', label: 'Ref Fabrication', sortable: true, render: (a: any) => (
+                <span className="font-mono text-sm text-green-600">{a.ref_fabrication}</span>
+              ) },
+              { key: 'modele', label: 'Modèle', sortable: true, render: (a: any) => a.modele || '-' },
+              { key: 'couleur_article', label: 'Couleur', sortable: true, render: (a: any) => a.couleur_article || '-' },
+              { key: 'prix_vente', label: 'Prix (Modèle)', sortable: true, align: 'right', value: (a: any) => Number(getPrixFromModele(a).prix_vente) || 0, render: (a: any) => {
+                const prix = getPrixFromModele(a);
+                return (
+                  <div className="text-sm">
+                    <div className="font-semibold text-green-600">{Number(prix.prix_vente || 0).toFixed(2)} TND</div>
+                    <div className="text-xs text-gray-500">Reviens: {Number(prix.prix_reviens || 0).toFixed(2)} TND</div>
+                    {prix.prix_multiple && prix.prix_multiple.length > 0 && (
+                      <div className="text-xs mt-1" style={{ color: 'var(--accent-indigo)' }}>
+                        +{prix.prix_multiple.length} autre(s) prix
+                      </div>
+                    )}
+                  </div>
+                );
+              } },
+              { key: 'stock_total', label: 'Stock', sortable: true, align: 'right', value: (a: any) => Number(a.stock_total) || 0, render: (a: any) => (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedArticleForStock(a);
+                    setShowStockDetail(true);
+                  }}
+                  className="text-left p-2 rounded transition-colors"
+                  style={{ background: 'transparent' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                 >
-                  <td className="px-6 py-4">
-                    {article.photo_article ? (
-                      <img src={article.photo_article} alt={article.ref_commercial} className="w-12 h-12 object-cover rounded" />
-                    ) : (
-                      <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
-                        <ImageIcon className="w-6 h-6 text-gray-400" />
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap font-mono text-sm font-medium" style={{ color: 'var(--accent-terracotta)' }}>
-                    {article.ref_commercial}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap font-mono text-sm text-green-600">
-                    {article.ref_fabrication}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">{article.modele}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {article.couleur_article || '-'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {(() => {
-                      const prix = getPrixFromModele(article);
-                      return (
-                        <div className="text-sm">
-                          <div className="font-semibold text-green-600">{Number(prix.prix_vente || 0).toFixed(2)} TND</div>
-                          <div className="text-xs text-gray-500">Reviens: {Number(prix.prix_reviens || 0).toFixed(2)} TND</div>
-                          {prix.prix_multiple && prix.prix_multiple.length > 0 && (
-                            <div className="text-xs mt-1" style={{ color: 'var(--accent-indigo)' }}>
-                              +{prix.prix_multiple.length} autre(s) prix
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedArticleForStock(article);
-                        setShowStockDetail(true);
-                      }}
-                      className="text-left p-2 rounded transition-colors"
-                      style={{ background: 'transparent' }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-hover)')}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                    >
-                      <div className="font-semibold" style={{ color: 'var(--accent-indigo)' }}>{article.stock_total || 0}</div>
-                      <div className="text-xs text-gray-500">
-                        {article.stock_par_entrepot && article.stock_par_entrepot.length > 0
-                          ? `${article.stock_par_entrepot.length} entrepôt(s)`
-                          : 'Aucun stock'}
-                      </div>
-                    </button>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 py-1 rounded text-xs font-medium" style={{ background: 'color-mix(in srgb, var(--accent-gold) 12%, var(--bg-elevated))', color: '#7A5C1F' }}>
-                      {article.quantite_deuxieme_choix || 0}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded text-xs font-medium">
-                      {article.total_a_fabriquer}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {article.dans_catalogue_produit ? (
-                      <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">Oui</span>
-                    ) : (
-                      <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs">Non</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedArticleForStock(article);
-                          setShowStockDetail(true);
-                        }}
-                        className="hover:opacity-70 transition"
-                        style={{ color: 'var(--accent-indigo)' }}
-                        title="Voir Stock"
-                      >
-                        <Warehouse className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          article.id_article && handleEdit(article);
-                        }}
-                        className="text-gray-600 hover:text-gray-700"
-                        title="Modifier"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          article.id_article && handleDelete(article.id_article);
-                        }}
-                        className="text-red-600 hover:text-red-700"
-                        title="Supprimer"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  <div className="font-semibold" style={{ color: 'var(--accent-indigo)' }}>{a.stock_total || 0}</div>
+                  <div className="text-xs text-gray-500">
+                    {a.stock_par_entrepot && a.stock_par_entrepot.length > 0 ? `${a.stock_par_entrepot.length} entrepôt(s)` : 'Aucun stock'}
+                  </div>
+                </button>
+              ) },
+              { key: 'quantite_deuxieme_choix', label: '2ème Choix', sortable: true, align: 'right', value: (a: any) => Number(a.quantite_deuxieme_choix) || 0, render: (a: any) => (
+                <span className="px-2 py-1 rounded text-xs font-medium" style={{ background: 'color-mix(in srgb, var(--accent-gold) 12%, var(--bg-elevated))', color: '#7A5C1F' }}>
+                  {a.quantite_deuxieme_choix || 0}
+                </span>
+              ) },
+              { key: 'total_a_fabriquer', label: 'À Fabriquer', sortable: true, align: 'right', value: (a: any) => Number(a.total_a_fabriquer) || 0, render: (a: any) => (
+                <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded text-xs font-medium">{a.total_a_fabriquer}</span>
+              ) },
+              { key: 'dans_catalogue_produit', label: 'Catalogue', sortable: true, value: (a: any) => a.dans_catalogue_produit ? 1 : 0, render: (a: any) => (
+                a.dans_catalogue_produit ? (
+                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">Oui</span>
+                ) : (
+                  <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs">Non</span>
+                )
+              ) },
+              { key: '_actions', label: 'Actions', sortable: false, exportable: false, render: (article: any) => (
+                <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setSelectedArticleForStock(article); setShowStockDetail(true); }}
+                    className="hover:opacity-70 transition"
+                    style={{ color: 'var(--accent-indigo)' }}
+                    title="Voir Stock"
+                  >
+                    <Warehouse className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); article.id_article && handleEdit(article); }}
+                    className="text-gray-600 hover:text-gray-700"
+                    title="Modifier"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); article.id_article && handleDelete(article.id_article); }}
+                    className="text-red-600 hover:text-red-700"
+                    title="Supprimer"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ) },
+            ] as Column<any>[]}
+            data={filteredArticles}
+            rowKey={(a: any) => a.id_article}
+            onRowClick={(a: any) => { if (a.id_article) navigate(`/articles/${a.id_article}`); }}
+            pageSize={25}
+            exportable
+            exportFilename="articles"
+            emptyState={
+              <EmptyState
+                variant={search || filters.modele || filters.actif || filters.catalogue ? 'search-no-result' : 'default'}
+                title={search || filters.modele || filters.actif || filters.catalogue ? 'Aucun article ne correspond' : 'Aucun article'}
+                description={search || filters.modele || filters.actif || filters.catalogue ? 'Réinitialisez vos filtres ou votre recherche.' : 'Créez votre premier article de catalogue.'}
+                cta={search || filters.modele || filters.actif || filters.catalogue
+                  ? { label: 'Réinitialiser', onClick: () => { setSearch(''); setFilters({ modele: '', actif: '', catalogue: '' }); } }
+                  : undefined}
+              />
+            }
+            loading={loading}
+          />
         ) : (
           // Mode Catalogue
           selectedModeleCatalogue ? (

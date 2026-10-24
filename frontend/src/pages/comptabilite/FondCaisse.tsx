@@ -185,7 +185,7 @@ const FondCaisse: React.FC = () => {
     if (selected == null) return;
     const ids = mvs.filter((m) => !m.comptabilise).map((m) => m.id_mouvement_caisse);
     if (ids.length === 0) {
-      alert('Aucun mouvement à comptabiliser.');
+      window.showToast?.('info', "Aucun mouvement à comptabiliser.");
       return;
     }
     if (!window.confirm(`Comptabiliser en bloc ${ids.length} mouvement(s) ?`)) return;

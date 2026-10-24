@@ -110,9 +110,9 @@ const TracabiliteLots: React.FC = () => {
   const imprimer = async (lot: any) => {
     try {
       const res = await tracabiliteLotsService.genererEtiquette(lot.id_lot || lot.id);
-      alert('Étiquette générée:\n' + JSON.stringify(res.data?.data || res.data, null, 2));
+      window.showToast?.('success', 'Enregistré', String('Étiquette générée:\n' + JSON.stringify(res.data?.data || res.data, null, 2)));
     } catch (e: any) {
-      alert('Erreur impression: ' + (e.response?.data?.message || e.message));
+      window.showToast?.('error', 'Erreur', String('Erreur impression: ' + (e.response?.data?.message || e.message)));
     }
   };
 

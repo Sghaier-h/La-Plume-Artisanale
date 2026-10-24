@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { DashboardShell, KpiCard, SectionCard } from '../../components/dashboard';
 import { caissesService, CaisseEtendue, RoutageCaisse } from '../../services/comptabiliteApi';
+import { Skeleton, EmptyState } from '../../components/ui';
 
 const typeIcon: Record<string, React.ReactNode> = {
   principale:       <Wallet size={18} />,
@@ -70,7 +71,7 @@ const Caisses: React.FC = () => {
       setTransfertForm({ id_caisse_source: 0, id_caisse_dest: 0, montant: '', libelle: '' });
       await load();
     } catch (e: any) {
-      alert(e?.response?.data?.error?.message || e?.message || 'Erreur transfert');
+      window.showToast?.('error', 'Erreur', String(e?.response?.data?.error?.message || e?.message || 'Erreur transfert'));
     }
   };
 
@@ -179,8 +180,36 @@ const Caisses: React.FC = () => {
               </div>
             </button>
           ))}
+          {loading && (
+            <>
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} style={{ ...caisseCard, pointerEvents: 'none' }}>
+                  <Skeleton className="h-5 w-1/2 mb-3" />
+                  <Skeleton className="h-3 w-1/3 mb-3" />
+                  <Skeleton className="h-8 w-2/3" />
+                </div>
+              ))}
+            </>
+          )}
           {!loading && caisses.filter((c) => !typeFilter || c.type_caisse === typeFilter).length === 0 && (
-            <div style={{ color: 'var(--fg-muted)', padding: 'var(--s-4)' }}>Aucune caisse configurée.</div>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <EmptyState
+                variant={typeFilter ? 'search-no-result' : 'default'}
+                title={typeFilter ? 'Aucune caisse ne correspond' : 'Aucune caisse configurée'}
+                description={typeFilter ? 'Essayez un autre type de caisse.' : 'Les caisses enregistrées apparaîtront ici.'}
+                cta={typeFilter ? { label: 'Réinitialiser', onClick: () => setTypeFilter('') } : undefined}
+              />
+            </div>
+          )}
+          {error && !loading && (
+            <div style={{ gridColumn: '1 / -1' }}>
+              <EmptyState
+                variant="error"
+                title="Impossible de charger les caisses"
+                description={error}
+                cta={{ label: 'Réessayer', onClick: () => { setError(null); setLoading(true); load(); } }}
+              />
+            </div>
           )}
         </div>
       </SectionCard>

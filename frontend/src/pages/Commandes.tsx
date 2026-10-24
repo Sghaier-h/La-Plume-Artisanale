@@ -4,6 +4,8 @@ import { ShoppingCart, Plus, Edit, Trash2, Search, X, CheckCircle, Package, Cale
 import ArticlePicker from '../components/ArticlePicker';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import KpiCard from '../components/ecommerce/KpiCard';
+import { PageSkeleton, EmptyState } from '../components/ui';
+import { DataTable, Column } from '../components/ui/DataTable';
 
 const Commandes: React.FC = () => {
   const navigate = useNavigate();
@@ -77,7 +79,7 @@ const Commandes: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.lignes.length === 0) {
-      alert('Ajoutez au moins une ligne de commande');
+      window.showToast?.('success', "Ajoutez au moins une ligne de commande");
       return;
     }
     try {
@@ -91,7 +93,7 @@ const Commandes: React.FC = () => {
       resetForm();
       loadData();
     } catch (error: any) {
-      alert(error.response?.data?.error?.message || 'Erreur');
+      window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur'));
     }
   };
 
@@ -130,9 +132,9 @@ const Commandes: React.FC = () => {
       try {
         await commandesService.validerCommande(id);
         loadData();
-        alert('Commande validée avec succès');
+        window.showToast?.('success', "Commande validée");
       } catch (error: any) {
-        alert(error.response?.data?.error?.message || 'Erreur lors de la validation');
+        window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de la validation'));
       }
     }
   };
@@ -145,11 +147,11 @@ const Commandes: React.FC = () => {
           statut: 'BROUILLON'
         });
         if (result.data?.success) {
-          alert('Bon de livraison créé avec succès !');
+          window.showToast?.('success', "Bon de livraison créé avec succès !");
           loadData();
         }
       } catch (error: any) {
-        alert(error.response?.data?.error?.message || 'Erreur lors de la création du BL');
+        window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de la création du BL'));
       }
     }
   };
@@ -197,11 +199,7 @@ const Commandes: React.FC = () => {
   }, [commandes]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-app)' }}>
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: 'var(--accent-terracotta)' }}></div>
-      </div>
-    );
+    return <PageSkeleton kpiCount={4} rows={8} cols={8} />;
   }
 
   return (
@@ -628,81 +626,78 @@ const Commandes: React.FC = () => {
         )}
 
         {/* Liste */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">N° Commande</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Montant</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {commandes.map((commande) => (
-                <tr
-                  key={commande.id_commande}
-                  onClick={() => navigate(`/commandes/${commande.id_commande}`)}
-                  className="hover:bg-gray-50 group cursor-pointer"
-                >
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{commande.numero_commande}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">{commande.client_nom}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">{new Date(commande.date_commande).toLocaleDateString()}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">{commande.montant_total ? `${commande.montant_total} ${commande.devise}` : '-'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs rounded ${
-                      commande.statut === 'validee' ? 'bg-green-100 text-green-800' :
-                      commande.statut === 'en_production' ? 'bg-[#EDF0F5] text-[#3B4E68]' :
-                      commande.statut === 'livree' ? 'bg-gray-100 text-gray-800' :
-                      'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {commande.statut}
+        {commandes.length === 0 ? (
+          <EmptyState
+            variant={search || filters.statut || filters.client_id ? 'search-no-result' : 'default'}
+            title={search || filters.statut || filters.client_id ? 'Aucune commande ne correspond' : 'Aucune commande pour l’instant'}
+            description={search || filters.statut || filters.client_id ? 'Modifiez vos filtres ou votre recherche.' : 'Créez votre première commande client.'}
+            cta={search || filters.statut || filters.client_id
+              ? { label: 'Réinitialiser', onClick: () => { setSearch(''); setFilters({ statut: '', client_id: '', sans_of: '' }); } }
+              : { label: 'Nouvelle commande', onClick: () => setShowForm(true) }}
+          />
+        ) : (
+          <DataTable<any>
+            columns={[
+              { key: 'numero_commande', label: 'N° Commande', sortable: true, render: (c: any) => <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 500 }}>{c.numero_commande}</span> },
+              { key: 'client_nom', label: 'Client', sortable: true, render: (c: any) => c.client_nom || '-' },
+              { key: 'date_commande', label: 'Date', sortable: true, value: (c: any) => c.date_commande, render: (c: any) => c.date_commande ? new Date(c.date_commande).toLocaleDateString() : '-' },
+              { key: 'montant_total', label: 'Montant', sortable: true, align: 'right', value: (c: any) => Number(c.montant_total) || 0, render: (c: any) => c.montant_total ? `${Number(c.montant_total).toFixed(2)} ${c.devise}` : '-' },
+              { key: 'statut', label: 'Statut', sortable: true, render: (c: any) => (
+                <div>
+                  <span className={`px-2 py-1 text-xs rounded ${
+                    c.statut === 'validee' ? 'bg-green-100 text-green-800' :
+                    c.statut === 'en_production' ? 'bg-[#EDF0F5] text-[#3B4E68]' :
+                    c.statut === 'livree' ? 'bg-gray-100 text-gray-800' :
+                    'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {c.statut}
+                  </span>
+                  {typeof c.nb_ofs === 'number' && (
+                    <span
+                      className={`ml-2 px-2 py-1 text-xs rounded ${
+                        c.nb_ofs > 0
+                          ? 'bg-[#EFF3E7] text-[#3F5E29]'
+                          : c.statut === 'validee'
+                            ? 'bg-orange-100 text-orange-800'
+                            : 'bg-gray-100 text-gray-600'
+                      }`}
+                      title="Nombre d'ordres de fabrication liés"
+                    >
+                      {c.nb_ofs > 0 ? `${c.nb_ofs} OF` : 'OF manquants'}
                     </span>
-                    {typeof commande.nb_ofs === 'number' && (
-                      <span
-                        className={`ml-2 px-2 py-1 text-xs rounded ${
-                          commande.nb_ofs > 0
-                            ? 'bg-[#EFF3E7] text-[#3F5E29]'
-                            : commande.statut === 'validee'
-                              ? 'bg-orange-100 text-orange-800'
-                              : 'bg-gray-100 text-gray-600'
-                        }`}
-                        title="Nombre d'ordres de fabrication liés"
-                      >
-                        {commande.nb_ofs > 0 ? `${commande.nb_ofs} OF` : 'OF manquants'}
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEdit(commande);
-                        }}
-                        className="text-gray-600 hover:text-gray-900"
-                        title="Modifier"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      {commande.statut === 'en_attente' && (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleValider(commande.id_commande); }}
-                          className="text-green-600 hover:text-green-900"
-                          title="Valider"
-                        >
-                          <CheckCircle className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  )}
+                </div>
+              ) },
+              { key: '_actions', label: 'Actions', sortable: false, exportable: false, render: (c: any) => (
+                <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleEdit(c); }}
+                    className="text-gray-600 hover:text-gray-900"
+                    title="Modifier"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
+                  {c.statut === 'en_attente' && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleValider(c.id_commande); }}
+                      className="text-green-600 hover:text-green-900"
+                      title="Valider"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ) },
+            ] as Column<any>[]}
+            data={commandes}
+            rowKey={(c: any) => c.id_commande}
+            onRowClick={(c: any) => navigate(`/commandes/${c.id_commande}`)}
+            pageSize={25}
+            exportable
+            exportFilename="commandes"
+            loading={loading}
+          />
+        )}
 
         {/* Modal de consultation */}
         {selectedCommande && (

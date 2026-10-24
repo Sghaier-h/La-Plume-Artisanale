@@ -58,17 +58,17 @@ const CompensationsRh: React.FC = () => {
       setForm({ ...form, montant_a_compenser: '', motif: '' });
       load();
     } catch (e: any) {
-      alert(e?.response?.data?.error?.message || 'Erreur création compensation');
+      window.showToast?.('error', 'Erreur', String(e?.response?.data?.error?.message || 'Erreur création compensation'));
     }
   };
 
   const appliquer = async (id: number) => {
     try { await api.post(`/v2/rh/compensations-rh/${id}/appliquer`, {}); load(); }
-    catch (e: any) { alert(e?.response?.data?.error?.message || 'Erreur'); }
+    catch (e: any) { window.showToast?.('error', 'Erreur', String(e?.response?.data?.error?.message || 'Erreur')); }
   };
   const annuler = async (id: number) => {
     try { await api.post(`/v2/rh/compensations-rh/${id}/annuler`, {}); load(); }
-    catch (e: any) { alert(e?.response?.data?.error?.message || 'Erreur'); }
+    catch (e: any) { window.showToast?.('error', 'Erreur', String(e?.response?.data?.error?.message || 'Erreur')); }
   };
 
   return (

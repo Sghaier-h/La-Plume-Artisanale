@@ -198,6 +198,7 @@ const Login: React.FC = () => {
 
   return (
     <div
+      className="la-plume-paper-bg"
       style={{
         minHeight: '100vh',
         width: '100%',
@@ -299,9 +300,23 @@ const Login: React.FC = () => {
             marginBottom: 'var(--s-6)',
           }}
         >
-          <PlumeLogo size={68} />
+          <div
+            style={{
+              position: 'relative',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 'var(--s-2)',
+              borderRadius: 'var(--radius-full)',
+              background:
+                'radial-gradient(circle at 50% 50%, rgba(200, 155, 60, 0.18), transparent 65%)',
+            }}
+          >
+            <PlumeLogo size={68} />
+          </div>
           <div>
             <h1
+              className="la-plume-title-brush"
               style={{
                 margin: 0,
                 fontFamily: 'var(--font-serif)',

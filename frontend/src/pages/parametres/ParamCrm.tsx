@@ -101,7 +101,7 @@ const ParamCrm: React.FC = () => {
       setNewRow({});
       reload();
     } catch (e: any) {
-      alert(e?.response?.data?.error?.message || e.message);
+      window.showToast?.('info', 'Information', String(e?.response?.data?.error?.message || e.message));
     }
   };
 
@@ -111,7 +111,7 @@ const ParamCrm: React.FC = () => {
       await paramCrmApi.remove(kind, idOf(kind, r));
       reload();
     } catch (e: any) {
-      alert(e?.response?.data?.error?.message || e.message);
+      window.showToast?.('info', 'Information', String(e?.response?.data?.error?.message || e.message));
     }
   };
 
@@ -119,7 +119,7 @@ const ParamCrm: React.FC = () => {
     try {
       await paramCrmApi.numUpdate(entite, patch);
       reload();
-    } catch (e: any) { alert(e?.response?.data?.error?.message || e.message); }
+    } catch (e: any) { window.showToast?.('info', 'Information', String(e?.response?.data?.error?.message || e.message)); }
   };
 
   return (

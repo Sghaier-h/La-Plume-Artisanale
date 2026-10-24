@@ -6,6 +6,8 @@ export interface DashboardShellProps {
   subtitle?: string;
   headerRight?: React.ReactNode;
   children: React.ReactNode;
+  /** Phase F4 — ajoute un soulignement « coup de pinceau » animé sur le titre */
+  titleBrush?: boolean;
 }
 
 /**
@@ -13,7 +15,7 @@ export interface DashboardShellProps {
  * Ensures consistent padding, background, max-width, and vertical rhythm.
  */
 export const DashboardShell: React.FC<DashboardShellProps> = ({
-  eyebrow, title, subtitle, headerRight, children,
+  eyebrow, title, subtitle, headerRight, children, titleBrush,
 }) => {
   return (
     <div
@@ -60,6 +62,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
               </div>
             )}
             <h1
+              className={titleBrush ? 'la-plume-title-brush' : undefined}
               style={{
                 fontFamily: 'var(--font-serif)',
                 fontSize: 'clamp(1.75rem, 2.5vw, 2.25rem)',

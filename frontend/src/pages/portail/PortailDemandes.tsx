@@ -39,7 +39,7 @@ const PortailDemandes: React.FC = () => {
       setOpen(false);
       setForm({ type_demande: 'question', sujet: '', message: '', id_commande: '' });
       await load();
-    } catch (e: any) { alert(e?.response?.data?.error?.message || 'Erreur'); }
+    } catch (e: any) { window.showToast?.('error', 'Erreur', String(e?.response?.data?.error?.message || 'Erreur')); }
   };
 
   return (

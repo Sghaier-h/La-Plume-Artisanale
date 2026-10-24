@@ -99,7 +99,7 @@ const AvertissementsRh: React.FC = () => {
     try {
       const res = await rhAvertissementsApi.scan();
       await load();
-      alert(`Scan terminé : ${res.created_count} avertissement(s) généré(s).`);
+      window.showToast?.('success', 'Enregistré', String(`Scan terminé : ${res.created_count} avertissement(s) généré(s).`));
     } catch (e: any) {
       setError(e?.response?.data?.error?.message || 'Erreur scan');
     } finally {

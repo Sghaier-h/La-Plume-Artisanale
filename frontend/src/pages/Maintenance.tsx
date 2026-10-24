@@ -99,7 +99,7 @@ const Maintenance: React.FC = () => {
       await loadList();
       await loadStats();
     } catch (e: any) {
-      alert(`Erreur: ${e?.response?.data?.error || e?.message}`);
+      window.showToast?.('error', 'Erreur', String(`Erreur: ${e?.response?.data?.error || e?.message}`));
     }
   };
 
@@ -111,7 +111,7 @@ const Maintenance: React.FC = () => {
       await loadList();
       await loadStats();
     } catch (e: any) {
-      alert(`Erreur création: ${e?.response?.data?.error || e?.message}`);
+      window.showToast?.('error', 'Erreur', String(`Erreur création: ${e?.response?.data?.error || e?.message}`));
     }
   };
 

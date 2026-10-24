@@ -291,9 +291,9 @@ const Immobilisations: React.FC = () => {
     } catch {
       /* mock */
     }
-    alert(
+    window.showToast?.('success', 'Enregistré', String(
       `Dotations générées pour ${immos.length} immobilisation(s) — écriture 6811 → 281x créée.`
-    );
+    ));
   };
 
   if (loading) {

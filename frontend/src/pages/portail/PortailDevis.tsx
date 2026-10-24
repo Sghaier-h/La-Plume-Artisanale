@@ -19,7 +19,7 @@ const PortailDevis: React.FC = () => {
   const accepter = async (id: number) => {
     if (!window.confirm('Confirmer l’acceptation de ce devis ?')) return;
     try { await portailData.accepterDevis(id); await load(); }
-    catch (e: any) { alert(e?.response?.data?.error?.message || 'Erreur'); }
+    catch (e: any) { window.showToast?.('error', 'Erreur', String(e?.response?.data?.error?.message || 'Erreur')); }
   };
 
   return (

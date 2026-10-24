@@ -177,11 +177,11 @@ const PaiementsFournisseurs: React.FC = () => {
     } catch {
       /* fallback */
     }
-    alert(
+    window.showToast?.('success', 'Enregistré', String(
       `Ordre de virement généré pour ${p.fournisseur_nom} — ${p.montant.toLocaleString(
         'fr-FR',
       )} DT`,
-    );
+    ));
   };
 
   if (loading) {

@@ -1242,9 +1242,9 @@ const SyncTab: React.FC<{ logs: SyncLog[]; sites: SiteEcommerce[] }> = ({ logs, 
   const retry = async (l: SyncLog) => {
     try {
       await syncEcommerceService.retrySync(l.id_log);
-      alert('Retry lancé');
+      window.showToast?.('info', "Retry lancé");
     } catch {
-      alert('Retry (mock) : le job serait relancé.');
+      window.showToast?.('info', "Retry (mock) : le job serait relancé.");
     }
   };
 

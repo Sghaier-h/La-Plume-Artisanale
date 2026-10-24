@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ArrowLeft, Plus, Edit, Trash2, Search, Download, X, FileText } from 'lucide-react';
 import { avoirsService, clientsService, facturesService } from '../services/api';
 import ArticlePicker from '../components/ArticlePicker';
+import { PageSkeleton, EmptyState } from '../components/ui';
 
 interface LigneAvoir {
   id_article?: number;
@@ -78,11 +79,11 @@ const Avoir: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.lignes.length === 0) {
-      alert('Ajoutez au moins une ligne d\'avoir');
+      window.showToast?.('success', "Ajoutez au moins une ligne d'avoir");
       return;
     }
     if (!formData.id_client || !formData.date_avoir) {
-      alert('Client et date d\'avoir requis');
+      window.showToast?.('info', "Client et date d'avoir requis");
       return;
     }
     try {
@@ -95,10 +96,10 @@ const Avoir: React.FC = () => {
       setEditingAvoir(null);
       resetForm();
       loadData();
-      alert(editingAvoir ? 'Avoir modifié avec succès' : 'Avoir créé avec succès');
+      window.showToast?.('success', 'Enregistré', String(editingAvoir ? 'Avoir modifié avec succès' : 'Avoir créé avec succès'));
     } catch (error: any) {
       console.error('Erreur sauvegarde avoir:', error);
-      alert(error.response?.data?.error?.message || 'Erreur lors de la sauvegarde');
+      window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de la sauvegarde'));
     }
   };
 
@@ -109,12 +110,12 @@ const Avoir: React.FC = () => {
         statut: 'BROUILLON'
       });
       if (result.data?.success) {
-        alert('Avoir généré avec succès depuis la facture');
+        window.showToast?.('success', "Avoir généré avec succès depuis la facture");
         loadData();
       }
     } catch (error: any) {
       console.error('Erreur génération avoir:', error);
-      alert(error.response?.data?.error?.message || 'Erreur lors de la génération');
+      window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de la génération'));
     }
   };
 
@@ -195,11 +196,7 @@ const Avoir: React.FC = () => {
   });
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8663D]"></div>
-      </div>
-    );
+    return <PageSkeleton kpiCount={0} rows={8} cols={7} />;
   }
 
   return (
@@ -549,6 +546,16 @@ const Avoir: React.FC = () => {
         )}
 
         {/* Liste */}
+        {filteredAvoirs.length === 0 ? (
+          <EmptyState
+            variant={search || filters.statut || filters.client_id ? 'search-no-result' : 'default'}
+            title={search || filters.statut || filters.client_id ? 'Aucun avoir ne correspond' : 'Aucun avoir'}
+            description={search || filters.statut || filters.client_id ? 'Réinitialisez vos filtres ou votre recherche.' : 'Les avoirs clients apparaîtront ici.'}
+            cta={search || filters.statut || filters.client_id
+              ? { label: 'Réinitialiser', onClick: () => { setSearch(''); setFilters({ statut: '', client_id: '' }); } }
+              : undefined}
+          />
+        ) : (
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <table className="w-full">
             <thead className="bg-gray-50">
@@ -563,14 +570,7 @@ const Avoir: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {filteredAvoirs.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
-                    Aucun avoir trouvé
-                  </td>
-                </tr>
-              ) : (
-                filteredAvoirs.map((avoir) => (
+              {filteredAvoirs.map((avoir) => (
                   <tr
                     key={avoir.id_avoir}
                     onClick={async () => {
@@ -581,7 +581,7 @@ const Avoir: React.FC = () => {
                         }
                       } catch (error: any) {
                         console.error('Erreur chargement avoir:', error);
-                        alert(error.response?.data?.error?.message || 'Erreur lors du chargement');
+                        window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors du chargement'));
                       }
                     }}
                     className="hover:bg-gray-50 group cursor-pointer"
@@ -602,7 +602,7 @@ const Avoir: React.FC = () => {
                           onClick={async (e) => {
                             e.stopPropagation();
                             try { await avoirsService.downloadPDF(avoir.id_avoir, avoir.numero_avoir); }
-                            catch { alert('Erreur lors du téléchargement du PDF'); }
+                            catch { window.showToast?.('error', 'Erreur', String('Erreur lors du téléchargement du PDF')); }
                           }}
                           className="text-[#C8663D] hover:text-[#a94f2b]"
                           title="Télécharger PDF"
@@ -642,7 +642,7 @@ const Avoir: React.FC = () => {
                               }
                             } catch (error: any) {
                               console.error('Erreur chargement avoir:', error);
-                              alert(error.response?.data?.error?.message || 'Erreur lors du chargement');
+                              window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors du chargement'));
                             }
                           }}
                           className="text-gray-600 hover:text-gray-700"
@@ -657,10 +657,10 @@ const Avoir: React.FC = () => {
                               try {
                                 await avoirsService.deleteAvoir(avoir.id_avoir);
                                 loadData();
-                                alert('Avoir supprimé avec succès');
+                                window.showToast?.('success', "Avoir supprimé");
                               } catch (error: any) {
                                 console.error('Erreur suppression avoir:', error);
-                                alert(error.response?.data?.error?.message || 'Erreur lors de la suppression');
+                                window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors de la suppression'));
                               }
                             }
                           }}
@@ -672,11 +672,11 @@ const Avoir: React.FC = () => {
                       </div>
                     </td>
                   </tr>
-                ))
-              )}
+                ))}
             </tbody>
           </table>
         </div>
+        )}
 
         {/* Modal de consultation */}
         {selectedAvoir && (
@@ -821,7 +821,7 @@ const Avoir: React.FC = () => {
                         }
                       } catch (error: any) {
                         console.error('Erreur chargement avoir:', error);
-                        alert(error.response?.data?.error?.message || 'Erreur lors du chargement');
+                        window.showToast?.('error', 'Erreur', String(error.response?.data?.error?.message || 'Erreur lors du chargement'));
                       }
                     }}
                     className="px-4 py-2 bg-[#C8663D] text-white rounded-lg hover:bg-[#a55231]"

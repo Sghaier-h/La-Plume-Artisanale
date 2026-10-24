@@ -51,7 +51,7 @@ const DossiersImport: React.FC = () => {
       setShowCreate(false);
       navigate(`/comptabilite/dossiers-import/${r.data?.data?.id_dossier}`);
     } catch (e: any) {
-      alert(e?.response?.data?.error?.message || e?.message || 'Erreur création');
+      window.showToast?.('error', 'Erreur', String(e?.response?.data?.error?.message || e?.message || 'Erreur création'));
     }
   };
 

@@ -176,7 +176,7 @@ const ModeleDetails: React.FC = () => {
       navigate('/modeles');
     } catch (err) {
       console.error('Erreur suppression:', err);
-      alert('Erreur lors de la suppression');
+      window.showToast?.('error', 'Erreur', String('Erreur lors de la suppression'));
     }
   };
 

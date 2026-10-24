@@ -59,7 +59,7 @@ const RapprochementBancaire: React.FC = () => {
       await load();
       setSelectedImport(r.data?.data?.id_import_bq || null);
     } catch (e: any) {
-      alert(e?.response?.data?.error?.message || e?.message || 'Erreur import');
+      window.showToast?.('error', 'Erreur', String(e?.response?.data?.error?.message || e?.message || 'Erreur import'));
     }
   };
 
@@ -80,7 +80,7 @@ const RapprochementBancaire: React.FC = () => {
       await rapprochementV2Service.rapprocher(l.id_ligne_bq, l.id_mouvement_journal_matche);
       const r = await rapprochementV2Service.listLignes({ id_import_bq: selectedImport! });
       setLignes(r.data?.data || []);
-    } catch (e: any) { alert(e?.response?.data?.error?.message || 'Erreur'); }
+    } catch (e: any) { window.showToast?.('error', 'Erreur', String(e?.response?.data?.error?.message || 'Erreur')); }
   };
 
   const ignorer = async (l: RapprochementLigne) => {
@@ -88,7 +88,7 @@ const RapprochementBancaire: React.FC = () => {
       await rapprochementV2Service.ignorer(l.id_ligne_bq);
       const r = await rapprochementV2Service.listLignes({ id_import_bq: selectedImport! });
       setLignes(r.data?.data || []);
-    } catch (e: any) { alert(e?.message); }
+    } catch (e: any) { window.showToast?.('info', 'Information', String(e?.message)); }
   };
 
   const colNonMatche  = lignes.filter(l => l.matching_statut === 'non_matche');

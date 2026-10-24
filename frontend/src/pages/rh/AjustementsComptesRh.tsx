@@ -58,19 +58,19 @@ const AjustementsComptesRh: React.FC = () => {
       setForm({ ...form, montant: '', motif: '' });
       load();
     } catch (e: any) {
-      alert(e?.response?.data?.error?.message || 'Erreur création ajustement');
+      window.showToast?.('error', 'Erreur', String(e?.response?.data?.error?.message || 'Erreur création ajustement'));
     }
   };
 
   const valider = async (id: number) => {
     try { await api.post(`/v2/rh/ajustements/${id}/valider`, {}); load(); }
-    catch (e: any) { alert(e?.response?.data?.error?.message || 'Erreur validation'); }
+    catch (e: any) { window.showToast?.('error', 'Erreur', String(e?.response?.data?.error?.message || 'Erreur validation')); }
   };
   const rejeter = async (id: number) => {
     const motif = window.prompt('Motif du rejet ?');
     if (!motif) return;
     try { await api.post(`/v2/rh/ajustements/${id}/rejeter`, { motif_rejet: motif }); load(); }
-    catch (e: any) { alert(e?.response?.data?.error?.message || 'Erreur rejet'); }
+    catch (e: any) { window.showToast?.('error', 'Erreur', String(e?.response?.data?.error?.message || 'Erreur rejet')); }
   };
 
   return (

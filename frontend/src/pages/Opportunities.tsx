@@ -6,6 +6,7 @@ import {
 import { DashboardShell, KpiCard, SectionCard } from '../components/dashboard';
 import { opportunitesApi, pickData } from '../services/crmApi';
 import { fmtMoney, fmtDate } from '../utils/formatters';
+import { SkeletonTable, EmptyState } from '../components/ui';
 
 interface OppRow {
   id_opportunite: number;
@@ -99,7 +100,7 @@ const Opportunities: React.FC = () => {
       subtitle="Pipeline commercial · négociations en cours et closings."
       headerRight={
         <button type="button" style={btnPrimary}
-                onClick={() => alert('Formulaire création à venir (route /opportunities/nouveau)')}>
+                onClick={() => window.showToast?.('info', 'Bientôt disponible')}>
           <PlusCircle size={14} style={{ marginRight: 6 }} /> Nouvelle opportunité
         </button>
       }
@@ -137,11 +138,21 @@ const Opportunities: React.FC = () => {
         </div>
 
         {loading ? (
-          <div style={{ padding: 'var(--s-8)', textAlign: 'center', color: 'var(--fg-muted)' }}>Chargement…</div>
+          <SkeletonTable rows={8} cols={7} />
         ) : error ? (
-          <div style={{ padding: 'var(--s-4)', color: 'var(--color-danger)', background: 'var(--color-danger-bg)', borderRadius: 'var(--radius-sm)' }}>{error}</div>
+          <EmptyState
+            variant="error"
+            title="Impossible de charger les opportunités"
+            description={error}
+            cta={{ label: 'Réessayer', onClick: () => setFilter((p) => p) }}
+          />
         ) : rows.length === 0 ? (
-          <div style={{ padding: 'var(--s-8)', textAlign: 'center', color: 'var(--fg-muted)' }}>Aucune opportunité.</div>
+          <EmptyState
+            variant={search || filter !== 'all' ? 'search-no-result' : 'default'}
+            title={search || filter !== 'all' ? `Aucun résultat${search ? ` pour « ${search} »` : ''}` : 'Aucune opportunité'}
+            description={search || filter !== 'all' ? 'Réinitialisez votre recherche ou vos filtres.' : 'Créez la première opportunité commerciale.'}
+            cta={search || filter !== 'all' ? { label: 'Réinitialiser', onClick: () => { setSearch(''); setFilter('all'); } } : undefined}
+          />
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', fontSize: 'var(--text-sm)', borderCollapse: 'collapse' }}>
