@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Contrôleur ExcelImport — Import de données Excel (templates + preview + upload)
  *
  * Endpoints:
@@ -184,7 +184,7 @@ const ROW_INSERTERS = {
   clients: async (row, userId) => {
     if (!row.code_client || !row.raison_sociale) throw new Error('code_client et raison_sociale requis');
     await pool.query(
-      `INSERT INTO clients (code_client, raison_sociale, email, telephone, adresse, ville, code_postal, pays, contact_principal, matricule_fiscal, actif, created_by, date_creation)
+      `INSERT INTO comptes (code_client, raison_sociale, email, telephone, adresse, ville, code_postal, pays, contact_principal, matricule_fiscal, actif, created_by, date_creation)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,true,$11,NOW())
        ON CONFLICT (code_client) DO NOTHING`,
       [
@@ -321,7 +321,7 @@ export const getExcelImport = async (req, res) => {
              e.imported_by, e.imported_at, e.status, e.mapping_config, e.created_at,
              u.nom AS user_nom, u.prenom AS user_prenom, u.email AS user_email
       FROM excel_import e
-      LEFT JOIN utilisateurs u ON e.imported_by = u.id_utilisateur
+      LEFT JOIN users u ON e.imported_by = u.id_user
       WHERE ${where.join(' AND ')}
       ORDER BY e.created_at DESC
       LIMIT $${params.length - 1} OFFSET $${params.length}

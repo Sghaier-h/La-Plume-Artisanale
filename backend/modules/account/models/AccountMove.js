@@ -1,4 +1,4 @@
-/**
+﻿/**
  * AccountMove Model - Écriture comptable (Facture)
  */
 
@@ -87,7 +87,7 @@ export class AccountMove extends BaseModel {
         f.*,
         c.raison_sociale as partner_name
       FROM factures_clients f
-      LEFT JOIN clients c ON f.id_client = c.id_client
+      LEFT JOIN comptes c ON f.id_client = c.id_client
       WHERE f.id_facture = ANY($1)
     `;
     

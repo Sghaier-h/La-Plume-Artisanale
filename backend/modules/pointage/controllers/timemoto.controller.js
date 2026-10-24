@@ -410,7 +410,7 @@ export const updateConfig = async (req, res) => {
 export const getMapping = async (req, res) => {
   try {
     const r = await pool.query(
-      `SELECT u.id_utilisateur, u.prenom, u.nom, u.email, u.numero_employe,
+      `SELECT u.id_user, u.prenom, u.nom, u.email, u.numero_employe,
               u.role, u.actif
        FROM users u
        WHERE COALESCE(u.actif, true) = true
@@ -431,7 +431,7 @@ export const updateMapping = async (req, res) => {
       return sendError(res, 'numero_employe trop long (32 max)', 400);
     }
     const r = await pool.query(
-      `UPDATE users SET numero_employe = $1 WHERE id_utilisateur = $2
+      `UPDATE users SET numero_employe = $1 WHERE id_user = $2
        RETURNING id_utilisateur, prenom, nom, email, numero_employe`,
       [numero_employe || null, id_utilisateur]
     );
@@ -501,7 +501,7 @@ export const getHistory = async (req, res) => {
               p.heures_travaillees, p.retard_minutes, p.present, p.source,
               p.device_id, p.imported_at, u.prenom, u.nom, u.numero_employe
          FROM pointage p
-         LEFT JOIN users u ON u.id_utilisateur = p.user_id
+         LEFT JOIN users u ON u.id_user = p.user_id
         WHERE p.source = 'timemoto'
         ORDER BY p.imported_at DESC NULLS LAST, p.id DESC
         LIMIT $1`,

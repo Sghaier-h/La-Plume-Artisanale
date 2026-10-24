@@ -85,8 +85,8 @@ export const updatePartner = async (req, res) => {
     const setClause = fields.map((field, i) => `${field} = $${i + 1}`).join(', ');
     
     const query = `
-      UPDATE clients
-      SET ${setClause}, date_modification = NOW(), updated_by = $${values.length + 1}
+      UPDATE comptes
+      SET ${setClause}, updated_at = NOW(), modifie_par = $${values.length + 1}
       WHERE id_client = $${values.length + 2}
       RETURNING *
     `;
@@ -113,7 +113,7 @@ export const deletePartner = async (req, res) => {
     const checkActiveQuery = `
       SELECT column_name 
       FROM information_schema.columns 
-      WHERE table_name = 'clients' AND (column_name = 'active' OR column_name = 'actif')
+      WHERE table_name = 'comptes' AND (column_name = 'active' OR column_name = 'actif')
     `;
     
     let query;
@@ -127,8 +127,8 @@ export const deletePartner = async (req, res) => {
         const activeField = checkResult.rows[0].column_name;
         // Suppression logique
         query = `
-          UPDATE clients
-          SET ${activeField} = false, date_modification = NOW(), updated_by = $1
+          UPDATE comptes
+          SET ${activeField} = false, updated_at = NOW(), modifie_par = $1
           WHERE id_client = $2
           RETURNING *
         `;

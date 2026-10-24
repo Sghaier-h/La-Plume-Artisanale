@@ -1,4 +1,4 @@
-/**
+﻿/**
  * PDF Service — La Plume Artisanale
  *
  * Génère les documents commerciaux (factures, devis, bons de livraison, avoirs)
@@ -336,7 +336,7 @@ export const bufferPDF = (drawFn, data) => new Promise((resolve, reject) => {
 export const fetchFactureFull = async (id) => {
   const f = await pool.query(
     `SELECT f.*, c.raison_sociale, c.adresse, c.ville, c.code_postal, c.telephone, c.email
-     FROM factures f LEFT JOIN clients c ON f.id_client = c.id_client
+     FROM factures f LEFT JOIN comptes c ON f.id_client = c.id_client
      WHERE f.id_facture = $1`,
     [id]
   );
@@ -359,7 +359,7 @@ export const fetchFactureFull = async (id) => {
 export const fetchDevisFull = async (id) => {
   const d = await pool.query(
     `SELECT d.*, c.raison_sociale, c.adresse, c.ville, c.code_postal, c.telephone, c.email
-     FROM devis d LEFT JOIN clients c ON d.id_client = c.id_client
+     FROM devis d LEFT JOIN comptes c ON d.id_client = c.id_client
      WHERE d.id_devis = $1`,
     [id]
   );
@@ -382,7 +382,7 @@ export const fetchDevisFull = async (id) => {
 export const fetchBLFull = async (id) => {
   const b = await pool.query(
     `SELECT bl.*, c.raison_sociale, c.adresse, c.ville, c.code_postal, c.telephone, c.email
-     FROM bons_livraison bl LEFT JOIN clients c ON bl.id_client = c.id_client
+     FROM bons_livraison bl LEFT JOIN comptes c ON bl.id_client = c.id_client
      WHERE bl.id_bl = $1`,
     [id]
   );
@@ -407,7 +407,7 @@ export const fetchAvoirFull = async (id) => {
     `SELECT a.*, c.raison_sociale, c.adresse, c.ville, c.code_postal, c.telephone, c.email,
             f.numero_facture
      FROM avoirs a
-     LEFT JOIN clients c  ON a.id_client  = c.id_client
+     LEFT JOIN comptes c  ON a.id_client  = c.id_client
      LEFT JOIN factures f ON a.id_facture = f.id_facture
      WHERE a.id_avoir = $1`,
     [id]

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Contrôleur Devis — Module modulaire
  * CRUD + transformation devis → commande
  */
@@ -23,7 +23,7 @@ export const getDevis = async (req, res) => {
         'd.montant_ht', 'd.montant_tva', 'd.montant_ttc',
         'd.id_commande', 'd.created_at'
       ])
-      .join('LEFT JOIN clients c ON d.id_client = c.id_client')
+      .join('LEFT JOIN comptes c ON d.id_client = c.id_client')
       .search(['d.numero_devis', 'c.raison_sociale'], search)
       .whereIf('d.statut = $?', statut)
       .whereIf('d.id_client = $?', client_id)
@@ -47,7 +47,7 @@ export const getDevisById = async (req, res) => {
       `SELECT d.*, c.raison_sociale as client_nom, c.code_client as client_code,
               cmd.numero_commande
        FROM devis d
-       LEFT JOIN clients c ON d.id_client = c.id_client
+       LEFT JOIN comptes c ON d.id_client = c.id_client
        LEFT JOIN commandes cmd ON d.id_commande = cmd.id_commande
        WHERE d.id_devis = $1`,
       [id]
@@ -156,7 +156,7 @@ export const createDevis = async (req, res) => {
 
     const devisComplet = await pool.query(
       `SELECT d.*, c.raison_sociale as client_nom FROM devis d
-       LEFT JOIN clients c ON d.id_client = c.id_client WHERE d.id_devis = $1`, [idDevis]
+       LEFT JOIN comptes c ON d.id_client = c.id_client WHERE d.id_devis = $1`, [idDevis]
     );
     const lignesResult = await pool.query('SELECT * FROM lignes_devis WHERE id_devis = $1 ORDER BY ordre', [idDevis]);
 
@@ -258,7 +258,7 @@ export const updateDevis = async (req, res) => {
 
     const devisComplet = await pool.query(
       `SELECT d.*, c.raison_sociale as client_nom FROM devis d
-       LEFT JOIN clients c ON d.id_client = c.id_client WHERE d.id_devis = $1`, [id]
+       LEFT JOIN comptes c ON d.id_client = c.id_client WHERE d.id_devis = $1`, [id]
     );
     const lignesResult = await pool.query('SELECT * FROM lignes_devis WHERE id_devis = $1 ORDER BY ordre', [id]);
 

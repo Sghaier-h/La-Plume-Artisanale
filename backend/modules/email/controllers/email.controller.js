@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Contrôleur Email — outbox / envoi d'emails (SMTP non configuré → mode simulation)
  *
  * Endpoints :
@@ -187,7 +187,7 @@ export const envoyerFacture = async (req, res) => {
     const idFacture = req.params.id_facture;
     const f = await pool.query(
       `SELECT f.*, c.raison_sociale, c.email
-       FROM factures f LEFT JOIN clients c ON f.id_client = c.id_client
+       FROM factures f LEFT JOIN comptes c ON f.id_client = c.id_client
        WHERE f.id_facture = $1`,
       [idFacture]
     );
@@ -234,7 +234,7 @@ export const envoyerBL = async (req, res) => {
     const idBl = req.params.id_bl;
     const b = await pool.query(
       `SELECT b.id_bl, b.numero_bl, c.raison_sociale, c.email
-       FROM bons_livraison b LEFT JOIN clients c ON b.id_client = c.id_client
+       FROM bons_livraison b LEFT JOIN comptes c ON b.id_client = c.id_client
        WHERE b.id_bl = $1`,
       [idBl]
     );
@@ -270,7 +270,7 @@ export const envoyerDevis = async (req, res) => {
     const idDevis = req.params.id_devis;
     const d = await pool.query(
       `SELECT d.id_devis, d.numero_devis, c.raison_sociale, c.email
-       FROM devis d LEFT JOIN clients c ON d.id_client = c.id_client
+       FROM devis d LEFT JOIN comptes c ON d.id_client = c.id_client
        WHERE d.id_devis = $1`,
       [idDevis]
     );

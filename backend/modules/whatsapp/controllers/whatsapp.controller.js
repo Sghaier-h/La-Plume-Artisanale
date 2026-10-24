@@ -333,7 +333,7 @@ export const taskNotification = async (req, res) => {
     try {
       const r = await pool.query(
         `SELECT o.*, u.telephone AS user_phone, u.nom, u.prenom
-         FROM operateurs o LEFT JOIN users u ON u.id_utilisateur = o.id_utilisateur
+         FROM operateurs o LEFT JOIN users u ON u.id_user = o.id_utilisateur
          WHERE o.id_operateurs = $1 OR o.id_operateur = $1 LIMIT 1`,
         [id_operateur]
       );
@@ -345,7 +345,7 @@ export const taskNotification = async (req, res) => {
     if (!phone) {
       try {
         const r2 = await pool.query(
-          `SELECT telephone, nom, prenom FROM users WHERE id_utilisateur = $1 LIMIT 1`,
+          `SELECT telephone, nom, prenom FROM users WHERE id_user = $1 LIMIT 1`,
           [id_operateur]
         );
         if (r2.rows[0]) { phone = r2.rows[0].telephone; nom = `${r2.rows[0].prenom || ''} ${r2.rows[0].nom || ''}`.trim(); }
@@ -371,7 +371,7 @@ export const dashboardContacts = async (req, res) => {
     let rows = [];
     try {
       const r = await pool.query(
-        `SELECT u.id_utilisateur AS id_operateur, u.nom, u.prenom, u.email,
+        `SELECT u.id_user AS id_operateur, u.nom, u.prenom, u.email,
                 u.telephone AS phone, u.role, u.poste
          FROM users u
          WHERE u.actif = true

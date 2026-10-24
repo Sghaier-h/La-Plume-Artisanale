@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Script Node.js pour créer la base de données locale et les tables
  * Utilise la connexion PostgreSQL via Node.js
  */
@@ -306,7 +306,7 @@ async function creerTablesManuellement(pool) {
 async function insererDonneesTest(pool) {
     const inserts = [
         // Client
-        `INSERT INTO clients (code_client, raison_sociale, email, telephone) 
+        `INSERT INTO comptes (code_client, raison_sociale, email, telephone) 
          VALUES ('CLI001', 'Client Test 1', 'client1@test.com', '123456789')
          ON CONFLICT (code_client) DO NOTHING`,
         

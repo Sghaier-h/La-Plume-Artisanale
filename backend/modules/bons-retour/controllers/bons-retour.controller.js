@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Contrôleur BonsRetour — Return notes management
  *
  * Endpoints:
@@ -58,11 +58,12 @@ export const getBonsRetour = async (req, res) => {
     const sql = `
       SELECT br.*,
              c.raison_sociale AS client_raison_sociale,
-             c.ville          AS client_ville,
-             c.adresse        AS client_adresse,
+             adr.ville        AS client_ville,
+             adr.rue          AS client_adresse,
              bl.numero_bl     AS bl_numero
       FROM bons_retour br
-      LEFT JOIN clients c        ON br.id_client = c.id_client
+      LEFT JOIN comptes c        ON br.id_client = c.id_client
+      LEFT JOIN adresses_client adr ON adr.id_client = c.id_client AND adr.est_defaut_facturation = TRUE
       LEFT JOIN bons_livraison bl ON br.id_bl    = bl.id_bl
       ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
       ORDER BY br.date_retour DESC NULLS LAST, br.id_retour DESC
@@ -99,12 +100,13 @@ export const getBonsRetourById = async (req, res) => {
     const r = await pool.query(`
       SELECT br.*,
              c.raison_sociale AS client_raison_sociale,
-             c.adresse        AS client_adresse,
-             c.ville          AS client_ville,
+             adr.rue          AS client_adresse,
+             adr.ville        AS client_ville,
              bl.numero_bl     AS bl_numero,
              bl.date_livraison AS bl_date_livraison
       FROM bons_retour br
-      LEFT JOIN clients c         ON br.id_client = c.id_client
+      LEFT JOIN comptes c         ON br.id_client = c.id_client
+      LEFT JOIN adresses_client adr ON adr.id_client = c.id_client AND adr.est_defaut_facturation = TRUE
       LEFT JOIN bons_livraison bl ON br.id_bl     = bl.id_bl
       WHERE br.id_retour = $1
     `, [id]);

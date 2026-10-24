@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Contrôleur Mobile — enregistrement d'appareils et push (stub)
  *
  * Endpoints:
@@ -115,7 +115,7 @@ export const getDevices = async (req, res) => {
       `SELECT m.id_mobile AS id, m.device_id, m.device_type, m.user_id, m.app_version,
               m.last_seen, m.is_active, m.created_at,
               u.email AS user_email
-       FROM mobile m LEFT JOIN utilisateurs u ON u.id_utilisateur = m.user_id
+       FROM mobile m LEFT JOIN users u ON u.id_user = m.user_id
        WHERE ${where.join(' AND ')}
        ORDER BY m.last_seen DESC NULLS LAST
        LIMIT $${params.length - 1} OFFSET $${params.length}`,

@@ -43,7 +43,7 @@ export class Client extends BaseModel {
         (SELECT COUNT(*) FROM contacts WHERE id_client = c.id_client AND actif = true) as nb_contacts
       FROM comptes c
       LEFT JOIN categories_clients cat ON c.id_categorie = cat.id_categorie
-      LEFT JOIN users u ON c.id_commercial = u.id_utilisateur
+      LEFT JOIN users u ON c.id_commercial = u.id_user
       LEFT JOIN types_commerciaux tc ON c.id_type_commercial = tc.id_type_commercial
       WHERE ${whereClause}
     `;
@@ -83,7 +83,7 @@ export class Client extends BaseModel {
         tc.libelle as libelle_type_commercial
       FROM comptes c
       LEFT JOIN categories_clients cat ON c.id_categorie = cat.id_categorie
-      LEFT JOIN users u ON c.id_commercial = u.id_utilisateur
+      LEFT JOIN users u ON c.id_commercial = u.id_user
       LEFT JOIN types_commerciaux tc ON c.id_type_commercial = tc.id_type_commercial
       WHERE c.id_client = ANY($1)
     `;
@@ -152,8 +152,8 @@ export class Client extends BaseModel {
 
     for (const id of idArray) {
       const query = `
-        UPDATE clients
-        SET ${fields}, date_modification = NOW()
+        UPDATE comptes
+        SET ${fields}, updated_at = NOW()
         WHERE id_client = $1
         RETURNING *
       `;
@@ -171,8 +171,8 @@ export class Client extends BaseModel {
     const idArray = Array.isArray(ids) ? ids : [ids];
     
     const query = `
-      UPDATE clients
-      SET actif = false, date_desactivation = NOW()
+      UPDATE comptes
+      SET actif = false, updated_at = NOW()
       WHERE id_client = ANY($1)
       RETURNING id_client
     `;

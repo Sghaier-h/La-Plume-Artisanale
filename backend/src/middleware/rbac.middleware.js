@@ -1,4 +1,4 @@
-/**
+﻿/**
  * RBAC (Role-Based Access Control) middleware
  * Fournit :
  *  - requireRole(...allowedRoles) : vérifie que req.user.role ∈ allowedRoles

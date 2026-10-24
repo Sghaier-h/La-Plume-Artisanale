@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Contrôleur Settings — Préférences utilisateur (per-user)
  *
  * Endpoints:
@@ -67,7 +67,7 @@ export const getSettings = async (req, res) => {
     const uid = currentUserId(req);
     if (!uid) return sendError(res, 'Utilisateur non authentifié', 401);
     const r = await pool.query(
-      `SELECT cle, valeur, category FROM settings WHERE id_utilisateur = $1 AND cle IS NOT NULL`,
+      `SELECT cle, valeur, category FROM settings WHERE id_user = $1 AND cle IS NOT NULL`,
       [uid]
     );
     const map = {};
@@ -89,7 +89,7 @@ export const resetSettings = async (req, res) => {
     const uid = currentUserId(req);
     if (!uid) return sendError(res, 'Utilisateur non authentifié', 401);
     const r = await pool.query(
-      `DELETE FROM settings WHERE id_utilisateur = $1 RETURNING cle`,
+      `DELETE FROM settings WHERE id_user = $1 RETURNING cle`,
       [uid]
     );
     return sendSuccess(res, { deleted: r.rows.length }, 'Préférences réinitialisées');
@@ -103,7 +103,7 @@ export const getUserSettings = async (req, res) => {
   try {
     if (!isAdmin(req)) return sendError(res, 'Réservé aux administrateurs', 403);
     const r = await pool.query(
-      `SELECT cle, valeur, category FROM settings WHERE id_utilisateur = $1 AND cle IS NOT NULL`,
+      `SELECT cle, valeur, category FROM settings WHERE id_user = $1 AND cle IS NOT NULL`,
       [req.params.id_user]
     );
     const map = {};
@@ -120,7 +120,7 @@ export const getSettingByCle = async (req, res) => {
     const uid = currentUserId(req);
     if (!uid) return sendError(res, 'Utilisateur non authentifié', 401);
     const r = await pool.query(
-      `SELECT cle, valeur, category FROM settings WHERE id_utilisateur = $1 AND cle = $2 LIMIT 1`,
+      `SELECT cle, valeur, category FROM settings WHERE id_user = $1 AND cle = $2 LIMIT 1`,
       [uid, req.params.cle]
     );
     if (!r.rows[0]) {
@@ -144,14 +144,14 @@ export const upsertSetting = async (req, res) => {
     if (valeur === undefined) return sendError(res, 'valeur requise', 400);
 
     const existing = await pool.query(
-      `SELECT 1 FROM settings WHERE id_utilisateur = $1 AND cle = $2 LIMIT 1`,
+      `SELECT 1 FROM settings WHERE id_user = $1 AND cle = $2 LIMIT 1`,
       [uid, req.params.cle]
     );
 
     if (existing.rows[0]) {
       await pool.query(
         `UPDATE settings SET valeur = $1, category = COALESCE($2, category), date_modification = NOW()
-         WHERE id_utilisateur = $3 AND cle = $4`,
+         WHERE id_user = $3 AND cle = $4`,
         [JSON.stringify(valeur), category || null, uid, req.params.cle]
       );
     } else {
@@ -173,7 +173,7 @@ export const deleteSetting = async (req, res) => {
     const uid = currentUserId(req);
     if (!uid) return sendError(res, 'Utilisateur non authentifié', 401);
     const r = await pool.query(
-      `DELETE FROM settings WHERE id_utilisateur = $1 AND cle = $2 RETURNING cle`,
+      `DELETE FROM settings WHERE id_user = $1 AND cle = $2 RETURNING cle`,
       [uid, req.params.cle]
     );
     if (!r.rows[0]) return sendError(res, 'Préférence introuvable', 404);

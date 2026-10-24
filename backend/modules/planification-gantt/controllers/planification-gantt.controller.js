@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Contrôleur Planification Gantt — arbre projets / tâches / ressources
  *
  * Endpoints :
@@ -38,7 +38,7 @@ export const getProjets = async (req, res) => {
         ), 0)::numeric                        AS pct_avancement,
         COUNT(of_.id_of)::int                 AS nb_of
       FROM commandes cmd
-      LEFT JOIN clients cli               ON cmd.id_client = cli.id_client
+      LEFT JOIN comptes cli               ON cmd.id_client = cli.id_client
       INNER JOIN articles_commande ac     ON ac.id_commande = cmd.id_commande
       INNER JOIN ordres_fabrication of_   ON of_.id_article_commande = ac.id_article_commande
       GROUP BY cmd.id_commande, cmd.numero_commande, cli.raison_sociale
@@ -134,7 +134,7 @@ export const getGanttData = async (req, res) => {
                ELSE 0 END
         ), 0)::numeric                        AS pct_avancement
       FROM commandes cmd
-      LEFT JOIN clients cli               ON cmd.id_client = cli.id_client
+      LEFT JOIN comptes cli               ON cmd.id_client = cli.id_client
       INNER JOIN articles_commande ac     ON ac.id_commande = cmd.id_commande
       INNER JOIN ordres_fabrication of_   ON of_.id_article_commande = ac.id_article_commande
       GROUP BY cmd.id_commande, cmd.numero_commande, cli.raison_sociale

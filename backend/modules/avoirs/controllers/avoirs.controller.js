@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Contrôleur Avoirs — Credit notes management
  *
  * Endpoints:
@@ -71,10 +71,11 @@ export const getAvoirs = async (req, res) => {
     const sql = `
       SELECT a.*,
              c.raison_sociale AS client_raison_sociale,
-             c.ville          AS client_ville,
-             c.adresse        AS client_adresse
+             adr.ville        AS client_ville,
+             adr.rue          AS client_adresse
       FROM avoirs a
-      LEFT JOIN clients c ON a.id_client = c.id_client
+      LEFT JOIN comptes c ON a.id_client = c.id_client
+      LEFT JOIN adresses_client adr ON adr.id_client = c.id_client AND adr.est_defaut_facturation = TRUE
       ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
       ORDER BY a.date_avoir DESC NULLS LAST, a.id_avoir DESC
     `;
@@ -111,12 +112,13 @@ export const getAvoirById = async (req, res) => {
     const head = await pool.query(`
       SELECT a.*,
              c.raison_sociale AS client_raison_sociale,
-             c.adresse        AS client_adresse,
-             c.ville          AS client_ville,
+             adr.rue          AS client_adresse,
+             adr.ville        AS client_ville,
              f.numero_facture AS facture_numero,
              f.date_facture   AS facture_date
       FROM avoirs a
-      LEFT JOIN clients  c ON a.id_client  = c.id_client
+      LEFT JOIN comptes  c ON a.id_client  = c.id_client
+      LEFT JOIN adresses_client adr ON adr.id_client = c.id_client AND adr.est_defaut_facturation = TRUE
       LEFT JOIN factures f ON a.id_facture = f.id_facture
       WHERE a.id_avoir = $1
     `, [id]);

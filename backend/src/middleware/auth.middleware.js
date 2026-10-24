@@ -43,14 +43,14 @@ export const authenticate = async (req, res, next) => {
       // Vérifier l'utilisateur dans les tables existantes
       const result = await pool.query(
         `SELECT 
-          u.id_utilisateur,
+          u.id_user,
           u.email,
           u.actif,
           r.code_role as role
         FROM users u
-        LEFT JOIN users_roles ur ON u.id_utilisateur = ur.id_utilisateur
+        LEFT JOIN utilisateurs_roles ur ON u.id_user = ur.id_utilisateur
         LEFT JOIN roles r ON ur.id_role = r.id_role
-        WHERE u.id_utilisateur = $1
+        WHERE u.id_user = $1
         LIMIT 1`,
         [decoded.userId]
       );
@@ -75,7 +75,7 @@ export const authenticate = async (req, res, next) => {
       };
 
       req.user = {
-        id: user.id_utilisateur.toString(),
+        id: user.id_user.toString(),
         email: user.email,
         role: roleMap[user.role] || 'USER'
       };

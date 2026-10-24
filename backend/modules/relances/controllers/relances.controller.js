@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Contrôleur Relances Factures — relances automatiques d'impayés
  *
  * Endpoints:
@@ -104,7 +104,7 @@ export const getRelances = async (req, res) => {
              c.raison_sociale AS client_nom, c.email AS client_email
       FROM relances_factures r
       LEFT JOIN factures f ON r.id_facture = f.id_facture
-      LEFT JOIN clients  c ON f.id_client   = c.id_client
+      LEFT JOIN comptes  c ON f.id_client   = c.id_client
       ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
       ORDER BY r.date_relance DESC
       LIMIT $${params.length - 1} OFFSET $${params.length}
@@ -123,7 +123,7 @@ export const getRelanceById = async (req, res) => {
       `SELECT r.*, f.numero_facture, c.raison_sociale AS client_nom
        FROM relances_factures r
        LEFT JOIN factures f ON r.id_facture = f.id_facture
-       LEFT JOIN clients  c ON f.id_client   = c.id_client
+       LEFT JOIN comptes  c ON f.id_client   = c.id_client
        WHERE r.id_relance = $1`,
       [req.params.id]
     );
@@ -163,7 +163,7 @@ const buildFacturesImpayeesQuery = () => `
     (CURRENT_DATE - f.date_echeance)::int AS jours_retard,
     lr.last_niveau, lr.last_date_relance
   FROM factures f
-  LEFT JOIN clients c ON f.id_client = c.id_client
+  LEFT JOIN comptes c ON f.id_client = c.id_client
   LEFT JOIN last_rel lr ON lr.id_facture = f.id_facture
   WHERE COALESCE(f.montant_restant, f.montant_ttc, 0) > 0
     AND f.date_echeance < CURRENT_DATE
@@ -320,7 +320,7 @@ export const envoyerRelanceManuelle = async (req, res) => {
              (CURRENT_DATE - f.date_echeance)::int AS jours_retard,
              lr.last_niveau, lr.last_date_relance
       FROM factures f
-      LEFT JOIN clients c ON f.id_client = c.id_client
+      LEFT JOIN comptes c ON f.id_client = c.id_client
       LEFT JOIN last_rel lr ON lr.id_facture = f.id_facture
       WHERE f.id_facture = $1
     `, [req.params.id_facture]);

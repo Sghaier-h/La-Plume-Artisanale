@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Ecommerce Order Controller
  * Contrôleur pour les commandes e-commerce
  */
@@ -15,7 +15,7 @@ export const getEcommerceOrders = async (req, res) => {
     let query = `
       SELECT co.*, c.raison_sociale as partner_name
       FROM commandes_clients co
-      LEFT JOIN clients c ON co.id_client = c.id_client
+      LEFT JOIN comptes c ON co.id_client = c.id_client
       WHERE 1=1
     `;
     const params = [];
@@ -41,7 +41,7 @@ export const getEcommerceOrder = async (req, res) => {
     const query = `
       SELECT co.*, c.raison_sociale as partner_name
       FROM commandes_clients co
-      LEFT JOIN clients c ON co.id_client = c.id_client
+      LEFT JOIN comptes c ON co.id_client = c.id_client
       WHERE co.id_commande = $1 
     `;
     const result = await pool.query(query, [id]);

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * MrpProduction Model - Ordre de fabrication
  */
 
@@ -24,7 +24,7 @@ export class MrpProduction extends BaseModel {
         u.nom as utilisateur_nom
       FROM ordres_fabrication of
       LEFT JOIN articles a ON of.id_article = a.id_article
-      LEFT JOIN utilisateurs u ON of.id_utilisateur = u.id_utilisateur
+      LEFT JOIN users u ON of.id_utilisateur = u.id_user
       WHERE 1=1
     `;
     const params = [];
@@ -81,7 +81,7 @@ export class MrpProduction extends BaseModel {
         u.nom as utilisateur_nom
       FROM ${tableName} of
       LEFT JOIN articles a ON of.id_article = a.id_article
-      LEFT JOIN utilisateurs u ON of.id_utilisateur = u.id_utilisateur
+      LEFT JOIN users u ON of.id_utilisateur = u.id_user
       WHERE of.${idField} = ANY($1)
     `;
     

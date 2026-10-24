@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Contrôleur Social-Auth — Placeholders OAuth (Google, Microsoft, Facebook)
  *
  * Endpoints:
@@ -65,7 +65,7 @@ export const getLinks = async (req, res) => {
     const uid = currentUserId(req);
     if (!uid) return sendError(res, 'Utilisateur non authentifié', 401);
     const r = await pool.query(
-      `SELECT ${SAFE_COLS} FROM "social-auth" WHERE id_utilisateur = $1 AND provider IS NOT NULL`,
+      `SELECT ${SAFE_COLS} FROM "social-auth" WHERE id_user = $1 AND provider IS NOT NULL`,
       [uid]
     );
     return sendSuccess(res, { items: r.rows, total: r.rows.length });
@@ -116,7 +116,7 @@ export const linkComplete = async (req, res) => {
     // Placeholder — un vrai flow échangerait 'code' contre des tokens auprès du provider
     const providerUserId = code || `placeholder-${Date.now()}`;
     const existing = await pool.query(
-      `SELECT 1 FROM "social-auth" WHERE id_utilisateur = $1 AND provider = $2 LIMIT 1`,
+      `SELECT 1 FROM "social-auth" WHERE id_user = $1 AND provider = $2 LIMIT 1`,
       [uid, provider]
     );
 
@@ -124,7 +124,7 @@ export const linkComplete = async (req, res) => {
       await pool.query(
         `UPDATE "social-auth"
            SET provider_user_id = $1, profile_data = $2, linked_at = NOW()
-         WHERE id_utilisateur = $3 AND provider = $4`,
+         WHERE id_user = $3 AND provider = $4`,
         [providerUserId, profile_data ? JSON.stringify(profile_data) : null, uid, provider]
       );
     } else {
@@ -146,7 +146,7 @@ export const unlink = async (req, res) => {
     const uid = currentUserId(req);
     if (!uid) return sendError(res, 'Utilisateur non authentifié', 401);
     const r = await pool.query(
-      `DELETE FROM "social-auth" WHERE id_utilisateur = $1 AND provider = $2 RETURNING provider`,
+      `DELETE FROM "social-auth" WHERE id_user = $1 AND provider = $2 RETURNING provider`,
       [uid, req.params.provider]
     );
     if (!r.rows[0]) return sendError(res, 'Lien introuvable', 404);

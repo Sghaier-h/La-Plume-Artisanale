@@ -1,4 +1,4 @@
-/**
+﻿/**
  * StockPicking Model - Réception/Livraison de stock
  */
 
@@ -18,7 +18,7 @@ export class StockPicking extends BaseModel {
         l.*,
         c.raison_sociale as partner_name
       FROM livraisons l
-      LEFT JOIN clients c ON l.id_commande IN (
+      LEFT JOIN comptes c ON l.id_commande IN (
         SELECT id_commande FROM commandes_clients WHERE id_client = c.id_client
       )
       WHERE 1=1

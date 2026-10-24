@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Contrôleur Audit — Journal d'audit / traçabilité des actions utilisateurs
  *
  * Endpoints :
@@ -58,7 +58,7 @@ export const getAudit = async (req, res) => {
              a.ancien_valeur, a.nouveau_valeur, a.ip_address, a.user_agent, a.date_action,
              u.email AS user_email, u.nom AS user_nom, u.prenom AS user_prenom
       FROM audit a
-      LEFT JOIN utilisateurs u ON a.id_user = u.id_utilisateur
+      LEFT JOIN users u ON a.id_user = u.id_user
       WHERE ${where.join(' AND ')}
       ORDER BY a.date_action DESC
       LIMIT $${params.length - 1} OFFSET $${params.length}
@@ -81,7 +81,7 @@ export const getStatsGlobal = async (req, res) => {
     const topUsers = await pool.query(
       `SELECT a.id_user, u.email, u.nom, u.prenom, COUNT(*)::int AS count
        FROM audit a
-       LEFT JOIN utilisateurs u ON a.id_user = u.id_utilisateur
+       LEFT JOIN users u ON a.id_user = u.id_user
        WHERE a.action IS NOT NULL AND a.id_user IS NOT NULL
        GROUP BY a.id_user, u.email, u.nom, u.prenom
        ORDER BY count DESC
@@ -106,7 +106,7 @@ export const getByEntity = async (req, res) => {
               a.ancien_valeur, a.nouveau_valeur, a.ip_address, a.user_agent, a.date_action,
               u.email AS user_email
        FROM audit a
-       LEFT JOIN utilisateurs u ON a.id_user = u.id_utilisateur
+       LEFT JOIN users u ON a.id_user = u.id_user
        WHERE a.entity_type = $1 AND a.entity_id = $2
        ORDER BY a.date_action DESC`,
       [type, id]
@@ -158,7 +158,7 @@ export const getStatsByUser = async (req, res) => {
     const r = await pool.query(
       `SELECT a.id_user, u.email, u.nom, u.prenom, COUNT(*)::int AS count
        FROM audit a
-       LEFT JOIN utilisateurs u ON a.id_user = u.id_utilisateur
+       LEFT JOIN users u ON a.id_user = u.id_user
        WHERE a.action IS NOT NULL AND a.id_user IS NOT NULL
        GROUP BY a.id_user, u.email, u.nom, u.prenom
        ORDER BY count DESC`
@@ -178,7 +178,7 @@ export const getByRecord = async (req, res) => {
               a.ancien_valeur, a.nouveau_valeur, a.ip_address, a.user_agent, a.date_action,
               u.email AS user_email, u.nom AS user_nom, u.prenom AS user_prenom
        FROM audit a
-       LEFT JOIN utilisateurs u ON a.id_user = u.id_utilisateur
+       LEFT JOIN users u ON a.id_user = u.id_user
        WHERE a.entity_type = $1 AND a.entity_id = $2
        ORDER BY a.date_action DESC`,
       [table, id]
@@ -211,7 +211,7 @@ export const getAuditById = async (req, res) => {
     const r = await pool.query(
       `SELECT a.*, a.id_audit AS id, u.email AS user_email, u.nom AS user_nom, u.prenom AS user_prenom
        FROM audit a
-       LEFT JOIN utilisateurs u ON a.id_user = u.id_utilisateur
+       LEFT JOIN users u ON a.id_user = u.id_user
        WHERE a.id_audit = $1 LIMIT 1`,
       [req.params.id]
     );

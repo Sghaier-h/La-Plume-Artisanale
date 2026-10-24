@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Contrôleur Documents — GED (métadonnées)
  *
  * Endpoints :
@@ -112,7 +112,7 @@ export const getDocuments = async (req, res) => {
              d.created_at, d.updated_at,
              u.email AS uploader_email
       FROM documents d
-      LEFT JOIN utilisateurs u ON d.uploaded_by = u.id_utilisateur
+      LEFT JOIN users u ON d.uploaded_by = u.id_user
       WHERE ${where.join(' AND ')}
       ORDER BY d.created_at DESC
       LIMIT $${params.length - 1} OFFSET $${params.length}
@@ -179,7 +179,7 @@ export const getDossierFabrication = async (req, res) => {
               d.size_bytes, d.categorie, d.tags, d.entity_type, d.entity_id, d.uploaded_by, d.is_public,
               d.created_at, u.email AS uploader_email
        FROM documents d
-       LEFT JOIN utilisateurs u ON d.uploaded_by = u.id_utilisateur
+       LEFT JOIN users u ON d.uploaded_by = u.id_user
        WHERE d.entity_type = 'of' AND d.entity_id = $1 AND d.filename IS NOT NULL
        ORDER BY d.created_at DESC`,
       [id]
@@ -275,7 +275,7 @@ export const getDocumentById = async (req, res) => {
     const r = await pool.query(
       `SELECT d.*, d.id_documents AS id, u.email AS uploader_email
        FROM documents d
-       LEFT JOIN utilisateurs u ON d.uploaded_by = u.id_utilisateur
+       LEFT JOIN users u ON d.uploaded_by = u.id_user
        WHERE d.id_documents = $1 LIMIT 1`,
       [req.params.id]
     );

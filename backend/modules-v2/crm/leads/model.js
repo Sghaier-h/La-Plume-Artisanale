@@ -16,7 +16,7 @@ export async function list({ q, statut, canal, id_utilisateur_assigne, limit = 5
   p.push(limit); p.push(offset);
   const sql = `
     SELECT l.*,
-           u.nom_complet AS utilisateur_assigne_nom,
+           TRIM(COALESCE(u.prenom, '') || ' ' || COALESCE(u.nom, '')) AS utilisateur_assigne_nom,
            c.raison_sociale AS compte_converti_nom, c.code_client AS compte_converti_code
       FROM leads l
       LEFT JOIN users   u ON u.id_user   = l.id_utilisateur_assigne
@@ -33,7 +33,7 @@ export async function list({ q, statut, canal, id_utilisateur_assigne, limit = 5
 
 export async function findById(id) {
   const { rows } = await getPool().query(
-    `SELECT l.*, u.nom_complet AS utilisateur_assigne_nom
+    `SELECT l.*, TRIM(COALESCE(u.prenom, '') || ' ' || COALESCE(u.nom, '')) AS utilisateur_assigne_nom
        FROM leads l LEFT JOIN users u ON u.id_user = l.id_utilisateur_assigne
       WHERE l.id_lead = $1`, [id]);
   return rows[0] || null;

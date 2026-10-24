@@ -48,12 +48,12 @@ router.get('/equipe', async (req, res) => {
 router.get('/commerciaux', async (req, res) => {
   try {
     const r = await pool.query(`
-      SELECT u.id_utilisateur, u.email, u.nom, u.prenom, u.nom_utilisateur, u.actif, r.code_role AS role
+      SELECT u.id_user, u.email, u.nom, u.prenom, u.nom_utilisateur, u.actif, r.code_role AS role
       FROM users u
-      LEFT JOIN users_roles ur ON u.id_utilisateur = ur.id_utilisateur
+      LEFT JOIN utilisateurs_roles ur ON u.id_user = ur.id_utilisateur
       LEFT JOIN roles r ON ur.id_role = r.id_role
       WHERE r.code_role IN ('COMMERCIAL','commercial')
-      ORDER BY u.id_utilisateur DESC
+      ORDER BY u.id_user DESC
     `);
     return sendSuccess(res, r.rows, 'Commerciaux');
   } catch (error) {
@@ -205,7 +205,7 @@ router.get('/:id(\\d+)/permissions', async (req, res) => {
     const r = await pool.query(
       `SELECT DISTINCT p.id_permission, p.code, p.libelle, p.module, p.description,
               r.code_role AS source_role
-       FROM users_roles ur
+       FROM utilisateurs_roles ur
        JOIN role_permissions rp ON rp.id_role = ur.id_role
        JOIN permissions p ON p.id_permission = rp.id_permission
        JOIN roles r ON r.id_role = ur.id_role

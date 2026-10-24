@@ -26,7 +26,7 @@ export const getUsers = async (req, res) => {
 export const getUserById = async (req, res) => {
   try {
     const { id } = req.params;
-    const query = `SELECT * FROM users WHERE id_utilisateur = $1`;
+    const query = `SELECT * FROM users WHERE id_user = $1`;
     const result = await pool.query(query, [id]);
     
     if (result.rows.length === 0) {
@@ -101,9 +101,9 @@ export const updateUser = async (req, res) => {
     const setClause = fields.map((field, i) => `${field} = $${i + 1}`).join(', ');
     
     const query = `
-      UPDATE utilisateurs
+      UPDATE users
       SET ${setClause}, date_modification = NOW(), updated_by = $${values.length + 1}
-      WHERE id_utilisateur = $${values.length + 2}
+      WHERE id_user = $${values.length + 2}
       RETURNING *
     `;
     
@@ -148,9 +148,9 @@ export const deleteUser = async (req, res) => {
         const activeField = checkResult.rows[0].column_name;
         // Suppression logique
         query = `
-          UPDATE utilisateurs
+          UPDATE users
           SET ${activeField} = false, date_modification = NOW(), updated_by = $1
-          WHERE id_utilisateur = $2
+          WHERE id_user = $2
           RETURNING *
         `;
         params = [userId, id];
@@ -158,7 +158,7 @@ export const deleteUser = async (req, res) => {
         // Suppression physique
         query = `
           DELETE FROM users
-          WHERE id_utilisateur = $1
+          WHERE id_user = $1
           RETURNING *
         `;
         params = [id];
@@ -167,7 +167,7 @@ export const deleteUser = async (req, res) => {
       // En cas d'erreur, utiliser la suppression physique
       query = `
         DELETE FROM users
-        WHERE id_utilisateur = $1
+        WHERE id_user = $1
         RETURNING *
       `;
       params = [id];

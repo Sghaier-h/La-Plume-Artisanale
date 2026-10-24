@@ -43,12 +43,12 @@ export const login = async (req, res) => {
     // Mode production — connexion BDD
     try {
       const result = await pool.query(
-        `SELECT u.id_utilisateur, u.email, u.nom_utilisateur, u.mot_de_passe_hash, u.actif,
+        `SELECT u.id_user, u.email, u.nom_utilisateur, u.mot_de_passe_hash, u.actif,
                 u.derniere_connexion, e.nom, e.prenom, e.fonction,
                 r.code_role as role
          FROM users u
          LEFT JOIN equipe_fabrication e ON u.id_operateur = e.id_operateur
-         LEFT JOIN users_roles ur ON u.id_utilisateur = ur.id_utilisateur
+         LEFT JOIN utilisateurs_roles ur ON u.id_user = ur.id_utilisateur
          LEFT JOIN roles r ON ur.id_role = r.id_role
          WHERE u.email = $1 LIMIT 1`,
         [email]
@@ -90,15 +90,15 @@ export const login = async (req, res) => {
       const mappedRole = roleMap[user.role] || 'USER';
 
       const token = jwt.sign(
-        { userId: user.id_utilisateur.toString(), email: user.email, role: mappedRole },
+        { userId: user.id_user.toString(), email: user.email, role: mappedRole },
         process.env.JWT_SECRET,
         { expiresIn: process.env.JWT_EXPIRE || '24h' }
       );
 
       // Mise à jour dernière connexion (non bloquant)
       pool.query(
-        'UPDATE users SET derniere_connexion = CURRENT_TIMESTAMP WHERE id_utilisateur = $1',
-        [user.id_utilisateur]
+        'UPDATE users SET derniere_connexion = CURRENT_TIMESTAMP WHERE id_user = $1',
+        [user.id_user]
       ).catch(err => logger.warn('Impossible de mettre à jour la dernière connexion', { error: err.message }));
 
       logger.info('Login réussi', { email: user.email, role: mappedRole });
@@ -106,7 +106,7 @@ export const login = async (req, res) => {
       return sendSuccess(res, {
         token,
         user: {
-          id: user.id_utilisateur.toString(),
+          id: user.id_user.toString(),
           email: user.email,
           nom: user.nom || user.nom_utilisateur,
           prenom: user.prenom || '',
@@ -161,13 +161,13 @@ export const me = async (req, res) => {
 
     try {
       const result = await pool.query(
-        `SELECT u.id_utilisateur, u.email, u.nom_utilisateur, u.derniere_connexion, u.actif,
+        `SELECT u.id_user, u.email, u.nom_utilisateur, u.derniere_connexion, u.actif,
                 e.nom, e.prenom, e.fonction, r.code_role as role
          FROM users u
          LEFT JOIN equipe_fabrication e ON u.id_operateur = e.id_operateur
-         LEFT JOIN users_roles ur ON u.id_utilisateur = ur.id_utilisateur
+         LEFT JOIN utilisateurs_roles ur ON u.id_user = ur.id_utilisateur
          LEFT JOIN roles r ON ur.id_role = r.id_role
-         WHERE u.id_utilisateur = $1 LIMIT 1`,
+         WHERE u.id_user = $1 LIMIT 1`,
         [req.user.id]
       );
 
@@ -184,7 +184,7 @@ export const me = async (req, res) => {
 
       return sendSuccess(res, {
         user: {
-          id: user.id_utilisateur.toString(),
+          id: user.id_user.toString(),
           email: user.email,
           nom: user.nom || user.nom_utilisateur,
           prenom: user.prenom || '',

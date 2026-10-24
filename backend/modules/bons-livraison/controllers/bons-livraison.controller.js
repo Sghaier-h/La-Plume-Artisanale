@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Contrôleur BonsLivraison — Delivery notes management
  *
  * Endpoints:
@@ -79,10 +79,11 @@ export const getBonsLivraison = async (req, res) => {
     const sql = `
       SELECT bl.*,
              c.raison_sociale AS client_raison_sociale,
-             c.ville          AS client_ville,
-             c.adresse        AS client_adresse
+             adr.ville        AS client_ville,
+             adr.rue          AS client_adresse
       FROM bons_livraison bl
-      LEFT JOIN clients c ON bl.id_client = c.id_client
+      LEFT JOIN comptes c ON bl.id_client = c.id_client
+      LEFT JOIN adresses_client adr ON adr.id_client = c.id_client AND adr.est_defaut_facturation = TRUE
       ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
       ORDER BY bl.date_livraison DESC NULLS LAST, bl.id_bl DESC
     `;
@@ -118,10 +119,11 @@ export const getBonsLivraisonById = async (req, res) => {
     const head = await pool.query(`
       SELECT bl.*,
              c.raison_sociale AS client_raison_sociale,
-             c.adresse        AS client_adresse,
-             c.ville          AS client_ville
+             adr.rue          AS client_adresse,
+             adr.ville        AS client_ville
       FROM bons_livraison bl
-      LEFT JOIN clients c ON bl.id_client = c.id_client
+      LEFT JOIN comptes c ON bl.id_client = c.id_client
+      LEFT JOIN adresses_client adr ON adr.id_client = c.id_client AND adr.est_defaut_facturation = TRUE
       WHERE bl.id_bl = $1
     `, [id]);
     if (!head.rows[0]) return sendError(res, 'Bon de livraison introuvable', 404);

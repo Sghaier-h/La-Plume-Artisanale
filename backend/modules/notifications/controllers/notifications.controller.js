@@ -204,7 +204,7 @@ export const broadcast = async (req, res) => {
            (id_destinataire, type, titre, contenu, lien, urgent, lu, date_creation, created_at, created_by, name)
          VALUES ($1, $2, $3, $4, $5, false, false, NOW(), NOW(), $6, $3)
          RETURNING id_notifications AS id, id_destinataire, type, titre, contenu, lien, urgent, lu, date_creation`,
-        [u.id_utilisateur, type, titre, contenu || null, lien || null, userId]
+        [u.id_user, type, titre, contenu || null, lien || null, userId]
       );
       created.push(r.rows[0]);
     }

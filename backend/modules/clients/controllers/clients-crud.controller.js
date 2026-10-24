@@ -10,28 +10,69 @@ import { getUserId } from '../../../src/utils/audit.helper.js';
 import { sendError, sendSuccess, handleError, HTTP_STATUS, ERROR_MESSAGES } from '../../../src/utils/error.helper.js';
 
 // ── GET /api/clients ────────────────────────────────────────────────────
+// Après migration schema-v2 : lit depuis `comptes` + join `adresses_client`
+// pour exposer les anciens champs attendus par le frontend legacy.
 export const getClients = async (req, res) => {
   try {
-    const { search, actif, type_client, id_categorie, id_commercial, page, limit } = req.query;
+    const { search, actif, type_client, id_categorie, id_commercial, page = 1, limit = 50 } = req.query;
 
-    const qb = new QueryBuilder('clients', 'c')
-      .select([
-        'c.id_client', 'c.code_client', 'c.raison_sociale',
-        'c.type_client', 'c.adresse', 'c.code_postal', 'c.ville', 'c.pays',
-        'c.telephone', 'c.email', 'c.contact_principal',
-        'c.conditions_paiement', 'c.plafond_credit', 'c.devise',
-        'c.taux_remise', 'c.actif', 'c.date_creation'
-      ])
-      .search(['c.code_client', 'c.raison_sociale', 'c.email'], search)
-      .whereBool('c.actif = $?', actif)
-      .whereIf('c.type_client = $?', type_client)
-      .whereIf('c.id_categorie = $?', id_categorie)
-      .whereIf('c.id_commercial = $?', id_commercial)
-      .orderBy('c.date_creation DESC')
-      .paginate(parseInt(page) || 1, parseInt(limit) || 50);
+    const where = [];
+    const params = [];
+    const pushP = (v) => { params.push(v); return `$${params.length}`; };
 
-    const result = await qb.execute(pool);
-    return sendSuccess(res, result);
+    if (search && String(search).trim()) {
+      const p = pushP(`%${search}%`);
+      where.push(`(c.code_client ILIKE ${p} OR c.raison_sociale ILIKE ${p})`);
+    }
+    if (actif !== undefined && actif !== '') {
+      where.push(`c.actif = ${pushP(actif === 'true' || actif === true)}`);
+    }
+    if (type_client) {
+      // mapping statut_crm (lead/prospect/client/archive) ← legacy type_client
+      where.push(`c.statut_crm = ${pushP(String(type_client).toLowerCase())}`);
+    }
+    if (id_commercial) {
+      where.push(`c.id_commercial = ${pushP(parseInt(id_commercial))}`);
+    }
+
+    const whereSql = where.length ? 'WHERE ' + where.join(' AND ') : '';
+    const lim = parseInt(limit) || 50;
+    const offset = ((parseInt(page) || 1) - 1) * lim;
+
+    const sql = `
+      SELECT c.id_client, c.code_client, c.raison_sociale,
+             c.statut_crm AS type_client,
+             c.pays,
+             adr.rue       AS adresse,
+             adr.code_postal,
+             adr.ville,
+             adr.contact_livraison_telephone AS telephone,
+             NULL::text    AS email,
+             c.id_commercial,
+             c.actif,
+             c.created_at  AS date_creation
+      FROM comptes c
+      LEFT JOIN adresses_client adr
+        ON adr.id_client = c.id_client AND adr.est_defaut_facturation = TRUE
+      ${whereSql}
+      ORDER BY c.created_at DESC
+      LIMIT ${lim} OFFSET ${offset}
+    `;
+    const countSql = `SELECT COUNT(*)::int AS total FROM comptes c ${whereSql}`;
+
+    const [rows, countR] = await Promise.all([
+      pool.query(sql, params),
+      pool.query(countSql, params)
+    ]);
+    return sendSuccess(res, {
+      data: rows.rows,
+      pagination: {
+        page: parseInt(page) || 1,
+        limit: lim,
+        total: countR.rows[0].total,
+        totalPages: Math.ceil(countR.rows[0].total / lim),
+      }
+    });
   } catch (error) {
     return handleError(res, error, 'getClients');
   }

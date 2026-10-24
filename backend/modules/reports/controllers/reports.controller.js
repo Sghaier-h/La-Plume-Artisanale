@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Contrôleur Reports — rapports d'agrégation multi-modules
  *
  * Fournit des agrégations best-effort sur les tables métier existantes.
@@ -100,7 +100,7 @@ export const reportVentes = async (req, res) => {
               COALESCE(c.nom, c.raison_sociale, 'Client ' || f.id_client::text) AS client,
               COALESCE(SUM(COALESCE(f.montant_ttc, f.montant_total, 0)),0)::numeric AS ca
          FROM factures f
-         LEFT JOIN clients c ON c.id_client = f.id_client
+         LEFT JOIN comptes c ON c.id_client = f.id_client
          ${where}
         GROUP BY f.id_client, c.nom, c.raison_sociale
         ORDER BY ca DESC

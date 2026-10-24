@@ -44,7 +44,7 @@ export const getCommercial = async (req, res) => {
               c.taux_commission, c.actif, c.created_at,
               u.email, u.nom, u.prenom
        FROM commercial c
-       LEFT JOIN users u ON u.id_utilisateur = c.id_commercial
+       LEFT JOIN users u ON u.id_user = c.id_commercial
        WHERE c.id_commercial IS NOT NULL
        ORDER BY c.created_at DESC`
     );
@@ -71,7 +71,7 @@ export const getStatsGlobal = async (req, res) => {
     } catch {}
     const commerciaux = await pool.query(
       `SELECT c.id_commercial, u.email, u.nom, u.prenom, c.objectif_mensuel
-       FROM commercial c LEFT JOIN users u ON u.id_utilisateur = c.id_commercial
+       FROM commercial c LEFT JOIN users u ON u.id_user = c.id_commercial
        WHERE c.actif = true AND c.id_commercial IS NOT NULL`
     );
     const top5 = commerciaux.rows.slice(0, 5).map((c) => ({ ...c, ca_mois: 0 }));
@@ -146,7 +146,7 @@ export const getCommercialById = async (req, res) => {
   try {
     const r = await pool.query(
       `SELECT c.*, c.id_commercial AS id, u.email, u.nom, u.prenom
-       FROM commercial c LEFT JOIN users u ON u.id_utilisateur = c.id_commercial
+       FROM commercial c LEFT JOIN users u ON u.id_user = c.id_commercial
        WHERE c.id_commercial = $1 LIMIT 1`,
       [req.params.id]
     );
@@ -227,7 +227,7 @@ export const getDashboard = async (req, res) => {
               c.objectif_annuel, c.taux_commission,
               u.nom, u.prenom, u.email
        FROM commercial c
-       LEFT JOIN users u ON u.id_utilisateur = c.id_commercial
+       LEFT JOIN users u ON u.id_user = c.id_commercial
        WHERE c.id_commercial = $1 LIMIT 1`,
       [id]
     );
@@ -379,7 +379,7 @@ export const getLeaderboard = async (req, res) => {
   try {
     const list = await pool.query(
       `SELECT c.id_commercial, u.nom, u.prenom, c.objectif_mensuel
-       FROM commercial c LEFT JOIN users u ON u.id_utilisateur = c.id_commercial
+       FROM commercial c LEFT JOIN users u ON u.id_user = c.id_commercial
        WHERE c.actif = true AND c.id_commercial IS NOT NULL`
     );
     const enriched = await Promise.all(list.rows.map(async (c) => {
@@ -494,7 +494,7 @@ export const getTeamPerformance = async (req, res) => {
     const list = await pool.query(
       `SELECT c.id_commercial, c.objectif_mensuel, c.objectif_annuel, c.taux_commission,
               u.nom, u.prenom
-       FROM commercial c LEFT JOIN users u ON u.id_utilisateur = c.id_commercial
+       FROM commercial c LEFT JOIN users u ON u.id_user = c.id_commercial
        WHERE c.actif = true AND c.id_commercial IS NOT NULL`
     );
     const team = await Promise.all(list.rows.map(async (c) => {

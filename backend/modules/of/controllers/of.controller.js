@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Contrôleur OF (Ordres de Fabrication) — Module modulaire
  * Requête la table `ordres_fabrication` (pas la table générique `of`)
  */
@@ -52,7 +52,7 @@ export const getOfById = async (req, res) => {
        LEFT JOIN articles_catalogue a ON o.id_article = a.id_article
        LEFT JOIN articles_commande ac ON o.id_article_commande = ac.id_article_commande
        LEFT JOIN commandes c ON ac.id_commande = c.id_commande
-       LEFT JOIN clients cl ON c.id_client = cl.id_client
+       LEFT JOIN comptes cl ON c.id_client = cl.id_client
        WHERE o.id_of = $1`,
       [id]
     );
@@ -171,7 +171,7 @@ export const getOFDetailComplet = async (req, res) => {
          LEFT JOIN articles_catalogue a ON o.id_article = a.id_article
          LEFT JOIN articles_commande ac ON o.id_article_commande = ac.id_article_commande
          LEFT JOIN commandes c ON ac.id_commande = c.id_commande
-         LEFT JOIN clients cl ON c.id_client = cl.id_client
+         LEFT JOIN comptes cl ON c.id_client = cl.id_client
         WHERE o.id_of = $1`,
       [id]
     );

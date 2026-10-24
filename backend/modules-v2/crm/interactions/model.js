@@ -24,7 +24,7 @@ export async function list({ q, id_client, id_lead, id_contact, type, direction,
            co.nom  AS compte_nom_particulier,
            co.code_client,
            ct.nom  AS contact_nom, ct.prenom AS contact_prenom,
-           u.nom_complet AS utilisateur_nom,
+           TRIM(COALESCE(u.prenom, '') || ' ' || COALESCE(u.nom, '')) AS utilisateur_nom,
            l.nom_prospect AS lead_nom
       FROM interactions_crm i
       LEFT JOIN comptes  co ON co.id_client  = i.id_client
@@ -45,7 +45,7 @@ export async function findById(id) {
   const { rows } = await getPool().query(
     `SELECT i.*, co.raison_sociale AS compte_raison_sociale,
             ct.nom AS contact_nom, ct.prenom AS contact_prenom,
-            u.nom_complet AS utilisateur_nom
+            TRIM(COALESCE(u.prenom, '') || ' ' || COALESCE(u.nom, '')) AS utilisateur_nom
        FROM interactions_crm i
        LEFT JOIN comptes co ON co.id_client = i.id_client
        LEFT JOIN contacts ct ON ct.id_contact = i.id_contact
