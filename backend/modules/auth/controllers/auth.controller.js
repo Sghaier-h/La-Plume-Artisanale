@@ -8,6 +8,7 @@ import jwt from 'jsonwebtoken';
 import { pool } from '../../../src/utils/db.js';
 import { logger } from '../../../src/utils/logger.js';
 import { mockUsers } from '../../../src/config/dev-users.js';
+import { getPermissionsForRole } from '../../../src/config/role-permissions.js';
 import { sendError, sendSuccess, handleError, HTTP_STATUS } from '../../../src/utils/error.helper.js';
 
 // ── POST /api/auth/login ────────────────────────────────────────────────
@@ -27,13 +28,25 @@ export const login = async (req, res) => {
       const mockUser = mockUsers.find(u => u.email === email && u.password === password);
 
       if (mockUser) {
+        const permissions = getPermissionsForRole(mockUser.user.role);
         const token = jwt.sign(
-          { userId: mockUser.user.id, email: mockUser.user.email, role: mockUser.user.role },
+          {
+            userId: mockUser.user.id,
+            id: mockUser.user.id,
+            email: mockUser.user.email,
+            role: mockUser.user.role,
+            role_principal: mockUser.user.role,
+            permissions,
+          },
           process.env.JWT_SECRET || 'dev-secret-key',
           { expiresIn: process.env.JWT_EXPIRE || '24h' }
         );
 
-        logger.info('Login mock réussi', { email: mockUser.user.email, role: mockUser.user.role });
+        logger.info('Login mock réussi', {
+          email: mockUser.user.email,
+          role: mockUser.user.role,
+          permsCount: permissions.length,
+        });
         return sendSuccess(res, { token, user: mockUser.user });
       }
 
