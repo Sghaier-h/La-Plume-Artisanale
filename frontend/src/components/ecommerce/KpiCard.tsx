@@ -9,6 +9,8 @@ interface KpiCardProps {
   icon?: React.ReactNode;
   color?: 'terracotta' | 'sage' | 'indigo' | 'warning' | 'neutral';
   subtitle?: string;
+  onClick?: () => void;
+  active?: boolean;
 }
 
 const COLOR_MAP: Record<string, { bg: string; text: string; icon: string }> = {
@@ -47,6 +49,8 @@ const KpiCard: React.FC<KpiCardProps> = ({
   icon,
   color = 'indigo',
   subtitle,
+  onClick,
+  active,
 }) => {
   const colors = COLOR_MAP[color] || COLOR_MAP.indigo;
   const evolutionIcon =
@@ -64,8 +68,27 @@ const KpiCard: React.FC<KpiCardProps> = ({
       ? 'text-emerald-700 bg-emerald-50'
       : 'text-red-700 bg-red-50';
 
+  const clickable = typeof onClick === 'function';
+  const Tag: any = clickable ? 'button' : 'div';
+  const clickableProps = clickable
+    ? {
+        type: 'button' as const,
+        onClick,
+        'aria-pressed': !!active,
+      }
+    : {};
+  const borderCls = active
+    ? 'border-2 border-current ring-2 ring-offset-1 ring-current/30'
+    : 'border border-white/60';
+  const interactCls = clickable
+    ? 'cursor-pointer hover:shadow-md hover:scale-[1.02] active:scale-[0.99] transition-all text-left w-full'
+    : 'hover:shadow-md transition-shadow';
+
   return (
-    <div className={`${colors.bg} rounded-xl p-5 shadow-sm border border-white/60 hover:shadow-md transition-shadow`}>
+    <Tag
+      {...clickableProps}
+      className={`${colors.bg} ${colors.text} rounded-xl p-5 shadow-sm ${borderCls} ${interactCls}`}
+    >
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
           <div className="text-xs font-medium text-gray-600 uppercase tracking-wide truncate">
@@ -95,7 +118,10 @@ const KpiCard: React.FC<KpiCardProps> = ({
           <span className="text-xs text-gray-500">vs période préc.</span>
         </div>
       )}
-    </div>
+      {clickable && active && (
+        <div className="mt-2 text-xs font-medium opacity-80">● Filtre actif — cliquer pour désactiver</div>
+      )}
+    </Tag>
   );
 };
 

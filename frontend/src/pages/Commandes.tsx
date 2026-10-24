@@ -242,10 +242,39 @@ const Commandes: React.FC = () => {
 
         {/* KPI row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <KpiCard label="Total commandes" value={kpis.total} icon={<ShoppingCart className="w-5 h-5" />} color="terracotta" />
-          <KpiCard label="En attente" value={kpis.enAttente} icon={<Clock className="w-5 h-5" />} color={kpis.enAttente > 0 ? 'warning' : 'neutral'} />
-          <KpiCard label="En production" value={kpis.enProduction} icon={<Zap className="w-5 h-5" />} color="indigo" />
-          <KpiCard label="CA cumulé" value={kpis.caTotal.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} suffix="TND" icon={<TrendingUp className="w-5 h-5" />} color="sage" />
+          <KpiCard
+            label="Total commandes"
+            value={kpis.total}
+            icon={<ShoppingCart className="w-5 h-5" />}
+            color="terracotta"
+            active={filters.statut === ''}
+            onClick={() => setFilters({ ...filters, statut: '' })}
+          />
+          <KpiCard
+            label="En attente"
+            value={kpis.enAttente}
+            icon={<Clock className="w-5 h-5" />}
+            color={kpis.enAttente > 0 ? 'warning' : 'neutral'}
+            active={filters.statut === 'en_attente'}
+            onClick={() => setFilters({ ...filters, statut: filters.statut === 'en_attente' ? '' : 'en_attente' })}
+          />
+          <KpiCard
+            label="En production"
+            value={kpis.enProduction}
+            icon={<Zap className="w-5 h-5" />}
+            color="indigo"
+            active={filters.statut === 'en_production' || filters.statut === 'validee'}
+            onClick={() => setFilters({ ...filters, statut: filters.statut === 'en_production' ? '' : 'en_production' })}
+          />
+          <KpiCard
+            label="CA cumulé"
+            value={kpis.caTotal.toLocaleString('fr-FR', { maximumFractionDigits: 0 })}
+            suffix="TND"
+            icon={<TrendingUp className="w-5 h-5" />}
+            color="sage"
+            active={filters.statut === 'facturee' || filters.statut === 'livree'}
+            onClick={() => setFilters({ ...filters, statut: filters.statut === 'livree' ? '' : 'livree' })}
+          />
         </div>
 
         {/* Filtres */}
